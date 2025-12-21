@@ -1,0 +1,410 @@
+---
+import DocsLayout from '../../layouts/DocsLayout.astro'
+import Callout from '../../components/Callout.astro'
+---
+
+<DocsLayout title="Teams">
+  <div class="space-y-8">
+    <div>
+      <h1 class="text-3xl font-bold text-white light:text-gray-900">Teams</h1>
+      <p class="mt-4 text-lg text-zinc-400 light:text-gray-600">
+        Collaborate with your team members on monitoring and resolving errors across your applications.
+      </p>
+    </div>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-semibold text-white light:text-gray-900">Overview</h2>
+      <p class="text-zinc-300 light:text-gray-600">
+        Teams allow multiple users to collaborate on monitoring and managing errors. With teams, you can:
+      </p>
+      <ul class="mt-4 space-y-2 text-zinc-300 light:text-gray-600">
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400"></span>
+          <span>Share access to apps with team members</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400"></span>
+          <span>Control who can manage team settings and app assignments</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400"></span>
+          <span>Organize your monitoring setup by project, department, or feature area</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400"></span>
+          <span>Invite team members via email with secure invitation links</span>
+        </li>
+      </ul>
+      <Callout type="info">
+        Teams are optional. You can use Checkend individually, but teams make it easy to collaborate when working with others.
+      </Callout>
+    </section>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-semibold text-white light:text-gray-900">Creating a Team</h2>
+      <p class="text-zinc-300 light:text-gray-600">
+        To create a new team:
+      </p>
+      <ol class="mt-4 space-y-3 text-zinc-300 light:text-gray-600">
+        <li class="flex items-start gap-3">
+          <span class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-violet-600/20 text-sm font-medium text-violet-400">1</span>
+          <span>Navigate to the <strong class="text-white light:text-gray-900">Teams</strong> page from the main navigation</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-violet-600/20 text-sm font-medium text-violet-400">2</span>
+          <span>Click the <strong class="text-white light:text-gray-900">New Team</strong> button</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-violet-600/20 text-sm font-medium text-violet-400">3</span>
+          <span>Enter a team name and click <strong class="text-white light:text-gray-900">Create Team</strong></span>
+        </li>
+      </ol>
+      <p class="mt-4 text-zinc-300 light:text-gray-600">
+        When you create a team, you automatically become the team owner and are added as an admin member. You can then invite others or add existing users to the team.
+      </p>
+    </section>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-semibold text-white light:text-gray-900">Team Roles</h2>
+      <p class="text-zinc-300 light:text-gray-600">
+        Teams have two role levels with different permissions:
+      </p>
+      <div class="mt-4 space-y-4">
+        <div class="rounded-lg border border-zinc-700 bg-zinc-800/50 p-4 light:border-gray-200 light:bg-gray-50">
+          <h3 class="text-lg font-medium text-white light:text-gray-900 mb-2">Admin</h3>
+          <p class="text-zinc-300 light:text-gray-600 mb-3">
+            Team admins can:
+          </p>
+          <ul class="space-y-2 text-zinc-300 light:text-gray-600">
+            <li class="flex items-start gap-2">
+              <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400"></span>
+              <span>Add and remove team members</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400"></span>
+              <span>Change member roles</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400"></span>
+              <span>Send team invitations</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400"></span>
+              <span>Assign apps to the team</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400"></span>
+              <span>Remove team assignments from apps</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400"></span>
+              <span>Edit team name</span>
+            </li>
+          </ul>
+        </div>
+        <div class="rounded-lg border border-zinc-700 bg-zinc-800/50 p-4 light:border-gray-200 light:bg-gray-50">
+          <h3 class="text-lg font-medium text-white light:text-gray-900 mb-2">Member</h3>
+          <p class="text-zinc-300 light:text-gray-600 mb-3">
+            Team members can:
+          </p>
+          <ul class="space-y-2 text-zinc-300 light:text-gray-600">
+            <li class="flex items-start gap-2">
+              <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400"></span>
+              <span>View all apps assigned to the team</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400"></span>
+              <span>View and manage problems for team apps</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400"></span>
+              <span>Resolve and unresolve errors</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400"></span>
+              <span>Add and remove tags</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+      <Callout type="warning">
+        At least one admin must remain in the team. You cannot remove the last admin from a team.
+      </Callout>
+    </section>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-semibold text-white light:text-gray-900">Managing Team Members</h2>
+      <p class="text-zinc-300 light:text-gray-600">
+        Team admins can manage team members from the team detail page.
+      </p>
+
+      <h3 class="mt-6 text-lg font-medium text-white light:text-gray-900">Adding Members Directly</h3>
+      <p class="text-zinc-300 light:text-gray-600">
+        To add an existing user to your team:
+      </p>
+      <ol class="mt-4 space-y-3 text-zinc-300 light:text-gray-600">
+        <li class="flex items-start gap-3">
+          <span class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-violet-600/20 text-sm font-medium text-violet-400">1</span>
+          <span>Go to the team detail page and click <strong class="text-white light:text-gray-900">Manage members</strong></span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-violet-600/20 text-sm font-medium text-violet-400">2</span>
+          <span>Enter the user's email address</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-violet-600/20 text-sm font-medium text-violet-400">3</span>
+          <span>Select their role (Admin or Member)</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-violet-600/20 text-sm font-medium text-violet-400">4</span>
+          <span>Click <strong class="text-white light:text-gray-900">Add Member</strong></span>
+        </li>
+      </ol>
+      <Callout type="info">
+        The user must already have a Checkend account. If they don't have an account, use team invitations instead.
+      </Callout>
+
+      <h3 class="mt-6 text-lg font-medium text-white light:text-gray-900">Changing Member Roles</h3>
+      <p class="text-zinc-300 light:text-gray-600">
+        Team admins can change a member's role:
+      </p>
+      <ol class="mt-4 space-y-3 text-zinc-300 light:text-gray-600">
+        <li class="flex items-start gap-3">
+          <span class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-violet-600/20 text-sm font-medium text-violet-400">1</span>
+          <span>Go to the team members page</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-violet-600/20 text-sm font-medium text-violet-400">2</span>
+          <span>Find the member you want to update</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-violet-600/20 text-sm font-medium text-violet-400">3</span>
+          <span>Select the new role from the dropdown and save</span>
+        </li>
+      </ol>
+
+      <h3 class="mt-6 text-lg font-medium text-white light:text-gray-900">Removing Members</h3>
+      <p class="text-zinc-300 light:text-gray-600">
+        To remove a member from the team:
+      </p>
+      <ol class="mt-4 space-y-3 text-zinc-300 light:text-gray-600">
+        <li class="flex items-start gap-3">
+          <span class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-violet-600/20 text-sm font-medium text-violet-400">1</span>
+          <span>Go to the team members page</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-violet-600/20 text-sm font-medium text-violet-400">2</span>
+          <span>Click <strong class="text-white light:text-gray-900">Remove</strong> next to the member you want to remove</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-violet-600/20 text-sm font-medium text-violet-400">3</span>
+          <span>Confirm the removal</span>
+        </li>
+      </ol>
+      <Callout type="warning">
+        Removing a member from a team will revoke their access to all apps assigned to that team. They will no longer be able to view or manage those apps.
+      </Callout>
+    </section>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-semibold text-white light:text-gray-900">Team Invitations</h2>
+      <p class="text-zinc-300 light:text-gray-600">
+        Team invitations allow you to invite users who don't yet have a Checkend account, or send secure invitation links to existing users.
+      </p>
+
+      <h3 class="mt-6 text-lg font-medium text-white light:text-gray-900">Sending Invitations</h3>
+      <p class="text-zinc-300 light:text-gray-600">
+        To send a team invitation:
+      </p>
+      <ol class="mt-4 space-y-3 text-zinc-300 light:text-gray-600">
+        <li class="flex items-start gap-3">
+          <span class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-violet-600/20 text-sm font-medium text-violet-400">1</span>
+          <span>Go to the team detail page and click <strong class="text-white light:text-gray-900">Team Invitations</strong></span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-violet-600/20 text-sm font-medium text-violet-400">2</span>
+          <span>Enter the email address of the person you want to invite</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-violet-600/20 text-sm font-medium text-violet-400">3</span>
+          <span>Click <strong class="text-white light:text-gray-900">Send Invitation</strong></span>
+        </li>
+      </ol>
+      <p class="mt-4 text-zinc-300 light:text-gray-600">
+        The invited user will receive an email with a secure invitation link. Invitations expire after 7 days.
+      </p>
+
+      <h3 class="mt-6 text-lg font-medium text-white light:text-gray-900">Accepting Invitations</h3>
+      <p class="text-zinc-300 light:text-gray-600">
+        When someone receives a team invitation:
+      </p>
+      <ol class="mt-4 space-y-3 text-zinc-300 light:text-gray-600">
+        <li class="flex items-start gap-3">
+          <span class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-violet-600/20 text-sm font-medium text-violet-400">1</span>
+          <span>They click the invitation link in the email</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-violet-600/20 text-sm font-medium text-violet-400">2</span>
+          <span>If not already signed in, they'll be prompted to sign in or create an account</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-violet-600/20 text-sm font-medium text-violet-400">3</span>
+          <span>Once authenticated, they're automatically added to the team as a member</span>
+        </li>
+      </ol>
+      <Callout type="info">
+        The email address used to accept the invitation must match the email address the invitation was sent to.
+      </Callout>
+
+      <h3 class="mt-6 text-lg font-medium text-white light:text-gray-900">Canceling Invitations</h3>
+      <p class="text-zinc-300 light:text-gray-600">
+        To cancel a pending invitation, go to the team invitations page and click <strong class="text-white light:text-gray-900">Cancel</strong> next to the invitation.
+      </p>
+    </section>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-semibold text-white light:text-gray-900">Assigning Apps to Teams</h2>
+      <p class="text-zinc-300 light:text-gray-600">
+        Apps can be assigned to one or more teams. All members of assigned teams will have access to the app.
+      </p>
+
+      <h3 class="mt-6 text-lg font-medium text-white light:text-gray-900">During App Creation</h3>
+      <p class="text-zinc-300 light:text-gray-600">
+        When you create a new app, you'll see a setup wizard that allows you to assign it to a team:
+      </p>
+      <ol class="mt-4 space-y-3 text-zinc-300 light:text-gray-600">
+        <li class="flex items-start gap-3">
+          <span class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-violet-600/20 text-sm font-medium text-violet-400">1</span>
+          <span>After creating the app, you'll see the setup wizard</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-violet-600/20 text-sm font-medium text-violet-400">2</span>
+          <span>Select a team from the dropdown (only teams where you're an admin are shown)</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-violet-600/20 text-sm font-medium text-violet-400">3</span>
+          <span>Click <strong class="text-white light:text-gray-900">Assign Team</strong> or skip to assign later</span>
+        </li>
+      </ol>
+
+      <h3 class="mt-6 text-lg font-medium text-white light:text-gray-900">From the App Page</h3>
+      <p class="text-zinc-300 light:text-gray-600">
+        You can also assign teams to an existing app:
+      </p>
+      <ol class="mt-4 space-y-3 text-zinc-300 light:text-gray-600">
+        <li class="flex items-start gap-3">
+          <span class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-violet-600/20 text-sm font-medium text-violet-400">1</span>
+          <span>Go to the app detail page</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-violet-600/20 text-sm font-medium text-violet-400">2</span>
+          <span>In the <strong class="text-white light:text-gray-900">Teams</strong> section, select a team from the dropdown</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-violet-600/20 text-sm font-medium text-violet-400">3</span>
+          <span>Click <strong class="text-white light:text-gray-900">Assign</strong></span>
+        </li>
+      </ol>
+      <Callout type="info">
+        Only team admins can assign apps to teams. You must be an admin of the team you're trying to assign the app to.
+      </Callout>
+
+      <h3 class="mt-6 text-lg font-medium text-white light:text-gray-900">Removing Team Assignments</h3>
+      <p class="text-zinc-300 light:text-gray-600">
+        To remove a team assignment from an app:
+      </p>
+      <ol class="mt-4 space-y-3 text-zinc-300 light:text-gray-600">
+        <li class="flex items-start gap-3">
+          <span class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-violet-600/20 text-sm font-medium text-violet-400">1</span>
+          <span>Go to the app detail page</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-violet-600/20 text-sm font-medium text-violet-400">2</span>
+          <span>In the <strong class="text-white light:text-gray-900">Teams</strong> section, click <strong class="text-white light:text-gray-900">Remove</strong> next to the team you want to remove</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-violet-600/20 text-sm font-medium text-violet-400">3</span>
+          <span>Confirm the removal</span>
+        </li>
+      </ol>
+      <Callout type="warning">
+        If you remove all team assignments from an app, only the app creator will have access to it. Make sure at least one team has access, or the app will become inaccessible to team members.
+      </Callout>
+    </section>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-semibold text-white light:text-gray-900">Access Control</h2>
+      <p class="text-zinc-300 light:text-gray-600">
+        Team membership determines what apps you can access:
+      </p>
+      <ul class="mt-4 space-y-2 text-zinc-300 light:text-gray-600">
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400"></span>
+          <span>You can access all apps assigned to teams you're a member of</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400"></span>
+          <span>Apps with no team assignments are only accessible to their creator (for a short grace period after creation)</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400"></span>
+          <span>Team admins can assign apps to teams, while members can only view and manage problems</span>
+        </li>
+      </ul>
+      <p class="mt-4 text-zinc-300 light:text-gray-600">
+        When you're a member of multiple teams, you'll see all apps from all your teams in the apps list.
+      </p>
+    </section>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-semibold text-white light:text-gray-900">Team Owner</h2>
+      <p class="text-zinc-300 light:text-gray-600">
+        The team owner is the user who created the team. The owner has special privileges:
+      </p>
+      <ul class="mt-4 space-y-2 text-zinc-300 light:text-gray-600">
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400"></span>
+          <span>Can delete the team (which removes all team assignments)</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400"></span>
+          <span>Automatically has admin role and cannot be removed from the team</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400"></span>
+          <span>Can edit the team name</span>
+        </li>
+      </ul>
+    </section>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-semibold text-white light:text-gray-900">Best Practices</h2>
+      <p class="text-zinc-300 light:text-gray-600">
+        Here are some tips for organizing your teams effectively:
+      </p>
+      <ul class="mt-4 space-y-2 text-zinc-300 light:text-gray-600">
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400"></span>
+          <span><strong class="text-white light:text-gray-900">Organize by project:</strong> Create teams for different projects or products</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400"></span>
+          <span><strong class="text-white light:text-gray-900">Organize by department:</strong> Create teams for engineering, QA, or operations</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400"></span>
+          <span><strong class="text-white light:text-gray-900">Use multiple teams:</strong> Assign apps to multiple teams if they're relevant to different groups</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400"></span>
+          <span><strong class="text-white light:text-gray-900">Limit admin access:</strong> Only grant admin role to users who need to manage team settings</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400"></span>
+          <span><strong class="text-white light:text-gray-900">Use invitations:</strong> Invite new users via email invitations for a smoother onboarding experience</span>
+        </li>
+      </ul>
+    </section>
+  </div>
+</DocsLayout>
+

@@ -1,0 +1,26 @@
+<%= form_with model: user, class: "space-y-6" do |form| %>
+  <div>
+    <%= form.label :email_address, class: "block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1.5" %>
+    <%= form.email_field :email_address,
+        required: true,
+        autofocus: true,
+        class: "block w-full px-3 py-2 bg-white dark:bg-zinc-900 border rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-1 transition-colors #{form.has_error_on(:email_address) ? 'border-pink-500 focus:border-pink-500 focus:ring-pink-500' : 'border-gray-300 dark:border-zinc-700 focus:border-violet-500 focus:ring-violet-500'}" %>
+    <%= form.errors_on(:email_address) %>
+  </div>
+
+  <div>
+    <div class="flex items-center">
+      <%= form.check_box :site_admin, class: "h-4 w-4 text-violet-600 focus:ring-violet-500 border-gray-300 dark:border-zinc-600 rounded" %>
+      <%= form.label :site_admin, "Site Administrator", class: "ml-2 block text-sm text-gray-700 dark:text-zinc-300" %>
+    </div>
+    <p class="mt-1 text-sm text-gray-500 dark:text-zinc-400">Grant this user site administrator privileges.</p>
+  </div>
+
+  <div class="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-zinc-700">
+    <%= link_to user_path(user), class: "px-4 py-2 text-gray-700 dark:text-zinc-300 hover:text-gray-900 dark:hover:text-white font-medium transition-colors" do %>
+      Cancel
+    <% end %>
+    <%= form.submit "Update User", class: "px-4 py-2 bg-violet-600 text-white rounded-lg font-medium hover:bg-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-900 transition-colors cursor-pointer" %>
+  </div>
+<% end %>
+

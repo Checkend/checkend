@@ -1,0 +1,119 @@
+<div>
+  <div class="flex justify-between items-start mb-8">
+    <div class="flex items-center space-x-4">
+      <div class="w-14 h-14 bg-violet-100 dark:bg-violet-500/20 rounded-xl flex items-center justify-center">
+        <svg class="w-7 h-7 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
+        </svg>
+      </div>
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white"><%= @api_key.name %></h1>
+        <div class="flex items-center space-x-2 mt-1">
+          <% if @api_key.active? %>
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400">
+              Active
+            </span>
+          <% else %>
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400">
+              Revoked
+            </span>
+          <% end %>
+        </div>
+      </div>
+    </div>
+    <div class="flex items-center space-x-2">
+      <% if @api_key.active? %>
+        <%= button_to revoke_api_key_path(@api_key), method: :delete, data: { turbo_confirm: "Are you sure you want to revoke this API key? It will stop working immediately." }, class: "px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 bg-white dark:bg-zinc-900 border border-red-300 dark:border-red-500/20 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors" do %>
+          Revoke
+        <% end %>
+      <% end %>
+      <%= button_to api_key_path(@api_key), method: :delete, data: { turbo_confirm: "Are you sure you want to delete this API key? This action cannot be undone." }, class: "px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 bg-white dark:bg-zinc-900 border border-red-300 dark:border-red-500/20 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors" do %>
+        Delete
+      <% end %>
+    </div>
+  </div>
+
+  <%# API Key Value (only shown once on creation) %>
+  <% if flash[:notice]&.include?("Save this key now") && @api_key.key.present? %>
+    <div class="bg-yellow-50 dark:bg-yellow-500/10 border border-yellow-200 dark:border-yellow-500/20 rounded-lg p-6 mb-6">
+      <div class="flex items-start">
+        <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-400 mt-0.5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+        </svg>
+        <div class="flex-1">
+          <h3 class="text-sm font-medium text-yellow-800 dark:text-yellow-400 mb-2">Important: Save your API key</h3>
+          <p class="text-sm text-yellow-700 dark:text-yellow-300 mb-4">This is the only time you'll be able to see the full API key. Make sure to copy it now and store it securely.</p>
+          <div x-data="{ copied: false }" class="flex items-center space-x-2">
+            <code class="flex-1 px-4 py-3 bg-white dark:bg-zinc-900 border border-yellow-200 dark:border-yellow-500/20 rounded-lg text-sm font-mono text-gray-800 dark:text-zinc-300 select-all overflow-x-auto"><%= @api_key.key %></code>
+            <button
+              @click="navigator.clipboard.writeText('<%= @api_key.key %>'); copied = true; setTimeout(() => copied = false, 2000)"
+              class="flex-shrink-0 p-3 bg-white dark:bg-zinc-900 border border-yellow-200 dark:border-yellow-500/20 rounded-lg text-yellow-600 dark:text-yellow-400 hover:text-yellow-700 dark:hover:text-yellow-300 hover:bg-yellow-50 dark:hover:bg-yellow-500/10 focus:outline-none focus:ring-2 focus:ring-yellow-500 transition-colors"
+              title="Copy to clipboard"
+            >
+              <svg x-show="!copied" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+              </svg>
+              <svg x-show="copied" x-cloak class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  <% else %>
+    <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-6 mb-6">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">API Key</h2>
+      <p class="text-sm text-gray-600 dark:text-zinc-400 mb-4">The API key value is hidden for security. Use the key you saved when creating this API key.</p>
+      <div class="px-4 py-3 bg-gray-100 dark:bg-zinc-900 rounded-lg">
+        <code class="text-sm font-mono text-gray-500 dark:text-zinc-500">••••••••••••••••••••••••••••••••</code>
+      </div>
+    </div>
+  <% end %>
+
+  <%# Permissions %>
+  <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-6 mb-6">
+    <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Permissions</h2>
+    <div class="space-y-2">
+      <% @api_key.permissions.each do |permission| %>
+        <div class="flex items-center px-3 py-2 bg-gray-50 dark:bg-zinc-900 rounded-lg">
+          <svg class="w-4 h-4 text-emerald-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+          </svg>
+          <code class="text-sm font-mono text-gray-700 dark:text-zinc-300"><%= permission %></code>
+        </div>
+      <% end %>
+      <% if @api_key.permissions.empty? %>
+        <p class="text-sm text-gray-500 dark:text-zinc-400">No permissions assigned.</p>
+      <% end %>
+    </div>
+  </div>
+
+  <%# Usage Information %>
+  <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-6">
+    <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Usage Information</h2>
+    <dl class="grid grid-cols-2 gap-4">
+      <div>
+        <dt class="text-sm text-gray-500 dark:text-zinc-400">Created</dt>
+        <dd class="text-sm font-medium text-gray-900 dark:text-white mt-1"><%= @api_key.created_at.strftime("%B %d, %Y at %I:%M %p") %></dd>
+      </div>
+      <div>
+        <dt class="text-sm text-gray-500 dark:text-zinc-400">Last Used</dt>
+        <dd class="text-sm font-medium text-gray-900 dark:text-white mt-1">
+          <% if @api_key.last_used_at %>
+            <%= @api_key.last_used_at.strftime("%B %d, %Y at %I:%M %p") %>
+          <% else %>
+            <span class="text-gray-400 dark:text-zinc-500">Never</span>
+          <% end %>
+        </dd>
+      </div>
+      <% if @api_key.revoked_at %>
+        <div>
+          <dt class="text-sm text-gray-500 dark:text-zinc-400">Revoked</dt>
+          <dd class="text-sm font-medium text-red-600 dark:text-red-400 mt-1"><%= @api_key.revoked_at.strftime("%B %d, %Y at %I:%M %p") %></dd>
+        </div>
+      <% end %>
+    </dl>
+  </div>
+</div>
+

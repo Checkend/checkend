@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta content='text/html; charset=UTF-8' http-equiv='Content-Type' />
+  </head>
+  <body>
+    <h1>You've been invited to join <%= @team.name %> on Checkend!</h1>
+    <p><%= @inviter.email_address %> has invited you to collaborate on apps together.</p>
+    <p><%= link_to "Accept Invitation", accept_team_invitation_url(@team_invitation.token) %></p>
+    <p><small>This invitation will expire in 7 days.</small></p>
+  </body>
+</html>
+

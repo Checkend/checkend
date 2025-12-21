@@ -1,0 +1,5 @@
+<%= turbo_frame_tag "modal" do %>
+  <%= render layout: "shared/slide_over", locals: { title: "Edit App", subtitle: "Update your application settings." } do %>
+    <%= render "form", app: @app %>
+  <% end %>
+<% end %>

@@ -1,0 +1,32 @@
+<div>
+  <div class="mb-6">
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">App Created!</h1>
+    <p class="text-gray-600 dark:text-zinc-400 mt-1">Would you like to assign this app to a team?</p>
+  </div>
+
+  <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-6">
+    <%= form_with url: assign_team_app_path(@app), method: :post, class: "space-y-6" do |form| %>
+      <div>
+        <%= form.label :team_id, "Select a team", class: "block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1.5" %>
+        <%= form.select :team_id,
+            options_from_collection_for_select(@teams, :slug, :name),
+            { include_blank: "Skip for now" },
+            { name: 'team_id', class: "block w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:border-violet-500 focus:ring-violet-500" } %>
+      </div>
+
+      <div class="flex items-center justify-end space-x-3">
+        <%= link_to app_path(@app), class: "px-4 py-2 text-gray-700 dark:text-zinc-300 hover:text-gray-900 dark:hover:text-white font-medium transition-colors" do %>
+          Skip
+        <% end %>
+        <%= form.submit "Assign Team", class: "px-4 py-2 bg-violet-600 text-white rounded-lg font-medium hover:bg-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-900 transition-colors cursor-pointer" %>
+      </div>
+    <% end %>
+
+    <div class="mt-6 pt-6 border-t border-gray-200 dark:border-zinc-700">
+      <%= link_to new_team_path, class: "text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300" do %>
+        Create a new team
+      <% end %>
+    </div>
+  </div>
+</div>
+

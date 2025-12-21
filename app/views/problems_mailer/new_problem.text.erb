@@ -1,0 +1,25 @@
+New Error in <%= @app.name %>
+============================
+
+A new error has been detected in your application.
+
+Error Class: <%= @problem.error_class %>
+Message: <%= truncate(@problem.error_message, length: 200) %>
+Application: <%= @app.name %> (<%= @app.environment %>)
+First Seen: <%= @problem.first_noticed_at&.strftime("%B %d, %Y at %I:%M %p") %>
+
+<% if @notice&.backtrace&.lines&.any? %>
+Backtrace:
+<% @notice.backtrace.lines.first(10).each do |line| %>
+  <%= "#{line['file']}:#{line['line']} in `#{line['method']}`" %>
+<% end %>
+<% if @notice.backtrace.lines.size > 10 %>
+  ... and <%= @notice.backtrace.lines.size - 10 %> more lines
+<% end %>
+<% end %>
+
+View Error Details: <%= app_problem_url(@app, @problem) %>
+
+---
+You received this email because you have notifications enabled for <%= @app.name %>.
+You can manage your notification settings in the app settings.

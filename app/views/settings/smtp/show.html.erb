@@ -1,0 +1,66 @@
+<div>
+  <div class="flex justify-between items-center mb-6">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Email Settings</h1>
+      <p class="text-gray-600 dark:text-zinc-400 mt-1">Configure SMTP settings for sending email notifications.</p>
+    </div>
+    <%= link_to edit_settings_smtp_path, class: "inline-flex items-center px-4 py-2 bg-violet-600 text-white rounded-lg font-medium hover:bg-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-800 transition-colors" do %>
+      <%= @smtp_configuration.enabled? ? 'Edit Configuration' : 'Configure SMTP' %>
+    <% end %>
+  </div>
+
+  <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-6">
+    <div class="space-y-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white">SMTP Status</h2>
+          <p class="text-sm text-gray-500 dark:text-zinc-400 mt-1">
+            <% if @smtp_configuration.enabled? %>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                Enabled
+              </span>
+            <% else %>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200">
+                Disabled
+              </span>
+            <% end %>
+          </p>
+        </div>
+      </div>
+
+      <% if @smtp_configuration.enabled? %>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-gray-200 dark:border-zinc-700">
+          <div>
+            <dt class="text-sm font-medium text-gray-500 dark:text-zinc-400">SMTP Server</dt>
+            <dd class="mt-1 text-sm text-gray-900 dark:text-white"><%= @smtp_configuration.address %>:<%= @smtp_configuration.port %></dd>
+          </div>
+          <div>
+            <dt class="text-sm font-medium text-gray-500 dark:text-zinc-400">Domain</dt>
+            <dd class="mt-1 text-sm text-gray-900 dark:text-white"><%= @smtp_configuration.domain.presence || 'Not set' %></dd>
+          </div>
+          <div>
+            <dt class="text-sm font-medium text-gray-500 dark:text-zinc-400">Username</dt>
+            <dd class="mt-1 text-sm text-gray-900 dark:text-white"><%= @smtp_configuration.user_name %></dd>
+          </div>
+          <div>
+            <dt class="text-sm font-medium text-gray-500 dark:text-zinc-400">Authentication</dt>
+            <dd class="mt-1 text-sm text-gray-900 dark:text-white"><%= @smtp_configuration.authentication.humanize %></dd>
+          </div>
+          <div>
+            <dt class="text-sm font-medium text-gray-500 dark:text-zinc-400">STARTTLS</dt>
+            <dd class="mt-1 text-sm text-gray-900 dark:text-white">
+              <%= @smtp_configuration.enable_starttls_auto? ? 'Enabled' : 'Disabled' %>
+            </dd>
+          </div>
+        </div>
+      <% else %>
+        <div class="pt-4 border-t border-gray-200 dark:border-zinc-700">
+          <p class="text-sm text-gray-500 dark:text-zinc-400">
+            SMTP is currently disabled. Configure your SMTP settings to enable email notifications.
+          </p>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
+

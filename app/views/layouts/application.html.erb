@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html class="h-full">
+  <head>
+    <title><%= content_for(:title) || "Checkend" %></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="Checkend">
+    <meta name="mobile-web-app-capable" content="yes">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+
+    <%= yield :head %>
+
+    <%# Prevent flash of wrong theme %>
+    <script>
+      if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark')
+      } else {
+        document.documentElement.classList.remove('dark')
+      }
+    </script>
+
+    <link rel="icon" href="/icon.png" type="image/png">
+    <link rel="icon" href="/icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/icon.png">
+
+    <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
+    <%= javascript_importmap_tags %>
+  </head>
+
+  <body class="h-full bg-gray-50 dark:bg-zinc-900 transition-colors"
+        x-data="{ sidebarOpen: false, slideOverOpen: false }"
+        @keydown.escape.window="sidebarOpen = false; slideOverOpen = false">
+    <%# Flash messages - fixed position overlay %>
+    <%= render "shared/flash" %>
+
+    <% if authenticated? %>
+      <%# Modal/Slide-over container %>
+      <%= turbo_frame_tag "modal" %>
+
+      <%# Mobile top bar %>
+      <div class="sticky top-0 z-40 flex items-center justify-between bg-white dark:bg-zinc-900 px-4 py-3 shadow-sm dark:shadow-zinc-800/50 sm:px-6 border-b border-gray-200 dark:border-zinc-800 lg:hidden">
+        <button type="button" @click="sidebarOpen = true" class="p-2 rounded-lg border border-gray-300 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-gray-900 dark:hover:text-white transition-colors">
+          <span class="sr-only">Open sidebar</span>
+          <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+          </svg>
+        </button>
+        <%# Centered logo icon %>
+        <div class="absolute left-1/2 -translate-x-1/2">
+          <%= render "shared/logo", size: :sm, show_text: false %>
+        </div>
+        <%# Spacer to balance the hamburger %>
+        <div class="w-9"></div>
+      </div>
+
+      <%# Mobile sidebar drawer %>
+      <div class="lg:hidden" role="dialog" aria-modal="true" x-show="sidebarOpen" style="display: none;">
+        <%# Backdrop %>
+        <div
+          x-show="sidebarOpen"
+          x-transition:enter="transition-opacity ease-linear duration-300"
+          x-transition:enter-start="opacity-0"
+          x-transition:enter-end="opacity-100"
+          x-transition:leave="transition-opacity ease-linear duration-300"
+          x-transition:leave-start="opacity-100"
+          x-transition:leave-end="opacity-0"
+          class="fixed inset-0 z-50 bg-gray-900/80"
+          @click="sidebarOpen = false"
+        ></div>
+
+        <%# Sidebar panel %>
+        <div
+          x-show="sidebarOpen"
+          x-transition:enter="transition ease-in-out duration-300 transform"
+          x-transition:enter-start="-translate-x-full"
+          x-transition:enter-end="translate-x-0"
+          x-transition:leave="transition ease-in-out duration-300 transform"
+          x-transition:leave-start="translate-x-0"
+          x-transition:leave-end="-translate-x-full"
+          class="fixed inset-0 z-50 flex"
+        >
+          <div class="relative mr-16 flex w-full max-w-xs flex-1">
+            <%# Close button %>
+            <div
+              x-show="sidebarOpen"
+              x-transition:enter="ease-in-out duration-300"
+              x-transition:enter-start="opacity-0"
+              x-transition:enter-end="opacity-100"
+              x-transition:leave="ease-in-out duration-300"
+              x-transition:leave-start="opacity-100"
+              x-transition:leave-end="opacity-0"
+              class="absolute left-full top-0 flex w-16 justify-center pt-5"
+            >
+              <button type="button" @click="sidebarOpen = false" class="-m-2.5 p-2.5">
+                <span class="sr-only">Close sidebar</span>
+                <svg class="size-6 text-white" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <%# Sidebar content %>
+            <div class="flex grow flex-col gap-y-5 overflow-y-auto bg-white dark:bg-zinc-900 px-6 pb-2 border-r border-gray-200 dark:border-zinc-800">
+              <%= render "shared/sidebar" %>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <%# Desktop sidebar %>
+      <div class="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
+        <div class="flex grow flex-col gap-y-5 overflow-y-auto border-r border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-6">
+          <%= render "shared/sidebar" %>
+        </div>
+      </div>
+
+      <%# Main content %>
+      <main class="lg:pl-72">
+        <div class="px-4 py-8 sm:px-6 lg:px-8">
+          <%= render "shared/breadcrumb" %>
+          <%= yield %>
+        </div>
+      </main>
+    <% else %>
+      <%# Unauthenticated layout - simple centered content %>
+      <main class="min-h-screen flex items-center justify-center px-4">
+        <%= yield %>
+      </main>
+    <% end %>
+  </body>
+</html>

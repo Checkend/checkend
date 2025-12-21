@@ -1,0 +1,154 @@
+---
+import DocsLayout from '../../layouts/DocsLayout.astro'
+import CodeBlock from '../../components/CodeBlock.astro'
+import Callout from '../../components/Callout.astro'
+---
+
+<DocsLayout title="Sending Errors">
+  <div class="space-y-8">
+    <div>
+      <h1 class="text-3xl font-bold text-white light:text-gray-900">Sending Errors</h1>
+      <p class="mt-4 text-lg text-zinc-400 light:text-gray-600">
+        Learn how to send errors from your applications to Checkend.
+      </p>
+    </div>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-semibold text-white light:text-gray-900">Basic Request</h2>
+      <p class="text-zinc-300 light:text-gray-600">
+        Send errors to Checkend using a simple POST request to the <code class="rounded bg-zinc-800 px-1.5 py-0.5 text-violet-400 light:bg-gray-100 light:text-violet-600">/ingest/v1/errors</code> endpoint.
+      </p>
+      <CodeBlock title="cURL" lang="bash" code={`curl -X POST https://your-checkend-instance.com/ingest/v1/errors \\
+  -H "Content-Type: application/json" \\
+  -H "Checkend-Ingestion-Key: your-ingestion-key" \\
+  -d '{
+    "error_class": "NoMethodError",
+    "error_message": "undefined method foo for nil:NilClass",
+    "backtrace": [
+      "app/models/user.rb:42:in validate_email",
+      "app/controllers/users_controller.rb:15:in create"
+    ]
+  }'`} />
+    </section>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-semibold text-white light:text-gray-900">Request Body</h2>
+      <p class="text-zinc-300 light:text-gray-600">
+        The request body accepts the following fields:
+      </p>
+
+      <div class="overflow-hidden rounded-lg border border-zinc-700 light:border-gray-200">
+        <table class="min-w-full divide-y divide-zinc-700 light:divide-gray-200">
+          <thead class="bg-zinc-800 light:bg-gray-50">
+            <tr>
+              <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-400 light:text-gray-500">Field</th>
+              <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-400 light:text-gray-500">Type</th>
+              <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-400 light:text-gray-500">Required</th>
+              <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-400 light:text-gray-500">Description</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-zinc-700 bg-zinc-900 light:divide-gray-200 light:bg-white">
+            <tr>
+              <td class="whitespace-nowrap px-4 py-3 font-mono text-sm text-violet-400">error_class</td>
+              <td class="px-4 py-3 text-sm text-zinc-300 light:text-gray-600">string</td>
+              <td class="px-4 py-3"><span class="rounded bg-pink-500/20 px-2 py-0.5 text-xs text-pink-400">Required</span></td>
+              <td class="px-4 py-3 text-sm text-zinc-300 light:text-gray-600">The error class name</td>
+            </tr>
+            <tr>
+              <td class="whitespace-nowrap px-4 py-3 font-mono text-sm text-violet-400">error_message</td>
+              <td class="px-4 py-3 text-sm text-zinc-300 light:text-gray-600">string</td>
+              <td class="px-4 py-3"><span class="rounded bg-pink-500/20 px-2 py-0.5 text-xs text-pink-400">Required</span></td>
+              <td class="px-4 py-3 text-sm text-zinc-300 light:text-gray-600">The error message</td>
+            </tr>
+            <tr>
+              <td class="whitespace-nowrap px-4 py-3 font-mono text-sm text-violet-400">backtrace</td>
+              <td class="px-4 py-3 text-sm text-zinc-300 light:text-gray-600">array</td>
+              <td class="px-4 py-3"><span class="rounded bg-zinc-600/50 px-2 py-0.5 text-xs text-zinc-400">Optional</span></td>
+              <td class="px-4 py-3 text-sm text-zinc-300 light:text-gray-600">Array of backtrace lines</td>
+            </tr>
+            <tr>
+              <td class="whitespace-nowrap px-4 py-3 font-mono text-sm text-violet-400">context</td>
+              <td class="px-4 py-3 text-sm text-zinc-300 light:text-gray-600">object</td>
+              <td class="px-4 py-3"><span class="rounded bg-zinc-600/50 px-2 py-0.5 text-xs text-zinc-400">Optional</span></td>
+              <td class="px-4 py-3 text-sm text-zinc-300 light:text-gray-600">Custom context data</td>
+            </tr>
+            <tr>
+              <td class="whitespace-nowrap px-4 py-3 font-mono text-sm text-violet-400">request</td>
+              <td class="px-4 py-3 text-sm text-zinc-300 light:text-gray-600">object</td>
+              <td class="px-4 py-3"><span class="rounded bg-zinc-600/50 px-2 py-0.5 text-xs text-zinc-400">Optional</span></td>
+              <td class="px-4 py-3 text-sm text-zinc-300 light:text-gray-600">Request information (url, method, params)</td>
+            </tr>
+            <tr>
+              <td class="whitespace-nowrap px-4 py-3 font-mono text-sm text-violet-400">user_info</td>
+              <td class="px-4 py-3 text-sm text-zinc-300 light:text-gray-600">object</td>
+              <td class="px-4 py-3"><span class="rounded bg-zinc-600/50 px-2 py-0.5 text-xs text-zinc-400">Optional</span></td>
+              <td class="px-4 py-3 text-sm text-zinc-300 light:text-gray-600">User information (id, email, name)</td>
+            </tr>
+            <tr>
+              <td class="whitespace-nowrap px-4 py-3 font-mono text-sm text-violet-400">fingerprint</td>
+              <td class="px-4 py-3 text-sm text-zinc-300 light:text-gray-600">string</td>
+              <td class="px-4 py-3"><span class="rounded bg-zinc-600/50 px-2 py-0.5 text-xs text-zinc-400">Optional</span></td>
+              <td class="px-4 py-3 text-sm text-zinc-300 light:text-gray-600">Custom fingerprint for grouping</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-semibold text-white light:text-gray-900">Full Example</h2>
+      <p class="text-zinc-300 light:text-gray-600">
+        Here's an example with all optional fields:
+      </p>
+      <CodeBlock title="cURL" lang="bash" code={`curl -X POST https://your-checkend-instance.com/ingest/v1/errors \\
+  -H "Content-Type: application/json" \\
+  -H "Checkend-Ingestion-Key: your-ingestion-key" \\
+  -d '{
+    "error_class": "ActiveRecord::RecordNotFound",
+    "error_message": "Could not find User with id=123",
+    "backtrace": [
+      "app/controllers/users_controller.rb:25:in show",
+      "actionpack/lib/action_controller/metal/basic_implicit_render.rb:6"
+    ],
+    "context": {
+      "environment": "production",
+      "server": "web-1"
+    },
+    "request": {
+      "url": "https://example.com/users/123",
+      "method": "GET",
+      "params": {"id": "123"}
+    },
+    "user_info": {
+      "id": "456",
+      "email": "admin@example.com"
+    }
+  }'`} />
+    </section>
+
+    <Callout type="info" title="Error Grouping">
+      By default, errors are grouped by their class name and the first line of the backtrace. You can provide a custom
+      <code class="rounded bg-violet-600/30 px-1 text-violet-300">fingerprint</code> to control how errors are grouped.
+      See the <a href="/docs/error-grouping" class="text-violet-400 hover:text-violet-300 underline">Error Grouping</a> guide for details.
+    </Callout>
+
+    <!-- Next steps -->
+    <div class="border-t border-zinc-800 pt-8 light:border-gray-200">
+      <h2 class="text-lg font-semibold text-white light:text-gray-900">Next steps</h2>
+      <div class="mt-4 grid gap-3">
+        <a href="/docs/error-grouping" class="flex items-center gap-2 text-violet-400 hover:text-violet-300 light:text-violet-600 light:hover:text-violet-700">
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          </svg>
+          Learn about error grouping
+        </a>
+        <a href="/docs/api/errors" class="flex items-center gap-2 text-violet-400 hover:text-violet-300 light:text-violet-600 light:hover:text-violet-700">
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          </svg>
+          Ingestion reference
+        </a>
+      </div>
+    </div>
+  </div>
+</DocsLayout>

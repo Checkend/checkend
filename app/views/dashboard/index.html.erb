@@ -1,0 +1,142 @@
+<div>
+  <%# Header %>
+  <div class="mb-6">
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
+    <p class="text-gray-600 dark:text-zinc-400 mt-1">Overview of your error monitoring.</p>
+  </div>
+
+  <%# Stats Grid %>
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-4">
+      <div class="text-sm text-gray-500 dark:text-zinc-400 mb-1">Apps</div>
+      <div class="text-2xl font-bold text-gray-900 dark:text-white"><%= @apps_count %></div>
+    </div>
+    <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-4">
+      <div class="text-sm text-gray-500 dark:text-zinc-400 mb-1">Unresolved</div>
+      <div class="text-2xl font-bold <%= @unresolved_count > 0 ? 'text-pink-600 dark:text-pink-400' : 'text-gray-900 dark:text-white' %>"><%= @unresolved_count %></div>
+    </div>
+    <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-4">
+      <div class="text-sm text-gray-500 dark:text-zinc-400 mb-1">Problems Today</div>
+      <div class="text-2xl font-bold <%= @problems_today_count > 0 ? 'text-orange-500 dark:text-orange-400' : 'text-gray-900 dark:text-white' %>"><%= @problems_today_count %></div>
+    </div>
+    <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-4">
+      <div class="text-sm text-gray-500 dark:text-zinc-400 mb-1">Notices Today</div>
+      <div class="text-2xl font-bold text-violet-600 dark:text-violet-400"><%= @notices_today_count %></div>
+    </div>
+  </div>
+
+  <%# Your Apps - Quick Links %>
+  <% if @apps.any? %>
+    <div class="mb-8">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Your Apps</h2>
+        <%= link_to apps_path, class: "text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 font-medium" do %>
+          View all
+        <% end %>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <% @apps.includes(:problems).order(:name).limit(6).each do |app| %>
+          <%= link_to app_path(app), class: "block bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-4 hover:border-violet-500 dark:hover:border-violet-500 transition-colors group" do %>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-3 min-w-0">
+                <div class="w-10 h-10 bg-violet-100 dark:bg-violet-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <svg class="w-5 h-5 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path>
+                  </svg>
+                </div>
+                <div class="min-w-0">
+                  <h3 class="font-medium text-gray-900 dark:text-white truncate group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors"><%= app.name %></h3>
+                  <% if app.environment.present? %>
+                    <span class="text-xs text-gray-500 dark:text-zinc-400"><%= app.environment %></span>
+                  <% end %>
+                </div>
+              </div>
+              <div class="flex-shrink-0 ml-2">
+                <% unresolved = app.problems.unresolved.count %>
+                <% if unresolved > 0 %>
+                  <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-pink-100 dark:bg-pink-500/20 text-pink-700 dark:text-pink-400">
+                    <%= unresolved %>
+                  </span>
+                <% else %>
+                  <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                  </span>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+
+  <%# Recent Problems %>
+  <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-200 dark:border-zinc-700">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Recent Problems</h2>
+    </div>
+
+    <% if @recent_problems.any? %>
+      <ul class="divide-y divide-gray-200 dark:divide-zinc-700">
+        <% @recent_problems.each do |problem| %>
+          <li>
+            <%= link_to app_problem_path(problem.app, problem), class: "block px-6 py-4 hover:bg-gray-50 dark:hover:bg-zinc-700/50 transition-colors" do %>
+              <div class="flex items-center justify-between">
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center space-x-2 flex-wrap gap-y-1">
+                    <% if problem.resolved? %>
+                      <span class="flex-shrink-0 w-2 h-2 rounded-full bg-emerald-500"></span>
+                    <% else %>
+                      <span class="flex-shrink-0 w-2 h-2 rounded-full bg-pink-500"></span>
+                    <% end %>
+                    <span class="text-xs px-2 py-0.5 bg-violet-100 dark:bg-violet-500/20 text-violet-700 dark:text-violet-400 rounded font-medium"><%= problem.app.name %></span>
+                    <span class="font-medium text-gray-900 dark:text-white truncate"><%= problem.error_class %></span>
+                    <% if problem.resolved? %>
+                      <span class="text-xs px-1.5 py-0.5 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 rounded">resolved</span>
+                    <% end %>
+                  </div>
+                  <p class="text-sm text-gray-600 dark:text-zinc-400 truncate mt-1"><%= problem.error_message %></p>
+                </div>
+                <div class="flex items-center space-x-4 ml-4 flex-shrink-0">
+                  <span class="text-sm text-gray-500 dark:text-zinc-500"><%= problem.notices_count %> <%= "notice".pluralize(problem.notices_count) %></span>
+                  <span class="text-sm text-gray-500 dark:text-zinc-500"><%= time_ago_in_words(problem.last_noticed_at) %> ago</span>
+                  <svg class="w-5 h-5 text-gray-400 dark:text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                  </svg>
+                </div>
+              </div>
+            <% end %>
+          </li>
+        <% end %>
+      </ul>
+    <% else %>
+      <div class="px-6 py-12 text-center">
+        <% if @apps_count > 0 %>
+          <div class="w-12 h-12 bg-emerald-100 dark:bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
+            <svg class="w-6 h-6 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+          </div>
+          <h3 class="text-base font-medium text-gray-900 dark:text-white mb-1">All clear!</h3>
+          <p class="text-sm text-gray-600 dark:text-zinc-400">No problems reported yet. Errors will appear here when they occur.</p>
+        <% else %>
+          <div class="w-12 h-12 bg-gray-100 dark:bg-zinc-700 rounded-full flex items-center justify-center mx-auto mb-3">
+            <svg class="w-6 h-6 text-gray-400 dark:text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path>
+            </svg>
+          </div>
+          <h3 class="text-base font-medium text-gray-900 dark:text-white mb-1">No apps yet</h3>
+          <p class="text-sm text-gray-600 dark:text-zinc-400 mb-4">Create your first app to start monitoring errors.</p>
+          <%= link_to new_app_path, data: { turbo_frame: "modal" }, class: "inline-flex items-center px-4 py-2 bg-violet-600 text-white rounded-lg font-medium hover:bg-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-800 transition-colors" do %>
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+            </svg>
+            Create your first app
+          <% end %>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+</div>

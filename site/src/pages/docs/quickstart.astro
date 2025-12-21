@@ -1,0 +1,112 @@
+---
+import DocsLayout from '../../layouts/DocsLayout.astro'
+import CodeBlock from '../../components/CodeBlock.astro'
+import Callout from '../../components/Callout.astro'
+---
+
+<DocsLayout title="Quickstart">
+  <div class="space-y-8">
+    <div>
+      <h1 class="text-3xl font-bold text-white light:text-gray-900">Quickstart</h1>
+      <p class="mt-4 text-lg text-zinc-400 light:text-gray-600">
+        Get Checkend running in under 5 minutes.
+      </p>
+    </div>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-semibold text-white light:text-gray-900">1. Clone the repository</h2>
+      <p class="text-zinc-300 light:text-gray-600">
+        Start by cloning the Checkend repository from GitHub:
+      </p>
+      <CodeBlock title="Terminal" code={`git clone https://github.com/furvur/checkend.git
+cd checkend`} />
+    </section>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-semibold text-white light:text-gray-900">2. Install dependencies</h2>
+      <p class="text-zinc-300 light:text-gray-600">
+        Install Ruby gems using Bundler:
+      </p>
+      <CodeBlock title="Terminal" code="bundle install" />
+    </section>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-semibold text-white light:text-gray-900">3. Set up the database</h2>
+      <p class="text-zinc-300 light:text-gray-600">
+        Create and migrate the database:
+      </p>
+      <CodeBlock title="Terminal" code="bin/rails db:setup" />
+      <Callout type="info">
+        Make sure PostgreSQL is running and you have the correct database credentials in your environment.
+      </Callout>
+    </section>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-semibold text-white light:text-gray-900">4. Start the server</h2>
+      <p class="text-zinc-300 light:text-gray-600">
+        Launch the development server:
+      </p>
+      <CodeBlock title="Terminal" code="bin/dev" />
+      <p class="text-zinc-300 light:text-gray-600">
+        Visit <code class="rounded bg-zinc-800 px-1.5 py-0.5 text-violet-400 light:bg-gray-100 light:text-violet-600">http://localhost:3000</code> to access the Checkend dashboard.
+      </p>
+    </section>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-semibold text-white light:text-gray-900">5. Create your first app</h2>
+      <p class="text-zinc-300 light:text-gray-600">
+        In the dashboard, create a new app to get your ingestion key. You'll use this key to send errors to Checkend.
+      </p>
+      <p class="mt-2 text-zinc-300 light:text-gray-600">
+        After creating the app, you can optionally assign it to a team to collaborate with others. See the
+        <a href="/docs/teams" class="text-violet-400 hover:text-violet-300 underline light:text-violet-600">Teams documentation</a>
+        for more information.
+      </p>
+    </section>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-semibold text-white light:text-gray-900">6. Send a test error</h2>
+      <p class="text-zinc-300 light:text-gray-600">
+        Use curl to send a test error to your Checkend instance:
+      </p>
+      <CodeBlock title="Terminal" lang="bash" code={`curl -X POST http://localhost:3000/ingest/v1/errors \\
+  -H "Content-Type: application/json" \\
+  -H "Checkend-Ingestion-Key: your-ingestion-key" \\
+  -d '{
+    "error_class": "TestError",
+    "error_message": "This is a test error",
+    "backtrace": ["app/test.rb:1:in test"]
+  }'`} />
+      <Callout type="success" title="That's it!">
+        You should now see the error appear in your Checkend dashboard. Check out the
+        <a href="/docs/sending-errors" class="text-violet-400 hover:text-violet-300 underline light:text-violet-600">Sending Errors</a>
+        guide for more details on the ingestion API.
+      </Callout>
+    </section>
+
+    <!-- Next steps -->
+    <div class="border-t border-zinc-800 pt-8 light:border-gray-200">
+      <h2 class="text-lg font-semibold text-white light:text-gray-900">Next steps</h2>
+      <div class="mt-4 grid gap-3">
+        <a href="/docs/installation" class="flex items-center gap-2 text-violet-400 hover:text-violet-300 light:text-violet-600 light:hover:text-violet-700">
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          </svg>
+          Detailed installation guide
+        </a>
+        <a href="/docs/configuration" class="flex items-center gap-2 text-violet-400 hover:text-violet-300 light:text-violet-600 light:hover:text-violet-700">
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          </svg>
+          Configuration options
+        </a>
+        <a href="/docs/deployment" class="flex items-center gap-2 text-violet-400 hover:text-violet-300 light:text-violet-600 light:hover:text-violet-700">
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          </svg>
+          Deploy to production
+        </a>
+      </div>
+    </div>
+  </div>
+</DocsLayout>

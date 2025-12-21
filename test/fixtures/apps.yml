@@ -1,0 +1,13 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  name: My Rails App
+  slug: my-rails-app
+  ingestion_key: <%= SecureRandom.base58(24) %>
+  environment: production
+
+two:
+  name: My Other App
+  slug: my-other-app
+  ingestion_key: <%= SecureRandom.base58(24) %>
+  environment: staging
