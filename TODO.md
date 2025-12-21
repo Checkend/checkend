@@ -39,11 +39,12 @@ Represents a client application that sends errors to Checkend.
 - `timestamps`
 
 **Tasks:**
-- [ ] Generate App model with migration
-- [ ] Add `has_secure_token :api_key` for automatic key generation
-- [ ] Add validations (name presence, api_key uniqueness)
-- [ ] Add `belongs_to :user` association
-- [ ] Write model tests
+- [x] Generate App model with migration
+- [x] Add `has_secure_token :api_key` for automatic key generation
+- [x] Add validations (name presence, api_key uniqueness)
+- [x] Add `belongs_to :user` association
+- [x] Add `has_many :problems` association (for later)
+- [x] Write model tests (8 tests)
 
 ---
 
@@ -240,13 +241,14 @@ end
 
 ## Current Progress
 
-**Status:** Authentication Complete
+**Status:** App Model Complete
 
 **Completed:**
 - User authentication with login/logout
 - Session management with rate limiting
 - Password reset via email
 - Dashboard with navigation
-- User model validation tests (5 tests passing)
+- User model with validation (5 tests)
+- App model with auto-generated API key (8 tests)
 
-**Next Step:** Create App model
+**Next Step:** Create Backtrace model
