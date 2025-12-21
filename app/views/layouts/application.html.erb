@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title><%= content_for(:title) || "Checkend" %></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="Checkend">
+    <meta name="mobile-web-app-capable" content="yes">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+
+    <%= yield :head %>
+
+    <%# Enable PWA manifest for installable apps (make sure to enable in config/routes.rb too!) %>
+    <%#= tag.link rel: "manifest", href: pwa_manifest_path(format: :json) %>
+
+    <link rel="icon" href="/icon.png" type="image/png">
+    <link rel="icon" href="/icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/icon.png">
+
+    <%# Includes all stylesheet files in app/assets/stylesheets %>
+    <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
+    <%= javascript_importmap_tags %>
+  </head>
+
+  <body class="bg-gray-50">
+    <nav class="bg-white shadow">
+      <div class="container mx-auto px-5 py-4 flex justify-between items-center">
+        <div class="flex items-center space-x-8">
+          <%= link_to "Checkend", root_path, class: "text-xl font-bold text-gray-900" %>
+        </div>
+        <div class="flex items-center space-x-4">
+          <% if authenticated? %>
+            <span class="text-gray-600 text-sm"><%= Current.user.email_address %></span>
+            <%= button_to "Sign out", session_path, method: :delete, class: "text-sm text-gray-600 hover:text-gray-900" %>
+          <% else %>
+            <%= link_to "Sign in", new_session_path, class: "text-sm text-gray-600 hover:text-gray-900" %>
+          <% end %>
+        </div>
+      </div>
+    </nav>
+
+    <% if flash[:alert].present? %>
+      <div class="container mx-auto px-5 mt-4">
+        <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+          <%= flash[:alert] %>
+        </div>
+      </div>
+    <% end %>
+
+    <% if flash[:notice].present? %>
+      <div class="container mx-auto px-5 mt-4">
+        <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded">
+          <%= flash[:notice] %>
+        </div>
+      </div>
+    <% end %>
+
+    <main class="container mx-auto mt-8 px-5">
+      <%= yield %>
+    </main>
+  </body>
+</html>
