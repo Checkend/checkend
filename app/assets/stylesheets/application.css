@@ -8,3 +8,8 @@
  *
  * Consider organizing styles into separate files for maintainability.
  */
+
+/* Ensure all buttons show pointer cursor on hover */
+button {
+  cursor: pointer;
+}

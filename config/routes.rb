@@ -1,4 +1,10 @@
 Rails.application.routes.draw do
+  # Development-only design routes
+  if Rails.env.development?
+    get "design-internal", to: "design#internal"
+    get "design-candidates", to: "design#candidates"
+  end
+
   resource :session
   resources :passwords, param: :token
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
