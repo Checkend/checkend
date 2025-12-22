@@ -1,0 +1,41 @@
+<div class="max-w-lg">
+  <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Security Settings</h1>
+  <p class="text-gray-600 dark:text-zinc-400 mb-8">Update your password to keep your account secure.</p>
+
+  <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg p-6 border border-transparent dark:border-zinc-700">
+    <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-6">Change Password</h2>
+
+    <%= form_with url: settings_password_path, method: :patch, class: "space-y-5" do |form| %>
+      <div>
+        <%= form.label :current_password, "Current Password", class: "block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1.5" %>
+        <%= form.password_field :current_password,
+            required: true,
+            autocomplete: "current-password",
+            class: "block w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-colors" %>
+      </div>
+
+      <div>
+        <%= form.label :password, "New Password", class: "block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1.5" %>
+        <%= form.password_field :password,
+            required: true,
+            autocomplete: "new-password",
+            minlength: 8,
+            class: "block w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-colors" %>
+        <p class="mt-1 text-sm text-gray-500 dark:text-zinc-500">Minimum 8 characters</p>
+      </div>
+
+      <div>
+        <%= form.label :password_confirmation, "Confirm New Password", class: "block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1.5" %>
+        <%= form.password_field :password_confirmation,
+            required: true,
+            autocomplete: "new-password",
+            class: "block w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-colors" %>
+      </div>
+
+      <div class="pt-4">
+        <%= form.submit "Update Password",
+            class: "px-4 py-2 bg-violet-600 text-white rounded-lg font-medium hover:bg-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-800 transition-colors" %>
+      </div>
+    <% end %>
+  </div>
+</div>

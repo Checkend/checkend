@@ -81,6 +81,10 @@
                 class="absolute right-0 mt-2 w-48 rounded-lg bg-white dark:bg-zinc-800 shadow-lg ring-1 ring-black/5 dark:ring-white/10 py-1 z-50"
                 style="display: none;"
               >
+                <%= link_to edit_settings_password_path, class: "block px-4 py-2 text-sm text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors" do %>
+                  Security
+                <% end %>
+                <div class="border-t border-gray-100 dark:border-zinc-700 my-1"></div>
                 <%= button_to session_path, method: :delete, class: "w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors" do %>
                   Sign out
                 <% end %>
