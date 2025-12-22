@@ -8,13 +8,13 @@ Build the web interface for managing apps and viewing/resolving errors.
 ## 1. Apps Management
 
 ### 1.1 Apps Controller & Views
-- [ ] Create `AppsController` with full CRUD actions
-- [ ] Index page: list user's apps with error counts
-- [ ] Show page: app details with recent problems
-- [ ] New/Edit forms: name, environment fields
-- [ ] Delete with confirmation
-- [ ] Display API key (with copy button)
-- [ ] Regenerate API key functionality
+- [x] Create `AppsController` with full CRUD actions
+- [x] Index page: list user's apps with error counts
+- [x] Show page: app details with recent problems
+- [x] New/Edit forms: name, environment fields
+- [x] Delete with confirmation
+- [x] Display API key (with copy button)
+- [x] Regenerate API key functionality
 
 ### 1.2 Routes
 ```ruby
@@ -104,8 +104,8 @@ end
 ## 6. Testing Plan
 
 ### Controller Tests
-- [ ] Apps CRUD operations
-- [ ] Authorization (users can only see their apps)
+- [x] Apps CRUD operations
+- [x] Authorization (users can only see their apps)
 - [ ] Problems filtering and pagination
 - [ ] Resolve/unresolve actions
 
@@ -119,6 +119,14 @@ end
 
 ## 7. Current Progress
 
-**Status:** Not Started
+**Status:** Apps Management Complete
 
-**Next Step:** Create AppsController with index and show pages
+**Completed:**
+- AppsController with full CRUD + regenerate API key
+- Index page with error counts and status badges
+- Show page with API key display, copy button, stats, recent problems
+- New/Edit forms with environment select
+- Delete with confirmation dialog
+- 18 controller tests for CRUD and authorization (126 total tests)
+
+**Next Step:** Create ProblemsController with index and show pages

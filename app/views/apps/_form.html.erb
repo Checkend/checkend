@@ -1,0 +1,35 @@
+<%= form_with model: app, class: "space-y-6" do |form| %>
+  <% if app.errors.any? %>
+    <div class="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg">
+      <div class="font-medium mb-1">Please fix the following errors:</div>
+      <ul class="list-disc list-inside text-sm">
+        <% app.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div>
+    <%= form.label :name, class: "block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1.5" %>
+    <%= form.text_field :name,
+        required: true,
+        autofocus: true,
+        placeholder: "My Rails App",
+        class: "block w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-colors" %>
+  </div>
+
+  <div>
+    <%= form.label :environment, class: "block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1.5" %>
+    <%= form.select :environment,
+        options_for_select([["Production", "production"], ["Staging", "staging"], ["Development", "development"]], app.environment),
+        { include_blank: "Select environment (optional)" },
+        class: "block w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-colors" %>
+    <p class="mt-1 text-sm text-gray-500 dark:text-zinc-500">Optional. Helps organize apps by deployment environment.</p>
+  </div>
+
+  <div class="flex items-center space-x-3 pt-4">
+    <%= form.submit class: "px-4 py-2 bg-violet-600 text-white rounded-lg font-medium hover:bg-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-900 transition-colors cursor-pointer" %>
+    <%= link_to "Cancel", (app.persisted? ? app_path(app) : apps_path), class: "px-4 py-2 text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white transition-colors" %>
+  </div>
+<% end %>
