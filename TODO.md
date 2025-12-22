@@ -111,16 +111,16 @@ end
 - [x] Notice detail view and authorization
 
 ### System Tests
-- [ ] Create and manage an app
-- [ ] View problems list with filters
-- [ ] View problem and notice details
-- [ ] Resolve and unresolve a problem
+- [x] Create and manage an app
+- [x] View problems list with filters
+- [x] View problem and notice details
+- [x] Resolve and unresolve a problem
 
 ---
 
 ## 7. Current Progress
 
-**Status:** Phase 3 Web Dashboard Complete
+**Status:** Phase 3 Web Dashboard Complete (including System Tests)
 
 **Completed:**
 - AppsController with full CRUD + regenerate API key
@@ -138,6 +138,7 @@ end
 - Collapsible sections using Alpine.js
 - Navigation between notices (newer/older)
 - Dashboard with stats, quick links to apps, and clickable recent problems
-- 159 total tests passing
+- System tests for apps CRUD, problems filtering, notice details, and resolve/unresolve
+- 195 total tests passing (159 unit/controller + 36 system tests)
 
-**Next Step:** Add system tests (Section 6) or move to Phase 4
+**Next Step:** Move to Phase 4
