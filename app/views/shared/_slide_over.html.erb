@@ -1,0 +1,71 @@
+<%# Slide-over panel component %>
+<%# Usage: render "shared/slide_over", title: "Title" do %>
+<%#   Your content here %>
+<%# end %>
+
+<div class="relative z-50" role="dialog" aria-modal="true"
+     x-show="slideOverOpen"
+     x-init="$nextTick(() => { slideOverOpen = true })">
+
+  <%# Backdrop %>
+  <div x-show="slideOverOpen"
+       x-transition:enter="ease-in-out duration-300"
+       x-transition:enter-start="opacity-0"
+       x-transition:enter-end="opacity-100"
+       x-transition:leave="ease-in-out duration-300"
+       x-transition:leave-start="opacity-100"
+       x-transition:leave-end="opacity-0"
+       class="fixed inset-0 bg-gray-900/80 dark:bg-black/80 transition-opacity"
+       @click="slideOverOpen = false"
+       style="display: none;">
+  </div>
+
+  <%# Panel %>
+  <div class="fixed inset-0 overflow-hidden">
+    <div class="absolute inset-0 overflow-hidden">
+      <div class="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10 sm:pl-16">
+        <div x-show="slideOverOpen"
+             x-transition:enter="transform transition ease-in-out duration-300"
+             x-transition:enter-start="translate-x-full"
+             x-transition:enter-end="translate-x-0"
+             x-transition:leave="transform transition ease-in-out duration-300"
+             x-transition:leave-start="translate-x-0"
+             x-transition:leave-end="translate-x-full"
+             class="pointer-events-auto w-screen max-w-md"
+             style="display: none;">
+
+          <div class="flex h-full flex-col bg-white dark:bg-zinc-900 shadow-xl">
+            <%# Header %>
+            <div class="bg-violet-600 dark:bg-violet-700 px-4 py-6 sm:px-6">
+              <div class="flex items-center justify-between">
+                <h2 class="text-base font-semibold text-white" id="slide-over-title">
+                  <%= local_assigns[:title] || "Panel" %>
+                </h2>
+                <div class="ml-3 flex h-7 items-center">
+                  <button type="button"
+                          @click="slideOverOpen = false"
+                          class="relative rounded-md bg-violet-700 dark:bg-violet-800 text-violet-200 hover:text-white focus:outline-none focus:ring-2 focus:ring-white">
+                    <span class="sr-only">Close panel</span>
+                    <svg class="size-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <% if local_assigns[:subtitle] %>
+                <div class="mt-1">
+                  <p class="text-sm text-violet-200"><%= subtitle %></p>
+                </div>
+              <% end %>
+            </div>
+
+            <%# Content %>
+            <div class="flex-1 overflow-y-auto px-4 py-6 sm:px-6">
+              <%= yield %>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

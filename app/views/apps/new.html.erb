@@ -1,8 +1,5 @@
-<div>
-  <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">New App</h1>
-  <p class="text-gray-600 dark:text-zinc-400 mb-8">Create a new application to start monitoring errors.</p>
-
-  <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-6">
+<%= turbo_frame_tag "modal" do %>
+  <%= render layout: "shared/slide_over", locals: { title: "New App", subtitle: "Create a new application to start monitoring errors." } do %>
     <%= render "form", app: @app %>
-  </div>
-</div>
+  <% end %>
+<% end %>

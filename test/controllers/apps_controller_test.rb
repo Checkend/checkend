@@ -53,7 +53,7 @@ class AppsControllerTest < ActionDispatch::IntegrationTest
   test "new shows form" do
     get new_app_path
     assert_response :success
-    assert_select "h1", "New App"
+    assert_select "h2", "New App"
     assert_select "form"
   end
 
@@ -83,7 +83,7 @@ class AppsControllerTest < ActionDispatch::IntegrationTest
   test "edit shows form" do
     get edit_app_path(@app)
     assert_response :success
-    assert_select "h1", "Edit App"
+    assert_select "h2", "Edit App"
   end
 
   test "edit cannot edit other users app" do

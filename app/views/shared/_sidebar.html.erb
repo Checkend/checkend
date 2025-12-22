@@ -51,7 +51,7 @@
             </li>
           <% end %>
           <li>
-            <%= link_to new_app_path, class: "group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-violet-600 dark:hover:text-violet-400 transition-colors" do %>
+            <%= link_to new_app_path, data: { turbo_frame: "modal" }, class: "group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-violet-600 dark:hover:text-violet-400 transition-colors" do %>
               <span class="flex size-6 shrink-0 items-center justify-center rounded-lg border border-dashed border-gray-300 dark:border-zinc-600 text-gray-400 dark:text-zinc-500 group-hover:border-violet-600 dark:group-hover:border-violet-500 group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors">
                 <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />

@@ -1,22 +1,12 @@
-<%= form_with model: app, class: "space-y-6" do |form| %>
-  <% if app.errors.any? %>
-    <div class="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg">
-      <div class="font-medium mb-1">Please fix the following errors:</div>
-      <ul class="list-disc list-inside text-sm">
-        <% app.errors.full_messages.each do |message| %>
-          <li><%= message %></li>
-        <% end %>
-      </ul>
-    </div>
-  <% end %>
-
+<%= form_with model: app, data: { turbo_frame: "_top" }, class: "space-y-6" do |form| %>
   <div>
     <%= form.label :name, class: "block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1.5" %>
     <%= form.text_field :name,
         required: true,
         autofocus: true,
         placeholder: "My Rails App",
-        class: "block w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-colors" %>
+        class: "block w-full px-3 py-2 bg-white dark:bg-zinc-900 border rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-1 transition-colors #{form.has_error_on(:name) ? 'border-pink-500 focus:border-pink-500 focus:ring-pink-500' : 'border-gray-300 dark:border-zinc-700 focus:border-violet-500 focus:ring-violet-500'}" %>
+    <%= form.errors_on(:name) %>
   </div>
 
   <div>
@@ -24,12 +14,19 @@
     <%= form.select :environment,
         options_for_select([["Production", "production"], ["Staging", "staging"], ["Development", "development"]], app.environment),
         { include_blank: "Select environment (optional)" },
-        class: "block w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-colors" %>
-    <p class="mt-1 text-sm text-gray-500 dark:text-zinc-500">Optional. Helps organize apps by deployment environment.</p>
+        class: "block w-full px-3 py-2 bg-white dark:bg-zinc-900 border rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-1 transition-colors #{form.has_error_on(:environment) ? 'border-pink-500 focus:border-pink-500 focus:ring-pink-500' : 'border-gray-300 dark:border-zinc-700 focus:border-violet-500 focus:ring-violet-500'}" %>
+    <%= form.errors_on(:environment) %>
+    <% unless form.has_error_on(:environment) %>
+      <p class="mt-1 text-sm text-gray-500 dark:text-zinc-500">Optional. Helps organize apps by deployment environment.</p>
+    <% end %>
   </div>
 
-  <div class="flex items-center space-x-3 pt-4">
+  <div class="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-zinc-700 mt-6 -mx-6 px-6 -mb-6 pb-6 bg-gray-50 dark:bg-zinc-800/50">
+    <button type="button"
+            @click="slideOverOpen = false"
+            class="px-4 py-2 text-gray-700 dark:text-zinc-300 hover:text-gray-900 dark:hover:text-white font-medium transition-colors">
+      Cancel
+    </button>
     <%= form.submit class: "px-4 py-2 bg-violet-600 text-white rounded-lg font-medium hover:bg-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-900 transition-colors cursor-pointer" %>
-    <%= link_to "Cancel", (app.persisted? ? app_path(app) : apps_path), class: "px-4 py-2 text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white transition-colors" %>
   </div>
 <% end %>
