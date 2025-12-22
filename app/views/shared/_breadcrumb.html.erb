@@ -1,0 +1,16 @@
+<%# Sticky breadcrumb navigation %>
+<%# Breadcrumbs are set in controllers using add_breadcrumb(label, path) %>
+<% if breadcrumbs.any? %>
+  <nav class="sticky top-0 z-10 -mx-4 sm:-mx-6 lg:-mx-8 -mt-8 px-4 sm:px-6 lg:px-8 py-2 bg-gray-50 dark:bg-zinc-900 border-b border-gray-200 dark:border-zinc-800 mb-4 overflow-x-auto whitespace-nowrap text-sm">
+    <% breadcrumbs.each_with_index do |item, index| %>
+      <% if item[:path].present? %>
+        <%= link_to item[:label], item[:path], class: "text-gray-500 dark:text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400" %>
+      <% else %>
+        <span class="text-gray-900 dark:text-white"><%= item[:label] %></span>
+      <% end %>
+      <% unless index == breadcrumbs.length - 1 %>
+        <span class="text-gray-400 dark:text-zinc-500 mx-2">/</span>
+      <% end %>
+    <% end %>
+  </nav>
+<% end %>

@@ -5,6 +5,7 @@ class ProblemsController < ApplicationController
 
   before_action :set_app
   before_action :set_problem, only: [ :show, :resolve, :unresolve ]
+  before_action :set_breadcrumbs
 
   def index
     @problems = @app.problems
@@ -79,5 +80,13 @@ class ProblemsController < ApplicationController
 
   def redirect_to_first_page
     redirect_to app_problems_path(@app, status: params[:status], search: params[:search], sort: params[:sort])
+  end
+
+  def set_breadcrumbs
+    add_breadcrumb "Apps", apps_path
+    add_breadcrumb @app.name, app_path(@app)
+    add_breadcrumb "Problems", app_problems_path(@app) if action_name == "show"
+    add_breadcrumb @problem.error_class if action_name == "show"
+    add_breadcrumb "Problems" if action_name == "index"
   end
 end

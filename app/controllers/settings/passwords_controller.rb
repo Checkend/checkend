@@ -1,4 +1,6 @@
 class Settings::PasswordsController < ApplicationController
+  before_action :set_breadcrumbs
+
   def edit
   end
 
@@ -25,5 +27,10 @@ class Settings::PasswordsController < ApplicationController
 
   def password_params
     params.permit(:password, :password_confirmation)
+  end
+
+  def set_breadcrumbs
+    add_breadcrumb "Settings", edit_settings_password_path
+    add_breadcrumb "Security"
   end
 end

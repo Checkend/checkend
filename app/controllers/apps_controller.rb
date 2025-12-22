@@ -1,5 +1,6 @@
 class AppsController < ApplicationController
   before_action :set_app, only: [ :show, :edit, :update, :destroy, :regenerate_api_key ]
+  before_action :set_breadcrumbs, only: [ :show ]
 
   def index
     @apps = Current.user.apps.includes(:problems).order(created_at: :desc)
@@ -51,5 +52,10 @@ class AppsController < ApplicationController
 
   def app_params
     params.require(:app).permit(:name, :environment)
+  end
+
+  def set_breadcrumbs
+    add_breadcrumb "Apps", apps_path
+    add_breadcrumb @app.name
   end
 end

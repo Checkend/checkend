@@ -1,17 +1,6 @@
 <div>
-  <%# Header with breadcrumb %>
+  <%# Header %>
   <div class="mb-6">
-    <nav class="text-sm mb-2">
-      <%= link_to "Apps", apps_path, class: "text-gray-500 dark:text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400" %>
-      <span class="text-gray-400 dark:text-zinc-500 mx-2">/</span>
-      <%= link_to @app.name, app_path(@app), class: "text-gray-500 dark:text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400" %>
-      <span class="text-gray-400 dark:text-zinc-500 mx-2">/</span>
-      <%= link_to "Problems", app_problems_path(@app), class: "text-gray-500 dark:text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400" %>
-      <span class="text-gray-400 dark:text-zinc-500 mx-2">/</span>
-      <%= link_to @problem.error_class, app_problem_path(@app, @problem), class: "text-gray-500 dark:text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400" %>
-      <span class="text-gray-400 dark:text-zinc-500 mx-2">/</span>
-      <span class="text-gray-900 dark:text-white">Notice #<%= @notice.id %></span>
-    </nav>
     <div class="flex justify-between items-start">
       <div class="flex items-center space-x-4">
         <div class="w-14 h-14 bg-pink-100 dark:bg-pink-500/20 rounded-xl flex items-center justify-center">
