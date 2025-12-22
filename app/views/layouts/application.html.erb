@@ -31,6 +31,9 @@
   <body class="h-full bg-gray-50 dark:bg-zinc-900 transition-colors"
         x-data="{ sidebarOpen: false, slideOverOpen: false }"
         @keydown.escape.window="sidebarOpen = false; slideOverOpen = false">
+    <%# Flash messages - fixed position overlay %>
+    <%= render "shared/flash" %>
+
     <% if authenticated? %>
       <%# Modal/Slide-over container %>
       <%= turbo_frame_tag "modal" %>
@@ -115,22 +118,6 @@
       <%# Main content %>
       <main class="lg:pl-72">
         <div class="px-4 py-8 sm:px-6 lg:px-8">
-          <% if flash[:alert].present? %>
-            <div class="mb-6">
-              <div class="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg">
-                <%= flash[:alert] %>
-              </div>
-            </div>
-          <% end %>
-
-          <% if flash[:notice].present? %>
-            <div class="mb-6">
-              <div class="bg-green-50 dark:bg-emerald-500/10 border border-green-200 dark:border-emerald-500/20 text-green-700 dark:text-emerald-400 px-4 py-3 rounded-lg">
-                <%= flash[:notice] %>
-              </div>
-            </div>
-          <% end %>
-
           <%= render "shared/breadcrumb" %>
           <%= yield %>
         </div>
