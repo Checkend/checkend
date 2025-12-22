@@ -49,28 +49,28 @@ end
 ## 3. Problem Detail & Notices
 
 ### 3.1 Problem Show Page
-- [ ] Error class and full message
-- [ ] Status with resolve/unresolve button
-- [ ] Timeline: first seen, last seen, resolved at
+- [x] Error class and full message
+- [x] Status with resolve/unresolve button
+- [x] Timeline: first seen, last seen, resolved at
 - [ ] Notice count and occurrence graph (optional)
-- [ ] List of recent notices
+- [x] List of recent notices
 
 ### 3.2 Notice Detail
-- [ ] Full backtrace with syntax highlighting
-- [ ] Context data (collapsible JSON)
-- [ ] Request info (URL, method, params, headers)
-- [ ] User info display
-- [ ] Occurred at timestamp
+- [x] Full backtrace with syntax highlighting
+- [x] Context data (collapsible JSON)
+- [x] Request info (URL, method, params, headers)
+- [x] User info display
+- [x] Occurred at timestamp
 
 ---
 
 ## 4. Navigation & Layout
 
 ### 4.1 App Layout Updates
-- [ ] Sidebar or top nav with app switcher
-- [ ] Breadcrumbs (App > Problems > Notice)
-- [ ] Flash messages styled for Violet Bold theme
-- [ ] Empty states for no apps/problems
+- [x] Sidebar or top nav with app switcher
+- [x] Breadcrumbs (App > Problems > Notice)
+- [x] Flash messages styled for Violet Bold theme
+- [x] Empty states for no apps/problems
 
 ### 4.2 Dashboard
 - [ ] Update root dashboard to show:
@@ -84,20 +84,20 @@ end
 ## 5. Styling
 
 ### 5.1 Apply Violet Bold Theme
-- [ ] Use approved design system components
-- [ ] Dark zinc-900 backgrounds
-- [ ] Violet-600 primary actions
-- [ ] Pink-500 for error indicators
-- [ ] Emerald-400 for resolved status
-- [ ] Inter font family
+- [x] Use approved design system components
+- [x] Dark zinc-900 backgrounds
+- [x] Violet-600 primary actions
+- [x] Pink-500 for error indicators
+- [x] Emerald-400 for resolved status
+- [x] Inter font family
 
 ### 5.2 Components Needed
-- [ ] Data tables with sorting
-- [ ] Pagination controls
-- [ ] Status badges (resolved/unresolved)
-- [ ] Copy-to-clipboard buttons
-- [ ] Collapsible sections
-- [ ] Code/backtrace display
+- [x] Data tables with sorting
+- [x] Pagination controls (Pagy with Tailwind)
+- [x] Status badges (resolved/unresolved)
+- [x] Copy-to-clipboard buttons
+- [x] Collapsible sections (Alpine.js)
+- [x] Code/backtrace display
 
 ---
 
@@ -108,6 +108,7 @@ end
 - [x] Authorization (users can only see their apps)
 - [x] Problems filtering and pagination
 - [x] Resolve/unresolve actions
+- [x] Notice detail view and authorization
 
 ### System Tests
 - [ ] Create and manage an app
@@ -119,7 +120,7 @@ end
 
 ## 7. Current Progress
 
-**Status:** Problems List Complete
+**Status:** Problem Detail & Notices Complete
 
 **Completed:**
 - AppsController with full CRUD + regenerate API key
@@ -131,6 +132,11 @@ end
 - Problems index with filtering (status), sorting (recent, oldest, notices), and search
 - Bulk resolve/unresolve functionality with Stimulus controller
 - Problem show page with status toggle and recent notices
-- 23 new controller tests for Problems (149 total tests)
+- Pagy pagination with custom Tailwind styling
+- NoticesController with full notice detail page
+- Notice show page with backtrace, request, user, and context sections
+- Collapsible sections using Alpine.js
+- Navigation between notices (newer/older)
+- 9 new controller tests for Notices (159 total tests)
 
-**Next Step:** Implement Problem Detail page with full notice display (Section 3)
+**Next Step:** Update root dashboard (Section 4.2) or add system tests (Section 6)

@@ -34,6 +34,7 @@ Rails.application.routes.draw do
         post :bulk_resolve
         post :bulk_unresolve
       end
+      resources :notices, only: [ :show ]
     end
   end
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html

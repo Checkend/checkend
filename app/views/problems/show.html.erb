@@ -77,29 +77,55 @@
     </div>
   </div>
 
-  <%# Recent Notices - placeholder for now %>
+  <%# Recent Notices %>
   <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 overflow-hidden">
     <div class="px-6 py-4 border-b border-gray-200 dark:border-zinc-700">
       <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Recent Notices</h2>
     </div>
-    <% recent_notices = @problem.notices.order(occurred_at: :desc).limit(10) %>
+    <% recent_notices = @problem.notices.includes(:backtrace).order(occurred_at: :desc).limit(10) %>
     <% if recent_notices.any? %>
       <ul class="divide-y divide-gray-200 dark:divide-zinc-700">
         <% recent_notices.each do |notice| %>
-          <li class="px-6 py-4 hover:bg-gray-50 dark:hover:bg-zinc-700/50 transition-colors">
-            <div class="flex items-center justify-between">
-              <div class="min-w-0 flex-1">
-                <div class="text-sm font-medium text-gray-900 dark:text-white">
-                  Notice #<%= notice.id %>
+          <li>
+            <%= link_to app_problem_notice_path(@app, @problem, notice), class: "block px-6 py-4 hover:bg-gray-50 dark:hover:bg-zinc-700/50 transition-colors" do %>
+              <div class="flex items-center justify-between">
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center space-x-3">
+                    <span class="text-sm font-medium text-gray-900 dark:text-white">
+                      <%= notice.occurred_at.strftime("%b %d, %Y %I:%M %p") %>
+                    </span>
+                    <% if notice.request['method'].present? %>
+                      <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold uppercase
+                        <% case notice.request['method'].to_s.upcase
+                           when 'GET' %>bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400<%
+                           when 'POST' %>bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400<%
+                           when 'PUT', 'PATCH' %>bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400<%
+                           when 'DELETE' %>bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400<%
+                           else %>bg-gray-100 dark:bg-zinc-700 text-gray-700 dark:text-zinc-300<%
+                           end %>">
+                        <%= notice.request['method'].to_s.upcase %>
+                      </span>
+                    <% end %>
+                    <% if notice.user_info['email'].present? || notice.user_info['id'].present? %>
+                      <span class="inline-flex items-center text-xs text-gray-500 dark:text-zinc-400">
+                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                        </svg>
+                        <%= notice.user_info['email'] || "User ##{notice.user_info['id']}" %>
+                      </span>
+                    <% end %>
+                  </div>
+                  <% if notice.request['url'].present? %>
+                    <div class="text-sm text-gray-600 dark:text-zinc-400 mt-1 truncate font-mono">
+                      <%= notice.request['url'] %>
+                    </div>
+                  <% end %>
                 </div>
-                <div class="text-sm text-gray-600 dark:text-zinc-400 mt-1">
-                  Occurred <%= time_ago_in_words(notice.occurred_at) %> ago
-                </div>
+                <svg class="w-5 h-5 text-gray-400 dark:text-zinc-500 flex-shrink-0 ml-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
               </div>
-              <svg class="w-5 h-5 text-gray-400 dark:text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-              </svg>
-            </div>
+            <% end %>
           </li>
         <% end %>
       </ul>
