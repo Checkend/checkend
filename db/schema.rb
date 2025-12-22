@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_12_21_195247) do
+ActiveRecord::Schema[8.1].define(version: 2025_12_22_011459) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -23,6 +23,48 @@ ActiveRecord::Schema[8.1].define(version: 2025_12_21_195247) do
     t.bigint "user_id", null: false
     t.index ["api_key"], name: "index_apps_on_api_key", unique: true
     t.index ["user_id"], name: "index_apps_on_user_id"
+  end
+
+  create_table "backtraces", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "fingerprint", null: false
+    t.jsonb "lines", default: [], null: false
+    t.datetime "updated_at", null: false
+    t.index ["fingerprint"], name: "index_backtraces_on_fingerprint", unique: true
+  end
+
+  create_table "notices", force: :cascade do |t|
+    t.bigint "backtrace_id"
+    t.jsonb "context", default: {}
+    t.datetime "created_at", null: false
+    t.string "error_class", null: false
+    t.text "error_message"
+    t.datetime "occurred_at", null: false
+    t.bigint "problem_id", null: false
+    t.jsonb "request", default: {}
+    t.datetime "updated_at", null: false
+    t.jsonb "user_info", default: {}
+    t.index ["backtrace_id"], name: "index_notices_on_backtrace_id"
+    t.index ["occurred_at"], name: "index_notices_on_occurred_at"
+    t.index ["problem_id"], name: "index_notices_on_problem_id"
+  end
+
+  create_table "problems", force: :cascade do |t|
+    t.bigint "app_id", null: false
+    t.datetime "created_at", null: false
+    t.string "error_class", null: false
+    t.text "error_message"
+    t.string "fingerprint", null: false
+    t.datetime "first_noticed_at"
+    t.datetime "last_noticed_at"
+    t.integer "notices_count", default: 0, null: false
+    t.datetime "resolved_at"
+    t.string "status", default: "unresolved", null: false
+    t.datetime "updated_at", null: false
+    t.index ["app_id", "fingerprint"], name: "index_problems_on_app_id_and_fingerprint", unique: true
+    t.index ["app_id"], name: "index_problems_on_app_id"
+    t.index ["last_noticed_at"], name: "index_problems_on_last_noticed_at"
+    t.index ["status"], name: "index_problems_on_status"
   end
 
   create_table "sessions", force: :cascade do |t|
@@ -43,5 +85,8 @@ ActiveRecord::Schema[8.1].define(version: 2025_12_21_195247) do
   end
 
   add_foreign_key "apps", "users"
+  add_foreign_key "notices", "backtraces"
+  add_foreign_key "notices", "problems"
+  add_foreign_key "problems", "apps"
   add_foreign_key "sessions", "users"
 end

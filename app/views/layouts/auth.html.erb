@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title><%= content_for(:title) || "Checkend" %></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="Checkend">
+    <meta name="mobile-web-app-capable" content="yes">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+
+    <%= yield :head %>
+
+    <link rel="icon" href="/icon.png" type="image/png">
+    <link rel="icon" href="/icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/icon.png">
+
+    <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
+    <%= javascript_importmap_tags %>
+  </head>
+
+  <body class="bg-zinc-900 min-h-screen flex flex-col">
+    <main class="flex-1 flex items-center justify-center px-4 py-12">
+      <div class="w-full max-w-md">
+        <!-- Logo -->
+        <div class="text-center mb-8">
+          <%= link_to root_path, class: "inline-block" do %>
+            <span class="text-2xl font-bold text-violet-400">Checkend</span>
+          <% end %>
+        </div>
+
+        <!-- Card -->
+        <div class="bg-zinc-800 rounded-lg border border-zinc-700 p-8">
+          <% if flash[:alert].present? %>
+            <div class="mb-6 px-4 py-3 bg-pink-500/10 border border-pink-500/20 rounded text-pink-400 text-sm">
+              <%= flash[:alert] %>
+            </div>
+          <% end %>
+
+          <% if flash[:notice].present? %>
+            <div class="mb-6 px-4 py-3 bg-emerald-500/10 border border-emerald-500/20 rounded text-emerald-400 text-sm">
+              <%= flash[:notice] %>
+            </div>
+          <% end %>
+
+          <%= yield %>
+        </div>
+
+        <!-- Footer -->
+        <div class="mt-8 text-center text-sm text-zinc-500">
+          Self-hosted error monitoring
+        </div>
+      </div>
+    </main>
+  </body>
+</html>

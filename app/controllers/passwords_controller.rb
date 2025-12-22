@@ -1,4 +1,6 @@
 class PasswordsController < ApplicationController
+  layout "auth"
+
   allow_unauthenticated_access
   before_action :set_user_by_token, only: %i[ edit update ]
   rate_limit to: 10, within: 3.minutes, only: :create, with: -> { redirect_to new_password_path, alert: "Try again later." }

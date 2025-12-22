@@ -954,6 +954,1841 @@
 
   </section>
 
+  <!-- Form Input Style Candidates -->
+  <section class="mb-12">
+    <h2 class="text-xl font-semibold text-gray-900 mb-4 border-b pb-2">Form Input Styles</h2>
+    <p class="text-sm text-gray-600 mb-6">Input field design options for the Violet Bold theme.</p>
+
+    <!-- CANDIDATE: Bordered Classic -->
+    <!-- Status: evaluating -->
+    <!-- Notes: Traditional bordered inputs, clear boundaries -->
+    <div class="border-2 border-dashed border-amber-300 rounded-lg p-6 mb-8">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold text-amber-700">Option A: Bordered Classic</h3>
+        <span class="px-2 py-1 text-xs bg-amber-100 text-amber-800 rounded">evaluating</span>
+      </div>
+
+      <div class="bg-zinc-900 rounded-lg p-6">
+        <div class="space-y-4 max-w-sm">
+          <div>
+            <label class="block text-sm font-medium text-zinc-300 mb-1.5">Email address</label>
+            <input type="email" placeholder="you@example.com" class="block w-full px-3 py-2 bg-zinc-900 border border-zinc-600 rounded text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-zinc-300 mb-1.5">Password</label>
+            <input type="password" placeholder="Enter password" class="block w-full px-3 py-2 bg-zinc-900 border border-zinc-600 rounded text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-zinc-300 mb-1.5">Disabled</label>
+            <input type="text" value="Cannot edit" disabled class="block w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-zinc-500 cursor-not-allowed">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-pink-400 mb-1.5">With error</label>
+            <input type="text" value="Invalid input" class="block w-full px-3 py-2 bg-zinc-900 border border-pink-500 rounded text-white focus:outline-none focus:ring-1 focus:ring-pink-500">
+            <p class="mt-1 text-sm text-pink-400">This field has an error</p>
+          </div>
+        </div>
+      </div>
+
+      <p class="mt-4 text-sm text-gray-600">
+        <strong>Pros:</strong> Clear boundaries, familiar pattern, obvious focus states.<br>
+        <strong>Cons:</strong> Busy look with many borders on forms.
+      </p>
+    </div>
+
+    <!-- CANDIDATE: Filled Background -->
+    <!-- Status: approved -->
+    <!-- Notes: Filled background, subtle borders - SELECTED (combined with icons) -->
+    <div class="border-2 border-solid border-emerald-500 rounded-lg p-6 mb-8 bg-emerald-50">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold text-emerald-700">Option B: Filled Background</h3>
+        <span class="px-2 py-1 text-xs bg-emerald-100 text-emerald-800 rounded">approved</span>
+      </div>
+
+      <div class="bg-zinc-900 rounded-lg p-6">
+        <div class="space-y-4 max-w-sm">
+          <div>
+            <label class="block text-sm font-medium text-zinc-300 mb-1.5">Email address</label>
+            <input type="email" placeholder="you@example.com" class="block w-full px-3 py-2 bg-zinc-800 border border-transparent rounded text-white placeholder-zinc-500 focus:outline-none focus:bg-zinc-800 focus:border-violet-500 focus:ring-1 focus:ring-violet-500">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-zinc-300 mb-1.5">Password</label>
+            <input type="password" placeholder="Enter password" class="block w-full px-3 py-2 bg-zinc-800 border border-transparent rounded text-white placeholder-zinc-500 focus:outline-none focus:bg-zinc-800 focus:border-violet-500 focus:ring-1 focus:ring-violet-500">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-zinc-300 mb-1.5">Disabled</label>
+            <input type="text" value="Cannot edit" disabled class="block w-full px-3 py-2 bg-zinc-800/50 border border-transparent rounded text-zinc-500 cursor-not-allowed">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-pink-400 mb-1.5">With error</label>
+            <input type="text" value="Invalid input" class="block w-full px-3 py-2 bg-pink-500/10 border border-pink-500/50 rounded text-white focus:outline-none focus:ring-1 focus:ring-pink-500">
+            <p class="mt-1 text-sm text-pink-400">This field has an error</p>
+          </div>
+        </div>
+      </div>
+
+      <p class="mt-4 text-sm text-gray-600">
+        <strong>Pros:</strong> Cleaner look, inputs stand out from background, modern feel.<br>
+        <strong>Cons:</strong> Less obvious boundaries until focused.
+      </p>
+    </div>
+
+    <!-- CANDIDATE: Underline Only -->
+    <!-- Status: evaluating -->
+    <!-- Notes: Minimal underline style, very clean -->
+    <div class="border-2 border-dashed border-amber-300 rounded-lg p-6 mb-8">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold text-amber-700">Option C: Underline Only</h3>
+        <span class="px-2 py-1 text-xs bg-amber-100 text-amber-800 rounded">evaluating</span>
+      </div>
+
+      <div class="bg-zinc-900 rounded-lg p-6">
+        <div class="space-y-4 max-w-sm">
+          <div>
+            <label class="block text-sm font-medium text-zinc-300 mb-1.5">Email address</label>
+            <input type="email" placeholder="you@example.com" class="block w-full px-0 py-2 bg-transparent border-0 border-b-2 border-zinc-600 text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500 focus:ring-0">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-zinc-300 mb-1.5">Password</label>
+            <input type="password" placeholder="Enter password" class="block w-full px-0 py-2 bg-transparent border-0 border-b-2 border-zinc-600 text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500 focus:ring-0">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-zinc-300 mb-1.5">Disabled</label>
+            <input type="text" value="Cannot edit" disabled class="block w-full px-0 py-2 bg-transparent border-0 border-b-2 border-zinc-700 border-dashed text-zinc-500 cursor-not-allowed">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-pink-400 mb-1.5">With error</label>
+            <input type="text" value="Invalid input" class="block w-full px-0 py-2 bg-transparent border-0 border-b-2 border-pink-500 text-white focus:outline-none focus:ring-0">
+            <p class="mt-1 text-sm text-pink-400">This field has an error</p>
+          </div>
+        </div>
+      </div>
+
+      <p class="mt-4 text-sm text-gray-600">
+        <strong>Pros:</strong> Ultra minimal, elegant, less visual noise.<br>
+        <strong>Cons:</strong> May feel unfinished, harder to identify input areas.
+      </p>
+    </div>
+
+    <!-- CANDIDATE: With Icons -->
+    <!-- Status: approved -->
+    <!-- Notes: Icons provide context - SELECTED (combined with filled background) -->
+    <div class="border-2 border-solid border-emerald-500 rounded-lg p-6 mb-8 bg-emerald-50">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold text-emerald-700">Option D: With Icons</h3>
+        <span class="px-2 py-1 text-xs bg-emerald-100 text-emerald-800 rounded">approved</span>
+      </div>
+
+      <div class="bg-zinc-900 rounded-lg p-6">
+        <div class="space-y-4 max-w-sm">
+          <div>
+            <label class="block text-sm font-medium text-zinc-300 mb-1.5">Email address</label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg class="w-5 h-5 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"></path></svg>
+              </div>
+              <input type="email" placeholder="you@example.com" class="block w-full pl-10 pr-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500">
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-zinc-300 mb-1.5">Password</label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg class="w-5 h-5 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+              </div>
+              <input type="password" placeholder="Enter password" class="block w-full pl-10 pr-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500">
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-zinc-300 mb-1.5">Search</label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg class="w-5 h-5 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+              </div>
+              <input type="text" placeholder="Search errors..." class="block w-full pl-10 pr-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500">
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-pink-400 mb-1.5">With error</label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg class="w-5 h-5 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              </div>
+              <input type="text" value="Invalid" class="block w-full pl-10 pr-3 py-2 bg-zinc-800 border border-pink-500 rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-pink-500">
+            </div>
+            <p class="mt-1 text-sm text-pink-400">This field has an error</p>
+          </div>
+        </div>
+      </div>
+
+      <p class="mt-4 text-sm text-gray-600">
+        <strong>Pros:</strong> Icons provide context, professional look, good scannability.<br>
+        <strong>Cons:</strong> More complex, icons need to be meaningful.
+      </p>
+    </div>
+
+    <!-- CANDIDATE: Glow Focus -->
+    <!-- Status: evaluating -->
+    <!-- Notes: Glowing border on focus, premium feel -->
+    <div class="border-2 border-dashed border-amber-300 rounded-lg p-6 mb-8">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold text-amber-700">Option E: Glow Focus</h3>
+        <span class="px-2 py-1 text-xs bg-amber-100 text-amber-800 rounded">evaluating</span>
+      </div>
+
+      <div class="bg-zinc-900 rounded-lg p-6">
+        <div class="space-y-4 max-w-sm">
+          <div>
+            <label class="block text-sm font-medium text-zinc-300 mb-1.5">Email address</label>
+            <input type="email" placeholder="you@example.com" class="block w-full px-3 py-2 bg-zinc-800/50 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 focus:shadow-[0_0_15px_rgba(139,92,246,0.15)] transition-shadow">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-zinc-300 mb-1.5">Password</label>
+            <input type="password" placeholder="Enter password" class="block w-full px-3 py-2 bg-zinc-800/50 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 focus:shadow-[0_0_15px_rgba(139,92,246,0.15)] transition-shadow">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-zinc-300 mb-1.5">Disabled</label>
+            <input type="text" value="Cannot edit" disabled class="block w-full px-3 py-2 bg-zinc-800/30 border border-zinc-700/50 rounded-lg text-zinc-500 cursor-not-allowed">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-pink-400 mb-1.5">With error</label>
+            <input type="text" value="Invalid input" class="block w-full px-3 py-2 bg-zinc-800/50 border border-pink-500 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:shadow-[0_0_15px_rgba(236,72,153,0.15)]">
+            <p class="mt-1 text-sm text-pink-400">This field has an error</p>
+          </div>
+        </div>
+      </div>
+
+      <p class="mt-4 text-sm text-gray-600">
+        <strong>Pros:</strong> Premium feel, clear focus indication, visually striking.<br>
+        <strong>Cons:</strong> Glow might be too flashy for some contexts.
+      </p>
+    </div>
+
+  </section>
+
+  <!-- Typography Candidates -->
+  <section class="mb-12">
+    <h2 class="text-xl font-semibold text-gray-900 mb-4 border-b pb-2">Typography</h2>
+    <p class="text-sm text-gray-600 mb-6">Font pairing options for headings and body text.</p>
+
+    <!-- CANDIDATE: System Default -->
+    <!-- Status: evaluating -->
+    <!-- Notes: Native system fonts, fastest loading -->
+    <div class="border-2 border-dashed border-amber-300 rounded-lg p-6 mb-8">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold text-amber-700">Option A: System Default</h3>
+        <span class="px-2 py-1 text-xs bg-amber-100 text-amber-800 rounded">evaluating</span>
+      </div>
+
+      <div class="bg-zinc-900 rounded-lg p-6">
+        <div class="space-y-4">
+          <div>
+            <p class="text-xs text-zinc-500 mb-1">Font: System UI Stack</p>
+            <h1 class="text-3xl font-bold text-white" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">Checkend Error Monitoring</h1>
+          </div>
+          <div>
+            <h2 class="text-xl font-semibold text-white" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">NoMethodError in UsersController</h2>
+          </div>
+          <div>
+            <p class="text-zinc-300" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">undefined method `name' for nil:NilClass. This error occurred 1,234 times in the last 24 hours.</p>
+          </div>
+          <div>
+            <code class="text-sm text-violet-400 bg-zinc-800 px-2 py-1 rounded" style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;">app/models/user.rb:42</code>
+          </div>
+        </div>
+      </div>
+
+      <p class="mt-4 text-sm text-gray-600">
+        <strong>Pros:</strong> Zero load time, native feel, great readability.<br>
+        <strong>Cons:</strong> Looks different across platforms.
+      </p>
+    </div>
+
+    <!-- CANDIDATE: Inter -->
+    <!-- Status: approved -->
+    <!-- Notes: Modern, highly readable, popular for UI - SELECTED -->
+    <div class="border-2 border-solid border-emerald-500 rounded-lg p-6 mb-8 bg-emerald-50">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold text-emerald-700">Option B: Inter</h3>
+        <span class="px-2 py-1 text-xs bg-emerald-100 text-emerald-800 rounded">approved</span>
+      </div>
+
+      <div class="bg-zinc-900 rounded-lg p-6">
+        <p class="text-xs text-zinc-500 mb-4">Requires: Google Fonts or self-hosted Inter</p>
+        <div class="space-y-4">
+          <div>
+            <h1 class="text-3xl font-bold text-white" style="font-family: Inter, sans-serif;">Checkend Error Monitoring</h1>
+          </div>
+          <div>
+            <h2 class="text-xl font-semibold text-white" style="font-family: Inter, sans-serif;">NoMethodError in UsersController</h2>
+          </div>
+          <div>
+            <p class="text-zinc-300" style="font-family: Inter, sans-serif;">undefined method `name' for nil:NilClass. This error occurred 1,234 times in the last 24 hours.</p>
+          </div>
+          <div>
+            <code class="text-sm text-violet-400 bg-zinc-800 px-2 py-1 rounded" style="font-family: 'JetBrains Mono', monospace;">app/models/user.rb:42</code>
+          </div>
+        </div>
+      </div>
+
+      <p class="mt-4 text-sm text-gray-600">
+        <strong>Pros:</strong> Modern, excellent for UI, great at small sizes, variable font.<br>
+        <strong>Cons:</strong> Requires loading external font (~100KB).
+      </p>
+    </div>
+
+    <!-- CANDIDATE: Space Grotesk + DM Sans -->
+    <!-- Status: evaluating -->
+    <!-- Notes: Geometric, techy feel -->
+    <div class="border-2 border-dashed border-amber-300 rounded-lg p-6 mb-8">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold text-amber-700">Option C: Space Grotesk + DM Sans</h3>
+        <span class="px-2 py-1 text-xs bg-amber-100 text-amber-800 rounded">evaluating</span>
+      </div>
+
+      <div class="bg-zinc-900 rounded-lg p-6">
+        <p class="text-xs text-zinc-500 mb-4">Headings: Space Grotesk | Body: DM Sans</p>
+        <div class="space-y-4">
+          <div>
+            <h1 class="text-3xl font-bold text-white" style="font-family: 'Space Grotesk', sans-serif;">Checkend Error Monitoring</h1>
+          </div>
+          <div>
+            <h2 class="text-xl font-semibold text-white" style="font-family: 'Space Grotesk', sans-serif;">NoMethodError in UsersController</h2>
+          </div>
+          <div>
+            <p class="text-zinc-300" style="font-family: 'DM Sans', sans-serif;">undefined method `name' for nil:NilClass. This error occurred 1,234 times in the last 24 hours.</p>
+          </div>
+          <div>
+            <code class="text-sm text-violet-400 bg-zinc-800 px-2 py-1 rounded" style="font-family: 'Space Mono', monospace;">app/models/user.rb:42</code>
+          </div>
+        </div>
+      </div>
+
+      <p class="mt-4 text-sm text-gray-600">
+        <strong>Pros:</strong> Distinctive, techy/developer aesthetic, unique brand feel.<br>
+        <strong>Cons:</strong> Two fonts to load, may feel too stylized.
+      </p>
+    </div>
+
+    <!-- CANDIDATE: Geist -->
+    <!-- Status: evaluating -->
+    <!-- Notes: Vercel's font, modern dev tool aesthetic -->
+    <div class="border-2 border-dashed border-amber-300 rounded-lg p-6 mb-8">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold text-amber-700">Option D: Geist (Vercel)</h3>
+        <span class="px-2 py-1 text-xs bg-amber-100 text-amber-800 rounded">evaluating</span>
+      </div>
+
+      <div class="bg-zinc-900 rounded-lg p-6">
+        <p class="text-xs text-zinc-500 mb-4">Geist Sans + Geist Mono (as seen on Vercel)</p>
+        <div class="space-y-4">
+          <div>
+            <h1 class="text-3xl font-bold text-white" style="font-family: 'Geist', sans-serif;">Checkend Error Monitoring</h1>
+          </div>
+          <div>
+            <h2 class="text-xl font-semibold text-white" style="font-family: 'Geist', sans-serif;">NoMethodError in UsersController</h2>
+          </div>
+          <div>
+            <p class="text-zinc-300" style="font-family: 'Geist', sans-serif;">undefined method `name' for nil:NilClass. This error occurred 1,234 times in the last 24 hours.</p>
+          </div>
+          <div>
+            <code class="text-sm text-violet-400 bg-zinc-800 px-2 py-1 rounded" style="font-family: 'Geist Mono', monospace;">app/models/user.rb:42</code>
+          </div>
+        </div>
+      </div>
+
+      <p class="mt-4 text-sm text-gray-600">
+        <strong>Pros:</strong> Premium dev tool feel, clean and modern, pairs well with dark themes.<br>
+        <strong>Cons:</strong> Requires self-hosting, similar to many dev tools.
+      </p>
+    </div>
+
+  </section>
+
+  <!-- Logo Candidates -->
+  <section class="mb-12">
+    <h2 class="text-xl font-semibold text-gray-900 mb-4 border-b pb-2">Logo</h2>
+    <p class="text-sm text-gray-600 mb-6">Logo concepts for Checkend brand identity.</p>
+
+    <!-- CANDIDATE: Wordmark Simple -->
+    <!-- Status: evaluating -->
+    <!-- Notes: Clean text-only logo -->
+    <div class="border-2 border-dashed border-amber-300 rounded-lg p-6 mb-8">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold text-amber-700">Option A: Wordmark Simple</h3>
+        <span class="px-2 py-1 text-xs bg-amber-100 text-amber-800 rounded">evaluating</span>
+      </div>
+
+      <div class="bg-zinc-900 rounded-lg p-8">
+        <div class="space-y-8">
+          <!-- Light on dark -->
+          <div class="flex items-center gap-8">
+            <div class="text-center">
+              <span class="text-3xl font-bold text-violet-400">Checkend</span>
+              <p class="text-xs text-zinc-500 mt-2">Primary</p>
+            </div>
+            <div class="text-center">
+              <span class="text-3xl font-bold text-white">Checkend</span>
+              <p class="text-xs text-zinc-500 mt-2">White</p>
+            </div>
+            <div class="text-center">
+              <span class="text-3xl font-bold text-zinc-400">Checkend</span>
+              <p class="text-xs text-zinc-500 mt-2">Muted</p>
+            </div>
+          </div>
+          <!-- Sizes -->
+          <div class="flex items-end gap-6">
+            <span class="text-4xl font-bold text-violet-400">Checkend</span>
+            <span class="text-2xl font-bold text-violet-400">Checkend</span>
+            <span class="text-lg font-bold text-violet-400">Checkend</span>
+            <span class="text-sm font-bold text-violet-400">Checkend</span>
+          </div>
+        </div>
+      </div>
+
+      <p class="mt-4 text-sm text-gray-600">
+        <strong>Pros:</strong> Simple, clean, scales well, no icon needed.<br>
+        <strong>Cons:</strong> Less distinctive, harder to use as favicon.
+      </p>
+    </div>
+
+    <!-- CANDIDATE: Check Icon + Wordmark -->
+    <!-- Status: evaluating -->
+    <!-- Notes: Checkmark icon with text -->
+    <div class="border-2 border-dashed border-amber-300 rounded-lg p-6 mb-8">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold text-amber-700">Option B: Check Icon + Wordmark</h3>
+        <span class="px-2 py-1 text-xs bg-amber-100 text-amber-800 rounded">evaluating</span>
+      </div>
+
+      <div class="bg-zinc-900 rounded-lg p-8">
+        <div class="space-y-8">
+          <div class="flex items-center gap-8">
+            <!-- Full logo -->
+            <div class="flex items-center gap-2">
+              <div class="w-10 h-10 bg-violet-600 rounded-lg flex items-center justify-center">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+              </div>
+              <span class="text-2xl font-bold text-white">Checkend</span>
+            </div>
+            <!-- Icon only -->
+            <div class="text-center">
+              <div class="w-10 h-10 bg-violet-600 rounded-lg flex items-center justify-center">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+              </div>
+              <p class="text-xs text-zinc-500 mt-2">Icon only</p>
+            </div>
+          </div>
+          <!-- Variations -->
+          <div class="flex items-center gap-6">
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 bg-violet-600 rounded flex items-center justify-center">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+              </div>
+              <span class="text-xl font-bold text-white">Checkend</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <div class="w-6 h-6 bg-violet-600 rounded flex items-center justify-center">
+                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+              </div>
+              <span class="text-base font-bold text-white">Checkend</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p class="mt-4 text-sm text-gray-600">
+        <strong>Pros:</strong> Recognizable icon, works as favicon, clear meaning.<br>
+        <strong>Cons:</strong> Checkmark is generic, may feel like a todo app.
+      </p>
+    </div>
+
+    <!-- CANDIDATE: Bug/Error Icon -->
+    <!-- Status: evaluating -->
+    <!-- Notes: Bug or error-themed icon -->
+    <div class="border-2 border-dashed border-amber-300 rounded-lg p-6 mb-8">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold text-amber-700">Option C: Bug Shield Icon</h3>
+        <span class="px-2 py-1 text-xs bg-amber-100 text-amber-800 rounded">evaluating</span>
+      </div>
+
+      <div class="bg-zinc-900 rounded-lg p-8">
+        <div class="space-y-8">
+          <div class="flex items-center gap-8">
+            <!-- Full logo -->
+            <div class="flex items-center gap-2">
+              <div class="w-10 h-10 bg-gradient-to-br from-violet-500 to-violet-700 rounded-lg flex items-center justify-center">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+              </div>
+              <span class="text-2xl font-bold text-white">Checkend</span>
+            </div>
+            <!-- Icon only -->
+            <div class="text-center">
+              <div class="w-10 h-10 bg-gradient-to-br from-violet-500 to-violet-700 rounded-lg flex items-center justify-center">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+              </div>
+              <p class="text-xs text-zinc-500 mt-2">Icon only</p>
+            </div>
+          </div>
+          <!-- On light background preview -->
+          <div class="bg-white rounded-lg p-4 inline-block">
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 bg-gradient-to-br from-violet-500 to-violet-700 rounded-lg flex items-center justify-center">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+              </div>
+              <span class="text-xl font-bold text-gray-900">Checkend</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p class="mt-4 text-sm text-gray-600">
+        <strong>Pros:</strong> Shield = protection/security, gradient adds depth, unique.<br>
+        <strong>Cons:</strong> More complex, may not scale as well at tiny sizes.
+      </p>
+    </div>
+
+    <!-- CANDIDATE: Brackets/Code Icon -->
+    <!-- Status: evaluating -->
+    <!-- Notes: Developer-focused code brackets -->
+    <div class="border-2 border-dashed border-amber-300 rounded-lg p-6 mb-8">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold text-amber-700">Option D: Code Brackets</h3>
+        <span class="px-2 py-1 text-xs bg-amber-100 text-amber-800 rounded">evaluating</span>
+      </div>
+
+      <div class="bg-zinc-900 rounded-lg p-8">
+        <div class="space-y-8">
+          <div class="flex items-center gap-8">
+            <!-- Full logo -->
+            <div class="flex items-center gap-1">
+              <span class="text-3xl font-bold text-violet-400">&lt;</span>
+              <span class="text-2xl font-bold text-white">Checkend</span>
+              <span class="text-3xl font-bold text-violet-400">/&gt;</span>
+            </div>
+          </div>
+          <!-- Compact version -->
+          <div class="flex items-center gap-6">
+            <div class="flex items-center">
+              <span class="text-2xl font-mono font-bold text-violet-400">&lt;/&gt;</span>
+              <span class="text-lg font-bold text-white ml-1">Checkend</span>
+            </div>
+            <div class="text-center">
+              <div class="w-10 h-10 bg-zinc-800 rounded-lg flex items-center justify-center border border-zinc-700">
+                <span class="text-lg font-mono font-bold text-violet-400">&lt;/&gt;</span>
+              </div>
+              <p class="text-xs text-zinc-500 mt-2">Icon only</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p class="mt-4 text-sm text-gray-600">
+        <strong>Pros:</strong> Developer-focused, code-centric branding, text-based icon.<br>
+        <strong>Cons:</strong> Very common pattern, may feel generic for dev tools.
+      </p>
+    </div>
+
+    <!-- CANDIDATE: Pulse/Heartbeat -->
+    <!-- Status: evaluating -->
+    <!-- Notes: Monitoring heartbeat line -->
+    <div class="border-2 border-dashed border-amber-300 rounded-lg p-6 mb-8">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold text-amber-700">Option E: Pulse Monitor</h3>
+        <span class="px-2 py-1 text-xs bg-amber-100 text-amber-800 rounded">evaluating</span>
+      </div>
+
+      <div class="bg-zinc-900 rounded-lg p-8">
+        <div class="space-y-8">
+          <div class="flex items-center gap-8">
+            <!-- Full logo with pulse -->
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 bg-violet-600 rounded-lg flex items-center justify-center overflow-hidden">
+                <svg class="w-8 h-6 text-white" viewBox="0 0 32 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12h6l3-8 4 16 4-12 3 4h10"/>
+                </svg>
+              </div>
+              <span class="text-2xl font-bold text-white">Checkend</span>
+            </div>
+            <!-- Icon only -->
+            <div class="text-center">
+              <div class="w-10 h-10 bg-violet-600 rounded-lg flex items-center justify-center overflow-hidden">
+                <svg class="w-8 h-6 text-white" viewBox="0 0 32 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12h6l3-8 4 16 4-12 3 4h10"/>
+                </svg>
+              </div>
+              <p class="text-xs text-zinc-500 mt-2">Icon only</p>
+            </div>
+          </div>
+          <!-- Animated version hint -->
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 bg-gradient-to-r from-violet-600 to-violet-500 rounded-xl flex items-center justify-center">
+              <svg class="w-10 h-7 text-white animate-pulse" viewBox="0 0 32 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12h6l3-8 4 16 4-12 3 4h10"/>
+              </svg>
+            </div>
+            <span class="text-zinc-400 text-sm">Can animate the pulse for loading states</span>
+          </div>
+        </div>
+      </div>
+
+      <p class="mt-4 text-sm text-gray-600">
+        <strong>Pros:</strong> "Health monitoring" metaphor, animatable, distinctive.<br>
+        <strong>Cons:</strong> May feel too medical, pulse icons are somewhat common.
+      </p>
+    </div>
+
+    <!-- CANDIDATE: Eye/Watch -->
+    <!-- Status: evaluating -->
+    <!-- Notes: All-seeing eye, watching for errors -->
+    <div class="border-2 border-dashed border-amber-300 rounded-lg p-6 mb-8">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold text-amber-700">Option F: Watchful Eye</h3>
+        <span class="px-2 py-1 text-xs bg-amber-100 text-amber-800 rounded">evaluating</span>
+      </div>
+
+      <div class="bg-zinc-900 rounded-lg p-8">
+        <div class="space-y-8">
+          <div class="flex items-center gap-8">
+            <!-- Full logo -->
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 bg-zinc-800 rounded-lg border border-zinc-700 flex items-center justify-center">
+                <div class="w-6 h-6 rounded-full border-2 border-violet-500 flex items-center justify-center">
+                  <div class="w-2 h-2 bg-violet-500 rounded-full"></div>
+                </div>
+              </div>
+              <span class="text-2xl font-bold text-white">Checkend</span>
+            </div>
+            <!-- Variations -->
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 bg-violet-600 rounded-lg flex items-center justify-center">
+                <div class="w-5 h-5 rounded-full bg-white flex items-center justify-center">
+                  <div class="w-2 h-2 bg-violet-600 rounded-full"></div>
+                </div>
+              </div>
+              <span class="text-lg font-bold text-white">Checkend</span>
+            </div>
+          </div>
+          <!-- Stylized eye -->
+          <div class="flex items-center gap-6">
+            <div class="text-center">
+              <div class="w-12 h-12 bg-gradient-to-br from-violet-500 to-violet-700 rounded-xl flex items-center justify-center">
+                <svg class="w-7 h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3" fill="currentColor"/>
+                </svg>
+              </div>
+              <p class="text-xs text-zinc-500 mt-2">Outlined</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p class="mt-4 text-sm text-gray-600">
+        <strong>Pros:</strong> "Watching/monitoring" concept, simple geometry, memorable.<br>
+        <strong>Cons:</strong> Eye imagery can feel surveillance-y, may be unsettling.
+      </p>
+    </div>
+
+    <!-- CANDIDATE: Stacked Layers -->
+    <!-- Status: evaluating -->
+    <!-- Notes: Abstract layers representing stack traces -->
+    <div class="border-2 border-dashed border-amber-300 rounded-lg p-6 mb-8">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold text-amber-700">Option G: Stack Layers</h3>
+        <span class="px-2 py-1 text-xs bg-amber-100 text-amber-800 rounded">evaluating</span>
+      </div>
+
+      <div class="bg-zinc-900 rounded-lg p-8">
+        <div class="space-y-8">
+          <div class="flex items-center gap-8">
+            <!-- Stacked bars icon -->
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 bg-violet-600 rounded-lg flex flex-col items-center justify-center gap-0.5 p-2">
+                <div class="w-full h-1 bg-white/90 rounded-full"></div>
+                <div class="w-full h-1 bg-white/70 rounded-full"></div>
+                <div class="w-full h-1 bg-white/50 rounded-full"></div>
+                <div class="w-full h-1 bg-white/30 rounded-full"></div>
+              </div>
+              <span class="text-2xl font-bold text-white">Checkend</span>
+            </div>
+            <!-- Icon only -->
+            <div class="text-center">
+              <div class="w-10 h-10 bg-violet-600 rounded-lg flex flex-col items-center justify-center gap-0.5 p-2">
+                <div class="w-full h-1 bg-white/90 rounded-full"></div>
+                <div class="w-full h-1 bg-white/70 rounded-full"></div>
+                <div class="w-full h-1 bg-white/50 rounded-full"></div>
+                <div class="w-full h-1 bg-white/30 rounded-full"></div>
+              </div>
+              <p class="text-xs text-zinc-500 mt-2">Icon only</p>
+            </div>
+          </div>
+          <!-- Variation with offset -->
+          <div class="flex items-center gap-6">
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-12 bg-zinc-800 border border-zinc-700 rounded-xl flex items-center justify-center">
+                <div class="relative">
+                  <div class="w-6 h-1.5 bg-violet-400 rounded-sm"></div>
+                  <div class="w-6 h-1.5 bg-violet-500 rounded-sm mt-1 ml-0.5"></div>
+                  <div class="w-6 h-1.5 bg-violet-600 rounded-sm mt-1 ml-1"></div>
+                </div>
+              </div>
+              <span class="text-lg font-bold text-white">Checkend</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p class="mt-4 text-sm text-gray-600">
+        <strong>Pros:</strong> Represents stack traces visually, abstract, unique.<br>
+        <strong>Cons:</strong> Meaning may not be immediately clear.
+      </p>
+    </div>
+
+    <!-- CANDIDATE: Terminal/Console -->
+    <!-- Status: evaluating -->
+    <!-- Notes: Terminal window icon -->
+    <div class="border-2 border-dashed border-amber-300 rounded-lg p-6 mb-8">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold text-amber-700">Option H: Terminal Window</h3>
+        <span class="px-2 py-1 text-xs bg-amber-100 text-amber-800 rounded">evaluating</span>
+      </div>
+
+      <div class="bg-zinc-900 rounded-lg p-8">
+        <div class="space-y-8">
+          <div class="flex items-center gap-8">
+            <!-- Terminal icon -->
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 bg-zinc-800 rounded-lg border border-zinc-600 flex flex-col overflow-hidden">
+                <div class="h-2.5 bg-zinc-700 flex items-center px-1 gap-0.5">
+                  <div class="w-1 h-1 rounded-full bg-pink-500"></div>
+                  <div class="w-1 h-1 rounded-full bg-orange-400"></div>
+                  <div class="w-1 h-1 rounded-full bg-emerald-400"></div>
+                </div>
+                <div class="flex-1 p-1 flex items-center">
+                  <span class="text-violet-400 text-xs font-mono font-bold">$_</span>
+                </div>
+              </div>
+              <span class="text-2xl font-bold text-white">Checkend</span>
+            </div>
+            <!-- With checkmark in terminal -->
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 bg-zinc-800 rounded-lg border border-zinc-600 flex flex-col overflow-hidden">
+                <div class="h-2.5 bg-zinc-700 flex items-center px-1 gap-0.5">
+                  <div class="w-1 h-1 rounded-full bg-pink-500"></div>
+                  <div class="w-1 h-1 rounded-full bg-orange-400"></div>
+                  <div class="w-1 h-1 rounded-full bg-emerald-400"></div>
+                </div>
+                <div class="flex-1 flex items-center justify-center">
+                  <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                </div>
+              </div>
+              <span class="text-xl font-bold text-white">Checkend</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p class="mt-4 text-sm text-gray-600">
+        <strong>Pros:</strong> Developer-familiar, fits the dev tool space, detailed.<br>
+        <strong>Cons:</strong> Complex at small sizes, terminal icons are common.
+      </p>
+    </div>
+
+    <!-- CANDIDATE: Abstract C -->
+    <!-- Status: evaluating -->
+    <!-- Notes: Stylized letter C -->
+    <div class="border-2 border-dashed border-amber-300 rounded-lg p-6 mb-8">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold text-amber-700">Option I: Abstract C</h3>
+        <span class="px-2 py-1 text-xs bg-amber-100 text-amber-800 rounded">evaluating</span>
+      </div>
+
+      <div class="bg-zinc-900 rounded-lg p-8">
+        <div class="space-y-8">
+          <div class="flex items-center gap-8">
+            <!-- C with notch -->
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 bg-violet-600 rounded-lg flex items-center justify-center">
+                <div class="w-6 h-6 border-3 border-white rounded-full" style="border-right-color: transparent; border-width: 3px;"></div>
+              </div>
+              <span class="text-2xl font-bold text-white">Checkend</span>
+            </div>
+            <!-- Gradient C -->
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 bg-gradient-to-br from-violet-500 via-violet-600 to-pink-500 rounded-xl flex items-center justify-center">
+                <span class="text-2xl font-black text-white" style="font-family: Inter, sans-serif;">C</span>
+              </div>
+              <span class="text-xl font-bold text-white">heckend</span>
+            </div>
+          </div>
+          <!-- Broken circle C -->
+          <div class="flex items-center gap-6">
+            <div class="text-center">
+              <div class="w-12 h-12 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center">
+                <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none">
+                  <path d="M20 12a8 8 0 01-8 8 8 8 0 01-8-8 8 8 0 018-8 8 8 0 015.66 2.34" stroke="rgb(139 92 246)" stroke-width="2.5" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <p class="text-xs text-zinc-500 mt-2">Minimal</p>
+            </div>
+            <div class="text-center">
+              <div class="w-12 h-12 rounded-xl bg-violet-600 flex items-center justify-center">
+                <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none">
+                  <path d="M20 12a8 8 0 01-8 8 8 8 0 01-8-8 8 8 0 018-8 8 8 0 015.66 2.34" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+                  <circle cx="18" cy="6" r="2" fill="white"/>
+                </svg>
+              </div>
+              <p class="text-xs text-zinc-500 mt-2">With dot</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p class="mt-4 text-sm text-gray-600">
+        <strong>Pros:</strong> Letter mark, simple, scales perfectly, memorable.<br>
+        <strong>Cons:</strong> Just a letter, may lack distinctiveness.
+      </p>
+    </div>
+
+    <!-- CANDIDATE: Abstract C with Dot - Expanded -->
+    <!-- Status: approved -->
+    <!-- Notes: Selected as the official Checkend logo -->
+    <div class="border-2 border-solid border-emerald-400 rounded-lg p-6 mb-8 bg-emerald-50">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold text-emerald-700">Option I-2: Abstract C with Dot (Expanded)</h3>
+        <span class="px-2 py-1 text-xs bg-emerald-100 text-emerald-800 rounded">approved</span>
+      </div>
+
+      <div class="bg-zinc-900 rounded-lg p-8">
+        <div class="space-y-8">
+          <!-- Concept explanation -->
+          <div class="bg-zinc-800 rounded-lg p-4 border border-zinc-700">
+            <h4 class="text-sm font-semibold text-violet-400 mb-2">Design Concept</h4>
+            <p class="text-zinc-400 text-sm">The broken circle forms a "C" for Checkend. The dot represents the "end" point - where errors terminate, where monitoring catches issues before they reach users. The gap in the circle suggests an opening for data/errors to flow in.</p>
+          </div>
+
+          <!-- Size variations -->
+          <div>
+            <h4 class="text-sm font-medium text-zinc-400 mb-4">Size Variations</h4>
+            <div class="flex items-end gap-6">
+              <div class="text-center">
+                <div class="w-16 h-16 rounded-2xl bg-violet-600 flex items-center justify-center">
+                  <svg class="w-10 h-10" viewBox="0 0 24 24" fill="none">
+                    <path d="M20 12a8 8 0 01-8 8 8 8 0 01-8-8 8 8 0 018-8 8 8 0 015.66 2.34" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+                    <circle cx="18" cy="6" r="2.5" fill="white"/>
+                  </svg>
+                </div>
+                <p class="text-xs text-zinc-500 mt-2">64px</p>
+              </div>
+              <div class="text-center">
+                <div class="w-12 h-12 rounded-xl bg-violet-600 flex items-center justify-center">
+                  <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none">
+                    <path d="M20 12a8 8 0 01-8 8 8 8 0 01-8-8 8 8 0 018-8 8 8 0 015.66 2.34" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+                    <circle cx="18" cy="6" r="2" fill="white"/>
+                  </svg>
+                </div>
+                <p class="text-xs text-zinc-500 mt-2">48px</p>
+              </div>
+              <div class="text-center">
+                <div class="w-10 h-10 rounded-lg bg-violet-600 flex items-center justify-center">
+                  <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none">
+                    <path d="M20 12a8 8 0 01-8 8 8 8 0 01-8-8 8 8 0 018-8 8 8 0 015.66 2.34" stroke="white" stroke-width="3" stroke-linecap="round"/>
+                    <circle cx="18" cy="6" r="2" fill="white"/>
+                  </svg>
+                </div>
+                <p class="text-xs text-zinc-500 mt-2">40px</p>
+              </div>
+              <div class="text-center">
+                <div class="w-8 h-8 rounded-lg bg-violet-600 flex items-center justify-center">
+                  <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none">
+                    <path d="M20 12a8 8 0 01-8 8 8 8 0 01-8-8 8 8 0 018-8 8 8 0 015.66 2.34" stroke="white" stroke-width="3" stroke-linecap="round"/>
+                    <circle cx="18" cy="6" r="2.5" fill="white"/>
+                  </svg>
+                </div>
+                <p class="text-xs text-zinc-500 mt-2">32px</p>
+              </div>
+              <div class="text-center">
+                <div class="w-6 h-6 rounded bg-violet-600 flex items-center justify-center">
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                    <path d="M20 12a8 8 0 01-8 8 8 8 0 01-8-8 8 8 0 018-8 8 8 0 015.66 2.34" stroke="white" stroke-width="3.5" stroke-linecap="round"/>
+                    <circle cx="18" cy="6" r="3" fill="white"/>
+                  </svg>
+                </div>
+                <p class="text-xs text-zinc-500 mt-2">24px</p>
+              </div>
+              <div class="text-center">
+                <div class="w-4 h-4 rounded-sm bg-violet-600 flex items-center justify-center">
+                  <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none">
+                    <path d="M20 12a8 8 0 01-8 8 8 8 0 01-8-8 8 8 0 018-8 8 8 0 015.66 2.34" stroke="white" stroke-width="4" stroke-linecap="round"/>
+                    <circle cx="18" cy="6" r="3.5" fill="white"/>
+                  </svg>
+                </div>
+                <p class="text-xs text-zinc-500 mt-2">16px</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dot position variations -->
+          <div>
+            <h4 class="text-sm font-medium text-zinc-400 mb-4">Dot Variations</h4>
+            <div class="flex items-center gap-6">
+              <div class="text-center">
+                <div class="w-12 h-12 rounded-xl bg-violet-600 flex items-center justify-center">
+                  <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none">
+                    <path d="M20 12a8 8 0 01-8 8 8 8 0 01-8-8 8 8 0 018-8 8 8 0 015.66 2.34" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+                    <circle cx="18" cy="6" r="2" fill="white"/>
+                  </svg>
+                </div>
+                <p class="text-xs text-zinc-500 mt-2">End dot</p>
+              </div>
+              <div class="text-center">
+                <div class="w-12 h-12 rounded-xl bg-violet-600 flex items-center justify-center">
+                  <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none">
+                    <path d="M20 12a8 8 0 01-8 8 8 8 0 01-8-8 8 8 0 018-8 8 8 0 015.66 2.34" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+                    <circle cx="18" cy="6" r="2" fill="#ec4899"/>
+                  </svg>
+                </div>
+                <p class="text-xs text-zinc-500 mt-2">Pink dot</p>
+              </div>
+              <div class="text-center">
+                <div class="w-12 h-12 rounded-xl bg-violet-600 flex items-center justify-center">
+                  <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none">
+                    <path d="M20 12a8 8 0 01-8 8 8 8 0 01-8-8 8 8 0 018-8 8 8 0 015.66 2.34" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+                    <circle cx="18" cy="6" r="2" fill="#34d399"/>
+                  </svg>
+                </div>
+                <p class="text-xs text-zinc-500 mt-2">Status dot</p>
+              </div>
+              <div class="text-center">
+                <div class="w-12 h-12 rounded-xl bg-violet-600 flex items-center justify-center relative">
+                  <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none">
+                    <path d="M20 12a8 8 0 01-8 8 8 8 0 01-8-8 8 8 0 018-8 8 8 0 015.66 2.34" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+                    <circle cx="18" cy="6" r="2" fill="white" class="animate-pulse"/>
+                  </svg>
+                </div>
+                <p class="text-xs text-zinc-500 mt-2">Pulse</p>
+              </div>
+              <div class="text-center">
+                <div class="w-12 h-12 rounded-xl bg-violet-600 flex items-center justify-center">
+                  <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none">
+                    <path d="M20 12a8 8 0 01-8 8 8 8 0 01-8-8 8 8 0 018-8 8 8 0 015.66 2.34" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+                    <circle cx="18" cy="6" r="1.5" fill="white"/>
+                    <circle cx="18" cy="6" r="3" stroke="white" stroke-width="0.5" opacity="0.5"/>
+                  </svg>
+                </div>
+                <p class="text-xs text-zinc-500 mt-2">Glow dot</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- With wordmark -->
+          <div>
+            <h4 class="text-sm font-medium text-zinc-400 mb-4">Full Logo Lockups</h4>
+            <div class="space-y-4">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-violet-600 flex items-center justify-center">
+                  <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none">
+                    <path d="M20 12a8 8 0 01-8 8 8 8 0 01-8-8 8 8 0 018-8 8 8 0 015.66 2.34" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+                    <circle cx="18" cy="6" r="2" fill="white"/>
+                  </svg>
+                </div>
+                <span class="text-2xl font-bold text-white">Checkend</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-lg bg-violet-600 flex items-center justify-center">
+                  <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none">
+                    <path d="M20 12a8 8 0 01-8 8 8 8 0 01-8-8 8 8 0 018-8 8 8 0 015.66 2.34" stroke="white" stroke-width="3" stroke-linecap="round"/>
+                    <circle cx="18" cy="6" r="2.5" fill="white"/>
+                  </svg>
+                </div>
+                <span class="text-xl font-bold text-white">Checkend</span>
+                <span class="text-zinc-500 text-sm ml-2">Horizontal</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Context examples -->
+          <div>
+            <h4 class="text-sm font-medium text-zinc-400 mb-4">In Context</h4>
+            <div class="flex gap-4">
+              <!-- Browser tab -->
+              <div class="text-center">
+                <div class="bg-zinc-700 rounded-t-lg px-3 py-1.5 flex items-center gap-2 w-fit">
+                  <div class="w-4 h-4 rounded-sm bg-violet-600 flex items-center justify-center">
+                    <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none">
+                      <path d="M20 12a8 8 0 01-8 8 8 8 0 01-8-8 8 8 0 018-8 8 8 0 015.66 2.34" stroke="white" stroke-width="4" stroke-linecap="round"/>
+                      <circle cx="18" cy="6" r="3.5" fill="white"/>
+                    </svg>
+                  </div>
+                  <span class="text-xs text-zinc-300">Dashboard - Checkend</span>
+                </div>
+                <p class="text-xs text-zinc-500 mt-2">Browser tab</p>
+              </div>
+              <!-- Mobile icon -->
+              <div class="text-center">
+                <div class="w-14 h-14 rounded-xl bg-violet-600 flex items-center justify-center shadow-lg">
+                  <svg class="w-8 h-8" viewBox="0 0 24 24" fill="none">
+                    <path d="M20 12a8 8 0 01-8 8 8 8 0 01-8-8 8 8 0 018-8 8 8 0 015.66 2.34" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+                    <circle cx="18" cy="6" r="2" fill="white"/>
+                  </svg>
+                </div>
+                <p class="text-xs text-zinc-500 mt-2">App icon</p>
+              </div>
+              <!-- Notification badge -->
+              <div class="text-center">
+                <div class="relative inline-block">
+                  <div class="w-10 h-10 rounded-lg bg-violet-600 flex items-center justify-center">
+                    <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none">
+                      <path d="M20 12a8 8 0 01-8 8 8 8 0 01-8-8 8 8 0 018-8 8 8 0 015.66 2.34" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+                      <circle cx="18" cy="6" r="2" fill="white"/>
+                    </svg>
+                  </div>
+                  <div class="absolute -top-1 -right-1 w-5 h-5 bg-pink-500 rounded-full flex items-center justify-center text-white text-xs font-bold">3</div>
+                </div>
+                <p class="text-xs text-zinc-500 mt-2">With badge</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Light background -->
+          <div>
+            <h4 class="text-sm font-medium text-zinc-400 mb-4">On Light Background</h4>
+            <div class="bg-white rounded-lg p-4 flex items-center gap-6">
+              <div class="flex items-center gap-2">
+                <div class="w-10 h-10 rounded-lg bg-violet-600 flex items-center justify-center">
+                  <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none">
+                    <path d="M20 12a8 8 0 01-8 8 8 8 0 01-8-8 8 8 0 018-8 8 8 0 015.66 2.34" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+                    <circle cx="18" cy="6" r="2" fill="white"/>
+                  </svg>
+                </div>
+                <span class="text-xl font-bold text-gray-900">Checkend</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <div class="w-10 h-10 rounded-lg border-2 border-violet-600 flex items-center justify-center">
+                  <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none">
+                    <path d="M20 12a8 8 0 01-8 8 8 8 0 01-8-8 8 8 0 018-8 8 8 0 015.66 2.34" stroke="rgb(124 58 237)" stroke-width="2.5" stroke-linecap="round"/>
+                    <circle cx="18" cy="6" r="2" fill="rgb(124 58 237)"/>
+                  </svg>
+                </div>
+                <span class="text-xl font-bold text-violet-600">Checkend</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p class="mt-4 text-sm text-gray-600">
+        <strong>Symbolism:</strong> The broken circle = continuous monitoring, always watching. The dot = the endpoint where issues are caught. Together they form a "C" for Checkend.<br>
+        <strong>Flexibility:</strong> The dot can change color to indicate status (green = healthy, pink = errors). Works at all sizes from favicon to app icon.
+      </p>
+    </div>
+
+  </section>
+
+  <!-- Mascot Candidates -->
+  <section class="mb-12">
+    <h2 class="text-xl font-semibold text-gray-900 mb-4 border-b pb-2">Mascots</h2>
+    <p class="text-sm text-gray-600 mb-6">Mascot character concepts illustrated with CSS.</p>
+
+    <!-- CANDIDATE: Owl Guardian - CSS Illustrated -->
+    <!-- Status: evaluating -->
+    <!-- Notes: Wise owl watching over your app -->
+    <div class="border-2 border-dashed border-amber-300 rounded-lg p-6 mb-8">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold text-amber-700">Option A: Owlbert the Guardian</h3>
+        <span class="px-2 py-1 text-xs bg-amber-100 text-amber-800 rounded">evaluating</span>
+      </div>
+
+      <div class="bg-zinc-900 rounded-lg p-8">
+        <div class="flex items-start gap-8">
+          <!-- CSS Owl Illustration -->
+          <div class="flex gap-6">
+            <!-- Normal state -->
+            <div class="text-center">
+              <div class="w-28 h-32 relative">
+                <!-- Body -->
+                <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-24 h-24 bg-gradient-to-b from-violet-500 to-violet-700 rounded-full"></div>
+                <!-- Belly -->
+                <div class="absolute bottom-2 left-1/2 -translate-x-1/2 w-16 h-16 bg-violet-300 rounded-full"></div>
+                <!-- Belly pattern -->
+                <div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-col gap-1">
+                  <div class="w-10 h-1 bg-violet-400 rounded-full mx-auto"></div>
+                  <div class="w-8 h-1 bg-violet-400 rounded-full mx-auto"></div>
+                  <div class="w-6 h-1 bg-violet-400 rounded-full mx-auto"></div>
+                </div>
+                <!-- Head/Face area -->
+                <div class="absolute top-0 left-1/2 -translate-x-1/2 w-20 h-14">
+                  <!-- Ear tufts -->
+                  <div class="absolute -top-1 left-1 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-b-[14px] border-b-violet-600 rotate-[-20deg]"></div>
+                  <div class="absolute -top-1 right-1 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-b-[14px] border-b-violet-600 rotate-[20deg]"></div>
+                  <!-- Eyes -->
+                  <div class="absolute top-4 left-1 w-8 h-8 bg-white rounded-full border-2 border-zinc-700 flex items-center justify-center">
+                    <div class="w-4 h-4 bg-zinc-900 rounded-full relative">
+                      <div class="absolute top-0.5 left-0.5 w-1.5 h-1.5 bg-white rounded-full"></div>
+                    </div>
+                  </div>
+                  <div class="absolute top-4 right-1 w-8 h-8 bg-white rounded-full border-2 border-zinc-700 flex items-center justify-center">
+                    <div class="w-4 h-4 bg-zinc-900 rounded-full relative">
+                      <div class="absolute top-0.5 left-0.5 w-1.5 h-1.5 bg-white rounded-full"></div>
+                    </div>
+                  </div>
+                  <!-- Beak -->
+                  <div class="absolute top-10 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-orange-400"></div>
+                </div>
+                <!-- Feet -->
+                <div class="absolute -bottom-2 left-6 w-3 h-3 bg-orange-400 rounded-full"></div>
+                <div class="absolute -bottom-2 right-6 w-3 h-3 bg-orange-400 rounded-full"></div>
+              </div>
+              <p class="text-xs text-zinc-500 mt-3">Normal</p>
+            </div>
+
+            <!-- Alert state -->
+            <div class="text-center">
+              <div class="w-28 h-32 relative">
+                <!-- Body -->
+                <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-24 h-24 bg-gradient-to-b from-violet-500 to-violet-700 rounded-full"></div>
+                <!-- Belly -->
+                <div class="absolute bottom-2 left-1/2 -translate-x-1/2 w-16 h-16 bg-violet-300 rounded-full"></div>
+                <!-- Belly pattern -->
+                <div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-col gap-1">
+                  <div class="w-10 h-1 bg-violet-400 rounded-full mx-auto"></div>
+                  <div class="w-8 h-1 bg-violet-400 rounded-full mx-auto"></div>
+                  <div class="w-6 h-1 bg-violet-400 rounded-full mx-auto"></div>
+                </div>
+                <!-- Head/Face area -->
+                <div class="absolute top-0 left-1/2 -translate-x-1/2 w-20 h-14">
+                  <!-- Ear tufts - raised -->
+                  <div class="absolute -top-3 left-1 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-b-[16px] border-b-violet-600 rotate-[-10deg]"></div>
+                  <div class="absolute -top-3 right-1 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-b-[16px] border-b-violet-600 rotate-[10deg]"></div>
+                  <!-- Eyes - wide -->
+                  <div class="absolute top-3 left-0 w-9 h-9 bg-white rounded-full border-2 border-zinc-700 flex items-center justify-center">
+                    <div class="w-5 h-5 bg-pink-500 rounded-full relative">
+                      <div class="absolute top-0.5 left-0.5 w-2 h-2 bg-white rounded-full"></div>
+                    </div>
+                  </div>
+                  <div class="absolute top-3 right-0 w-9 h-9 bg-white rounded-full border-2 border-zinc-700 flex items-center justify-center">
+                    <div class="w-5 h-5 bg-pink-500 rounded-full relative">
+                      <div class="absolute top-0.5 left-0.5 w-2 h-2 bg-white rounded-full"></div>
+                    </div>
+                  </div>
+                  <!-- Beak - open -->
+                  <div class="absolute top-11 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-orange-400"></div>
+                  <div class="absolute top-[46px] left-1/2 -translate-x-1/2 w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-b-[4px] border-b-orange-500"></div>
+                </div>
+                <!-- Feet -->
+                <div class="absolute -bottom-2 left-6 w-3 h-3 bg-orange-400 rounded-full"></div>
+                <div class="absolute -bottom-2 right-6 w-3 h-3 bg-orange-400 rounded-full"></div>
+                <!-- Alert indicator -->
+                <div class="absolute -top-3 -right-1 w-5 h-5 bg-pink-500 rounded-full flex items-center justify-center text-white text-xs font-bold animate-pulse">!</div>
+              </div>
+              <p class="text-xs text-zinc-500 mt-3">Alert</p>
+            </div>
+
+            <!-- Happy state -->
+            <div class="text-center">
+              <div class="w-28 h-32 relative">
+                <!-- Body -->
+                <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-24 h-24 bg-gradient-to-b from-violet-500 to-violet-700 rounded-full"></div>
+                <!-- Belly -->
+                <div class="absolute bottom-2 left-1/2 -translate-x-1/2 w-16 h-16 bg-violet-300 rounded-full"></div>
+                <!-- Checkmark on belly -->
+                <div class="absolute bottom-5 left-1/2 -translate-x-1/2">
+                  <svg class="w-8 h-8 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                </div>
+                <!-- Head/Face area -->
+                <div class="absolute top-0 left-1/2 -translate-x-1/2 w-20 h-14">
+                  <!-- Ear tufts -->
+                  <div class="absolute -top-1 left-1 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-b-[14px] border-b-violet-600 rotate-[-20deg]"></div>
+                  <div class="absolute -top-1 right-1 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-b-[14px] border-b-violet-600 rotate-[20deg]"></div>
+                  <!-- Eyes - happy crescents -->
+                  <div class="absolute top-5 left-1 w-8 h-4 border-b-4 border-zinc-900 rounded-b-full"></div>
+                  <div class="absolute top-5 right-1 w-8 h-4 border-b-4 border-zinc-900 rounded-b-full"></div>
+                  <!-- Beak -->
+                  <div class="absolute top-10 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-orange-400"></div>
+                </div>
+                <!-- Feet -->
+                <div class="absolute -bottom-2 left-6 w-3 h-3 bg-orange-400 rounded-full"></div>
+                <div class="absolute -bottom-2 right-6 w-3 h-3 bg-orange-400 rounded-full"></div>
+              </div>
+              <p class="text-xs text-zinc-500 mt-3">Happy</p>
+            </div>
+          </div>
+
+          <div class="flex-1">
+            <h4 class="text-lg font-semibold text-white mb-2">Owlbert</h4>
+            <p class="text-zinc-400 text-sm mb-4">A wise owl with violet feathers, watching over your application 24/7. Big expressive eyes that change based on system state.</p>
+            <div class="space-y-2 text-sm">
+              <p class="text-zinc-300"><strong class="text-violet-400">Personality:</strong> Wise, watchful, protective</p>
+              <p class="text-zinc-300"><strong class="text-violet-400">Use cases:</strong> Empty states, 404 pages, status indicators</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p class="mt-4 text-sm text-gray-600">
+        <strong>Pros:</strong> "Night watch" symbolism fits monitoring, expressive, unique.<br>
+        <strong>Cons:</strong> May feel whimsical for enterprise users.
+      </p>
+    </div>
+
+    <!-- CANDIDATE: Robot - CSS Illustrated -->
+    <!-- Status: evaluating -->
+    <!-- Notes: Friendly monitoring robot -->
+    <div class="border-2 border-dashed border-amber-300 rounded-lg p-6 mb-8">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold text-amber-700">Option B: Checky the Bot</h3>
+        <span class="px-2 py-1 text-xs bg-amber-100 text-amber-800 rounded">evaluating</span>
+      </div>
+
+      <div class="bg-zinc-900 rounded-lg p-8">
+        <div class="flex items-start gap-8">
+          <!-- CSS Robot Illustration -->
+          <div class="flex gap-6">
+            <!-- Normal state -->
+            <div class="text-center">
+              <div class="w-24 h-32 relative">
+                <!-- Antenna -->
+                <div class="absolute top-0 left-1/2 -translate-x-1/2 w-1 h-4 bg-zinc-500"></div>
+                <div class="absolute -top-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-violet-500 rounded-full animate-pulse"></div>
+                <!-- Head -->
+                <div class="absolute top-4 left-1/2 -translate-x-1/2 w-20 h-14 bg-gradient-to-b from-zinc-600 to-zinc-700 rounded-xl border-2 border-zinc-500">
+                  <!-- Screen face -->
+                  <div class="absolute top-2 left-2 right-2 bottom-2 bg-zinc-900 rounded-lg flex items-center justify-center">
+                    <!-- Eyes -->
+                    <div class="flex gap-3">
+                      <div class="w-3 h-3 bg-violet-400 rounded-full"></div>
+                      <div class="w-3 h-3 bg-violet-400 rounded-full"></div>
+                    </div>
+                  </div>
+                </div>
+                <!-- Body -->
+                <div class="absolute top-[72px] left-1/2 -translate-x-1/2 w-16 h-12 bg-gradient-to-b from-zinc-600 to-zinc-700 rounded-lg border-2 border-zinc-500">
+                  <!-- Chest light -->
+                  <div class="absolute top-2 left-1/2 -translate-x-1/2 w-6 h-6 bg-zinc-800 rounded-full flex items-center justify-center">
+                    <div class="w-3 h-3 bg-violet-500 rounded-full"></div>
+                  </div>
+                </div>
+                <!-- Arms -->
+                <div class="absolute top-[76px] left-1 w-2 h-8 bg-zinc-600 rounded-full"></div>
+                <div class="absolute top-[76px] right-1 w-2 h-8 bg-zinc-600 rounded-full"></div>
+                <!-- Feet -->
+                <div class="absolute bottom-0 left-5 w-4 h-2 bg-zinc-600 rounded-t-lg"></div>
+                <div class="absolute bottom-0 right-5 w-4 h-2 bg-zinc-600 rounded-t-lg"></div>
+              </div>
+              <p class="text-xs text-zinc-500 mt-3">Normal</p>
+            </div>
+
+            <!-- Alert state -->
+            <div class="text-center">
+              <div class="w-24 h-32 relative">
+                <!-- Antenna - red alert -->
+                <div class="absolute top-0 left-1/2 -translate-x-1/2 w-1 h-4 bg-zinc-500"></div>
+                <div class="absolute -top-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-pink-500 rounded-full animate-ping"></div>
+                <div class="absolute -top-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-pink-500 rounded-full"></div>
+                <!-- Head -->
+                <div class="absolute top-4 left-1/2 -translate-x-1/2 w-20 h-14 bg-gradient-to-b from-zinc-600 to-zinc-700 rounded-xl border-2 border-pink-500">
+                  <!-- Screen face - alert -->
+                  <div class="absolute top-2 left-2 right-2 bottom-2 bg-zinc-900 rounded-lg flex items-center justify-center">
+                    <span class="text-pink-500 text-xl font-bold">!</span>
+                  </div>
+                </div>
+                <!-- Body -->
+                <div class="absolute top-[72px] left-1/2 -translate-x-1/2 w-16 h-12 bg-gradient-to-b from-zinc-600 to-zinc-700 rounded-lg border-2 border-zinc-500">
+                  <div class="absolute top-2 left-1/2 -translate-x-1/2 w-6 h-6 bg-zinc-800 rounded-full flex items-center justify-center">
+                    <div class="w-3 h-3 bg-pink-500 rounded-full animate-pulse"></div>
+                  </div>
+                </div>
+                <!-- Arms - raised -->
+                <div class="absolute top-[68px] left-0 w-2 h-8 bg-zinc-600 rounded-full -rotate-45 origin-bottom"></div>
+                <div class="absolute top-[68px] right-0 w-2 h-8 bg-zinc-600 rounded-full rotate-45 origin-bottom"></div>
+                <!-- Feet -->
+                <div class="absolute bottom-0 left-5 w-4 h-2 bg-zinc-600 rounded-t-lg"></div>
+                <div class="absolute bottom-0 right-5 w-4 h-2 bg-zinc-600 rounded-t-lg"></div>
+              </div>
+              <p class="text-xs text-zinc-500 mt-3">Alert</p>
+            </div>
+
+            <!-- Happy state -->
+            <div class="text-center">
+              <div class="w-24 h-32 relative">
+                <!-- Antenna - green -->
+                <div class="absolute top-0 left-1/2 -translate-x-1/2 w-1 h-4 bg-zinc-500"></div>
+                <div class="absolute -top-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-emerald-400 rounded-full"></div>
+                <!-- Head -->
+                <div class="absolute top-4 left-1/2 -translate-x-1/2 w-20 h-14 bg-gradient-to-b from-zinc-600 to-zinc-700 rounded-xl border-2 border-emerald-500">
+                  <!-- Screen face - checkmark -->
+                  <div class="absolute top-2 left-2 right-2 bottom-2 bg-zinc-900 rounded-lg flex items-center justify-center">
+                    <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                  </div>
+                </div>
+                <!-- Body -->
+                <div class="absolute top-[72px] left-1/2 -translate-x-1/2 w-16 h-12 bg-gradient-to-b from-zinc-600 to-zinc-700 rounded-lg border-2 border-zinc-500">
+                  <div class="absolute top-2 left-1/2 -translate-x-1/2 w-6 h-6 bg-zinc-800 rounded-full flex items-center justify-center">
+                    <div class="w-3 h-3 bg-emerald-400 rounded-full"></div>
+                  </div>
+                </div>
+                <!-- Arms - thumbs up gesture implied -->
+                <div class="absolute top-[76px] left-1 w-2 h-8 bg-zinc-600 rounded-full"></div>
+                <div class="absolute top-[70px] right-0 w-2 h-8 bg-zinc-600 rounded-full rotate-[30deg] origin-bottom"></div>
+                <!-- Feet -->
+                <div class="absolute bottom-0 left-5 w-4 h-2 bg-zinc-600 rounded-t-lg"></div>
+                <div class="absolute bottom-0 right-5 w-4 h-2 bg-zinc-600 rounded-t-lg"></div>
+              </div>
+              <p class="text-xs text-zinc-500 mt-3">Happy</p>
+            </div>
+          </div>
+
+          <div class="flex-1">
+            <h4 class="text-lg font-semibold text-white mb-2">Checky</h4>
+            <p class="text-zinc-400 text-sm mb-4">A friendly monitoring robot with a screen face. Antenna and chest light change color based on system status.</p>
+            <div class="space-y-2 text-sm">
+              <p class="text-zinc-300"><strong class="text-violet-400">Personality:</strong> Vigilant, reliable, helpful</p>
+              <p class="text-zinc-300"><strong class="text-violet-400">Use cases:</strong> Dashboard widget, notifications, loading states</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p class="mt-4 text-sm text-gray-600">
+        <strong>Pros:</strong> Tech-appropriate, screen face is versatile, modern feel.<br>
+        <strong>Cons:</strong> Robot mascots are common in tech.
+      </p>
+    </div>
+
+    <!-- CANDIDATE: Ghost/Spirit - CSS Illustrated -->
+    <!-- Status: evaluating -->
+    <!-- Notes: Friendly ghost that haunts bugs -->
+    <div class="border-2 border-dashed border-amber-300 rounded-lg p-6 mb-8">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold text-amber-700">Option C: Spectre the Bug Hunter</h3>
+        <span class="px-2 py-1 text-xs bg-amber-100 text-amber-800 rounded">evaluating</span>
+      </div>
+
+      <div class="bg-zinc-900 rounded-lg p-8">
+        <div class="flex items-start gap-8">
+          <!-- CSS Ghost Illustration -->
+          <div class="flex gap-6">
+            <!-- Normal state -->
+            <div class="text-center">
+              <div class="w-24 h-32 relative flex items-end justify-center">
+                <!-- Ghost body -->
+                <div class="relative">
+                  <div class="w-20 h-24 bg-gradient-to-b from-white to-violet-100 rounded-t-full relative">
+                    <!-- Eyes -->
+                    <div class="absolute top-6 left-3 w-4 h-5 bg-zinc-900 rounded-full"></div>
+                    <div class="absolute top-6 right-3 w-4 h-5 bg-zinc-900 rounded-full"></div>
+                    <!-- Blush -->
+                    <div class="absolute top-10 left-1 w-3 h-2 bg-pink-200 rounded-full opacity-60"></div>
+                    <div class="absolute top-10 right-1 w-3 h-2 bg-pink-200 rounded-full opacity-60"></div>
+                    <!-- Mouth -->
+                    <div class="absolute top-12 left-1/2 -translate-x-1/2 w-2 h-2 bg-zinc-900 rounded-full"></div>
+                  </div>
+                  <!-- Wavy bottom -->
+                  <div class="flex -mt-1">
+                    <div class="w-5 h-4 bg-violet-100 rounded-b-full"></div>
+                    <div class="w-5 h-6 bg-violet-100 rounded-b-full -mt-2"></div>
+                    <div class="w-5 h-4 bg-violet-100 rounded-b-full"></div>
+                    <div class="w-5 h-6 bg-violet-100 rounded-b-full -mt-2"></div>
+                  </div>
+                </div>
+              </div>
+              <p class="text-xs text-zinc-500 mt-3">Normal</p>
+            </div>
+
+            <!-- Alert state -->
+            <div class="text-center">
+              <div class="w-24 h-32 relative flex items-end justify-center">
+                <div class="relative animate-bounce">
+                  <div class="w-20 h-24 bg-gradient-to-b from-white to-pink-100 rounded-t-full relative">
+                    <!-- Eyes - surprised -->
+                    <div class="absolute top-5 left-2 w-5 h-6 bg-zinc-900 rounded-full"></div>
+                    <div class="absolute top-5 right-2 w-5 h-6 bg-zinc-900 rounded-full"></div>
+                    <!-- White reflection -->
+                    <div class="absolute top-6 left-3 w-2 h-2 bg-white rounded-full"></div>
+                    <div class="absolute top-6 right-3 w-2 h-2 bg-white rounded-full"></div>
+                    <!-- Mouth - gasp -->
+                    <div class="absolute top-12 left-1/2 -translate-x-1/2 w-4 h-4 bg-zinc-900 rounded-full"></div>
+                  </div>
+                  <!-- Wavy bottom -->
+                  <div class="flex -mt-1">
+                    <div class="w-5 h-4 bg-pink-100 rounded-b-full"></div>
+                    <div class="w-5 h-6 bg-pink-100 rounded-b-full -mt-2"></div>
+                    <div class="w-5 h-4 bg-pink-100 rounded-b-full"></div>
+                    <div class="w-5 h-6 bg-pink-100 rounded-b-full -mt-2"></div>
+                  </div>
+                </div>
+                <!-- Alert badge -->
+                <div class="absolute top-0 right-0 w-6 h-6 bg-pink-500 rounded-full flex items-center justify-center text-white text-xs font-bold">!</div>
+              </div>
+              <p class="text-xs text-zinc-500 mt-3">Alert</p>
+            </div>
+
+            <!-- Happy state -->
+            <div class="text-center">
+              <div class="w-24 h-32 relative flex items-end justify-center">
+                <div class="relative">
+                  <div class="w-20 h-24 bg-gradient-to-b from-white to-emerald-100 rounded-t-full relative">
+                    <!-- Eyes - happy -->
+                    <div class="absolute top-6 left-3 w-4 h-2 border-b-[3px] border-zinc-900 rounded-b-full"></div>
+                    <div class="absolute top-6 right-3 w-4 h-2 border-b-[3px] border-zinc-900 rounded-b-full"></div>
+                    <!-- Blush -->
+                    <div class="absolute top-8 left-1 w-3 h-2 bg-pink-300 rounded-full opacity-60"></div>
+                    <div class="absolute top-8 right-1 w-3 h-2 bg-pink-300 rounded-full opacity-60"></div>
+                    <!-- Smile -->
+                    <div class="absolute top-11 left-1/2 -translate-x-1/2 w-6 h-3 border-b-[3px] border-zinc-900 rounded-b-full"></div>
+                  </div>
+                  <!-- Wavy bottom -->
+                  <div class="flex -mt-1">
+                    <div class="w-5 h-4 bg-emerald-100 rounded-b-full"></div>
+                    <div class="w-5 h-6 bg-emerald-100 rounded-b-full -mt-2"></div>
+                    <div class="w-5 h-4 bg-emerald-100 rounded-b-full"></div>
+                    <div class="w-5 h-6 bg-emerald-100 rounded-b-full -mt-2"></div>
+                  </div>
+                </div>
+                <!-- Sparkles -->
+                <div class="absolute top-2 left-2 text-emerald-400">✦</div>
+                <div class="absolute top-4 right-1 text-emerald-400 text-xs">✦</div>
+              </div>
+              <p class="text-xs text-zinc-500 mt-3">Happy</p>
+            </div>
+          </div>
+
+          <div class="flex-1">
+            <h4 class="text-lg font-semibold text-white mb-2">Spectre</h4>
+            <p class="text-zinc-400 text-sm mb-4">A friendly ghost that "haunts" your errors. Floats around finding bugs and changes color based on system health.</p>
+            <div class="space-y-2 text-sm">
+              <p class="text-zinc-300"><strong class="text-violet-400">Personality:</strong> Friendly, playful, thorough</p>
+              <p class="text-zinc-300"><strong class="text-violet-400">Use cases:</strong> Empty states, searching animations, 404 pages</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p class="mt-4 text-sm text-gray-600">
+        <strong>Pros:</strong> Unique, cute, "ghost in the machine" metaphor, very expressive.<br>
+        <strong>Cons:</strong> May be too playful, ghost imagery varies culturally.
+      </p>
+    </div>
+
+    <!-- CANDIDATE: Lighthouse Keeper - CSS Illustrated -->
+    <!-- Status: evaluating -->
+    <!-- Notes: Lighthouse watching over your app -->
+    <div class="border-2 border-dashed border-amber-300 rounded-lg p-6 mb-8">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold text-amber-700">Option D: Beacon the Lighthouse</h3>
+        <span class="px-2 py-1 text-xs bg-amber-100 text-amber-800 rounded">evaluating</span>
+      </div>
+
+      <div class="bg-zinc-900 rounded-lg p-8">
+        <div class="flex items-start gap-8">
+          <!-- CSS Lighthouse Illustration -->
+          <div class="flex gap-6">
+            <!-- Normal state -->
+            <div class="text-center">
+              <div class="w-24 h-36 relative flex items-end justify-center">
+                <!-- Base/rocks -->
+                <div class="absolute bottom-0 left-0 right-0 h-4 bg-zinc-700 rounded-t-lg"></div>
+                <!-- Tower -->
+                <div class="absolute bottom-4 left-1/2 -translate-x-1/2 w-12 h-20 bg-gradient-to-b from-white to-zinc-200 rounded-t-lg" style="clip-path: polygon(10% 100%, 90% 100%, 80% 0%, 20% 0%);">
+                  <!-- Stripes -->
+                  <div class="absolute top-3 left-0 right-0 h-3 bg-violet-500"></div>
+                  <div class="absolute top-9 left-0 right-0 h-3 bg-violet-500"></div>
+                  <div class="absolute top-15 left-0 right-0 h-3 bg-violet-500"></div>
+                </div>
+                <!-- Lamp house -->
+                <div class="absolute bottom-[88px] left-1/2 -translate-x-1/2 w-10 h-8 bg-zinc-800 rounded-t-lg border-2 border-zinc-600">
+                  <div class="absolute inset-1 bg-amber-300 rounded-sm opacity-80"></div>
+                </div>
+                <!-- Roof -->
+                <div class="absolute bottom-[120px] left-1/2 -translate-x-1/2">
+                  <div class="w-0 h-0 border-l-[16px] border-l-transparent border-r-[16px] border-r-transparent border-b-[12px] border-b-zinc-700"></div>
+                </div>
+              </div>
+              <p class="text-xs text-zinc-500 mt-3">Idle</p>
+            </div>
+
+            <!-- Alert state - with light beam -->
+            <div class="text-center">
+              <div class="w-28 h-36 relative flex items-end justify-center">
+                <!-- Light beam -->
+                <div class="absolute bottom-[92px] left-1/2 w-32 h-6 bg-gradient-to-r from-amber-400/80 via-amber-300/40 to-transparent origin-left animate-pulse" style="transform: translateX(0) rotate(-15deg);"></div>
+                <!-- Base/rocks -->
+                <div class="absolute bottom-0 left-2 right-2 h-4 bg-zinc-700 rounded-t-lg"></div>
+                <!-- Tower -->
+                <div class="absolute bottom-4 left-1/2 -translate-x-1/2 w-12 h-20 bg-gradient-to-b from-white to-zinc-200 rounded-t-lg" style="clip-path: polygon(10% 100%, 90% 100%, 80% 0%, 20% 0%);">
+                  <div class="absolute top-3 left-0 right-0 h-3 bg-pink-500"></div>
+                  <div class="absolute top-9 left-0 right-0 h-3 bg-pink-500"></div>
+                  <div class="absolute top-15 left-0 right-0 h-3 bg-pink-500"></div>
+                </div>
+                <!-- Lamp house - bright -->
+                <div class="absolute bottom-[88px] left-1/2 -translate-x-1/2 w-10 h-8 bg-zinc-800 rounded-t-lg border-2 border-amber-500">
+                  <div class="absolute inset-1 bg-amber-400 rounded-sm animate-pulse"></div>
+                </div>
+                <!-- Roof -->
+                <div class="absolute bottom-[120px] left-1/2 -translate-x-1/2">
+                  <div class="w-0 h-0 border-l-[16px] border-l-transparent border-r-[16px] border-r-transparent border-b-[12px] border-b-zinc-700"></div>
+                </div>
+              </div>
+              <p class="text-xs text-zinc-500 mt-3">Alert</p>
+            </div>
+
+            <!-- Happy state -->
+            <div class="text-center">
+              <div class="w-24 h-36 relative flex items-end justify-center">
+                <!-- Sparkles -->
+                <div class="absolute top-2 left-3 text-emerald-400 text-xs">✦</div>
+                <div class="absolute top-6 right-3 text-emerald-400">✦</div>
+                <!-- Base/rocks -->
+                <div class="absolute bottom-0 left-0 right-0 h-4 bg-zinc-700 rounded-t-lg"></div>
+                <!-- Tower -->
+                <div class="absolute bottom-4 left-1/2 -translate-x-1/2 w-12 h-20 bg-gradient-to-b from-white to-zinc-200 rounded-t-lg" style="clip-path: polygon(10% 100%, 90% 100%, 80% 0%, 20% 0%);">
+                  <div class="absolute top-3 left-0 right-0 h-3 bg-emerald-500"></div>
+                  <div class="absolute top-9 left-0 right-0 h-3 bg-emerald-500"></div>
+                  <div class="absolute top-15 left-0 right-0 h-3 bg-emerald-500"></div>
+                </div>
+                <!-- Lamp house -->
+                <div class="absolute bottom-[88px] left-1/2 -translate-x-1/2 w-10 h-8 bg-zinc-800 rounded-t-lg border-2 border-emerald-500">
+                  <div class="absolute inset-1 bg-emerald-400 rounded-sm"></div>
+                </div>
+                <!-- Roof -->
+                <div class="absolute bottom-[120px] left-1/2 -translate-x-1/2">
+                  <div class="w-0 h-0 border-l-[16px] border-l-transparent border-r-[16px] border-r-transparent border-b-[12px] border-b-zinc-700"></div>
+                </div>
+              </div>
+              <p class="text-xs text-zinc-500 mt-3">All Clear</p>
+            </div>
+          </div>
+
+          <div class="flex-1">
+            <h4 class="text-lg font-semibold text-white mb-2">Beacon</h4>
+            <p class="text-zinc-400 text-sm mb-4">A lighthouse that watches over your application, its light sweeping to catch errors before they crash on the rocks. Stripes change color based on status.</p>
+            <div class="space-y-2 text-sm">
+              <p class="text-zinc-300"><strong class="text-violet-400">Personality:</strong> Vigilant, steadfast, guiding</p>
+              <p class="text-zinc-300"><strong class="text-violet-400">Use cases:</strong> Dashboard header, status pages, onboarding</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p class="mt-4 text-sm text-gray-600">
+        <strong>Pros:</strong> "Guiding light" metaphor, unique in tech, light beam is animatable.<br>
+        <strong>Cons:</strong> More illustrative than character-like, less expressive.
+      </p>
+    </div>
+
+    <!-- CANDIDATE: Cat Detective - CSS Illustrated -->
+    <!-- Status: evaluating -->
+    <!-- Notes: Cat that catches bugs -->
+    <div class="border-2 border-dashed border-amber-300 rounded-lg p-6 mb-8">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold text-amber-700">Option E: Catch the Bug Cat</h3>
+        <span class="px-2 py-1 text-xs bg-amber-100 text-amber-800 rounded">evaluating</span>
+      </div>
+
+      <div class="bg-zinc-900 rounded-lg p-8">
+        <div class="flex items-start gap-8">
+          <!-- CSS Cat Illustration -->
+          <div class="flex gap-6">
+            <!-- Normal state -->
+            <div class="text-center">
+              <div class="w-28 h-32 relative">
+                <!-- Tail -->
+                <div class="absolute bottom-4 -left-2 w-3 h-12 bg-violet-500 rounded-full origin-bottom rotate-[-30deg]"></div>
+                <!-- Body -->
+                <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-20 h-14 bg-violet-500 rounded-full"></div>
+                <!-- Head -->
+                <div class="absolute bottom-10 left-1/2 -translate-x-1/2 w-18 h-16 bg-violet-500 rounded-full">
+                  <!-- Ears -->
+                  <div class="absolute -top-2 left-1 w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-b-[16px] border-b-violet-500"></div>
+                  <div class="absolute -top-2 right-1 w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-b-[16px] border-b-violet-500"></div>
+                  <!-- Inner ears -->
+                  <div class="absolute -top-0 left-2.5 w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-b-[8px] border-b-pink-300"></div>
+                  <div class="absolute -top-0 right-2.5 w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-b-[8px] border-b-pink-300"></div>
+                  <!-- Eyes -->
+                  <div class="absolute top-4 left-2 w-5 h-5 bg-white rounded-full flex items-center justify-center">
+                    <div class="w-3 h-3 bg-zinc-900 rounded-full"></div>
+                  </div>
+                  <div class="absolute top-4 right-2 w-5 h-5 bg-white rounded-full flex items-center justify-center">
+                    <div class="w-3 h-3 bg-zinc-900 rounded-full"></div>
+                  </div>
+                  <!-- Nose -->
+                  <div class="absolute top-10 left-1/2 -translate-x-1/2 w-2 h-1.5 bg-pink-400 rounded-full"></div>
+                  <!-- Mouth -->
+                  <div class="absolute top-11 left-1/2 -translate-x-1/2 w-4 h-2 border-b border-zinc-900 rounded-b-full"></div>
+                  <!-- Whiskers -->
+                  <div class="absolute top-9 left-0 w-4 h-px bg-zinc-300"></div>
+                  <div class="absolute top-10 -left-1 w-5 h-px bg-zinc-300"></div>
+                  <div class="absolute top-9 right-0 w-4 h-px bg-zinc-300"></div>
+                  <div class="absolute top-10 -right-1 w-5 h-px bg-zinc-300"></div>
+                </div>
+                <!-- Front paws -->
+                <div class="absolute bottom-0 left-6 w-4 h-5 bg-violet-600 rounded-full"></div>
+                <div class="absolute bottom-0 right-6 w-4 h-5 bg-violet-600 rounded-full"></div>
+              </div>
+              <p class="text-xs text-zinc-500 mt-3">Normal</p>
+            </div>
+
+            <!-- Alert state - hunting -->
+            <div class="text-center">
+              <div class="w-28 h-32 relative">
+                <!-- Tail - alert -->
+                <div class="absolute bottom-4 -left-2 w-3 h-12 bg-violet-500 rounded-full origin-bottom rotate-[20deg]"></div>
+                <!-- Body - crouched -->
+                <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-22 h-12 bg-violet-500 rounded-full"></div>
+                <!-- Head - alert -->
+                <div class="absolute bottom-8 left-1/2 -translate-x-1/2 w-18 h-16 bg-violet-500 rounded-full">
+                  <!-- Ears - perked -->
+                  <div class="absolute -top-3 left-0 w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-b-[18px] border-b-violet-500"></div>
+                  <div class="absolute -top-3 right-0 w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-b-[18px] border-b-violet-500"></div>
+                  <!-- Inner ears -->
+                  <div class="absolute -top-1 left-1.5 w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-b-[10px] border-b-pink-300"></div>
+                  <div class="absolute -top-1 right-1.5 w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-b-[10px] border-b-pink-300"></div>
+                  <!-- Eyes - wide/hunting -->
+                  <div class="absolute top-4 left-2 w-5 h-6 bg-white rounded-full flex items-center justify-center">
+                    <div class="w-4 h-4 bg-pink-500 rounded-full"></div>
+                  </div>
+                  <div class="absolute top-4 right-2 w-5 h-6 bg-white rounded-full flex items-center justify-center">
+                    <div class="w-4 h-4 bg-pink-500 rounded-full"></div>
+                  </div>
+                  <!-- Nose & mouth -->
+                  <div class="absolute top-11 left-1/2 -translate-x-1/2 w-2 h-1.5 bg-pink-400 rounded-full"></div>
+                </div>
+                <!-- Bug target -->
+                <div class="absolute top-0 right-2 animate-bounce">
+                  <span class="text-lg">🐛</span>
+                </div>
+                <!-- Front paws - ready -->
+                <div class="absolute bottom-0 left-4 w-4 h-6 bg-violet-600 rounded-full"></div>
+                <div class="absolute bottom-0 right-4 w-4 h-6 bg-violet-600 rounded-full"></div>
+              </div>
+              <p class="text-xs text-zinc-500 mt-3">Hunting</p>
+            </div>
+
+            <!-- Happy state -->
+            <div class="text-center">
+              <div class="w-28 h-32 relative">
+                <!-- Tail - happy wave -->
+                <div class="absolute bottom-4 -left-2 w-3 h-12 bg-violet-500 rounded-full origin-bottom rotate-[-45deg]"></div>
+                <!-- Body -->
+                <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-20 h-14 bg-violet-500 rounded-full"></div>
+                <!-- Head -->
+                <div class="absolute bottom-10 left-1/2 -translate-x-1/2 w-18 h-16 bg-violet-500 rounded-full">
+                  <!-- Ears -->
+                  <div class="absolute -top-2 left-1 w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-b-[16px] border-b-violet-500"></div>
+                  <div class="absolute -top-2 right-1 w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-b-[16px] border-b-violet-500"></div>
+                  <!-- Inner ears -->
+                  <div class="absolute -top-0 left-2.5 w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-b-[8px] border-b-pink-300"></div>
+                  <div class="absolute -top-0 right-2.5 w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-b-[8px] border-b-pink-300"></div>
+                  <!-- Eyes - happy -->
+                  <div class="absolute top-5 left-2 w-5 h-2 border-b-[3px] border-zinc-900 rounded-b-full"></div>
+                  <div class="absolute top-5 right-2 w-5 h-2 border-b-[3px] border-zinc-900 rounded-b-full"></div>
+                  <!-- Blush -->
+                  <div class="absolute top-7 left-1 w-3 h-2 bg-pink-300 rounded-full opacity-50"></div>
+                  <div class="absolute top-7 right-1 w-3 h-2 bg-pink-300 rounded-full opacity-50"></div>
+                  <!-- Nose -->
+                  <div class="absolute top-9 left-1/2 -translate-x-1/2 w-2 h-1.5 bg-pink-400 rounded-full"></div>
+                  <!-- Smile -->
+                  <div class="absolute top-10 left-1/2 -translate-x-1/2 w-5 h-2 border-b-2 border-zinc-900 rounded-b-full"></div>
+                </div>
+                <!-- Caught bug -->
+                <div class="absolute bottom-2 right-2 text-xs">✓🐛</div>
+                <!-- Front paws -->
+                <div class="absolute bottom-0 left-6 w-4 h-5 bg-violet-600 rounded-full"></div>
+                <div class="absolute bottom-0 right-6 w-4 h-5 bg-violet-600 rounded-full"></div>
+              </div>
+              <p class="text-xs text-zinc-500 mt-3">Caught it!</p>
+            </div>
+          </div>
+
+          <div class="flex-1">
+            <h4 class="text-lg font-semibold text-white mb-2">Catch</h4>
+            <p class="text-zinc-400 text-sm mb-4">A curious cat that hunts down bugs in your code. Alert posture when errors detected, celebrates when bugs are caught/resolved.</p>
+            <div class="space-y-2 text-sm">
+              <p class="text-zinc-300"><strong class="text-violet-400">Personality:</strong> Curious, quick, playful</p>
+              <p class="text-zinc-300"><strong class="text-violet-400">Use cases:</strong> Error hunting animations, success states, 404 pages</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p class="mt-4 text-sm text-gray-600">
+        <strong>Pros:</strong> Cats are universally loved, "catching bugs" is perfect metaphor.<br>
+        <strong>Cons:</strong> May be seen as too casual, cat mascots exist elsewhere.
+      </p>
+    </div>
+
+    <!-- CANDIDATE: Shield Guardian - CSS Illustrated -->
+    <!-- Status: evaluating -->
+    <!-- Notes: Protective shield character -->
+    <div class="border-2 border-dashed border-amber-300 rounded-lg p-6 mb-8">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold text-amber-700">Option F: Ward the Shield</h3>
+        <span class="px-2 py-1 text-xs bg-amber-100 text-amber-800 rounded">evaluating</span>
+      </div>
+
+      <div class="bg-zinc-900 rounded-lg p-8">
+        <div class="flex items-start gap-8">
+          <!-- CSS Shield Illustration -->
+          <div class="flex gap-6">
+            <!-- Normal state -->
+            <div class="text-center">
+              <div class="w-24 h-32 relative flex items-center justify-center">
+                <!-- Shield shape -->
+                <div class="w-20 h-24 bg-gradient-to-b from-violet-500 to-violet-700 relative" style="clip-path: polygon(50% 100%, 0% 20%, 0% 0%, 100% 0%, 100% 20%);">
+                  <!-- Inner shield -->
+                  <div class="absolute top-2 left-2 right-2 bottom-4 bg-violet-400" style="clip-path: polygon(50% 100%, 0% 20%, 0% 0%, 100% 0%, 100% 20%);">
+                    <!-- Face area -->
+                    <div class="absolute top-6 left-1/2 -translate-x-1/2">
+                      <!-- Eyes -->
+                      <div class="flex gap-4 justify-center">
+                        <div class="w-3 h-3 bg-zinc-900 rounded-full"></div>
+                        <div class="w-3 h-3 bg-zinc-900 rounded-full"></div>
+                      </div>
+                      <!-- Smile -->
+                      <div class="mt-2 w-6 h-2 border-b-2 border-zinc-900 rounded-b-full mx-auto"></div>
+                    </div>
+                  </div>
+                  <!-- Shield emblem -->
+                  <div class="absolute bottom-8 left-1/2 -translate-x-1/2 w-4 h-4 border-2 border-violet-300 rounded-full"></div>
+                </div>
+                <!-- Small arms -->
+                <div class="absolute bottom-8 -left-1 w-3 h-6 bg-violet-600 rounded-full"></div>
+                <div class="absolute bottom-8 -right-1 w-3 h-6 bg-violet-600 rounded-full"></div>
+              </div>
+              <p class="text-xs text-zinc-500 mt-3">Guarding</p>
+            </div>
+
+            <!-- Alert state -->
+            <div class="text-center">
+              <div class="w-24 h-32 relative flex items-center justify-center">
+                <!-- Glow effect -->
+                <div class="absolute inset-0 bg-pink-500/20 rounded-full animate-pulse"></div>
+                <!-- Shield shape -->
+                <div class="w-20 h-24 bg-gradient-to-b from-pink-500 to-pink-700 relative" style="clip-path: polygon(50% 100%, 0% 20%, 0% 0%, 100% 0%, 100% 20%);">
+                  <!-- Inner shield -->
+                  <div class="absolute top-2 left-2 right-2 bottom-4 bg-pink-400" style="clip-path: polygon(50% 100%, 0% 20%, 0% 0%, 100% 0%, 100% 20%);">
+                    <!-- Face area - alert -->
+                    <div class="absolute top-6 left-1/2 -translate-x-1/2">
+                      <!-- Eyes - alert -->
+                      <div class="flex gap-4 justify-center">
+                        <div class="w-4 h-4 bg-zinc-900 rounded-full flex items-center justify-center">
+                          <div class="w-1 h-1 bg-white rounded-full"></div>
+                        </div>
+                        <div class="w-4 h-4 bg-zinc-900 rounded-full flex items-center justify-center">
+                          <div class="w-1 h-1 bg-white rounded-full"></div>
+                        </div>
+                      </div>
+                      <!-- Alert mouth -->
+                      <div class="mt-2 w-4 h-3 bg-zinc-900 rounded-full mx-auto"></div>
+                    </div>
+                  </div>
+                  <!-- Alert emblem -->
+                  <div class="absolute bottom-8 left-1/2 -translate-x-1/2 text-white text-sm font-bold">!</div>
+                </div>
+                <!-- Arms - blocking -->
+                <div class="absolute bottom-8 -left-3 w-3 h-8 bg-pink-600 rounded-full -rotate-45"></div>
+                <div class="absolute bottom-8 -right-3 w-3 h-8 bg-pink-600 rounded-full rotate-45"></div>
+              </div>
+              <p class="text-xs text-zinc-500 mt-3">Blocking</p>
+            </div>
+
+            <!-- Happy state -->
+            <div class="text-center">
+              <div class="w-24 h-32 relative flex items-center justify-center">
+                <!-- Sparkles -->
+                <div class="absolute -top-1 left-2 text-emerald-400">✦</div>
+                <div class="absolute top-2 -right-1 text-emerald-400 text-xs">✦</div>
+                <!-- Shield shape -->
+                <div class="w-20 h-24 bg-gradient-to-b from-emerald-500 to-emerald-700 relative" style="clip-path: polygon(50% 100%, 0% 20%, 0% 0%, 100% 0%, 100% 20%);">
+                  <!-- Inner shield -->
+                  <div class="absolute top-2 left-2 right-2 bottom-4 bg-emerald-400" style="clip-path: polygon(50% 100%, 0% 20%, 0% 0%, 100% 0%, 100% 20%);">
+                    <!-- Face area - happy -->
+                    <div class="absolute top-6 left-1/2 -translate-x-1/2">
+                      <!-- Eyes - happy -->
+                      <div class="flex gap-4 justify-center">
+                        <div class="w-3 h-1.5 border-b-2 border-zinc-900 rounded-b-full"></div>
+                        <div class="w-3 h-1.5 border-b-2 border-zinc-900 rounded-b-full"></div>
+                      </div>
+                      <!-- Big smile -->
+                      <div class="mt-3 w-6 h-3 border-b-2 border-zinc-900 rounded-b-full mx-auto"></div>
+                    </div>
+                  </div>
+                  <!-- Checkmark emblem -->
+                  <div class="absolute bottom-8 left-1/2 -translate-x-1/2">
+                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                  </div>
+                </div>
+                <!-- Arms - celebrating -->
+                <div class="absolute bottom-10 -left-2 w-3 h-6 bg-emerald-600 rounded-full -rotate-[60deg]"></div>
+                <div class="absolute bottom-10 -right-2 w-3 h-6 bg-emerald-600 rounded-full rotate-[60deg]"></div>
+              </div>
+              <p class="text-xs text-zinc-500 mt-3">Protected</p>
+            </div>
+          </div>
+
+          <div class="flex-1">
+            <h4 class="text-lg font-semibold text-white mb-2">Ward</h4>
+            <p class="text-zinc-400 text-sm mb-4">A friendly shield guardian that protects your application. Changes color based on threat level - violet (normal), pink (blocking), green (all clear).</p>
+            <div class="space-y-2 text-sm">
+              <p class="text-zinc-300"><strong class="text-violet-400">Personality:</strong> Protective, brave, reliable</p>
+              <p class="text-zinc-300"><strong class="text-violet-400">Use cases:</strong> Security features, status indicators, protection messaging</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p class="mt-4 text-sm text-gray-600">
+        <strong>Pros:</strong> Shield = protection, simple shape, enterprise-friendly.<br>
+        <strong>Cons:</strong> Less character personality, could feel generic.
+      </p>
+    </div>
+
+    <!-- CANDIDATE: No Mascot -->
+    <!-- Status: approved -->
+    <!-- Notes: Chose mascot-free branding for now -->
+    <div class="border-2 border-solid border-emerald-400 rounded-lg p-6 mb-8">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold text-emerald-700">Option G: No Mascot</h3>
+        <span class="px-2 py-1 text-xs bg-emerald-100 text-emerald-800 rounded">approved</span>
+      </div>
+
+      <div class="bg-zinc-900 rounded-lg p-8">
+        <div class="flex items-start gap-8">
+          <!-- Abstract shapes instead -->
+          <div class="flex gap-4">
+            <div class="w-24 h-32 bg-zinc-800 rounded-xl flex flex-col items-center justify-center gap-3 border border-zinc-700">
+              <div class="w-12 h-12 bg-gradient-to-br from-violet-500 to-violet-700 rounded-xl"></div>
+              <div class="w-16 h-1 bg-zinc-600 rounded"></div>
+              <div class="w-12 h-1 bg-zinc-700 rounded"></div>
+            </div>
+            <div class="w-24 h-32 bg-zinc-800 rounded-xl flex flex-col items-center justify-center border border-zinc-700 p-4">
+              <svg class="w-12 h-12 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <p class="text-zinc-500 text-xs mt-2">Icons only</p>
+            </div>
+          </div>
+
+          <div class="flex-1">
+            <h4 class="text-lg font-semibold text-white mb-2">No Character</h4>
+            <p class="text-zinc-400 text-sm mb-4">Focus on clean, professional branding. Use abstract shapes, icons, and illustrations without a character mascot.</p>
+            <div class="space-y-2 text-sm">
+              <p class="text-zinc-300"><strong class="text-violet-400">Approach:</strong> Abstract blobs, geometric patterns, icon system</p>
+              <p class="text-zinc-300"><strong class="text-violet-400">Examples:</strong> Linear, Stripe, Notion style</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p class="mt-4 text-sm text-gray-600">
+        <strong>Pros:</strong> Professional, timeless, enterprise-friendly.<br>
+        <strong>Cons:</strong> Less personality, harder to create emotional connection.
+      </p>
+    </div>
+
+  </section>
+
   <!-- Add your candidates below -->
   <section class="mb-12">
     <h2 class="text-xl font-semibold text-gray-900 mb-4 border-b pb-2">Your Candidates</h2>

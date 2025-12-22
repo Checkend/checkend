@@ -13,3 +13,10 @@
 button {
   cursor: pointer;
 }
+
+/* Improve focus outlines for accessibility */
+a:focus-visible {
+  outline: 2px solid rgb(139 92 246); /* violet-500 */
+  outline-offset: 2px;
+  border-radius: 2px;
+}
