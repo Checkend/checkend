@@ -30,19 +30,19 @@ end
 ## 2. Problems List
 
 ### 2.1 Problems Controller & Views
-- [ ] Create `ProblemsController` (nested under apps)
-- [ ] Index page: paginated list of problems
-- [ ] Filter by status (unresolved/resolved/all)
-- [ ] Sort by last occurrence, error count
-- [ ] Search by error class or message
-- [ ] Bulk actions: resolve/unresolve selected
+- [x] Create `ProblemsController` (nested under apps)
+- [x] Index page: paginated list of problems
+- [x] Filter by status (unresolved/resolved/all)
+- [x] Sort by last occurrence, error count
+- [x] Search by error class or message
+- [x] Bulk actions: resolve/unresolve selected
 
 ### 2.2 Problem List Item Display
-- [ ] Error class and truncated message
-- [ ] Notice count badge
-- [ ] First/last seen timestamps
-- [ ] Status indicator (resolved/unresolved)
-- [ ] Link to problem detail
+- [x] Error class and truncated message
+- [x] Notice count badge
+- [x] First/last seen timestamps
+- [x] Status indicator (resolved/unresolved)
+- [x] Link to problem detail
 
 ---
 
@@ -106,8 +106,8 @@ end
 ### Controller Tests
 - [x] Apps CRUD operations
 - [x] Authorization (users can only see their apps)
-- [ ] Problems filtering and pagination
-- [ ] Resolve/unresolve actions
+- [x] Problems filtering and pagination
+- [x] Resolve/unresolve actions
 
 ### System Tests
 - [ ] Create and manage an app
@@ -119,7 +119,7 @@ end
 
 ## 7. Current Progress
 
-**Status:** Apps Management Complete
+**Status:** Problems List Complete
 
 **Completed:**
 - AppsController with full CRUD + regenerate API key
@@ -127,6 +127,10 @@ end
 - Show page with API key display, copy button, stats, recent problems
 - New/Edit forms with environment select
 - Delete with confirmation dialog
-- 18 controller tests for CRUD and authorization (126 total tests)
+- ProblemsController with index and show pages
+- Problems index with filtering (status), sorting (recent, oldest, notices), and search
+- Bulk resolve/unresolve functionality with Stimulus controller
+- Problem show page with status toggle and recent notices
+- 23 new controller tests for Problems (149 total tests)
 
-**Next Step:** Create ProblemsController with index and show pages
+**Next Step:** Implement Problem Detail page with full notice display (Section 3)

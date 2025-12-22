@@ -25,6 +25,16 @@ Rails.application.routes.draw do
     member do
       post :regenerate_api_key
     end
+    resources :problems, only: [ :index, :show ] do
+      member do
+        post :resolve
+        post :unresolve
+      end
+      collection do
+        post :bulk_resolve
+        post :bulk_unresolve
+      end
+    end
   end
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 

@@ -1,0 +1,203 @@
+<div>
+  <%# Header with breadcrumb %>
+  <div class="mb-6">
+    <nav class="text-sm mb-2">
+      <%= link_to "Apps", apps_path, class: "text-gray-500 dark:text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400" %>
+      <span class="text-gray-400 dark:text-zinc-500 mx-2">/</span>
+      <%= link_to @app.name, app_path(@app), class: "text-gray-500 dark:text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400" %>
+      <span class="text-gray-400 dark:text-zinc-500 mx-2">/</span>
+      <span class="text-gray-900 dark:text-white">Problems</span>
+    </nav>
+    <div class="flex justify-between items-center">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Problems</h1>
+        <p class="text-gray-600 dark:text-zinc-400 mt-1">
+          <%= @pagy.count %> problem<%= @pagy.count == 1 ? '' : 's' %> found
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <%# Filters and Search %>
+  <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-4 mb-6">
+    <%= form_with url: app_problems_path(@app), method: :get, local: true, class: "flex flex-wrap items-center gap-4" do |f| %>
+      <%# Status Filter %>
+      <div class="flex items-center space-x-2">
+        <label class="text-sm font-medium text-gray-700 dark:text-zinc-300">Status:</label>
+        <select name="status" onchange="this.form.submit()" class="rounded-lg border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-gray-900 dark:text-white text-sm focus:ring-violet-500 focus:border-violet-500">
+          <option value="all" <%= 'selected' if params[:status].blank? || params[:status] == 'all' %>>All</option>
+          <option value="unresolved" <%= 'selected' if params[:status] == 'unresolved' %>>Unresolved</option>
+          <option value="resolved" <%= 'selected' if params[:status] == 'resolved' %>>Resolved</option>
+        </select>
+      </div>
+
+      <%# Sort %>
+      <div class="flex items-center space-x-2">
+        <label class="text-sm font-medium text-gray-700 dark:text-zinc-300">Sort:</label>
+        <select name="sort" onchange="this.form.submit()" class="rounded-lg border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-gray-900 dark:text-white text-sm focus:ring-violet-500 focus:border-violet-500">
+          <option value="recent" <%= 'selected' if params[:sort].blank? || params[:sort] == 'recent' %>>Most Recent</option>
+          <option value="oldest" <%= 'selected' if params[:sort] == 'oldest' %>>Oldest First</option>
+          <option value="notices" <%= 'selected' if params[:sort] == 'notices' %>>Most Notices</option>
+        </select>
+      </div>
+
+      <%# Search %>
+      <div class="flex-1 min-w-[200px]">
+        <div class="relative">
+          <input
+            type="text"
+            name="search"
+            value="<%= params[:search] %>"
+            placeholder="Search by error class or message..."
+            class="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-zinc-400 text-sm focus:ring-violet-500 focus:border-violet-500"
+          >
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <svg class="w-4 h-4 text-gray-400 dark:text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <button type="submit" class="px-4 py-2 bg-violet-600 text-white rounded-lg font-medium hover:bg-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-900 transition-colors text-sm">
+        Search
+      </button>
+
+      <% if params[:search].present? || params[:status].present? || params[:sort].present? %>
+        <%= link_to app_problems_path(@app), class: "text-sm text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-300" do %>
+          Clear filters
+        <% end %>
+      <% end %>
+    <% end %>
+  </div>
+
+  <% if @problems.any? %>
+    <%# Bulk actions form %>
+    <%= form_with url: bulk_resolve_app_problems_path(@app), method: :post, local: true, data: { controller: "bulk-select" } do |f| %>
+      <%= hidden_field_tag :status, params[:status] %>
+      <%= hidden_field_tag :search, params[:search] %>
+      <%= hidden_field_tag :sort, params[:sort] %>
+
+      <%# Bulk action bar %>
+      <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-3 mb-4 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <label class="flex items-center">
+            <input type="checkbox" data-action="bulk-select#toggleAll" class="rounded border-gray-300 dark:border-zinc-600 text-violet-600 focus:ring-violet-500 dark:bg-zinc-700">
+            <span class="ml-2 text-sm text-gray-600 dark:text-zinc-400">Select all</span>
+          </label>
+          <span class="text-sm text-gray-500 dark:text-zinc-500" data-bulk-select-target="count">0 selected</span>
+        </div>
+        <div class="flex items-center space-x-2">
+          <button type="submit" formaction="<%= bulk_resolve_app_problems_path(@app) %>" class="px-3 py-1.5 text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 rounded-lg transition-colors">
+            Resolve Selected
+          </button>
+          <button type="submit" formaction="<%= bulk_unresolve_app_problems_path(@app) %>" class="px-3 py-1.5 text-sm font-medium text-pink-600 dark:text-pink-400 hover:bg-pink-50 dark:hover:bg-pink-500/10 rounded-lg transition-colors">
+            Unresolve Selected
+          </button>
+        </div>
+      </div>
+
+      <%# Problems list %>
+      <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 overflow-hidden">
+        <ul class="divide-y divide-gray-200 dark:divide-zinc-700">
+          <% @problems.each do |problem| %>
+            <li class="hover:bg-gray-50 dark:hover:bg-zinc-700/50 transition-colors">
+              <div class="px-6 py-4 flex items-center">
+                <%# Checkbox %>
+                <div class="flex-shrink-0 mr-4">
+                  <input
+                    type="checkbox"
+                    name="problem_ids[]"
+                    value="<%= problem.id %>"
+                    data-action="bulk-select#toggle"
+                    class="rounded border-gray-300 dark:border-zinc-600 text-violet-600 focus:ring-violet-500 dark:bg-zinc-700"
+                  >
+                </div>
+
+                <%# Problem info %>
+                <%= link_to app_problem_path(@app, problem), class: "flex-1 min-w-0" do %>
+                  <div class="flex items-center space-x-2">
+                    <% if problem.resolved? %>
+                      <span class="flex-shrink-0 w-2 h-2 rounded-full bg-emerald-500" title="Resolved"></span>
+                    <% else %>
+                      <span class="flex-shrink-0 w-2 h-2 rounded-full bg-pink-500" title="Unresolved"></span>
+                    <% end %>
+                    <span class="font-medium text-gray-900 dark:text-white truncate"><%= problem.error_class %></span>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-zinc-700 text-gray-600 dark:text-zinc-400">
+                      <%= problem.notices_count %> notice<%= problem.notices_count == 1 ? '' : 's' %>
+                    </span>
+                  </div>
+                  <p class="text-sm text-gray-600 dark:text-zinc-400 truncate mt-1"><%= truncate(problem.error_message, length: 100) %></p>
+                  <div class="flex items-center space-x-4 mt-2 text-xs text-gray-500 dark:text-zinc-500">
+                    <span>First: <%= time_ago_in_words(problem.first_noticed_at) %> ago</span>
+                    <span>Last: <%= time_ago_in_words(problem.last_noticed_at) %> ago</span>
+                    <% if problem.resolved? && problem.resolved_at %>
+                      <span class="text-emerald-600 dark:text-emerald-400">Resolved <%= time_ago_in_words(problem.resolved_at) %> ago</span>
+                    <% end %>
+                  </div>
+                <% end %>
+
+                <%# Quick actions %>
+                <div class="flex-shrink-0 ml-4 flex items-center space-x-2">
+                  <% if problem.unresolved? %>
+                    <%= button_to resolve_app_problem_path(@app, problem), method: :post, class: "p-2 text-gray-400 dark:text-zinc-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 rounded-lg transition-colors", title: "Mark as resolved" do %>
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                      </svg>
+                    <% end %>
+                  <% else %>
+                    <%= button_to unresolve_app_problem_path(@app, problem), method: :post, class: "p-2 text-gray-400 dark:text-zinc-500 hover:text-pink-600 dark:hover:text-pink-400 hover:bg-pink-50 dark:hover:bg-pink-500/10 rounded-lg transition-colors", title: "Mark as unresolved" do %>
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                      </svg>
+                    <% end %>
+                  <% end %>
+                  <%= link_to app_problem_path(@app, problem), class: "p-2 text-gray-400 dark:text-zinc-500 hover:text-violet-600 dark:hover:text-violet-400 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-lg transition-colors" do %>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                  <% end %>
+                </div>
+              </div>
+            </li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
+
+    <%# Pagination %>
+    <% if @pagy.pages > 1 %>
+      <div class="mt-6 space-y-3">
+        <%== pagy_tailwind_nav(@pagy) %>
+        <div class="text-center">
+          <%== pagy_tailwind_info(@pagy) %>
+        </div>
+      </div>
+    <% end %>
+
+  <% else %>
+    <%# Empty state %>
+    <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-12 text-center">
+      <% if params[:search].present? || params[:status].present? %>
+        <div class="w-16 h-16 bg-gray-100 dark:bg-zinc-700 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg class="w-8 h-8 text-gray-400 dark:text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+        </div>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">No problems found</h3>
+        <p class="text-gray-600 dark:text-zinc-400 mb-6">Try adjusting your search or filter criteria.</p>
+        <%= link_to app_problems_path(@app), class: "inline-flex items-center px-4 py-2 bg-violet-600 text-white rounded-lg font-medium hover:bg-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-800 transition-colors" do %>
+          Clear filters
+        <% end %>
+      <% else %>
+        <div class="w-16 h-16 bg-emerald-100 dark:bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg class="w-8 h-8 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+          </svg>
+        </div>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">No problems yet</h3>
+        <p class="text-gray-600 dark:text-zinc-400">Errors from this app will appear here when they occur.</p>
+      <% end %>
+    </div>
+  <% end %>
+</div>

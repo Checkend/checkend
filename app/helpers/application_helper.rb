@@ -1,4 +1,6 @@
 module ApplicationHelper
+  include Pagy::Frontend
+
   def nav_link_classes(active:)
     base = 'group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold transition-colors'
     if active

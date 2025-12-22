@@ -101,31 +101,39 @@
 
   <%# Recent Problems %>
   <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 overflow-hidden">
-    <div class="px-6 py-4 border-b border-gray-200 dark:border-zinc-700">
+    <div class="px-6 py-4 border-b border-gray-200 dark:border-zinc-700 flex items-center justify-between">
       <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Recent Problems</h2>
+      <%= link_to app_problems_path(@app), class: "text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 font-medium transition-colors" do %>
+        View all
+      <% end %>
     </div>
     <% recent_problems = @app.problems.order(last_noticed_at: :desc).limit(5) %>
     <% if recent_problems.any? %>
       <ul class="divide-y divide-gray-200 dark:divide-zinc-700">
         <% recent_problems.each do |problem| %>
-          <li class="px-6 py-4 hover:bg-gray-50 dark:hover:bg-zinc-700/50 transition-colors">
-            <div class="flex items-center justify-between">
-              <div class="min-w-0 flex-1">
-                <div class="flex items-center space-x-2">
-                  <% if problem.resolved? %>
-                    <span class="flex-shrink-0 w-2 h-2 rounded-full bg-emerald-500"></span>
-                  <% else %>
-                    <span class="flex-shrink-0 w-2 h-2 rounded-full bg-pink-500"></span>
-                  <% end %>
-                  <span class="font-medium text-gray-900 dark:text-white truncate"><%= problem.error_class %></span>
+          <li>
+            <%= link_to app_problem_path(@app, problem), class: "block px-6 py-4 hover:bg-gray-50 dark:hover:bg-zinc-700/50 transition-colors" do %>
+              <div class="flex items-center justify-between">
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center space-x-2">
+                    <% if problem.resolved? %>
+                      <span class="flex-shrink-0 w-2 h-2 rounded-full bg-emerald-500"></span>
+                    <% else %>
+                      <span class="flex-shrink-0 w-2 h-2 rounded-full bg-pink-500"></span>
+                    <% end %>
+                    <span class="font-medium text-gray-900 dark:text-white truncate"><%= problem.error_class %></span>
+                  </div>
+                  <p class="text-sm text-gray-600 dark:text-zinc-400 truncate mt-1"><%= problem.error_message %></p>
                 </div>
-                <p class="text-sm text-gray-600 dark:text-zinc-400 truncate mt-1"><%= problem.error_message %></p>
+                <div class="flex items-center space-x-4 ml-4">
+                  <span class="text-sm text-gray-500 dark:text-zinc-500"><%= problem.notices_count %> notices</span>
+                  <span class="text-sm text-gray-500 dark:text-zinc-500"><%= time_ago_in_words(problem.last_noticed_at) %> ago</span>
+                  <svg class="w-5 h-5 text-gray-400 dark:text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                  </svg>
+                </div>
               </div>
-              <div class="flex items-center space-x-4 ml-4">
-                <span class="text-sm text-gray-500 dark:text-zinc-500"><%= problem.notices_count %> notices</span>
-                <span class="text-sm text-gray-500 dark:text-zinc-500"><%= time_ago_in_words(problem.last_noticed_at) %> ago</span>
-              </div>
-            </div>
+            <% end %>
           </li>
         <% end %>
       </ul>

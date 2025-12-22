@@ -1,0 +1,118 @@
+<div>
+  <%# Header with breadcrumb %>
+  <div class="mb-6">
+    <nav class="text-sm mb-2">
+      <%= link_to "Apps", apps_path, class: "text-gray-500 dark:text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400" %>
+      <span class="text-gray-400 dark:text-zinc-500 mx-2">/</span>
+      <%= link_to @app.name, app_path(@app), class: "text-gray-500 dark:text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400" %>
+      <span class="text-gray-400 dark:text-zinc-500 mx-2">/</span>
+      <%= link_to "Problems", app_problems_path(@app), class: "text-gray-500 dark:text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400" %>
+      <span class="text-gray-400 dark:text-zinc-500 mx-2">/</span>
+      <span class="text-gray-900 dark:text-white truncate"><%= @problem.error_class %></span>
+    </nav>
+    <div class="flex justify-between items-start">
+      <div class="flex items-center space-x-4">
+        <div class="w-14 h-14 <%= @problem.resolved? ? 'bg-emerald-100 dark:bg-emerald-500/20' : 'bg-pink-100 dark:bg-pink-500/20' %> rounded-xl flex items-center justify-center">
+          <% if @problem.resolved? %>
+            <svg class="w-7 h-7 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+          <% else %>
+            <svg class="w-7 h-7 text-pink-600 dark:text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+            </svg>
+          <% end %>
+        </div>
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white"><%= @problem.error_class %></h1>
+          <p class="text-gray-600 dark:text-zinc-400 mt-1"><%= @problem.error_message %></p>
+        </div>
+      </div>
+      <%# Status toggle button %>
+      <div>
+        <% if @problem.unresolved? %>
+          <%= button_to resolve_app_problem_path(@app, @problem), method: :post, class: "inline-flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-900 transition-colors" do %>
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+            Mark as Resolved
+          <% end %>
+        <% else %>
+          <%= button_to unresolve_app_problem_path(@app, @problem), method: :post, class: "inline-flex items-center px-4 py-2 bg-pink-600 text-white rounded-lg font-medium hover:bg-pink-500 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-900 transition-colors" do %>
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+            </svg>
+            Mark as Unresolved
+          <% end %>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <%# Stats Overview %>
+  <div class="grid grid-cols-4 gap-4 mb-8">
+    <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-4">
+      <div class="text-sm text-gray-500 dark:text-zinc-400 mb-1">Status</div>
+      <div class="flex items-center space-x-2">
+        <% if @problem.resolved? %>
+          <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+          <span class="text-lg font-semibold text-emerald-600 dark:text-emerald-400">Resolved</span>
+        <% else %>
+          <span class="w-2 h-2 rounded-full bg-pink-500"></span>
+          <span class="text-lg font-semibold text-pink-600 dark:text-pink-400">Unresolved</span>
+        <% end %>
+      </div>
+    </div>
+    <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-4">
+      <div class="text-sm text-gray-500 dark:text-zinc-400 mb-1">Total Notices</div>
+      <div class="text-2xl font-bold text-gray-900 dark:text-white"><%= @problem.notices_count %></div>
+    </div>
+    <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-4">
+      <div class="text-sm text-gray-500 dark:text-zinc-400 mb-1">First Seen</div>
+      <div class="text-lg font-semibold text-gray-900 dark:text-white"><%= time_ago_in_words(@problem.first_noticed_at) %> ago</div>
+    </div>
+    <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-4">
+      <div class="text-sm text-gray-500 dark:text-zinc-400 mb-1">Last Seen</div>
+      <div class="text-lg font-semibold text-gray-900 dark:text-white"><%= time_ago_in_words(@problem.last_noticed_at) %> ago</div>
+    </div>
+  </div>
+
+  <%# Recent Notices - placeholder for now %>
+  <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-200 dark:border-zinc-700">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Recent Notices</h2>
+    </div>
+    <% recent_notices = @problem.notices.order(occurred_at: :desc).limit(10) %>
+    <% if recent_notices.any? %>
+      <ul class="divide-y divide-gray-200 dark:divide-zinc-700">
+        <% recent_notices.each do |notice| %>
+          <li class="px-6 py-4 hover:bg-gray-50 dark:hover:bg-zinc-700/50 transition-colors">
+            <div class="flex items-center justify-between">
+              <div class="min-w-0 flex-1">
+                <div class="text-sm font-medium text-gray-900 dark:text-white">
+                  Notice #<%= notice.id %>
+                </div>
+                <div class="text-sm text-gray-600 dark:text-zinc-400 mt-1">
+                  Occurred <%= time_ago_in_words(notice.occurred_at) %> ago
+                </div>
+              </div>
+              <svg class="w-5 h-5 text-gray-400 dark:text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+              </svg>
+            </div>
+          </li>
+        <% end %>
+      </ul>
+    <% else %>
+      <div class="px-6 py-12 text-center">
+        <div class="w-12 h-12 bg-gray-100 dark:bg-zinc-700 rounded-full flex items-center justify-center mx-auto mb-3">
+          <svg class="w-6 h-6 text-gray-400 dark:text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+          </svg>
+        </div>
+        <h3 class="text-base font-medium text-gray-900 dark:text-white mb-1">No notices recorded</h3>
+        <p class="text-sm text-gray-600 dark:text-zinc-400">Individual error occurrences will appear here.</p>
+      </div>
+    <% end %>
+  </div>
+</div>
