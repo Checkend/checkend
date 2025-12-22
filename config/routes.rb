@@ -1,4 +1,11 @@
 Rails.application.routes.draw do
+  # API routes
+  namespace :api do
+    namespace :v1 do
+      resources :errors, only: [:create]
+    end
+  end
+
   # Development-only design routes
   if Rails.env.development?
     get "design-internal", to: "design#internal"

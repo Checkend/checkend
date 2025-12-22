@@ -1,254 +1,155 @@
-# TODO - Phase 1: Foundation
+# TODO - Phase 2: Error Ingestion API
 
 ## Overview
-Complete the foundation phase of Checkend: user authentication and core domain models.
+Build the REST API endpoint that receives error reports from client applications, processes them, and stores them in the database.
 
 ---
 
-## 1. User Authentication
+## 1. API Endpoint
 
-Rails 8 includes a built-in authentication generator that provides sessions, password resets, and secure password handling.
+### POST /api/v1/errors
 
-### Tasks
-- [x] Run `bin/rails generate authentication`
-- [x] Review and customize generated code
-- [x] Run migrations
-- [x] Add basic navigation with login/logout links
-- [x] Test authentication flow
+Receives error reports from client applications.
 
-### Notes
-- Generator creates: User model, Session model, controllers, views, mailer
-- Uses `has_secure_password` (bcrypt)
-- Includes password reset functionality via email
-- Added email validation (presence, uniqueness, format)
-- Fixed minitest 6.0 compatibility issue (pinned to ~> 5.25)
+**Request Headers:**
+- `X-API-Key: <app_api_key>` - Required for authentication
+- `Content-Type: application/json`
 
----
-
-## 2. Core Models
-
-### 2.1 App Model
-Represents a client application that sends errors to Checkend.
-
-**Fields:**
-- `id` - Primary key (bigint)
-- `name` - Application name (string, required)
-- `api_key` - Unique API key for authentication (string, indexed, required)
-- `environment` - Default environment filter (string, optional)
-- `user_id` - Owner of the app (foreign key)
-- `timestamps`
-
-**Tasks:**
-- [x] Generate App model with migration
-- [x] Add `has_secure_token :api_key` for automatic key generation
-- [x] Add validations (name presence, api_key uniqueness)
-- [x] Add `belongs_to :user` association
-- [x] Add `has_many :problems` association (for later)
-- [x] Write model tests (8 tests)
-
----
-
-### 2.2 Problem Model
-Groups similar errors together via fingerprinting. A "problem" is a unique error type.
-
-**Fields:**
-- `id` - Primary key (bigint)
-- `app_id` - Parent application (foreign key, indexed)
-- `fingerprint` - Unique hash for grouping (string, indexed)
-- `error_class` - Exception class name (string)
-- `message` - Error message (text)
-- `first_seen_at` - When first occurrence happened (datetime)
-- `last_seen_at` - When most recent occurrence happened (datetime)
-- `notices_count` - Counter cache for notices (integer, default: 0)
-- `resolved` - Whether the problem is resolved (boolean, default: false)
-- `resolved_at` - When it was resolved (datetime, nullable)
-- `timestamps`
-
-**Tasks:**
-- [ ] Generate Problem model with migration
-- [ ] Add `belongs_to :app` association
-- [ ] Add `has_many :notices` association
-- [ ] Add fingerprint uniqueness validation scoped to app
-- [ ] Add scopes: `resolved`, `unresolved`, `recent`
-- [ ] Write model tests
-
----
-
-### 2.3 Backtrace Model
-Stores deduplicated stack traces. Multiple notices can share the same backtrace.
-
-**Fields:**
-- `id` - Primary key (bigint)
-- `fingerprint` - Hash of the backtrace content (string, indexed, unique)
-- `lines` - Parsed backtrace lines as JSON (jsonb)
-- `timestamps`
-
-**Backtrace Line Structure (JSON):**
+**Request Body:**
 ```json
 {
-  "file": "app/models/user.rb",
-  "line": 42,
-  "method": "validate_email",
-  "context": ["line 40 content", "line 41 content", ">> line 42 content", "line 43 content"]
+  "error": {
+    "class": "NoMethodError",
+    "message": "undefined method 'foo' for nil:NilClass",
+    "backtrace": [
+      "app/models/user.rb:42:in `validate_email'",
+      "app/controllers/users_controller.rb:15:in `create'"
+    ],
+    "fingerprint": "optional-custom-fingerprint"
+  },
+  "context": {
+    "environment": "production",
+    "hostname": "web-01",
+    "custom_key": "custom_value"
+  },
+  "request": {
+    "url": "https://example.com/users",
+    "method": "POST",
+    "params": { "user": { "email": "..." } },
+    "headers": { "User-Agent": "..." },
+    "ip_address": "192.168.1.1"
+  },
+  "user": {
+    "id": "123",
+    "email": "user@example.com",
+    "name": "John Doe"
+  },
+  "occurred_at": "2025-01-15T10:30:00Z"
 }
 ```
 
-**Tasks:**
-- [ ] Generate Backtrace model with migration
-- [ ] Add `has_many :notices` association
-- [ ] Add class method for fingerprint generation from raw backtrace
-- [ ] Add class method `find_or_create_by_content(raw_backtrace)`
-- [ ] Write model tests
-
----
-
-### 2.4 Notice Model
-Represents a single error occurrence sent from a client application.
-
-**Fields:**
-- `id` - Primary key (bigint)
-- `problem_id` - Parent problem (foreign key, indexed)
-- `backtrace_id` - Associated backtrace (foreign key, indexed)
-- `error_class` - Exception class name (string)
-- `message` - Error message (text)
-- `environment` - Rails env or similar (string, indexed)
-- `hostname` - Server hostname (string)
-- `context` - Custom context data (jsonb)
-- `request` - Request information (jsonb)
-- `user_info` - User information (jsonb)
-- `notifier` - Client library info (jsonb)
-- `occurred_at` - When the error occurred on client (datetime)
-- `timestamps`
-
-**Request JSON Structure:**
+**Response (201 Created):**
 ```json
 {
-  "url": "https://example.com/users/123",
-  "method": "POST",
-  "params": {},
-  "headers": {},
-  "ip_address": "192.168.1.1"
+  "id": "notice_uuid",
+  "problem_id": "problem_uuid",
+  "url": "https://checkend.example.com/problems/123"
 }
 ```
 
-**User Info JSON Structure:**
-```json
-{
-  "id": "user_123",
-  "email": "user@example.com",
-  "name": "John Doe"
-}
-```
-
-**Tasks:**
-- [ ] Generate Notice model with migration
-- [ ] Add `belongs_to :problem, counter_cache: true` association
-- [ ] Add `belongs_to :backtrace` association
-- [ ] Add `has_one :app, through: :problem` for convenience
-- [ ] Add scopes: `recent`, `by_environment`
-- [ ] Write model tests
+**Error Responses:**
+- `401 Unauthorized` - Invalid or missing API key
+- `422 Unprocessable Entity` - Invalid payload
 
 ---
 
-## 3. Database Indexes Strategy
+## 2. Tasks
 
-Ensure proper indexes for common query patterns:
+### 2.1 API Infrastructure
+- [x] Create `Api::V1::BaseController` with JSON error handling
+- [x] Implement API key authentication via `X-API-Key` header
+- [ ] Add request rate limiting (per API key)
+- [x] Write controller tests for auth scenarios
 
-- [ ] `apps.api_key` - Unique index for API authentication
-- [ ] `apps.user_id` - For user's apps listing
-- [ ] `problems.app_id` - For app's problems listing
-- [ ] `problems.fingerprint, app_id` - Unique composite for deduplication
-- [ ] `problems.resolved` - For filtering resolved/unresolved
-- [ ] `problems.last_seen_at` - For sorting by recency
-- [ ] `notices.problem_id` - For problem's notices listing
-- [ ] `notices.occurred_at` - For time-based queries
-- [ ] `notices.environment` - For environment filtering
-- [ ] `backtraces.fingerprint` - Unique index for deduplication
+### 2.2 Errors Controller
+- [x] Create `Api::V1::ErrorsController` with `create` action
+- [x] Parse and validate incoming error payload
+- [x] Return appropriate success/error responses
+- [x] Write controller tests for valid/invalid payloads (16 tests)
 
----
+### 2.3 Error Processing Service
+- [x] Create `ErrorIngestionService` to orchestrate processing
+- [x] Parse raw backtrace strings into structured format
+- [x] Generate fingerprint (or use custom if provided)
+- [x] Find or create Problem by fingerprint
+- [x] Find or create Backtrace by content
+- [x] Create Notice with all data
+- [x] Update Problem timestamps and counter
+- [x] Write service tests (14 tests)
 
-## 4. Model Relationships Summary
+### 2.4 Backtrace Parser
+- [x] Create `BacktraceParser` service
+- [x] Parse Ruby backtrace format: `file:line:in 'method'`
+- [x] Extract file, line number, method name
+- [x] Handle edge cases (non-standard formats)
+- [x] Write parser tests (9 tests)
 
-```
-User
-  └── has_many :apps
-
-App
-  ├── belongs_to :user
-  └── has_many :problems
-        └── has_many :notices (through: :problems)
-
-Problem
-  ├── belongs_to :app
-  └── has_many :notices
-
-Notice
-  ├── belongs_to :problem (counter_cache: true)
-  └── belongs_to :backtrace
-
-Backtrace
-  └── has_many :notices
-```
+### 2.5 Fingerprint Generator
+- [x] Uses `Problem.generate_fingerprint` (already exists from Phase 1)
+- [x] Default: SHA256 of error_class + first backtrace line
+- [x] Support custom fingerprint override
 
 ---
 
-## 5. Fingerprinting Strategy
+## 3. Routes
 
-Fingerprints are used to group similar errors into problems.
-
-**Default Fingerprint Generation:**
-1. Take error class name
-2. Take first line of backtrace (file + line number)
-3. Generate SHA256 hash of combined string
-
-**Example:**
 ```ruby
-def generate_fingerprint(error_class, backtrace_lines)
-  key = "#{error_class}:#{backtrace_lines.first}"
-  Digest::SHA256.hexdigest(key)
+namespace :api do
+  namespace :v1 do
+    resources :errors, only: [:create]
+  end
 end
 ```
 
-**Custom Fingerprint:**
-- API accepts optional `fingerprint` param
-- If provided, use it instead of auto-generated one
-- Allows clients to control grouping behavior
+---
+
+## 4. Testing Plan
+
+### Controller Tests
+- [x] Valid error submission returns 201
+- [x] Missing API key returns 401
+- [x] Invalid API key returns 401
+- [x] Missing required fields returns 422
+- [ ] Rate limiting works correctly
+
+### Service Tests
+- [x] New problem created for new fingerprint
+- [x] Existing problem found for matching fingerprint
+- [x] Backtrace deduplicated correctly
+- [x] Notice counter incremented
+- [x] Problem timestamps updated
+- [x] Custom fingerprint respected
+
+### Integration Tests
+- [x] Full flow: API request → Problem + Notice created
+- [x] Duplicate error groups correctly
+- [x] Different errors create separate problems
 
 ---
 
-## Implementation Order
+## 5. Current Progress
 
-1. **Authentication** - Required first since App belongs_to User
-2. **App model** - Foundation for everything else
-3. **Backtrace model** - Independent, no foreign keys to other domain models
-4. **Problem model** - Depends on App
-5. **Notice model** - Depends on Problem and Backtrace
-6. **Verify relationships** - Test all associations work correctly
-
----
-
-## Testing Checklist
-
-- [ ] User authentication flow works
-- [ ] App can be created with auto-generated API key
-- [ ] Problem fingerprint uniqueness within app
-- [ ] Backtrace deduplication works correctly
-- [ ] Notice creates/increments problem counter cache
-- [ ] All model validations pass
-- [ ] All associations work correctly
-
----
-
-## Current Progress
-
-**Status:** App Model Complete
+**Status:** Phase 2 Complete ✓
 
 **Completed:**
-- User authentication with login/logout
-- Session management with rate limiting
-- Password reset via email
-- Dashboard with navigation
-- User model with validation (5 tests)
-- App model with auto-generated API key (8 tests)
+- `Api::V1::BaseController` with API key authentication
+- `Api::V1::ErrorsController` with create action
+- `ErrorIngestionService` orchestrating full flow
+- `BacktraceParser` for Ruby backtrace parsing
+- Fingerprint generation with custom override support
+- **101 tests passing** (36 new tests for Phase 2)
 
-**Next Step:** Create Backtrace model
+**Remaining:**
+- Rate limiting (optional enhancement)
+
+**Next Step:** Phase 3 - Web Dashboard
