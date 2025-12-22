@@ -1,0 +1,251 @@
+---
+import Layout from '../layouts/Layout.astro'
+import ThemeToggle from '../components/ThemeToggle.astro'
+import Logo from '../components/Logo.astro'
+---
+
+<Layout title="Sponsor Checkend - Support Open Source Error Monitoring">
+  <!-- Header -->
+  <header class="border-b border-zinc-800 light:border-gray-200">
+    <nav class="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 lg:px-8">
+      <a href="/">
+        <Logo size="sm" />
+      </a>
+      <div class="flex items-center gap-6">
+        <a href="/docs" class="text-sm text-zinc-400 hover:text-white light:text-gray-600 light:hover:text-gray-900">Docs</a>
+        <a
+          href="https://github.com/checkend/checkend"
+          class="text-sm text-zinc-400 hover:text-white light:text-gray-600 light:hover:text-gray-900"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          GitHub
+        </a>
+        <a
+          href="/sponsor"
+          class="text-sm text-pink-400 hover:text-pink-300 light:text-pink-600 light:hover:text-pink-700"
+        >
+          Sponsor
+        </a>
+        <ThemeToggle />
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <!-- Hero -->
+    <section class="mx-auto max-w-7xl px-6 py-24 lg:px-8">
+      <div class="mx-auto max-w-2xl text-center">
+        <div class="mb-6 inline-flex items-center justify-center w-16 h-16 rounded-full bg-pink-600/20">
+          <svg class="w-8 h-8 text-pink-400" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+          </svg>
+        </div>
+        <h1 class="text-4xl font-bold tracking-tight text-white sm:text-5xl light:text-gray-900">
+          Sponsor Checkend
+        </h1>
+        <p class="mt-6 text-lg leading-8 text-zinc-400 light:text-gray-600">
+          Help us build and maintain a free, open source error monitoring solution for the community.
+          Your sponsorship directly supports development, documentation, and infrastructure.
+        </p>
+      </div>
+    </section>
+
+    <!-- Why Sponsor -->
+    <section class="border-t border-zinc-800 bg-zinc-800/50 py-16 light:border-gray-200 light:bg-gray-50">
+      <div class="mx-auto max-w-7xl px-6 lg:px-8">
+        <div class="mx-auto max-w-2xl text-center mb-12">
+          <h2 class="text-2xl font-bold tracking-tight text-white light:text-gray-900">
+            Why sponsor?
+          </h2>
+        </div>
+        <div class="mx-auto max-w-4xl grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div class="text-center">
+            <div class="mx-auto mb-3 w-10 h-10 rounded-lg bg-violet-600/20 flex items-center justify-center">
+              <svg class="w-5 h-5 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+              </svg>
+            </div>
+            <h3 class="text-lg font-semibold text-white light:text-gray-900">Active Development</h3>
+            <p class="mt-2 text-sm text-zinc-400 light:text-gray-600">
+              Fund new features, improvements, and bug fixes
+            </p>
+          </div>
+          <div class="text-center">
+            <div class="mx-auto mb-3 w-10 h-10 rounded-lg bg-violet-600/20 flex items-center justify-center">
+              <svg class="w-5 h-5 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+              </svg>
+            </div>
+            <h3 class="text-lg font-semibold text-white light:text-gray-900">Better Docs</h3>
+            <p class="mt-2 text-sm text-zinc-400 light:text-gray-600">
+              Support comprehensive documentation and guides
+            </p>
+          </div>
+          <div class="text-center">
+            <div class="mx-auto mb-3 w-10 h-10 rounded-lg bg-violet-600/20 flex items-center justify-center">
+              <svg class="w-5 h-5 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+              </svg>
+            </div>
+            <h3 class="text-lg font-semibold text-white light:text-gray-900">Community</h3>
+            <p class="mt-2 text-sm text-zinc-400 light:text-gray-600">
+              Keep Checkend free for everyone
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Sponsor Tiers -->
+    <section class="py-24">
+      <div class="mx-auto max-w-7xl px-6 lg:px-8">
+        <div class="mx-auto max-w-2xl text-center mb-12">
+          <h2 class="text-3xl font-bold tracking-tight text-white light:text-gray-900">
+            Sponsorship Tiers
+          </h2>
+          <p class="mt-4 text-zinc-400 light:text-gray-600">
+            Choose a tier that works for you. Every contribution helps.
+          </p>
+        </div>
+
+        <div class="mx-auto max-w-5xl grid grid-cols-1 gap-8 lg:grid-cols-3 px-4">
+          <!-- Backer -->
+          <div class="rounded-lg bg-zinc-800 px-8 py-10 border border-zinc-700 light:bg-white light:border-gray-200 light:shadow-sm flex flex-col">
+            <h3 class="text-lg font-semibold text-white light:text-gray-900">Backer</h3>
+            <p class="mt-2 text-3xl font-bold text-white light:text-gray-900">
+              $10<span class="text-base font-normal text-zinc-400">/month</span>
+            </p>
+            <p class="mt-1 text-sm text-zinc-500 light:text-gray-500">For individuals</p>
+            <ul class="mt-6 space-y-3 flex-1">
+              <li class="flex items-start gap-3">
+                <span class="text-emerald-400 flex-shrink-0">&#10003;</span>
+                <span class="text-sm text-zinc-300 light:text-gray-600">Sponsor badge on GitHub</span>
+              </li>
+              <li class="flex items-start gap-3">
+                <span class="text-emerald-400 flex-shrink-0">&#10003;</span>
+                <span class="text-sm text-zinc-300 light:text-gray-600">Name in SPONSORS.md</span>
+              </li>
+              <li class="flex items-start gap-3">
+                <span class="text-emerald-400 flex-shrink-0">&#10003;</span>
+                <span class="text-sm text-zinc-300 light:text-gray-600">Priority issue responses</span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Sponsor -->
+          <div class="rounded-lg bg-zinc-800 px-8 py-10 border-2 border-violet-600 light:bg-white light:shadow-lg flex flex-col">
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-lg font-semibold text-white light:text-gray-900">Sponsor</h3>
+              <span class="bg-violet-600 text-white text-xs font-semibold px-3 py-1 rounded-full">Popular</span>
+            </div>
+            <p class="mt-2 text-3xl font-bold text-white light:text-gray-900">
+              $100<span class="text-base font-normal text-zinc-400">/month</span>
+            </p>
+            <p class="mt-1 text-sm text-zinc-500 light:text-gray-500">For companies</p>
+            <ul class="mt-6 space-y-3 flex-1">
+              <li class="flex items-start gap-3">
+                <span class="text-emerald-400 flex-shrink-0">&#10003;</span>
+                <span class="text-sm text-zinc-300 light:text-gray-600">Everything in Backer</span>
+              </li>
+              <li class="flex items-start gap-3">
+                <span class="text-emerald-400 flex-shrink-0">&#10003;</span>
+                <span class="text-sm text-zinc-300 light:text-gray-600">Logo on project README</span>
+              </li>
+              <li class="flex items-start gap-3">
+                <span class="text-emerald-400 flex-shrink-0">&#10003;</span>
+                <span class="text-sm text-zinc-300 light:text-gray-600">Logo on website sponsors section</span>
+              </li>
+              <li class="flex items-start gap-3">
+                <span class="text-emerald-400 flex-shrink-0">&#10003;</span>
+                <span class="text-sm text-zinc-300 light:text-gray-600">Early access to features</span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Gold Sponsor -->
+          <div class="rounded-lg bg-zinc-800 px-8 py-10 border border-zinc-700 light:bg-white light:border-gray-200 light:shadow-sm flex flex-col">
+            <h3 class="text-lg font-semibold text-white light:text-gray-900">Gold Sponsor</h3>
+            <p class="mt-2 text-3xl font-bold text-white light:text-gray-900">
+              $500<span class="text-base font-normal text-zinc-400">/month</span>
+            </p>
+            <p class="mt-1 text-sm text-zinc-500 light:text-gray-500">For companies</p>
+            <ul class="mt-6 space-y-3 flex-1">
+              <li class="flex items-start gap-3">
+                <span class="text-emerald-400 flex-shrink-0">&#10003;</span>
+                <span class="text-sm text-zinc-300 light:text-gray-600">Everything in Sponsor</span>
+              </li>
+              <li class="flex items-start gap-3">
+                <span class="text-emerald-400 flex-shrink-0">&#10003;</span>
+                <span class="text-sm text-zinc-300 light:text-gray-600">Large logo on homepage</span>
+              </li>
+              <li class="flex items-start gap-3">
+                <span class="text-emerald-400 flex-shrink-0">&#10003;</span>
+                <span class="text-sm text-zinc-300 light:text-gray-600">Logo in documentation footer</span>
+              </li>
+              <li class="flex items-start gap-3">
+                <span class="text-emerald-400 flex-shrink-0">&#10003;</span>
+                <span class="text-sm text-zinc-300 light:text-gray-600">Dedicated support channel</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- CTA -->
+        <div class="mt-12 text-center">
+          <a
+            href="https://github.com/sponsors/checkend"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex items-center gap-2 rounded-md bg-pink-600 px-6 py-3 text-base font-semibold text-white shadow-sm hover:bg-pink-700 transition-colors"
+          >
+            Sponsor on GitHub
+          </a>
+          <p class="mt-4 text-sm text-zinc-500 light:text-gray-500">
+            One-time donations are also welcome
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- One-time -->
+    <section class="border-t border-zinc-800 bg-zinc-800/50 py-16 light:border-gray-200 light:bg-gray-50">
+      <div class="mx-auto max-w-7xl px-6 lg:px-8">
+        <div class="mx-auto max-w-2xl text-center">
+          <h2 class="text-2xl font-bold tracking-tight text-white light:text-gray-900">
+            Prefer a one-time contribution?
+          </h2>
+          <p class="mt-4 text-zinc-400 light:text-gray-600">
+            GitHub Sponsors also accepts one-time donations of any amount.
+            Every contribution, big or small, helps keep Checkend free and open source.
+          </p>
+          <a
+            href="https://github.com/sponsors/checkend?frequency=one-time"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-violet-400 hover:text-violet-300 light:text-violet-600 light:hover:text-violet-700"
+          >
+            Make a one-time donation <span aria-hidden="true">&rarr;</span>
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-zinc-800 py-12 light:border-gray-200">
+    <div class="mx-auto max-w-7xl px-6 lg:px-8">
+      <div class="flex flex-col items-center gap-6">
+        <Logo size="sm" showText={false} />
+        <div class="flex items-center gap-6 text-sm">
+          <a href="/docs" class="text-zinc-400 hover:text-white light:text-gray-500 light:hover:text-gray-900">Docs</a>
+          <a href="https://github.com/checkend/checkend" class="text-zinc-400 hover:text-white light:text-gray-500 light:hover:text-gray-900" target="_blank" rel="noopener noreferrer">GitHub</a>
+          <a href="/sponsor" class="text-pink-400 hover:text-pink-300 light:text-pink-600 light:hover:text-pink-700">Sponsor</a>
+        </div>
+        <p class="text-center text-sm text-zinc-500 light:text-gray-500">
+          &copy; {new Date().getFullYear()} Checkend. Open source under AGPL-3.0 license.
+        </p>
+      </div>
+    </div>
+  </footer>
+</Layout>

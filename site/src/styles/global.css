@@ -1,5 +1,7 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
+@source "../**/*.astro";
+@source "../**/*.ts";
 
 /* Custom variant for light mode (inverted dark mode approach) */
 @custom-variant light (&:where(.light, .light *));

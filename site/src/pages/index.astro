@@ -14,12 +14,18 @@ import Logo from '../components/Logo.astro'
       <div class="flex items-center gap-6">
         <a href="/docs" class="text-sm text-zinc-400 hover:text-white light:text-gray-600 light:hover:text-gray-900">Docs</a>
         <a
-          href="https://github.com/furvur/checkend"
+          href="https://github.com/checkend/checkend"
           class="text-sm text-zinc-400 hover:text-white light:text-gray-600 light:hover:text-gray-900"
           target="_blank"
           rel="noopener noreferrer"
         >
           GitHub
+        </a>
+        <a
+          href="/sponsor"
+          class="text-sm text-pink-400 hover:text-pink-300 light:text-pink-600 light:hover:text-pink-700"
+        >
+          Sponsor
         </a>
         <ThemeToggle />
       </div>
@@ -39,13 +45,22 @@ import Logo from '../components/Logo.astro'
         </p>
         <div class="mt-10 flex items-center justify-center gap-x-6">
           <a
-            href="/docs/getting-started"
+            href="/docs/quickstart"
             class="rounded-md bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-violet-700 transition-colors"
           >
             Get Started
           </a>
           <a
-            href="https://github.com/furvur/checkend"
+            href="/sponsor"
+            class="rounded-md bg-pink-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-pink-700 transition-colors flex items-center gap-2"
+          >
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+            </svg>
+            Sponsor
+          </a>
+          <a
+            href="https://github.com/checkend/checkend"
             class="text-sm font-semibold leading-6 text-violet-400 hover:text-violet-300 light:text-violet-600 light:hover:text-violet-700"
             target="_blank"
             rel="noopener noreferrer"
@@ -225,8 +240,13 @@ import Logo from '../components/Logo.astro'
   <!-- Footer -->
   <footer class="border-t border-zinc-800 py-12 light:border-gray-200">
     <div class="mx-auto max-w-7xl px-6 lg:px-8">
-      <div class="flex flex-col items-center gap-4">
+      <div class="flex flex-col items-center gap-6">
         <Logo size="sm" showText={false} />
+        <div class="flex items-center gap-6 text-sm">
+          <a href="/docs" class="text-zinc-400 hover:text-white light:text-gray-500 light:hover:text-gray-900">Docs</a>
+          <a href="https://github.com/checkend/checkend" class="text-zinc-400 hover:text-white light:text-gray-500 light:hover:text-gray-900" target="_blank" rel="noopener noreferrer">GitHub</a>
+          <a href="/sponsor" class="text-pink-400 hover:text-pink-300 light:text-pink-600 light:hover:text-pink-700">Sponsor</a>
+        </div>
         <p class="text-center text-sm text-zinc-500 light:text-gray-500">
           &copy; {new Date().getFullYear()} Checkend. Open source under AGPL-3.0 license.
         </p>
