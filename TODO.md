@@ -73,11 +73,11 @@ end
 - [x] Empty states for no apps/problems
 
 ### 4.2 Dashboard
-- [ ] Update root dashboard to show:
+- [x] Update root dashboard to show:
   - Total apps count
   - Total unresolved problems
-  - Recent errors across all apps
-  - Quick links to each app
+  - Recent errors across all apps (clickable links to problem detail)
+  - Quick links to each app (grid with unresolved count badges)
 
 ---
 
@@ -120,7 +120,7 @@ end
 
 ## 7. Current Progress
 
-**Status:** Problem Detail & Notices Complete
+**Status:** Phase 3 Web Dashboard Complete
 
 **Completed:**
 - AppsController with full CRUD + regenerate API key
@@ -137,6 +137,7 @@ end
 - Notice show page with backtrace, request, user, and context sections
 - Collapsible sections using Alpine.js
 - Navigation between notices (newer/older)
-- 9 new controller tests for Notices (159 total tests)
+- Dashboard with stats, quick links to apps, and clickable recent problems
+- 159 total tests passing
 
-**Next Step:** Update root dashboard (Section 4.2) or add system tests (Section 6)
+**Next Step:** Add system tests (Section 6) or move to Phase 4
