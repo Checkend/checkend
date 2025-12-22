@@ -1,0 +1,77 @@
+---
+import Layout from '../../layouts/Layout.astro'
+---
+
+<Layout title="Getting Started - Checkend">
+  <header class="border-b border-gray-200">
+    <nav class="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 lg:px-8">
+      <a href="/" class="text-xl font-bold text-gray-900">Checkend</a>
+      <div class="flex items-center gap-6">
+        <a href="/docs" class="text-sm font-medium text-gray-900">Docs</a>
+        <a
+          href="https://github.com/furvur/checkend"
+          class="text-sm text-gray-600 hover:text-gray-900"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          GitHub
+        </a>
+      </div>
+    </nav>
+  </header>
+
+  <main class="mx-auto max-w-4xl px-6 py-16 lg:px-8">
+    <nav class="mb-8">
+      <a href="/docs" class="text-sm text-gray-500 hover:text-gray-700">&larr; Back to Docs</a>
+    </nav>
+
+    <article class="prose prose-gray max-w-none">
+      <h1>Getting Started</h1>
+
+      <p>
+        Checkend is a self-hosted error monitoring application. Follow these steps to get it running
+        on your infrastructure.
+      </p>
+
+      <h2>Prerequisites</h2>
+      <ul>
+        <li>Ruby 3.3+</li>
+        <li>PostgreSQL 14+</li>
+        <li>Node.js 20+ (for asset compilation)</li>
+      </ul>
+
+      <h2>Installation</h2>
+
+      <h3>1. Clone the repository</h3>
+      <pre
+        class="rounded-lg bg-gray-900 p-4 text-sm text-gray-100"><code>git clone https://github.com/furvur/checkend.git
+cd checkend</code></pre>
+
+      <h3>2. Install dependencies</h3>
+      <pre class="rounded-lg bg-gray-900 p-4 text-sm text-gray-100"><code>bundle install</code></pre>
+
+      <h3>3. Set up the database</h3>
+      <pre
+        class="rounded-lg bg-gray-900 p-4 text-sm text-gray-100"><code>bin/rails db:setup</code></pre>
+
+      <h3>4. Start the server</h3>
+      <pre class="rounded-lg bg-gray-900 p-4 text-sm text-gray-100"><code>bin/dev</code></pre>
+
+      <p>
+        Visit <code>http://localhost:3000</code> to access the Checkend dashboard.
+      </p>
+
+      <h2>Deployment</h2>
+      <p>
+        Checkend includes Kamal configuration for easy deployment. See the
+        <a href="/docs/deployment">deployment guide</a> for details.
+      </p>
+
+      <h2>Next Steps</h2>
+      <ul>
+        <li><a href="/docs/configuration">Configure your instance</a></li>
+        <li><a href="/docs/api">Integrate the API</a></li>
+      </ul>
+    </article>
+  </main>
+</Layout>

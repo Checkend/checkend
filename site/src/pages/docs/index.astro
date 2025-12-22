@@ -1,0 +1,58 @@
+---
+import Layout from '../../layouts/Layout.astro'
+---
+
+<Layout title="Documentation - Checkend">
+  <header class="border-b border-gray-200">
+    <nav class="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 lg:px-8">
+      <a href="/" class="text-xl font-bold text-gray-900">Checkend</a>
+      <div class="flex items-center gap-6">
+        <a href="/docs" class="text-sm font-medium text-gray-900">Docs</a>
+        <a
+          href="https://github.com/furvur/checkend"
+          class="text-sm text-gray-600 hover:text-gray-900"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          GitHub
+        </a>
+      </div>
+    </nav>
+  </header>
+
+  <main class="mx-auto max-w-4xl px-6 py-16 lg:px-8">
+    <h1 class="text-3xl font-bold text-gray-900">Documentation</h1>
+    <p class="mt-4 text-gray-600">
+      Learn how to install, configure, and use Checkend for error monitoring.
+    </p>
+
+    <div class="mt-12 space-y-8">
+      <section>
+        <h2 class="text-xl font-semibold text-gray-900">Getting Started</h2>
+        <ul class="mt-4 space-y-2">
+          <li>
+            <a href="/docs/getting-started" class="text-gray-600 hover:text-gray-900 hover:underline">
+              Installation &rarr;
+            </a>
+          </li>
+          <li>
+            <a href="/docs/configuration" class="text-gray-600 hover:text-gray-900 hover:underline">
+              Configuration &rarr;
+            </a>
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2 class="text-xl font-semibold text-gray-900">API Reference</h2>
+        <ul class="mt-4 space-y-2">
+          <li>
+            <a href="/docs/api" class="text-gray-600 hover:text-gray-900 hover:underline">
+              REST API &rarr;
+            </a>
+          </li>
+        </ul>
+      </section>
+    </div>
+  </main>
+</Layout>

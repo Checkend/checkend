@@ -1,0 +1,133 @@
+---
+import Layout from '../layouts/Layout.astro'
+---
+
+<Layout title="Checkend - Self-hosted Error Monitoring">
+  <!-- Header -->
+  <header class="border-b border-gray-200">
+    <nav class="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 lg:px-8">
+      <a href="/" class="text-xl font-bold text-gray-900">Checkend</a>
+      <div class="flex items-center gap-6">
+        <a href="/docs" class="text-sm text-gray-600 hover:text-gray-900">Docs</a>
+        <a
+          href="https://github.com/furvur/checkend"
+          class="text-sm text-gray-600 hover:text-gray-900"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          GitHub
+        </a>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <!-- Hero -->
+    <section class="mx-auto max-w-7xl px-6 py-24 lg:px-8 lg:py-32">
+      <div class="mx-auto max-w-2xl text-center">
+        <h1 class="text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl">
+          Self-hosted error monitoring
+        </h1>
+        <p class="mt-6 text-lg leading-8 text-gray-600">
+          Track, group, and resolve errors in your applications. Open source, privacy-friendly, and
+          runs on your own infrastructure.
+        </p>
+        <div class="mt-10 flex items-center justify-center gap-x-6">
+          <a
+            href="/docs/getting-started"
+            class="rounded-md bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-gray-700"
+          >
+            Get Started
+          </a>
+          <a
+            href="https://github.com/furvur/checkend"
+            class="text-sm font-semibold leading-6 text-gray-900"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            View on GitHub <span aria-hidden="true">&rarr;</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features -->
+    <section class="border-t border-gray-200 bg-gray-50 py-24">
+      <div class="mx-auto max-w-7xl px-6 lg:px-8">
+        <div class="mx-auto max-w-2xl text-center">
+          <h2 class="text-3xl font-bold tracking-tight text-gray-900">
+            Everything you need to track errors
+          </h2>
+          <p class="mt-4 text-gray-600">
+            Simple setup, powerful features, and complete control over your data.
+          </p>
+        </div>
+        <div class="mx-auto mt-16 grid max-w-5xl grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+          <div class="rounded-lg bg-white p-6 shadow-sm">
+            <h3 class="text-lg font-semibold text-gray-900">Smart Grouping</h3>
+            <p class="mt-2 text-sm text-gray-600">
+              Automatically group similar errors together using intelligent fingerprinting.
+            </p>
+          </div>
+          <div class="rounded-lg bg-white p-6 shadow-sm">
+            <h3 class="text-lg font-semibold text-gray-900">REST API</h3>
+            <p class="mt-2 text-sm text-gray-600">
+              Simple API to report errors from any language or framework.
+            </p>
+          </div>
+          <div class="rounded-lg bg-white p-6 shadow-sm">
+            <h3 class="text-lg font-semibold text-gray-900">Self-hosted</h3>
+            <p class="mt-2 text-sm text-gray-600">
+              Run on your own servers. Your data never leaves your infrastructure.
+            </p>
+          </div>
+          <div class="rounded-lg bg-white p-6 shadow-sm">
+            <h3 class="text-lg font-semibold text-gray-900">Open Source</h3>
+            <p class="mt-2 text-sm text-gray-600">
+              MIT licensed. Inspect, modify, and contribute to the codebase.
+            </p>
+          </div>
+          <div class="rounded-lg bg-white p-6 shadow-sm">
+            <h3 class="text-lg font-semibold text-gray-900">Rails 8</h3>
+            <p class="mt-2 text-sm text-gray-600">
+              Built with modern Rails. Easy to deploy with Kamal.
+            </p>
+          </div>
+          <div class="rounded-lg bg-white p-6 shadow-sm">
+            <h3 class="text-lg font-semibold text-gray-900">Dashboard</h3>
+            <p class="mt-2 text-sm text-gray-600">
+              Clean web interface to view, search, and resolve errors.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="py-24">
+      <div class="mx-auto max-w-7xl px-6 lg:px-8">
+        <div class="mx-auto max-w-2xl text-center">
+          <h2 class="text-3xl font-bold tracking-tight text-gray-900">Ready to get started?</h2>
+          <p class="mt-4 text-gray-600">Deploy Checkend on your infrastructure in minutes.</p>
+          <div class="mt-8">
+            <a
+              href="/docs/getting-started"
+              class="rounded-md bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-gray-700"
+            >
+              Read the Docs
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-gray-200 py-8">
+    <div class="mx-auto max-w-7xl px-6 lg:px-8">
+      <p class="text-center text-sm text-gray-500">
+        &copy; {new Date().getFullYear()} Checkend. Open source under MIT license.
+      </p>
+    </div>
+  </footer>
+</Layout>
