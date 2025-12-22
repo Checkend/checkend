@@ -1,58 +1,122 @@
 ---
-import Layout from '../../layouts/Layout.astro'
+import DocsLayout from '../../layouts/DocsLayout.astro'
+import Callout from '../../components/Callout.astro'
 ---
 
-<Layout title="Documentation - Checkend">
-  <header class="border-b border-gray-200">
-    <nav class="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 lg:px-8">
-      <a href="/" class="text-xl font-bold text-gray-900">Checkend</a>
-      <div class="flex items-center gap-6">
-        <a href="/docs" class="text-sm font-medium text-gray-900">Docs</a>
-        <a
-          href="https://github.com/furvur/checkend"
-          class="text-sm text-gray-600 hover:text-gray-900"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          GitHub
-        </a>
-      </div>
-    </nav>
-  </header>
-
-  <main class="mx-auto max-w-4xl px-6 py-16 lg:px-8">
-    <h1 class="text-3xl font-bold text-gray-900">Documentation</h1>
-    <p class="mt-4 text-gray-600">
-      Learn how to install, configure, and use Checkend for error monitoring.
-    </p>
-
-    <div class="mt-12 space-y-8">
-      <section>
-        <h2 class="text-xl font-semibold text-gray-900">Getting Started</h2>
-        <ul class="mt-4 space-y-2">
-          <li>
-            <a href="/docs/getting-started" class="text-gray-600 hover:text-gray-900 hover:underline">
-              Installation &rarr;
-            </a>
-          </li>
-          <li>
-            <a href="/docs/configuration" class="text-gray-600 hover:text-gray-900 hover:underline">
-              Configuration &rarr;
-            </a>
-          </li>
-        </ul>
-      </section>
-
-      <section>
-        <h2 class="text-xl font-semibold text-gray-900">API Reference</h2>
-        <ul class="mt-4 space-y-2">
-          <li>
-            <a href="/docs/api" class="text-gray-600 hover:text-gray-900 hover:underline">
-              REST API &rarr;
-            </a>
-          </li>
-        </ul>
-      </section>
+<DocsLayout title="Introduction">
+  <div class="space-y-8">
+    <div>
+      <h1 class="text-3xl font-bold text-white light:text-gray-900">Documentation</h1>
+      <p class="mt-4 text-lg text-zinc-400 light:text-gray-600">
+        Learn how to set up Checkend and start monitoring errors in your applications.
+      </p>
     </div>
-  </main>
-</Layout>
+
+    <Callout type="info" title="Open Source">
+      Checkend is open source under the AGPL-3.0 license. You can self-host it on your own infrastructure
+      and have complete control over your error data.
+    </Callout>
+
+    <!-- Quick links grid -->
+    <div class="grid gap-4 sm:grid-cols-2">
+      <a
+        href="/docs/quickstart"
+        class="group rounded-lg border border-zinc-700 bg-zinc-800 p-5 transition-colors hover:border-violet-500/50 hover:bg-zinc-800/80 light:border-gray-200 light:bg-white light:hover:border-violet-500/50 light:hover:bg-gray-50"
+      >
+        <div class="mb-2 flex items-center gap-2">
+          <div class="rounded-md bg-violet-600/20 p-1.5">
+            <svg class="h-4 w-4 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          </div>
+          <h3 class="font-semibold text-white light:text-gray-900">Quickstart</h3>
+        </div>
+        <p class="text-sm text-zinc-400 light:text-gray-600">
+          Get up and running with Checkend in under 5 minutes.
+        </p>
+      </a>
+
+      <a
+        href="/docs/installation"
+        class="group rounded-lg border border-zinc-700 bg-zinc-800 p-5 transition-colors hover:border-violet-500/50 hover:bg-zinc-800/80 light:border-gray-200 light:bg-white light:hover:border-violet-500/50 light:hover:bg-gray-50"
+      >
+        <div class="mb-2 flex items-center gap-2">
+          <div class="rounded-md bg-violet-600/20 p-1.5">
+            <svg class="h-4 w-4 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+          </div>
+          <h3 class="font-semibold text-white light:text-gray-900">Installation</h3>
+        </div>
+        <p class="text-sm text-zinc-400 light:text-gray-600">
+          Detailed installation instructions for different environments.
+        </p>
+      </a>
+
+      <a
+        href="/docs/sending-errors"
+        class="group rounded-lg border border-zinc-700 bg-zinc-800 p-5 transition-colors hover:border-violet-500/50 hover:bg-zinc-800/80 light:border-gray-200 light:bg-white light:hover:border-violet-500/50 light:hover:bg-gray-50"
+      >
+        <div class="mb-2 flex items-center gap-2">
+          <div class="rounded-md bg-violet-600/20 p-1.5">
+            <svg class="h-4 w-4 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+            </svg>
+          </div>
+          <h3 class="font-semibold text-white light:text-gray-900">Sending Errors</h3>
+        </div>
+        <p class="text-sm text-zinc-400 light:text-gray-600">
+          Learn how to send errors from your applications to Checkend.
+        </p>
+      </a>
+
+      <a
+        href="/docs/api/authentication"
+        class="group rounded-lg border border-zinc-700 bg-zinc-800 p-5 transition-colors hover:border-violet-500/50 hover:bg-zinc-800/80 light:border-gray-200 light:bg-white light:hover:border-violet-500/50 light:hover:bg-gray-50"
+      >
+        <div class="mb-2 flex items-center gap-2">
+          <div class="rounded-md bg-violet-600/20 p-1.5">
+            <svg class="h-4 w-4 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+            </svg>
+          </div>
+          <h3 class="font-semibold text-white light:text-gray-900">API Reference</h3>
+        </div>
+        <p class="text-sm text-zinc-400 light:text-gray-600">
+          Complete API documentation for integrating with Checkend.
+        </p>
+      </a>
+    </div>
+
+    <!-- Features overview -->
+    <div>
+      <h2 class="text-xl font-semibold text-white light:text-gray-900">Key Features</h2>
+      <ul class="mt-4 space-y-3 text-zinc-300 light:text-gray-600">
+        <li class="flex items-start gap-3">
+          <svg class="mt-1 h-4 w-4 flex-shrink-0 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+          <span><strong class="text-white light:text-gray-900">Smart Error Grouping</strong> — Automatically group similar errors using intelligent fingerprinting</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <svg class="mt-1 h-4 w-4 flex-shrink-0 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+          <span><strong class="text-white light:text-gray-900">Simple REST API</strong> — Send errors from any language or framework with a single HTTP request</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <svg class="mt-1 h-4 w-4 flex-shrink-0 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+          <span><strong class="text-white light:text-gray-900">Self-Hosted</strong> — Your data stays on your infrastructure, giving you complete control</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <svg class="mt-1 h-4 w-4 flex-shrink-0 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+          <span><strong class="text-white light:text-gray-900">Modern Dashboard</strong> — Clean, focused interface to view, search, and resolve errors</span>
+        </li>
+      </ul>
+    </div>
+  </div>
+</DocsLayout>

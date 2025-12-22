@@ -1,0 +1,119 @@
+---
+import DocsLayout from '../../layouts/DocsLayout.astro'
+import CodeBlock from '../../components/CodeBlock.astro'
+import Callout from '../../components/Callout.astro'
+---
+
+<DocsLayout title="Deployment">
+  <div class="space-y-8">
+    <div>
+      <h1 class="text-3xl font-bold text-white light:text-gray-900">Deployment</h1>
+      <p class="mt-4 text-lg text-zinc-400 light:text-gray-600">
+        Deploy Checkend to production using Kamal.
+      </p>
+    </div>
+
+    <Callout type="info" title="Kamal">
+      Checkend includes built-in support for <a href="https://kamal-deploy.org" class="text-violet-400 hover:text-violet-300 underline" target="_blank" rel="noopener">Kamal</a>,
+      a deployment tool from the Rails team that makes it easy to deploy Docker containers to any server.
+    </Callout>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-semibold text-white light:text-gray-900">Prerequisites</h2>
+      <ul class="mt-4 space-y-2 text-zinc-300 light:text-gray-600">
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400"></span>
+          <span>A server with Docker installed (Ubuntu 22.04+ recommended)</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400"></span>
+          <span>SSH access to the server</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400"></span>
+          <span>A PostgreSQL database (can be on the same server or managed service)</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400"></span>
+          <span>A domain name pointing to your server</span>
+        </li>
+      </ul>
+    </section>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-semibold text-white light:text-gray-900">Configure Kamal</h2>
+      <p class="text-zinc-300 light:text-gray-600">
+        Edit <code class="rounded bg-zinc-800 px-1.5 py-0.5 text-violet-400 light:bg-gray-100 light:text-violet-600">config/deploy.yml</code> with your server details:
+      </p>
+      <CodeBlock title="config/deploy.yml" lang="yaml" code={`service: checkend
+
+image: your-registry/checkend
+
+servers:
+  web:
+    hosts:
+      - your-server-ip
+    labels:
+      traefik.http.routers.checkend.rule: Host(\`checkend.yourdomain.com\`)
+
+env:
+  clear:
+    RAILS_ENV: production
+  secret:
+    - SECRET_KEY_BASE
+    - DATABASE_URL`} />
+    </section>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-semibold text-white light:text-gray-900">Set Secrets</h2>
+      <p class="text-zinc-300 light:text-gray-600">
+        Set your environment secrets:
+      </p>
+      <CodeBlock title="Terminal" code="kamal env push" />
+    </section>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-semibold text-white light:text-gray-900">Deploy</h2>
+      <p class="text-zinc-300 light:text-gray-600">
+        Deploy Checkend to your server:
+      </p>
+      <CodeBlock title="Terminal" code={`# First deployment
+kamal setup
+
+# Subsequent deployments
+kamal deploy`} />
+    </section>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-semibold text-white light:text-gray-900">SSL Certificates</h2>
+      <p class="text-zinc-300 light:text-gray-600">
+        Kamal uses Traefik as a reverse proxy, which can automatically provision SSL certificates via Let's Encrypt.
+        Make sure your domain's DNS is configured before deploying.
+      </p>
+    </section>
+
+    <Callout type="warning" title="Database Migrations">
+      Kamal automatically runs database migrations during deployment. Make sure your migrations are backward-compatible
+      to avoid downtime.
+    </Callout>
+
+    <!-- Next steps -->
+    <div class="border-t border-zinc-800 pt-8 light:border-gray-200">
+      <h2 class="text-lg font-semibold text-white light:text-gray-900">Next steps</h2>
+      <div class="mt-4 grid gap-3">
+        <a href="/docs/configuration" class="flex items-center gap-2 text-violet-400 hover:text-violet-300 light:text-violet-600 light:hover:text-violet-700">
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          </svg>
+          Configure your instance
+        </a>
+        <a href="/docs/sending-errors" class="flex items-center gap-2 text-violet-400 hover:text-violet-300 light:text-violet-600 light:hover:text-violet-700">
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          </svg>
+          Start sending errors
+        </a>
+      </div>
+    </div>
+  </div>
+</DocsLayout>

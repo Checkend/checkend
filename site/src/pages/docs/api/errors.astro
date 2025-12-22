@@ -1,0 +1,146 @@
+---
+import DocsLayout from '../../../layouts/DocsLayout.astro'
+import CodeBlock from '../../../components/CodeBlock.astro'
+import Callout from '../../../components/Callout.astro'
+---
+
+<DocsLayout title="Errors Endpoint">
+  <div class="space-y-8">
+    <div>
+      <h1 class="text-3xl font-bold text-white light:text-gray-900">Errors Endpoint</h1>
+      <p class="mt-4 text-lg text-zinc-400 light:text-gray-600">
+        API reference for the errors endpoint.
+      </p>
+    </div>
+
+    <section class="space-y-4">
+      <div class="flex items-center gap-3">
+        <span class="rounded bg-emerald-500/20 px-2 py-1 text-xs font-semibold text-emerald-400">POST</span>
+        <code class="text-lg font-mono text-white light:text-gray-900">/api/v1/errors</code>
+      </div>
+      <p class="text-zinc-300 light:text-gray-600">
+        Report a new error to Checkend. The error will be grouped with similar errors based on its fingerprint.
+      </p>
+    </section>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-semibold text-white light:text-gray-900">Request Headers</h2>
+      <div class="overflow-hidden rounded-lg border border-zinc-700 light:border-gray-200">
+        <table class="min-w-full divide-y divide-zinc-700 light:divide-gray-200">
+          <thead class="bg-zinc-800 light:bg-gray-50">
+            <tr>
+              <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-400 light:text-gray-500">Header</th>
+              <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-400 light:text-gray-500">Value</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-zinc-700 bg-zinc-900 light:divide-gray-200 light:bg-white">
+            <tr>
+              <td class="whitespace-nowrap px-4 py-3 font-mono text-sm text-violet-400">Content-Type</td>
+              <td class="px-4 py-3 font-mono text-sm text-zinc-300 light:text-gray-600">application/json</td>
+            </tr>
+            <tr>
+              <td class="whitespace-nowrap px-4 py-3 font-mono text-sm text-violet-400">X-API-Key</td>
+              <td class="px-4 py-3 text-sm text-zinc-300 light:text-gray-600">Your app's API key</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-semibold text-white light:text-gray-900">Request Body</h2>
+      <CodeBlock title="JSON Schema" lang="json" code={`{
+  "error_class": "string (required)",
+  "error_message": "string (required)",
+  "backtrace": ["string"],
+  "context": {},
+  "request": {
+    "url": "string",
+    "method": "string",
+    "params": {},
+    "headers": {}
+  },
+  "user_info": {
+    "id": "string",
+    "email": "string",
+    "name": "string"
+  },
+  "fingerprint": "string"
+}`} />
+    </section>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-semibold text-white light:text-gray-900">Example Request</h2>
+      <CodeBlock title="cURL" lang="bash" code={`curl -X POST https://checkend.example.com/api/v1/errors \\
+  -H "Content-Type: application/json" \\
+  -H "X-API-Key: ck_live_abc123" \\
+  -d '{
+    "error_class": "NoMethodError",
+    "error_message": "undefined method foo for nil:NilClass",
+    "backtrace": [
+      "app/models/user.rb:42:in validate_email",
+      "app/controllers/users_controller.rb:15:in create"
+    ],
+    "context": {
+      "rails_env": "production"
+    }
+  }'`} />
+    </section>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-semibold text-white light:text-gray-900">Response</h2>
+
+      <h3 class="text-lg font-medium text-zinc-100 light:text-gray-800">Success (201 Created)</h3>
+      <CodeBlock title="Response" lang="json" code={`{
+  "id": "notice_abc123",
+  "problem_id": "prob_xyz789",
+  "created_at": "2024-01-15T10:30:00Z"
+}`} />
+
+      <h3 class="mt-6 text-lg font-medium text-zinc-100 light:text-gray-800">Error (422 Unprocessable Entity)</h3>
+      <CodeBlock title="Response" lang="json" code={`{
+  "errors": {
+    "error_class": ["can't be blank"],
+    "error_message": ["can't be blank"]
+  }
+}`} />
+    </section>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-semibold text-white light:text-gray-900">Response Codes</h2>
+      <div class="overflow-hidden rounded-lg border border-zinc-700 light:border-gray-200">
+        <table class="min-w-full divide-y divide-zinc-700 light:divide-gray-200">
+          <thead class="bg-zinc-800 light:bg-gray-50">
+            <tr>
+              <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-400 light:text-gray-500">Status</th>
+              <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-400 light:text-gray-500">Description</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-zinc-700 bg-zinc-900 light:divide-gray-200 light:bg-white">
+            <tr>
+              <td class="whitespace-nowrap px-4 py-3 font-mono text-sm text-emerald-400">201</td>
+              <td class="px-4 py-3 text-sm text-zinc-300 light:text-gray-600">Error created successfully</td>
+            </tr>
+            <tr>
+              <td class="whitespace-nowrap px-4 py-3 font-mono text-sm text-pink-400">401</td>
+              <td class="px-4 py-3 text-sm text-zinc-300 light:text-gray-600">Invalid or missing API key</td>
+            </tr>
+            <tr>
+              <td class="whitespace-nowrap px-4 py-3 font-mono text-sm text-pink-400">422</td>
+              <td class="px-4 py-3 text-sm text-zinc-300 light:text-gray-600">Validation error (missing required fields)</td>
+            </tr>
+            <tr>
+              <td class="whitespace-nowrap px-4 py-3 font-mono text-sm text-pink-400">500</td>
+              <td class="px-4 py-3 text-sm text-zinc-300 light:text-gray-600">Internal server error</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <Callout type="info" title="Rate Limiting">
+      Currently, there are no rate limits on the API. However, we recommend implementing client-side rate limiting
+      to avoid overwhelming your Checkend instance during error spikes.
+    </Callout>
+  </div>
+</DocsLayout>
