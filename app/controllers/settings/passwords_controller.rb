@@ -10,13 +10,13 @@ class Settings::PasswordsController < ApplicationController
 
     if Current.user.authenticate(params[:current_password])
       if Current.user.update(password_params)
-        redirect_to edit_settings_password_path, notice: "Password updated successfully."
+        redirect_to edit_settings_password_path, notice: 'Password updated successfully.'
       else
-        flash.now[:alert] = "Password could not be updated."
+        flash.now[:alert] = 'Password could not be updated.'
         render :edit, status: :unprocessable_entity
       end
     else
-      flash.now[:alert] = "Current password is incorrect."
+      flash.now[:alert] = 'Current password is incorrect.'
       render :edit, status: :unprocessable_entity
     end
   end

@@ -1,5 +1,5 @@
 class AppsController < ApplicationController
-  before_action :set_app, only: [:show, :edit, :update, :destroy, :regenerate_api_key]
+  before_action :set_app, only: [ :show, :edit, :update, :destroy, :regenerate_api_key ]
 
   def index
     @apps = Current.user.apps.includes(:problems).order(created_at: :desc)
@@ -16,7 +16,7 @@ class AppsController < ApplicationController
     @app = Current.user.apps.build(app_params)
 
     if @app.save
-      redirect_to @app, notice: "App was successfully created."
+      redirect_to @app, notice: 'App was successfully created.'
     else
       render :new, status: :unprocessable_entity
     end
@@ -27,7 +27,7 @@ class AppsController < ApplicationController
 
   def update
     if @app.update(app_params)
-      redirect_to @app, notice: "App was successfully updated."
+      redirect_to @app, notice: 'App was successfully updated.'
     else
       render :edit, status: :unprocessable_entity
     end
@@ -35,18 +35,18 @@ class AppsController < ApplicationController
 
   def destroy
     @app.destroy
-    redirect_to apps_path, notice: "App was successfully deleted."
+    redirect_to apps_path, notice: 'App was successfully deleted.'
   end
 
   def regenerate_api_key
     @app.regenerate_api_key
-    redirect_to @app, notice: "API key was successfully regenerated."
+    redirect_to @app, notice: 'API key was successfully regenerated.'
   end
 
   private
 
   def set_app
-    @app = Current.user.apps.find(params[:id])
+    @app = Current.user.apps.find_by!(slug: params[:id])
   end
 
   def app_params

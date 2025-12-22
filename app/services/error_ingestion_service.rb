@@ -34,7 +34,7 @@ class ErrorIngestionService
   class ValidationError < StandardError; end
 
   def validate_params!
-    raise ValidationError, "error.class is required" if error_class.blank?
+    raise ValidationError, 'error.class is required' if error_class.blank?
   end
 
   def error_class
@@ -71,7 +71,7 @@ class ErrorIngestionService
   end
 
   def generate_fingerprint
-    first_line = raw_backtrace.first || ""
+    first_line = raw_backtrace.first || ''
     Problem.generate_fingerprint(error_class, error_message, first_line)
   end
 

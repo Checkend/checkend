@@ -2791,7 +2791,295 @@
 
   <!-- Add your candidates below -->
   <section class="mb-12">
-    <h2 class="text-xl font-semibold text-gray-900 mb-4 border-b pb-2">Your Candidates</h2>
-    <p class="text-sm text-gray-500 italic">Add new design candidates here...</p>
+    <h2 class="text-xl font-semibold text-gray-900 mb-4 border-b pb-2">Dashboard Layout Candidates</h2>
+    <p class="text-sm text-gray-600 mb-4">Comparing different layouts for the main dashboard page.</p>
+
+    <!-- CANDIDATE: Dashboard Option A - Stats + Recent Problems -->
+    <!-- Status: evaluating -->
+    <!-- Notes: Clean, focused layout. Stats at top, recent problems below. -->
+    <div class="border-2 border-dashed border-amber-300 rounded-lg p-6 mb-6">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold text-amber-700">Option A: Stats + Recent Problems</h3>
+        <span class="px-2 py-1 text-xs bg-amber-100 text-amber-800 rounded">evaluating</span>
+      </div>
+
+      <%# Dark mode preview %>
+      <div class="bg-zinc-900 rounded-lg p-6">
+        <%# Header %>
+        <div class="mb-6">
+          <h1 class="text-2xl font-bold text-white">Dashboard</h1>
+          <p class="text-zinc-400 mt-1">Overview of your error monitoring.</p>
+        </div>
+
+        <%# Stats Grid %>
+        <div class="grid grid-cols-4 gap-4 mb-8">
+          <div class="bg-zinc-800 rounded-lg p-4 border border-zinc-700">
+            <div class="text-sm text-zinc-400 mb-1">Apps</div>
+            <div class="text-2xl font-bold text-white">3</div>
+          </div>
+          <div class="bg-zinc-800 rounded-lg p-4 border border-zinc-700">
+            <div class="text-sm text-zinc-400 mb-1">Unresolved</div>
+            <div class="text-2xl font-bold text-pink-400">12</div>
+          </div>
+          <div class="bg-zinc-800 rounded-lg p-4 border border-zinc-700">
+            <div class="text-sm text-zinc-400 mb-1">Problems Today</div>
+            <div class="text-2xl font-bold text-orange-400">4</div>
+          </div>
+          <div class="bg-zinc-800 rounded-lg p-4 border border-zinc-700">
+            <div class="text-sm text-zinc-400 mb-1">Notices Today</div>
+            <div class="text-2xl font-bold text-violet-400">156</div>
+          </div>
+        </div>
+
+        <%# Recent Problems %>
+        <div class="bg-zinc-800 rounded-lg border border-zinc-700 overflow-hidden">
+          <div class="px-6 py-4 border-b border-zinc-700">
+            <h2 class="text-lg font-semibold text-white">Recent Problems</h2>
+          </div>
+          <ul class="divide-y divide-zinc-700">
+            <li class="px-6 py-4 hover:bg-zinc-700/50">
+              <div class="flex items-center justify-between">
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center space-x-2">
+                    <span class="w-2 h-2 rounded-full bg-pink-500"></span>
+                    <span class="text-xs px-2 py-0.5 bg-violet-500/20 text-violet-400 rounded">Demo Rails App</span>
+                    <span class="font-medium text-white">NoMethodError</span>
+                  </div>
+                  <p class="text-sm text-zinc-400 truncate mt-1">undefined method 'foo' for nil:NilClass</p>
+                </div>
+                <div class="flex items-center space-x-4 ml-4">
+                  <span class="text-sm text-zinc-500">234 notices</span>
+                  <span class="text-sm text-zinc-500">2m ago</span>
+                </div>
+              </div>
+            </li>
+            <li class="px-6 py-4 hover:bg-zinc-700/50">
+              <div class="flex items-center justify-between">
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center space-x-2">
+                    <span class="w-2 h-2 rounded-full bg-pink-500"></span>
+                    <span class="text-xs px-2 py-0.5 bg-violet-500/20 text-violet-400 rounded">API Service</span>
+                    <span class="font-medium text-white">ActiveRecord::RecordNotFound</span>
+                  </div>
+                  <p class="text-sm text-zinc-400 truncate mt-1">Couldn't find User with id=123</p>
+                </div>
+                <div class="flex items-center space-x-4 ml-4">
+                  <span class="text-sm text-zinc-500">56 notices</span>
+                  <span class="text-sm text-zinc-500">15m ago</span>
+                </div>
+              </div>
+            </li>
+            <li class="px-6 py-4 hover:bg-zinc-700/50">
+              <div class="flex items-center justify-between">
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center space-x-2">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    <span class="text-xs px-2 py-0.5 bg-violet-500/20 text-violet-400 rounded">Demo Rails App</span>
+                    <span class="font-medium text-white">ArgumentError</span>
+                    <span class="text-xs px-1.5 py-0.5 bg-emerald-500/20 text-emerald-400 rounded">resolved</span>
+                  </div>
+                  <p class="text-sm text-zinc-400 truncate mt-1">wrong number of arguments (given 2, expected 1)</p>
+                </div>
+                <div class="flex items-center space-x-4 ml-4">
+                  <span class="text-sm text-zinc-500">12 notices</span>
+                  <span class="text-sm text-zinc-500">1h ago</span>
+                </div>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <p class="mt-4 text-sm text-gray-600">
+        <strong>Pros:</strong> Simple, scannable, shows what matters most. Easy to implement.<br>
+        <strong>Cons:</strong> No charts/trends. Might feel sparse.
+      </p>
+    </div>
+
+    <!-- CANDIDATE: Dashboard Option B - Two Column with Apps Sidebar -->
+    <!-- Status: evaluating -->
+    <!-- Notes: Adds apps sidebar for quick navigation -->
+    <div class="border-2 border-dashed border-amber-300 rounded-lg p-6 mb-6">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold text-amber-700">Option B: Two Column with Apps Sidebar</h3>
+        <span class="px-2 py-1 text-xs bg-amber-100 text-amber-800 rounded">evaluating</span>
+      </div>
+
+      <%# Dark mode preview %>
+      <div class="bg-zinc-900 rounded-lg p-6">
+        <%# Header %>
+        <div class="mb-6">
+          <h1 class="text-2xl font-bold text-white">Dashboard</h1>
+          <p class="text-zinc-400 mt-1">Overview of your error monitoring.</p>
+        </div>
+
+        <div class="grid grid-cols-3 gap-6">
+          <%# Main content - 2 cols %>
+          <div class="col-span-2 space-y-6">
+            <%# Stats Grid %>
+            <div class="grid grid-cols-3 gap-4">
+              <div class="bg-zinc-800 rounded-lg p-4 border border-zinc-700">
+                <div class="text-sm text-zinc-400 mb-1">Unresolved</div>
+                <div class="text-2xl font-bold text-pink-400">12</div>
+              </div>
+              <div class="bg-zinc-800 rounded-lg p-4 border border-zinc-700">
+                <div class="text-sm text-zinc-400 mb-1">New Today</div>
+                <div class="text-2xl font-bold text-orange-400">4</div>
+              </div>
+              <div class="bg-zinc-800 rounded-lg p-4 border border-zinc-700">
+                <div class="text-sm text-zinc-400 mb-1">Notices Today</div>
+                <div class="text-2xl font-bold text-violet-400">156</div>
+              </div>
+            </div>
+
+            <%# Recent Problems %>
+            <div class="bg-zinc-800 rounded-lg border border-zinc-700 overflow-hidden">
+              <div class="px-4 py-3 border-b border-zinc-700 flex justify-between items-center">
+                <h2 class="font-semibold text-white">Recent Problems</h2>
+                <a href="#" class="text-sm text-violet-400 hover:text-violet-300">View all</a>
+              </div>
+              <ul class="divide-y divide-zinc-700">
+                <li class="px-4 py-3 hover:bg-zinc-700/50">
+                  <div class="flex items-center space-x-2 mb-1">
+                    <span class="w-2 h-2 rounded-full bg-pink-500"></span>
+                    <span class="font-medium text-white text-sm">NoMethodError</span>
+                  </div>
+                  <p class="text-xs text-zinc-500">Demo Rails App • 234 notices • 2m ago</p>
+                </li>
+                <li class="px-4 py-3 hover:bg-zinc-700/50">
+                  <div class="flex items-center space-x-2 mb-1">
+                    <span class="w-2 h-2 rounded-full bg-pink-500"></span>
+                    <span class="font-medium text-white text-sm">ActiveRecord::RecordNotFound</span>
+                  </div>
+                  <p class="text-xs text-zinc-500">API Service • 56 notices • 15m ago</p>
+                </li>
+                <li class="px-4 py-3 hover:bg-zinc-700/50">
+                  <div class="flex items-center space-x-2 mb-1">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    <span class="font-medium text-white text-sm">ArgumentError</span>
+                  </div>
+                  <p class="text-xs text-zinc-500">Demo Rails App • 12 notices • 1h ago</p>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <%# Sidebar - 1 col %>
+          <div class="space-y-6">
+            <%# Apps needing attention %>
+            <div class="bg-zinc-800 rounded-lg border border-zinc-700 overflow-hidden">
+              <div class="px-4 py-3 border-b border-zinc-700">
+                <h2 class="font-semibold text-white">Apps</h2>
+              </div>
+              <ul class="divide-y divide-zinc-700">
+                <li class="px-4 py-3 hover:bg-zinc-700/50 flex items-center justify-between">
+                  <div class="flex items-center space-x-2">
+                    <span class="w-6 h-6 rounded bg-violet-500/20 flex items-center justify-center text-xs text-violet-400 font-medium">D</span>
+                    <span class="text-sm text-white">Demo Rails App</span>
+                  </div>
+                  <span class="px-2 py-0.5 text-xs bg-pink-500/20 text-pink-400 rounded-full">8</span>
+                </li>
+                <li class="px-4 py-3 hover:bg-zinc-700/50 flex items-center justify-between">
+                  <div class="flex items-center space-x-2">
+                    <span class="w-6 h-6 rounded bg-violet-500/20 flex items-center justify-center text-xs text-violet-400 font-medium">A</span>
+                    <span class="text-sm text-white">API Service</span>
+                  </div>
+                  <span class="px-2 py-0.5 text-xs bg-pink-500/20 text-pink-400 rounded-full">4</span>
+                </li>
+                <li class="px-4 py-3 hover:bg-zinc-700/50 flex items-center justify-between">
+                  <div class="flex items-center space-x-2">
+                    <span class="w-6 h-6 rounded bg-violet-500/20 flex items-center justify-center text-xs text-violet-400 font-medium">W</span>
+                    <span class="text-sm text-white">Web Frontend</span>
+                  </div>
+                  <span class="px-2 py-0.5 text-xs bg-emerald-500/20 text-emerald-400 rounded-full">0</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p class="mt-4 text-sm text-gray-600">
+        <strong>Pros:</strong> Quick app navigation from dashboard. More information density.<br>
+        <strong>Cons:</strong> More complex. Apps are already in sidebar navigation.
+      </p>
+    </div>
+
+    <!-- CANDIDATE: Dashboard Option C - Minimal Alert-focused -->
+    <!-- Status: evaluating -->
+    <!-- Notes: Focuses on what needs attention, hides resolved issues -->
+    <div class="border-2 border-dashed border-amber-300 rounded-lg p-6 mb-6">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold text-amber-700">Option C: Minimal Alert-focused</h3>
+        <span class="px-2 py-1 text-xs bg-amber-100 text-amber-800 rounded">evaluating</span>
+      </div>
+
+      <%# Dark mode preview %>
+      <div class="bg-zinc-900 rounded-lg p-6">
+        <%# Status banner %>
+        <div class="bg-pink-500/10 border border-pink-500/30 rounded-lg p-4 mb-6 flex items-center justify-between">
+          <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-full bg-pink-500/20 flex items-center justify-center">
+              <svg class="w-5 h-5 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+              </svg>
+            </div>
+            <div>
+              <p class="font-semibold text-pink-400">12 unresolved problems</p>
+              <p class="text-sm text-pink-300/70">4 new problems in the last 24 hours</p>
+            </div>
+          </div>
+          <a href="#" class="px-4 py-2 bg-pink-500 text-white text-sm font-medium rounded-lg hover:bg-pink-600">View Problems</a>
+        </div>
+
+        <%# Recent activity - more compact %>
+        <div class="mb-6">
+          <h2 class="text-lg font-semibold text-white mb-4">Recent Activity</h2>
+          <div class="space-y-3">
+            <div class="flex items-start space-x-3">
+              <span class="w-2 h-2 rounded-full bg-pink-500 mt-2"></span>
+              <div class="flex-1">
+                <p class="text-white"><span class="text-zinc-400">New problem in</span> Demo Rails App</p>
+                <p class="text-sm text-zinc-500">NoMethodError: undefined method 'foo' • 2m ago</p>
+              </div>
+            </div>
+            <div class="flex items-start space-x-3">
+              <span class="w-2 h-2 rounded-full bg-orange-400 mt-2"></span>
+              <div class="flex-1">
+                <p class="text-white"><span class="text-zinc-400">156 notices on</span> ActiveRecord::RecordNotFound</p>
+                <p class="text-sm text-zinc-500">API Service • 15m ago</p>
+              </div>
+            </div>
+            <div class="flex items-start space-x-3">
+              <span class="w-2 h-2 rounded-full bg-emerald-500 mt-2"></span>
+              <div class="flex-1">
+                <p class="text-white"><span class="text-zinc-400">Resolved</span> ArgumentError</p>
+                <p class="text-sm text-zinc-500">Demo Rails App • 1h ago</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <%# Quick stats footer %>
+        <div class="flex items-center justify-between pt-4 border-t border-zinc-800">
+          <div class="flex items-center space-x-6">
+            <div class="text-sm">
+              <span class="text-zinc-500">Apps:</span>
+              <span class="text-white font-medium ml-1">3</span>
+            </div>
+            <div class="text-sm">
+              <span class="text-zinc-500">Notices today:</span>
+              <span class="text-white font-medium ml-1">156</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p class="mt-4 text-sm text-gray-600">
+        <strong>Pros:</strong> Clear call to action. Great "all clear" state potential. Activity feed feels alive.<br>
+        <strong>Cons:</strong> Less data-rich. May feel too simple for power users.
+      </p>
+    </div>
+
   </section>
 </div>

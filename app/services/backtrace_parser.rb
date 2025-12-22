@@ -13,16 +13,16 @@ class BacktraceParser
     match = line.match(RUBY_BACKTRACE_PATTERN)
     if match
       {
-        "file" => match[1],
-        "line" => match[2].to_i,
-        "method" => match[3]
+        'file' => match[1],
+        'line' => match[2].to_i,
+        'method' => match[3]
       }
     else
       # Fallback for non-standard formats
       {
-        "file" => line,
-        "line" => 0,
-        "method" => "unknown"
+        'file' => line,
+        'line' => 0,
+        'method' => 'unknown'
       }
     end
   end

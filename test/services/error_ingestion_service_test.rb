@@ -1,10 +1,10 @@
-require "test_helper"
+require 'test_helper'
 
 class ErrorIngestionServiceTest < ActiveSupport::TestCase
   setup do
     @app = apps(:one)
     @valid_params = {
-      class: "NoMethodError",
+      class: 'NoMethodError',
       message: "undefined method 'foo' for nil:NilClass",
       backtrace: [
         "app/models/user.rb:42:in `validate_email'",
@@ -13,7 +13,7 @@ class ErrorIngestionServiceTest < ActiveSupport::TestCase
     }
   end
 
-  test "returns success result with notice and problem" do
+  test 'returns success result with notice and problem' do
     result = ErrorIngestionService.call(
       app: @app,
       error_params: @valid_params
@@ -25,17 +25,17 @@ class ErrorIngestionServiceTest < ActiveSupport::TestCase
     assert_nil result.error
   end
 
-  test "returns failure when error class is missing" do
+  test 'returns failure when error class is missing' do
     result = ErrorIngestionService.call(
       app: @app,
-      error_params: { message: "some error" }
+      error_params: { message: 'some error' }
     )
 
     assert_not result.success?
-    assert_equal "error.class is required", result.error
+    assert_equal 'error.class is required', result.error
   end
 
-  test "creates problem with correct attributes" do
+  test 'creates problem with correct attributes' do
     result = ErrorIngestionService.call(
       app: @app,
       error_params: @valid_params
@@ -43,28 +43,28 @@ class ErrorIngestionServiceTest < ActiveSupport::TestCase
 
     problem = result.problem
     assert_equal @app, problem.app
-    assert_equal "NoMethodError", problem.error_class
+    assert_equal 'NoMethodError', problem.error_class
     assert_equal "undefined method 'foo' for nil:NilClass", problem.error_message
     assert problem.fingerprint.present?
   end
 
-  test "creates notice with correct attributes" do
+  test 'creates notice with correct attributes' do
     result = ErrorIngestionService.call(
       app: @app,
       error_params: @valid_params,
-      context_params: { environment: "production" },
-      request_params: { url: "https://example.com" },
-      user_params: { id: "123" }
+      context_params: { environment: 'production' },
+      request_params: { url: 'https://example.com' },
+      user_params: { id: '123' }
     )
 
     notice = result.notice
-    assert_equal "NoMethodError", notice.error_class
-    assert_equal "production", notice.context["environment"]
-    assert_equal "https://example.com", notice.request["url"]
-    assert_equal "123", notice.user_info["id"]
+    assert_equal 'NoMethodError', notice.error_class
+    assert_equal 'production', notice.context['environment']
+    assert_equal 'https://example.com', notice.request['url']
+    assert_equal '123', notice.user_info['id']
   end
 
-  test "creates backtrace from raw lines" do
+  test 'creates backtrace from raw lines' do
     result = ErrorIngestionService.call(
       app: @app,
       error_params: @valid_params
@@ -73,10 +73,10 @@ class ErrorIngestionServiceTest < ActiveSupport::TestCase
     backtrace = result.notice.backtrace
     assert backtrace.present?
     assert_equal 2, backtrace.lines.length
-    assert_equal "app/models/user.rb", backtrace.lines[0]["file"]
+    assert_equal 'app/models/user.rb', backtrace.lines[0]['file']
   end
 
-  test "reuses existing problem for same fingerprint" do
+  test 'reuses existing problem for same fingerprint' do
     result1 = ErrorIngestionService.call(app: @app, error_params: @valid_params)
     result2 = ErrorIngestionService.call(app: @app, error_params: @valid_params)
 
@@ -84,11 +84,11 @@ class ErrorIngestionServiceTest < ActiveSupport::TestCase
     assert_not_equal result1.notice.id, result2.notice.id
   end
 
-  test "creates different problems for different errors" do
+  test 'creates different problems for different errors' do
     params1 = @valid_params.dup
     params2 = @valid_params.merge(
-      class: "ArgumentError",
-      backtrace: ["app/services/foo.rb:10:in `bar'"]
+      class: 'ArgumentError',
+      backtrace: [ "app/services/foo.rb:10:in `bar'" ]
     )
 
     result1 = ErrorIngestionService.call(app: @app, error_params: params1)
@@ -97,22 +97,22 @@ class ErrorIngestionServiceTest < ActiveSupport::TestCase
     assert_not_equal result1.problem.id, result2.problem.id
   end
 
-  test "uses custom fingerprint when provided" do
-    params = @valid_params.merge(fingerprint: "my-custom-fingerprint")
+  test 'uses custom fingerprint when provided' do
+    params = @valid_params.merge(fingerprint: 'my-custom-fingerprint')
 
     result = ErrorIngestionService.call(app: @app, error_params: params)
 
-    assert_equal "my-custom-fingerprint", result.problem.fingerprint
+    assert_equal 'my-custom-fingerprint', result.problem.fingerprint
   end
 
-  test "deduplicates identical backtraces" do
+  test 'deduplicates identical backtraces' do
     result1 = ErrorIngestionService.call(app: @app, error_params: @valid_params)
     result2 = ErrorIngestionService.call(app: @app, error_params: @valid_params)
 
     assert_equal result1.notice.backtrace_id, result2.notice.backtrace_id
   end
 
-  test "handles empty backtrace" do
+  test 'handles empty backtrace' do
     params = @valid_params.merge(backtrace: [])
 
     result = ErrorIngestionService.call(app: @app, error_params: params)
@@ -121,8 +121,8 @@ class ErrorIngestionServiceTest < ActiveSupport::TestCase
     assert_nil result.notice.backtrace
   end
 
-  test "handles missing backtrace" do
-    params = { class: "NoMethodError", message: "error" }
+  test 'handles missing backtrace' do
+    params = { class: 'NoMethodError', message: 'error' }
 
     result = ErrorIngestionService.call(app: @app, error_params: params)
 
@@ -130,7 +130,7 @@ class ErrorIngestionServiceTest < ActiveSupport::TestCase
     assert_nil result.notice.backtrace
   end
 
-  test "increments problem notices_count" do
+  test 'increments problem notices_count' do
     result1 = ErrorIngestionService.call(app: @app, error_params: @valid_params)
     assert_equal 1, result1.problem.reload.notices_count
 

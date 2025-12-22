@@ -35,8 +35,24 @@
       <%# Modal/Slide-over container %>
       <%= turbo_frame_tag "modal" %>
 
+      <%# Mobile top bar %>
+      <div class="sticky top-0 z-40 flex items-center justify-between bg-white dark:bg-zinc-900 px-4 py-3 shadow-sm dark:shadow-zinc-800/50 sm:px-6 border-b border-gray-200 dark:border-zinc-800 lg:hidden">
+        <button type="button" @click="sidebarOpen = true" class="p-2 rounded-lg border border-gray-300 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-gray-900 dark:hover:text-white transition-colors">
+          <span class="sr-only">Open sidebar</span>
+          <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+          </svg>
+        </button>
+        <%# Centered logo icon %>
+        <div class="absolute left-1/2 -translate-x-1/2">
+          <%= render "shared/logo", size: :sm, show_text: false %>
+        </div>
+        <%# Spacer to balance the hamburger %>
+        <div class="w-9"></div>
+      </div>
+
       <%# Mobile sidebar drawer %>
-      <div class="relative z-50 lg:hidden" role="dialog" aria-modal="true">
+      <div class="lg:hidden" role="dialog" aria-modal="true" x-show="sidebarOpen" style="display: none;">
         <%# Backdrop %>
         <div
           x-show="sidebarOpen"
@@ -46,9 +62,8 @@
           x-transition:leave="transition-opacity ease-linear duration-300"
           x-transition:leave-start="opacity-100"
           x-transition:leave-end="opacity-0"
-          class="fixed inset-0 bg-gray-900/80"
+          class="fixed inset-0 z-50 bg-gray-900/80"
           @click="sidebarOpen = false"
-          style="display: none;"
         ></div>
 
         <%# Sidebar panel %>
@@ -60,8 +75,7 @@
           x-transition:leave="transition ease-in-out duration-300 transform"
           x-transition:leave-start="translate-x-0"
           x-transition:leave-end="-translate-x-full"
-          class="fixed inset-0 flex"
-          style="display: none;"
+          class="fixed inset-0 z-50 flex"
         >
           <div class="relative mr-16 flex w-full max-w-xs flex-1">
             <%# Close button %>
@@ -88,17 +102,6 @@
               <%= render "shared/sidebar" %>
             </div>
           </div>
-        </div>
-
-        <%# Mobile top bar %>
-        <div class="sticky top-0 z-40 flex items-center gap-x-6 bg-white dark:bg-zinc-900 px-4 py-4 shadow-sm dark:shadow-zinc-800/50 sm:px-6 border-b border-gray-200 dark:border-zinc-800">
-          <button type="button" @click="sidebarOpen = true" class="-m-2.5 p-2.5 text-gray-700 dark:text-zinc-300 hover:text-gray-900 dark:hover:text-white">
-            <span class="sr-only">Open sidebar</span>
-            <svg class="size-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-            </svg>
-          </button>
-          <div class="flex-1 text-sm/6 font-semibold text-gray-900 dark:text-white"><%= content_for(:page_title) || "Checkend" %></div>
         </div>
       </div>
 

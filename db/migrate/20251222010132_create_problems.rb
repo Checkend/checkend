@@ -14,7 +14,7 @@ class CreateProblems < ActiveRecord::Migration[8.1]
       t.timestamps
     end
 
-    add_index :problems, [:app_id, :fingerprint], unique: true
+    add_index :problems, [ :app_id, :fingerprint ], unique: true
     add_index :problems, :status
     add_index :problems, :last_noticed_at
   end
