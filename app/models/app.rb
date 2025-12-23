@@ -1,18 +1,38 @@
 class App < ApplicationRecord
-  belongs_to :user
   has_many :problems, dependent: :destroy
+  has_many :team_assignments, dependent: :destroy
+  has_many :teams, through: :team_assignments
+  has_many :user_notification_preferences, dependent: :destroy
 
   has_secure_token :api_key
 
   validates :name, presence: true
   validates :api_key, uniqueness: true
-  validates :slug, presence: true, uniqueness: { scope: :user_id }
+  validates :slug, presence: true, uniqueness: true
 
   before_validation :generate_slug, on: :create
   before_validation :update_slug, on: :update, if: -> { name_changed? && name.present? }
 
   def to_param
     slug
+  end
+
+  def accessible_by?(user)
+    return false unless user
+
+    teams.joins(:team_members).where(team_members: { user_id: user.id }).exists?
+  end
+
+  def team_members
+    User.joins(team_members: :team)
+        .joins('INNER JOIN team_assignments ON team_assignments.team_id = teams.id')
+        .where('team_assignments.app_id = ?', id)
+        .distinct
+  end
+
+  def notification_recipients(event_type)
+    users = team_members.to_a.uniq
+    users.select { |u| u.wants_notification?(self, event_type) }
   end
 
   private
@@ -38,7 +58,7 @@ class App < ApplicationRecord
     base_slug = slug
     counter = 1
 
-    while user&.apps&.where(slug: slug)&.where&.not(id: id)&.exists?
+    while App.where(slug: slug).where.not(id: id).exists?
       self.slug = "#{base_slug}-#{counter}"
       counter += 1
     end

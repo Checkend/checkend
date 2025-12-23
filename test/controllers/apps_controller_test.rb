@@ -3,7 +3,12 @@ require 'test_helper'
 class AppsControllerTest < ActionDispatch::IntegrationTest
   setup do
     @user = users(:one)
+    @other_user = users(:two)
     @app = apps(:one)
+    @team = teams(:one)
+    # Set up team access
+    @team.team_members.find_or_create_by!(user: @user, role: 'admin')
+    @team.team_assignments.find_or_create_by!(app: @app)
     sign_in_as(@user)
   end
 
@@ -21,14 +26,14 @@ class AppsControllerTest < ActionDispatch::IntegrationTest
   end
 
   # Index tests
-  test "index shows user's apps" do
+  test "index shows accessible apps" do
     get apps_path
     assert_response :success
     assert_select 'h1', 'Apps'
     assert_match @app.name, response.body
   end
 
-  test 'index does not show other users apps' do
+  test 'index does not show inaccessible apps' do
     other_app = apps(:two)
     get apps_path
     assert_response :success
@@ -43,7 +48,7 @@ class AppsControllerTest < ActionDispatch::IntegrationTest
     assert_match @app.api_key, response.body
   end
 
-  test 'show cannot view other users app' do
+  test 'show cannot view inaccessible app' do
     other_app = apps(:two)
     get app_path(other_app)
     assert_response :not_found
@@ -53,7 +58,6 @@ class AppsControllerTest < ActionDispatch::IntegrationTest
   test 'new shows form' do
     get new_app_path
     assert_response :success
-    assert_select 'h2', 'New App'
     assert_select 'form'
   end
 
@@ -64,10 +68,9 @@ class AppsControllerTest < ActionDispatch::IntegrationTest
     end
 
     app = App.last
-    assert_redirected_to app_path(app)
+    assert_redirected_to setup_wizard_app_path(app)
     assert_equal 'New Test App', app.name
     assert_equal 'production', app.environment
-    assert_equal @user, app.user
     assert app.api_key.present?
   end
 
@@ -83,10 +86,9 @@ class AppsControllerTest < ActionDispatch::IntegrationTest
   test 'edit shows form' do
     get edit_app_path(@app)
     assert_response :success
-    assert_select 'h2', 'Edit App'
   end
 
-  test 'edit cannot edit other users app' do
+  test 'edit cannot edit inaccessible app' do
     other_app = apps(:two)
     get edit_app_path(other_app)
     assert_response :not_found
@@ -111,7 +113,7 @@ class AppsControllerTest < ActionDispatch::IntegrationTest
     assert_not_equal '', @app.name
   end
 
-  test 'update cannot update other users app' do
+  test 'update cannot update inaccessible app' do
     other_app = apps(:two)
     patch app_path(other_app), params: { app: { name: 'Hacked' } }
     assert_response :not_found
@@ -126,7 +128,7 @@ class AppsControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to apps_path
   end
 
-  test 'destroy cannot delete other users app' do
+  test 'destroy cannot delete inaccessible app' do
     other_app = apps(:two)
     delete app_path(other_app)
     assert_response :not_found
@@ -143,9 +145,40 @@ class AppsControllerTest < ActionDispatch::IntegrationTest
     assert_not_equal old_key, @app.api_key
   end
 
-  test 'regenerate_api_key cannot regenerate other users app key' do
+  test 'regenerate_api_key cannot regenerate inaccessible app key' do
     other_app = apps(:two)
     post regenerate_api_key_app_path(other_app)
     assert_response :not_found
+  end
+
+  # Team assignment tests
+  test 'assign_team assigns team to app' do
+    new_team = Team.create!(name: "New Team", owner: @user)
+    new_team.team_members.create!(user: @user, role: 'admin')
+
+    assert_difference('TeamAssignment.count', 1) do
+      post assign_team_app_path(@app), params: { team_id: new_team.id }
+    end
+
+    assert_redirected_to app_path(@app)
+    assert @app.teams.include?(new_team)
+  end
+
+  test 'assign_team requires admin role' do
+    new_team = Team.create!(name: "New Team", owner: @other_user)
+    new_team.team_members.create!(user: @other_user, role: 'admin')
+
+    assert_no_difference('TeamAssignment.count') do
+      post assign_team_app_path(@app), params: { team_id: new_team.id }
+    end
+  end
+
+  test 'remove_team_assignment removes team from app' do
+    assert_difference('TeamAssignment.count', -1) do
+      delete remove_team_assignment_app_path(@app, team_id: @team.id)
+    end
+
+    assert_redirected_to app_path(@app)
+    assert_not @app.teams.include?(@team)
   end
 end

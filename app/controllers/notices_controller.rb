@@ -1,6 +1,7 @@
 class NoticesController < ApplicationController
   before_action :set_app
   before_action :set_problem
+  before_action :require_app_access!
   before_action :set_notice
   before_action :set_breadcrumbs
 
@@ -10,7 +11,8 @@ class NoticesController < ApplicationController
   private
 
   def set_app
-    @app = Current.user.apps.find_by!(slug: params[:app_id])
+    @app = accessible_apps.find_by!(slug: params[:app_id])
+    raise ActiveRecord::RecordNotFound unless @app
   end
 
   def set_problem

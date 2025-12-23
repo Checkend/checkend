@@ -1,0 +1,10 @@
+one:
+  team: one
+  user: one
+  role: admin
+
+two:
+  team: one
+  user: two
+  role: member
+

@@ -5,6 +5,10 @@ class ProblemTagsControllerTest < ActionDispatch::IntegrationTest
     @user = users(:one)
     @app = apps(:one)
     @problem = problems(:one)
+    @team = teams(:one)
+    # Set up team access
+    @team.team_members.find_or_create_by!(user: @user, role: 'admin')
+    @team.team_assignments.find_or_create_by!(app: @app)
     sign_in_as(@user)
   end
 
@@ -151,8 +155,16 @@ class ProblemTagsControllerTest < ActionDispatch::IntegrationTest
     assert_response :redirect
   end
 
-  test 'requires ownership of app' do
+  test 'requires access to app' do
     other_user = users(:two)
+    # Ensure other_user doesn't have access to @app
+    # Remove any existing team memberships that might give access
+    @team.team_members.where(user: other_user).destroy_all
+    # Create a separate team for other_user that is NOT assigned to @app
+    other_team = Team.create!(name: "Other Team", owner: other_user)
+    other_team.team_members.create!(user: other_user, role: 'admin')
+    # Ensure @app is only assigned to @team, not other_team
+    @app.team_assignments.where(team: other_team).destroy_all
     sign_in_as(other_user)
 
     get app_problem_tags_path(@app, @problem), as: :json

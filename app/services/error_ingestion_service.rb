@@ -102,12 +102,15 @@ class ErrorIngestionService
   end
 
   def notify_if_needed
-    recipient = @problem.app.user
+    event_type = @problem_is_new ? :new_problem : :reoccurrence
+    recipients = @problem.app.notification_recipients(event_type)
 
-    if @problem_is_new
-      NewProblemNotifier.with(problem: @problem, notice: @notice).deliver_later(recipient)
-    elsif @problem_was_resolved
-      ProblemReoccurredNotifier.with(problem: @problem, notice: @notice).deliver_later(recipient)
+    recipients.each do |recipient|
+      if @problem_is_new
+        NewProblemNotifier.with(problem: @problem, notice: @notice).deliver_later(recipient)
+      elsif @problem_was_resolved
+        ProblemReoccurredNotifier.with(problem: @problem, notice: @notice).deliver_later(recipient)
+      end
     end
   end
 end

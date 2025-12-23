@@ -1,0 +1,7 @@
+one:
+  email: invitee@example.com
+  token: test-token-123
+  team: one
+  invited_by: one
+  expires_at: <%= 7.days.from_now %>
+

@@ -30,8 +30,17 @@ class AppsTest < ApplicationSystemTestCase
 
     click_button 'Create App'
 
+    # After creation, user is redirected to setup wizard
     assert_text 'App was successfully created'
-    assert_text 'Test Application'
+    assert_text 'App Created!'
+    assert_text 'Would you like to assign this app to a team?'
+
+    # Skip the wizard to go to the app page
+    # The Skip link should navigate to the app
+    click_link 'Skip', wait: 2
+
+    # Wait for navigation and verify we're on the app page
+    assert_text 'Test Application', wait: 5
     assert_text 'staging'
   end
 
@@ -71,17 +80,24 @@ class AppsTest < ApplicationSystemTestCase
 
   test 'deleting an app' do
     # Create a separate app to delete so we don't affect other tests
-    app_to_delete = @user.apps.create!(name: 'App to Delete', environment: 'staging')
+    app_to_delete = App.create!(name: 'App to Delete', environment: 'staging', slug: 'app-to-delete')
+    # Assign to a team so user can access it
+    team = teams(:one) || Team.create!(name: 'Test Team', owner: @user)
+    team.team_members.find_or_create_by!(user: @user, role: 'admin')
+    team.team_assignments.find_or_create_by!(app: app_to_delete)
 
     sign_in_as(@user)
 
     visit app_path(app_to_delete)
 
-    # Open the actions dropdown menu
+    # Open the actions dropdown menu (three dots button)
     find("button[class*='rounded-lg'][class*='text-gray-500']").click
 
-    # Click delete and accept the confirmation
-    accept_confirm do
+    # Wait for dropdown to appear
+    assert_text 'Delete'
+
+    # Click delete and accept the confirmation (button_to with turbo_confirm)
+    accept_confirm 'Are you sure you want to delete this app? This will also delete all associated problems and notices.' do
       click_button 'Delete'
     end
 

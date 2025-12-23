@@ -6,6 +6,10 @@ class NoticesControllerTest < ActionDispatch::IntegrationTest
     @app = apps(:one)
     @problem = problems(:one)
     @notice = notices(:one)
+    @team = teams(:one)
+    # Set up team access
+    @team.team_members.find_or_create_by!(user: @user, role: 'admin')
+    @team.team_assignments.find_or_create_by!(app: @app)
     sign_in_as(@user)
   end
 
@@ -37,8 +41,9 @@ class NoticesControllerTest < ActionDispatch::IntegrationTest
     problem = notice_with_request.problem
     app = problem.app
 
-    # Sign in as the owner of this app
-    sign_in_as(app.user)
+    # Ensure user has access to this app
+    team = teams(:one)
+    team.team_assignments.find_or_create_by!(app: app)
 
     get app_problem_notice_path(app, problem, notice_with_request)
     assert_response :success
@@ -51,7 +56,9 @@ class NoticesControllerTest < ActionDispatch::IntegrationTest
     problem = notice_with_user.problem
     app = problem.app
 
-    sign_in_as(app.user)
+    # Ensure user has access to this app
+    team = teams(:one)
+    team.team_assignments.find_or_create_by!(app: app)
 
     get app_problem_notice_path(app, problem, notice_with_user)
     assert_response :success
@@ -64,7 +71,9 @@ class NoticesControllerTest < ActionDispatch::IntegrationTest
     problem = notice_with_context.problem
     app = problem.app
 
-    sign_in_as(app.user)
+    # Ensure user has access to this app
+    team = teams(:one)
+    team.team_assignments.find_or_create_by!(app: app)
 
     get app_problem_notice_path(app, problem, notice_with_context)
     assert_response :success
@@ -73,7 +82,7 @@ class NoticesControllerTest < ActionDispatch::IntegrationTest
   end
 
   # Authorization tests
-  test 'show cannot view notice from other users app' do
+  test 'show cannot view notice from inaccessible app' do
     other_app = apps(:two)
     other_problem = problems(:other_app)
     # Create a notice for the other app's problem

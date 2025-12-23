@@ -1,6 +1,7 @@
 class ProblemTagsController < ApplicationController
   before_action :set_app
   before_action :set_problem
+  before_action :require_app_access!
 
   def index
     query = params[:q].to_s.downcase.strip
@@ -52,7 +53,8 @@ class ProblemTagsController < ApplicationController
   private
 
   def set_app
-    @app = Current.user.apps.find_by!(slug: params[:app_id])
+    @app = accessible_apps.find_by!(slug: params[:app_id])
+    raise ActiveRecord::RecordNotFound unless @app
   end
 
   def set_problem

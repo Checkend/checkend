@@ -1,0 +1,44 @@
+<div>
+  <div class="flex justify-between items-center mb-6">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Team Invitations</h1>
+      <p class="text-gray-600 dark:text-zinc-400 mt-1">Manage invitations for <%= @team.name %>.</p>
+    </div>
+    <%= link_to team_path(@team), class: "text-sm text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white" do %>
+      Back to team
+    <% end %>
+  </div>
+
+  <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-6 mb-6">
+    <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Send Invitation</h2>
+    <%= form_with url: team_team_invitations_path(@team), method: :post, class: "space-y-4" do |form| %>
+      <div>
+        <%= form.label :email, "Email address", class: "block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1.5" %>
+        <%= form.email_field :email, required: true, class: "block w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:border-violet-500 focus:ring-violet-500" %>
+      </div>
+      <%= form.submit "Send Invitation", class: "px-4 py-2 bg-violet-600 text-white rounded-lg font-medium hover:bg-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500 transition-colors cursor-pointer" %>
+    <% end %>
+  </div>
+
+  <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-6">
+    <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Pending Invitations</h2>
+    <% if @team_invitations.pending.any? %>
+      <div class="space-y-3">
+        <% @team_invitations.pending.each do |invitation| %>
+          <div class="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-zinc-700">
+            <div>
+              <p class="text-sm font-medium text-gray-900 dark:text-white"><%= invitation.email %></p>
+              <p class="text-xs text-gray-500 dark:text-zinc-400">Sent <%= time_ago_in_words(invitation.created_at) %> ago</p>
+            </div>
+            <%= button_to team_team_invitation_path(@team, invitation), method: :delete, data: { turbo_confirm: "Cancel this invitation?" }, class: "text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium transition-colors" do %>
+              Cancel
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <p class="text-sm text-gray-500 dark:text-zinc-400">No pending invitations.</p>
+    <% end %>
+  </div>
+</div>
+

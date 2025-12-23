@@ -24,7 +24,11 @@ Rails.application.routes.draw do
   resources :apps do
     member do
       post :regenerate_api_key
+      get :setup_wizard
+      post :assign_team
+      delete :remove_team_assignment
     end
+    resource :user_notification_preference, only: [ :edit, :update ], path: 'notification_preferences'
     resources :problems, only: [ :index, :show ] do
       member do
         post :resolve
@@ -40,6 +44,15 @@ Rails.application.routes.draw do
       resources :tags, only: [ :index, :create, :destroy ], controller: 'problem_tags'
     end
   end
+
+  # Teams management
+  resources :teams do
+    resources :team_members, only: [ :index, :create, :update, :destroy ]
+    resources :team_invitations, only: [ :index, :create, :update, :destroy ]
+  end
+
+  # Team invitation acceptance (public route)
+  get 'team_invitations/:token/accept', to: 'team_invitations#accept', as: :accept_team_invitation
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.

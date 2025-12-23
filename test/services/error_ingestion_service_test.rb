@@ -3,6 +3,11 @@ require 'test_helper'
 class ErrorIngestionServiceTest < ActiveSupport::TestCase
   setup do
     @app = apps(:one)
+    @user = users(:one)
+    @team = teams(:one)
+    # Set up team access for notifications
+    @team.team_members.find_or_create_by!(user: @user, role: 'admin')
+    @team.team_assignments.find_or_create_by!(app: @app)
     @valid_params = {
       class: 'NoMethodError',
       message: "undefined method 'foo' for nil:NilClass",
@@ -140,8 +145,11 @@ class ErrorIngestionServiceTest < ActiveSupport::TestCase
 
   # Notification tests
 
-  test 'sends notification for new problem' do
-    assert_difference 'Noticed::Notification.count', 1 do
+  test 'sends notification for new problem to team members' do
+    # Should send to team members who want notifications
+    # Fixtures have 2 team members (user one and user two) for team one
+    # Both should receive notifications by default
+    assert_difference 'Noticed::Notification.count', 2 do
       ErrorIngestionService.call(app: @app, error_params: @valid_params)
     end
   end
@@ -156,13 +164,14 @@ class ErrorIngestionServiceTest < ActiveSupport::TestCase
     end
   end
 
-  test 'sends notification when resolved problem reoccurs' do
-    # Create problem and resolve it
+  test 'sends notification when resolved problem reoccurs to team members' do
+    # Create problem and resolve it (this sends 2 notifications - one to each team member)
     result = ErrorIngestionService.call(app: @app, error_params: @valid_params)
     result.problem.resolve!
 
     # New notice on resolved problem should trigger reoccurrence notification
-    assert_difference 'Noticed::Notification.count', 1 do
+    # Should send to both team members
+    assert_difference 'Noticed::Notification.count', 2 do
       ErrorIngestionService.call(app: @app, error_params: @valid_params)
     end
   end

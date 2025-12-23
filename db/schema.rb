@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_12_23_125305) do
+ActiveRecord::Schema[8.1].define(version: 2025_12_23_174757) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -23,10 +23,8 @@ ActiveRecord::Schema[8.1].define(version: 2025_12_23_125305) do
     t.boolean "notify_on_reoccurrence", default: true, null: false
     t.string "slug"
     t.datetime "updated_at", null: false
-    t.bigint "user_id", null: false
     t.index ["api_key"], name: "index_apps_on_api_key", unique: true
     t.index ["slug"], name: "index_apps_on_slug", unique: true
-    t.index ["user_id"], name: "index_apps_on_user_id"
   end
 
   create_table "backtraces", force: :cascade do |t|
@@ -122,6 +120,61 @@ ActiveRecord::Schema[8.1].define(version: 2025_12_23_125305) do
     t.index ["name"], name: "index_tags_on_name", unique: true
   end
 
+  create_table "team_assignments", force: :cascade do |t|
+    t.bigint "app_id", null: false
+    t.datetime "created_at", null: false
+    t.bigint "team_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["app_id"], name: "index_team_assignments_on_app_id"
+    t.index ["team_id", "app_id"], name: "index_team_assignments_on_team_id_and_app_id", unique: true
+    t.index ["team_id"], name: "index_team_assignments_on_team_id"
+  end
+
+  create_table "team_invitations", force: :cascade do |t|
+    t.datetime "accepted_at"
+    t.datetime "created_at", null: false
+    t.string "email", null: false
+    t.datetime "expires_at"
+    t.bigint "invited_by_id", null: false
+    t.bigint "team_id", null: false
+    t.string "token", null: false
+    t.datetime "updated_at", null: false
+    t.index ["invited_by_id"], name: "index_team_invitations_on_invited_by_id"
+    t.index ["team_id"], name: "index_team_invitations_on_team_id"
+    t.index ["token"], name: "index_team_invitations_on_token", unique: true
+  end
+
+  create_table "team_members", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "role", default: "member", null: false
+    t.bigint "team_id", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["team_id", "user_id"], name: "index_team_members_on_team_id_and_user_id", unique: true
+    t.index ["team_id"], name: "index_team_members_on_team_id"
+    t.index ["user_id"], name: "index_team_members_on_user_id"
+  end
+
+  create_table "teams", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "name", null: false
+    t.bigint "owner_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["owner_id"], name: "index_teams_on_owner_id"
+  end
+
+  create_table "user_notification_preferences", force: :cascade do |t|
+    t.bigint "app_id", null: false
+    t.datetime "created_at", null: false
+    t.boolean "notify_on_new_problem", default: true
+    t.boolean "notify_on_reoccurrence", default: true
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["app_id"], name: "index_user_notification_preferences_on_app_id"
+    t.index ["user_id", "app_id"], name: "index_user_notification_preferences_on_user_id_and_app_id", unique: true
+    t.index ["user_id"], name: "index_user_notification_preferences_on_user_id"
+  end
+
   create_table "users", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "email_address", null: false
@@ -130,11 +183,19 @@ ActiveRecord::Schema[8.1].define(version: 2025_12_23_125305) do
     t.index ["email_address"], name: "index_users_on_email_address", unique: true
   end
 
-  add_foreign_key "apps", "users"
   add_foreign_key "notices", "backtraces"
   add_foreign_key "notices", "problems"
   add_foreign_key "problem_tags", "problems"
   add_foreign_key "problem_tags", "tags"
   add_foreign_key "problems", "apps"
   add_foreign_key "sessions", "users"
+  add_foreign_key "team_assignments", "apps"
+  add_foreign_key "team_assignments", "teams"
+  add_foreign_key "team_invitations", "teams"
+  add_foreign_key "team_invitations", "users", column: "invited_by_id"
+  add_foreign_key "team_members", "teams"
+  add_foreign_key "team_members", "users"
+  add_foreign_key "teams", "users", column: "owner_id"
+  add_foreign_key "user_notification_preferences", "apps"
+  add_foreign_key "user_notification_preferences", "users"
 end

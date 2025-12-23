@@ -1,0 +1,55 @@
+<div>
+  <div class="flex justify-between items-center mb-6">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white"><%= @team.name %></h1>
+      <p class="text-gray-600 dark:text-zinc-400 mt-1">Team details and members.</p>
+    </div>
+    <% if @team.owner == Current.user %>
+      <div class="flex space-x-3">
+        <%= link_to edit_team_path(@team), class: "inline-flex items-center px-4 py-2 border border-gray-300 dark:border-zinc-600 text-gray-700 dark:text-zinc-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-zinc-700 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-900 transition-colors" do %>
+          Edit
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-6">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Members</h2>
+      <div class="space-y-3">
+        <% @team.team_members.includes(:user).each do |member| %>
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+              <div class="flex-shrink-0 w-8 h-8 bg-violet-100 dark:bg-violet-500/20 rounded-full flex items-center justify-center">
+                <span class="text-sm font-medium text-violet-600 dark:text-violet-400"><%= member.user.email_address[0].upcase %></span>
+              </div>
+              <div>
+                <p class="text-sm font-medium text-gray-900 dark:text-white"><%= member.user.email_address %></p>
+                <p class="text-xs text-gray-500 dark:text-zinc-400"><%= member.role.capitalize %></p>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+      <%= link_to team_team_members_path(@team), class: "mt-4 inline-flex items-center text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300" do %>
+        Manage members
+      <% end %>
+    </div>
+
+    <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-6">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Assigned Apps</h2>
+      <% if @team.apps.any? %>
+        <div class="space-y-3">
+          <% @team.apps.each do |app| %>
+            <%= link_to app_path(app), class: "block p-3 rounded-lg border border-gray-200 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-700/50 transition-colors" do %>
+              <p class="text-sm font-medium text-gray-900 dark:text-white"><%= app.name %></p>
+            <% end %>
+          <% end %>
+        </div>
+      <% else %>
+        <p class="text-sm text-gray-500 dark:text-zinc-400">No apps assigned to this team yet.</p>
+      <% end %>
+    </div>
+  </div>
+</div>
+

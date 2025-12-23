@@ -32,10 +32,11 @@
 
 ## Future Versions
 
-### Version 1.1 - Enhanced Filtering
-- [ ] Tags support and filtering
-- [ ] Custom fingerprint override
-- [ ] Search improvements
+### Version 1.1 - Enhanced Filtering ✅
+- [x] Tags support (Tag/ProblemTag models, inline editor, filtering, bulk actions)
+- [x] Search improvements (date range filtering, min notices filter, advanced filters UI)
+- [x] Notifier tracking (SDK name, version, language info for v2.0 preparation)
+- [~] Custom fingerprint override (skipped - client-side already supported via API)
 
 ### Version 1.2 - Integrations
 - [ ] Slack notifications

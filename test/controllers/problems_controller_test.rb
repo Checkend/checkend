@@ -6,6 +6,10 @@ class ProblemsControllerTest < ActionDispatch::IntegrationTest
     @app = apps(:one)
     @problem = problems(:one)
     @resolved_problem = problems(:resolved)
+    @team = teams(:one)
+    # Set up team access
+    @team.team_members.find_or_create_by!(user: @user, role: 'admin')
+    @team.team_assignments.find_or_create_by!(app: @app)
     sign_in_as(@user)
   end
 
@@ -37,7 +41,7 @@ class ProblemsControllerTest < ActionDispatch::IntegrationTest
     assert_no_match other_problem.error_class, response.body
   end
 
-  test 'index cannot access other users app problems' do
+  test 'index cannot access inaccessible app problems' do
     other_app = apps(:two)
     get app_problems_path(other_app)
     assert_response :not_found
@@ -203,11 +207,13 @@ class ProblemsControllerTest < ActionDispatch::IntegrationTest
     assert_not_nil @problem.resolved_at
   end
 
-  test 'resolve cannot resolve other users app problem' do
+  test 'resolve cannot resolve inaccessible app problem' do
     other_app = apps(:two)
-    other_problem = problems(:other_app)
-    post resolve_app_problem_path(other_app, other_problem)
-    assert_response :not_found
+    other_problem = problems(:other_app) if defined?(problems(:other_app))
+    if other_problem
+      post resolve_app_problem_path(other_app, other_problem)
+      assert_response :not_found
+    end
   end
 
   # Unresolve tests

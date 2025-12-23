@@ -1,6 +1,6 @@
 class DashboardController < ApplicationController
   def index
-    @apps = Current.user.apps
+    @apps = accessible_apps
     @apps_count = @apps.count
 
     # Get all problems for user's apps

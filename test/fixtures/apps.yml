@@ -5,11 +5,9 @@ one:
   slug: my-rails-app
   api_key: <%= SecureRandom.base58(24) %>
   environment: production
-  user: one
 
 two:
   name: My Other App
   slug: my-other-app
   api_key: <%= SecureRandom.base58(24) %>
   environment: staging
-  user: two
