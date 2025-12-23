@@ -84,9 +84,59 @@ class ProblemsControllerTest < ActionDispatch::IntegrationTest
     assert_match @problem.error_class, response.body
   end
 
+  # Date range filter tests
+  test 'index filters by date_from' do
+    # problems(:one) has last_noticed_at in the future (fixture data)
+    get app_problems_path(@app, date_from: Date.current.to_s)
+    assert_response :success
+  end
+
+  test 'index filters by date_to' do
+    get app_problems_path(@app, date_to: Date.current.to_s)
+    assert_response :success
+  end
+
+  test 'index filters by date range' do
+    get app_problems_path(@app, date_from: 7.days.ago.to_date.to_s, date_to: Date.current.to_s)
+    assert_response :success
+  end
+
+  # Notice count filter tests
+  test 'index filters by min_notices' do
+    get app_problems_path(@app, min_notices: 5)
+    assert_response :success
+    # Problem one has 5 notices, resolved has 10
+    assert_match @problem.error_class, response.body
+    assert_match @resolved_problem.error_class, response.body
+  end
+
+  test 'index filters by high min_notices excludes low count problems' do
+    get app_problems_path(@app, min_notices: 10)
+    assert_response :success
+    # Only resolved problem has 10 notices
+    assert_match @resolved_problem.error_class, response.body
+  end
+
+  test 'bulk actions preserve date filters' do
+    post bulk_resolve_app_problems_path(@app), params: {
+      problem_ids: [ @problem.id ],
+      date_from: '2024-01-01',
+      date_to: '2024-12-31'
+    }
+    assert_redirected_to app_problems_path(@app, date_from: '2024-01-01', date_to: '2024-12-31')
+  end
+
+  test 'bulk actions preserve min_notices filter' do
+    post bulk_resolve_app_problems_path(@app), params: {
+      problem_ids: [ @problem.id ],
+      min_notices: '5'
+    }
+    assert_redirected_to app_problems_path(@app, min_notices: '5')
+  end
+
   # Tag filter tests
   test 'index filters by single tag' do
-    get app_problems_path(@app, tags: ['critical'])
+    get app_problems_path(@app, tags: [ 'critical' ])
     assert_response :success
     assert_match @problem.error_class, response.body
   end
@@ -98,7 +148,7 @@ class ProblemsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test 'index excludes problems without specified tag' do
-    get app_problems_path(@app, tags: ['backend'])
+    get app_problems_path(@app, tags: [ 'backend' ])
     assert_response :success
     # problems(:one) only has critical and frontend tags, not backend
     # problems(:two) has backend tag
@@ -107,10 +157,10 @@ class ProblemsControllerTest < ActionDispatch::IntegrationTest
 
   test 'bulk actions preserve tag filter' do
     post bulk_resolve_app_problems_path(@app), params: {
-      problem_ids: [@problem.id],
-      tags: ['critical']
+      problem_ids: [ @problem.id ],
+      tags: [ 'critical' ]
     }
-    assert_redirected_to app_problems_path(@app, tags: ['critical'])
+    assert_redirected_to app_problems_path(@app, tags: [ 'critical' ])
   end
 
   # Sort tests
@@ -212,7 +262,7 @@ class ProblemsControllerTest < ActionDispatch::IntegrationTest
     assert_not problem_two.tags.include?(tag)
 
     post bulk_add_tags_app_problems_path(@app), params: {
-      problem_ids: [@problem.id, problem_two.id],
+      problem_ids: [ @problem.id, problem_two.id ],
       tag_name: 'new-bulk-tag'
     }
 
@@ -228,7 +278,7 @@ class ProblemsControllerTest < ActionDispatch::IntegrationTest
 
     assert_difference 'Tag.count', 1 do
       post bulk_add_tags_app_problems_path(@app), params: {
-        problem_ids: [@problem.id],
+        problem_ids: [ @problem.id ],
         tag_name: 'brand-new-tag'
       }
     end
@@ -239,7 +289,7 @@ class ProblemsControllerTest < ActionDispatch::IntegrationTest
 
   test 'bulk_add_tags with blank tag name shows error' do
     post bulk_add_tags_app_problems_path(@app), params: {
-      problem_ids: [@problem.id],
+      problem_ids: [ @problem.id ],
       tag_name: ''
     }
 
@@ -252,7 +302,7 @@ class ProblemsControllerTest < ActionDispatch::IntegrationTest
     assert @problem.tags.include?(tag)
 
     post bulk_remove_tags_app_problems_path(@app), params: {
-      problem_ids: [@problem.id],
+      problem_ids: [ @problem.id ],
       tag_name: 'critical'
     }
 
@@ -262,7 +312,7 @@ class ProblemsControllerTest < ActionDispatch::IntegrationTest
 
   test 'bulk_remove_tags with nonexistent tag shows error' do
     post bulk_remove_tags_app_problems_path(@app), params: {
-      problem_ids: [@problem.id],
+      problem_ids: [ @problem.id ],
       tag_name: 'nonexistent-tag'
     }
 
@@ -272,13 +322,13 @@ class ProblemsControllerTest < ActionDispatch::IntegrationTest
 
   test 'bulk_add_tags preserves filters' do
     post bulk_add_tags_app_problems_path(@app), params: {
-      problem_ids: [@problem.id],
+      problem_ids: [ @problem.id ],
       tag_name: 'test-tag',
       status: 'unresolved',
-      tags: ['critical']
+      tags: [ 'critical' ]
     }
 
-    assert_redirected_to app_problems_path(@app, status: 'unresolved', tags: ['critical'])
+    assert_redirected_to app_problems_path(@app, status: 'unresolved', tags: [ 'critical' ])
   end
 
   # Pagination tests

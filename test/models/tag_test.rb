@@ -33,7 +33,7 @@ class TagTest < ActiveSupport::TestCase
   end
 
   test 'name rejects invalid characters' do
-    invalid_names = ['with space', 'with@symbol', 'with.dot', 'with/slash']
+    invalid_names = [ 'with space', 'with@symbol', 'with.dot', 'with/slash' ]
     invalid_names.each do |name|
       tag = Tag.new(name: name)
       assert_not tag.valid?, "#{name} should be invalid"

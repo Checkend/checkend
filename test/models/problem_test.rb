@@ -242,4 +242,53 @@ class ProblemTest < ActiveSupport::TestCase
     results = Problem.tagged_with(%w[critical frontend])
     assert_equal 1, results.where(id: problems(:one).id).count
   end
+
+  # Date range scope tests
+  test 'last_seen_after filters by last_noticed_at' do
+    problem = problems(:one)
+    problem.update!(last_noticed_at: 2.days.ago)
+
+    results = Problem.last_seen_after(1.day.ago)
+    assert_not_includes results, problem
+
+    results = Problem.last_seen_after(3.days.ago)
+    assert_includes results, problem
+  end
+
+  test 'last_seen_before filters by last_noticed_at' do
+    problem = problems(:one)
+    problem.update!(last_noticed_at: 2.days.ago)
+
+    results = Problem.last_seen_before(1.day.ago)
+    assert_includes results, problem
+
+    results = Problem.last_seen_before(3.days.ago)
+    assert_not_includes results, problem
+  end
+
+  test 'last_seen_after returns all when given blank input' do
+    assert_equal Problem.all.to_a.sort, Problem.last_seen_after(nil).to_a.sort
+    assert_equal Problem.all.to_a.sort, Problem.last_seen_after('').to_a.sort
+  end
+
+  test 'last_seen_before returns all when given blank input' do
+    assert_equal Problem.all.to_a.sort, Problem.last_seen_before(nil).to_a.sort
+    assert_equal Problem.all.to_a.sort, Problem.last_seen_before('').to_a.sort
+  end
+
+  # Notice count scope tests
+  test 'with_notices_at_least filters by notice count' do
+    results = Problem.with_notices_at_least(10)
+    assert_includes results, problems(:resolved) # has 10 notices
+    assert_not_includes results, problems(:one)  # has 5 notices
+  end
+
+  test 'with_notices_at_least returns all when given blank input' do
+    assert_equal Problem.all.to_a.sort, Problem.with_notices_at_least(nil).to_a.sort
+    assert_equal Problem.all.to_a.sort, Problem.with_notices_at_least('').to_a.sort
+  end
+
+  test 'with_notices_at_least returns all when given zero' do
+    assert_equal Problem.all.to_a.sort, Problem.with_notices_at_least(0).to_a.sort
+  end
 end

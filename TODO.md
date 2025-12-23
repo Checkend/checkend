@@ -58,36 +58,13 @@ Add tags support, custom fingerprint override, and improved search capabilities 
 
 ---
 
-## 2. Custom Fingerprint Override
+## 2. Custom Fingerprint Override ⏭️ SKIPPED
 
-### 2.1 Database Changes
-- [ ] Add `custom_fingerprint:string` column to problems
-- [ ] Add `fingerprint_locked:boolean` column (default: false)
-- [ ] Migrate existing data
-
-### 2.2 Fingerprint Override Logic
-- [ ] Modify Problem model: use `custom_fingerprint` if present, else generated
-- [ ] Update ErrorIngestionService to respect locked fingerprints
-- [ ] When fingerprint is locked, new notices still match by custom fingerprint
-
-### 2.3 Problem Merging
-- [ ] Create `ProblemMergeService` to combine two problems
-  - Move all notices from source to target
-  - Update counter caches
-  - Delete source problem
-  - Lock target fingerprint to prevent re-splitting
-- [ ] Add merge UI on problem show page
-- [ ] Add problem search/select modal for merge target
-
-### 2.4 Fingerprint UI
-- [ ] Display current fingerprint on problem show page
-- [ ] Add "Edit Fingerprint" form (with warning about implications)
-- [ ] Add "Lock Fingerprint" toggle
-- [ ] Add "Merge with Another Problem" action
+**Decision:** Skip server-side fingerprint override. Client-side fingerprints are already supported via the API (`fingerprint` parameter). Server-side merging adds complexity for a rarely-used feature.
 
 ---
 
-## 3. Search Improvements
+## 3. Search Improvements ✅
 
 ### Approach Options
 
@@ -110,32 +87,58 @@ Add tags support, custom fingerprint override, and improved search capabilities 
 
 **Decision:** Option A for v1.1, consider Option B/C for future
 
-### 3.1 Extended Search Fields
+### 3.1 Extended Search Fields ⏭️ DEFERRED
 - [ ] Search in `context` JSONB field (notices)
 - [ ] Search in `user_info` JSONB field (notices)
 - [ ] Search by environment (if tracked in context)
 - [ ] Option to search notice-level data (slower but more thorough)
 
-### 3.2 Date Range Filtering
-- [ ] Add "From Date" and "To Date" inputs to filter form
-- [ ] Filter by `first_noticed_at` or `last_noticed_at` (user choice)
-- [ ] Add quick filters: "Today", "Last 7 days", "Last 30 days"
+*Note: Deferred to future version. Requires more complex query optimization.*
 
-### 3.3 Advanced Filters
-- [ ] Filter by notice count range (e.g., "More than 10 occurrences")
+### 3.2 Date Range Filtering ✅
+- [x] Add "From Date" and "To Date" inputs to filter form
+- [x] Filter by `last_noticed_at` date range
+- [x] Add quick filters: "Today", "Last 7 days", "Last 30 days"
+
+### 3.3 Advanced Filters ✅
+- [x] Filter by notice count range (min_notices filter)
 - [ ] Filter by app (for multi-app view, future consideration)
 - [ ] Save filter presets (optional, stretch goal)
 
-### 3.4 UI Improvements
-- [ ] Collapsible "Advanced Filters" section
-- [ ] Show active filter count badge
-- [ ] Keyboard shortcut for search focus (Cmd+K or /)
+### 3.4 UI Improvements ✅
+- [x] Collapsible "Advanced Filters" section
+- [x] Show active filter count badge
+- [ ] Keyboard shortcut for search focus (Cmd+K or /) - deferred
 
 ---
 
-## 4. Testing
+## 4. Notifier Tracking
 
-### 4.1 Tag Tests
+Track which client SDK sent each error to prepare for v2.0 client libraries.
+
+### 4.1 Database Changes
+- [ ] Add `notifier` jsonb column to notices table
+- [ ] Run migration
+
+### 4.2 API Changes
+- [ ] Add `notifier_params` to ErrorsController
+- [ ] Permit notifier fields: `name`, `version`, `language`, `language_version`
+- [ ] Pass notifier params to ErrorIngestionService
+- [ ] Store notifier data on Notice creation
+
+### 4.3 UI Display
+- [ ] Display notifier info on notice detail page (if present)
+- [ ] Show SDK name/version badge in notice list
+
+### 4.4 Testing
+- [ ] Test notifier params are stored correctly
+- [ ] Test backward compatibility (notifier is optional)
+
+---
+
+## 5. Testing
+
+### 5.1 Tag Tests
 - [x] `test/models/tag_test.rb` - validations, uniqueness
 - [x] `test/models/problem_tag_test.rb` - associations
 - [x] `test/models/problem_test.rb` - tagged_with scope
@@ -143,22 +146,16 @@ Add tags support, custom fingerprint override, and improved search capabilities 
 - [x] `test/controllers/problems_controller_test.rb` - tag filtering (4 tests)
 - [ ] `test/system/tags_test.rb` - tag management UI
 
-### 4.2 Fingerprint Tests
-- [ ] Test custom fingerprint override
-- [ ] Test fingerprint locking
-- [ ] `test/services/problem_merge_service_test.rb`
-- [ ] Test merge UI flow
-
-### 4.3 Search Tests
-- [ ] Test date range filtering
-- [ ] Test extended field search
-- [ ] Test filter combinations
+### 5.2 Search Tests ✅
+- [x] Test date range filtering (controller + model tests)
+- [ ] Test extended field search (deferred with feature)
+- [x] Test filter combinations (bulk action preserves filters)
 
 ---
 
-## 5. Current Progress
+## 6. Current Progress
 
-**Status:** Section 1 (Tags Support) Complete!
+**Status:** Sections 1 (Tags) and 3 (Search Improvements) Complete!
 
 **Completed:**
 - Tag and ProblemTag models with migrations
@@ -172,14 +169,18 @@ Add tags support, custom fingerprint override, and improved search capabilities 
 - Tag filtering UI on problems index with toggle selection
 - Filters preserved in pagination and bulk actions
 - Bulk add/remove tags with dropdown menus
-- Full test coverage (227 tests passing)
+- Date range filtering (From/To dates with quick filters)
+- Minimum notices filter
+- Collapsible "Advanced Filters" section with badge
+- Full test coverage (241 tests passing)
 
-**Next Step:** Continue with Section 2 (Custom Fingerprint Override) or Section 3 (Search Improvements)
+**Next Step:** Section 4 (Notifier Tracking) or v1.1 release
 
 ---
 
 ## Implementation Order
 
 1. ~~Tags (1.1 → 1.5) - Most user-visible feature~~ ✅ Complete
-2. Search Improvements (3.1 → 3.4) - Quick wins
-3. Custom Fingerprint (2.1 → 2.4) - More complex, do last
+2. ~~Custom Fingerprint (2.1 → 2.4)~~ ⏭️ Skipped
+3. ~~Search Improvements (3.2 → 3.4)~~ ✅ Complete
+4. Notifier Tracking (4.1 → 4.4) - Small, prepares for v2.0 SDKs

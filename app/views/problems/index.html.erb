@@ -12,8 +12,17 @@
   </div>
 
   <%# Filters and Search %>
+  <%
+    # Calculate active filter count for badge
+    active_filters = 0
+    active_filters += 1 if params[:date_from].present?
+    active_filters += 1 if params[:date_to].present?
+    active_filters += 1 if params[:min_notices].present?
+    has_advanced_filters = active_filters > 0
+  %>
   <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-4 mb-6">
-    <%= form_with url: app_problems_path(@app), method: :get, local: true, class: "flex flex-wrap items-center gap-4" do |f| %>
+    <%= form_with url: app_problems_path(@app), method: :get, local: true, class: "space-y-4" do |f| %>
+      <div class="flex flex-wrap items-center gap-4">
       <%# Status Filter %>
       <div class="flex items-center space-x-2">
         <label class="text-sm font-medium text-gray-700 dark:text-zinc-300">Status:</label>
@@ -70,11 +79,78 @@
         Search
       </button>
 
-      <% if params[:search].present? || params[:status].present? || params[:sort].present? || params[:tags].present? %>
+      <% if params[:search].present? || params[:status].present? || params[:sort].present? || params[:tags].present? || has_advanced_filters %>
         <%= link_to app_problems_path(@app), class: "text-sm text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-300" do %>
           Clear filters
         <% end %>
       <% end %>
+      </div>
+
+      <%# Advanced Filters Toggle %>
+      <div data-controller="collapsible" data-collapsible-open-value="<%= has_advanced_filters %>">
+        <button type="button" data-action="collapsible#toggle" class="flex items-center text-sm font-medium text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-200">
+          <svg data-collapsible-target="icon" class="w-4 h-4 mr-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+          </svg>
+          Advanced Filters
+          <% if active_filters > 0 %>
+            <span class="ml-2 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-violet-600 rounded-full">
+              <%= active_filters %>
+            </span>
+          <% end %>
+        </button>
+
+        <div data-collapsible-target="content" class="<%= 'hidden' unless has_advanced_filters %> mt-4 pt-4 border-t border-gray-200 dark:border-zinc-700">
+          <div class="flex flex-wrap items-end gap-4">
+            <%# Date Range %>
+            <div class="flex items-center gap-2">
+              <div>
+                <label class="block text-xs font-medium text-gray-600 dark:text-zinc-400 mb-1">Last seen from</label>
+                <input type="date" name="date_from" value="<%= params[:date_from] %>"
+                       class="px-3 py-1.5 text-sm rounded-md border border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-violet-500">
+              </div>
+              <span class="text-gray-400 dark:text-zinc-500 pt-5">to</span>
+              <div>
+                <label class="block text-xs font-medium text-gray-600 dark:text-zinc-400 mb-1">Last seen to</label>
+                <input type="date" name="date_to" value="<%= params[:date_to] %>"
+                       class="px-3 py-1.5 text-sm rounded-md border border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-violet-500">
+              </div>
+            </div>
+
+            <%# Quick Date Filters %>
+            <div class="flex items-center gap-1">
+              <%
+                today = Date.current.to_s
+                seven_days_ago = 7.days.ago.to_date.to_s
+                thirty_days_ago = 30.days.ago.to_date.to_s
+              %>
+              <button type="button" onclick="document.querySelector('[name=date_from]').value='<%= today %>'; document.querySelector('[name=date_to]').value='<%= today %>';"
+                      class="px-2 py-1.5 text-xs font-medium rounded bg-gray-100 dark:bg-zinc-700 text-gray-600 dark:text-zinc-300 hover:bg-gray-200 dark:hover:bg-zinc-600">
+                Today
+              </button>
+              <button type="button" onclick="document.querySelector('[name=date_from]').value='<%= seven_days_ago %>'; document.querySelector('[name=date_to]').value='<%= today %>';"
+                      class="px-2 py-1.5 text-xs font-medium rounded bg-gray-100 dark:bg-zinc-700 text-gray-600 dark:text-zinc-300 hover:bg-gray-200 dark:hover:bg-zinc-600">
+                Last 7 days
+              </button>
+              <button type="button" onclick="document.querySelector('[name=date_from]').value='<%= thirty_days_ago %>'; document.querySelector('[name=date_to]').value='<%= today %>';"
+                      class="px-2 py-1.5 text-xs font-medium rounded bg-gray-100 dark:bg-zinc-700 text-gray-600 dark:text-zinc-300 hover:bg-gray-200 dark:hover:bg-zinc-600">
+                Last 30 days
+              </button>
+            </div>
+
+            <%# Min Notices %>
+            <div>
+              <label class="block text-xs font-medium text-gray-600 dark:text-zinc-400 mb-1">Min notices</label>
+              <input type="number" name="min_notices" value="<%= params[:min_notices] %>" min="1" placeholder="e.g. 10"
+                     class="w-24 px-3 py-1.5 text-sm rounded-md border border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-gray-900 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-violet-500">
+            </div>
+
+            <button type="submit" class="px-3 py-1.5 text-sm font-medium text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-500/10 rounded-lg transition-colors">
+              Apply Filters
+            </button>
+          </div>
+        </div>
+      </div>
     <% end %>
 
     <%# Tag Filters %>
@@ -108,6 +184,9 @@
       <%= hidden_field_tag :status, params[:status] %>
       <%= hidden_field_tag :search, params[:search] %>
       <%= hidden_field_tag :sort, params[:sort] %>
+      <%= hidden_field_tag :date_from, params[:date_from] %>
+      <%= hidden_field_tag :date_to, params[:date_to] %>
+      <%= hidden_field_tag :min_notices, params[:min_notices] %>
       <% Array(params[:tags]).each do |tag_name| %>
         <%= hidden_field_tag 'tags[]', tag_name %>
       <% end %>

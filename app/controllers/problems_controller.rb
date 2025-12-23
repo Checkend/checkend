@@ -31,6 +31,19 @@ class ProblemsController < ApplicationController
       @problems = @problems.tagged_with(params[:tags])
     end
 
+    # Date range filtering
+    if params[:date_from].present?
+      @problems = @problems.last_seen_after(Date.parse(params[:date_from]))
+    end
+    if params[:date_to].present?
+      @problems = @problems.last_seen_before(Date.parse(params[:date_to]))
+    end
+
+    # Notice count filter
+    if params[:min_notices].present?
+      @problems = @problems.with_notices_at_least(params[:min_notices])
+    end
+
     # Sort
     case params[:sort]
     when 'notices'
@@ -130,7 +143,7 @@ class ProblemsController < ApplicationController
   end
 
   def filter_params
-    params.permit(:status, :search, :sort, tags: []).to_h.compact_blank
+    params.permit(:status, :search, :sort, :date_from, :date_to, :min_notices, tags: []).to_h.compact_blank
   end
 
   def set_breadcrumbs

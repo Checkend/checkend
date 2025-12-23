@@ -9,6 +9,9 @@ class Problem < ApplicationRecord
 
   scope :unresolved, -> { where(status: 'unresolved') }
   scope :resolved, -> { where(status: 'resolved') }
+  scope :last_seen_after, ->(date) { where('last_noticed_at >= ?', date.beginning_of_day) if date.present? }
+  scope :last_seen_before, ->(date) { where('last_noticed_at <= ?', date.end_of_day) if date.present? }
+  scope :with_notices_at_least, ->(count) { where('notices_count >= ?', count) if count.present? && count.to_i > 0 }
   scope :tagged_with, ->(tag_names) {
     return all if tag_names.blank?
 
