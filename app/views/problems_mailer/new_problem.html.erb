@@ -1,0 +1,38 @@
+<h1>New Error in <%= @app.name %></h1>
+
+<p>A new error has been detected in your application.</p>
+
+<table cellpadding="10" cellspacing="0" style="border: 1px solid #e5e7eb; border-radius: 8px; margin: 20px 0;">
+  <tr>
+    <td style="background-color: #f9fafb; font-weight: bold; width: 120px;">Error Class</td>
+    <td><%= @problem.error_class %></td>
+  </tr>
+  <tr>
+    <td style="background-color: #f9fafb; font-weight: bold;">Message</td>
+    <td><%= truncate(@problem.error_message, length: 200) %></td>
+  </tr>
+  <tr>
+    <td style="background-color: #f9fafb; font-weight: bold;">Application</td>
+    <td><%= @app.name %> (<%= @app.environment %>)</td>
+  </tr>
+  <tr>
+    <td style="background-color: #f9fafb; font-weight: bold;">First Seen</td>
+    <td><%= @problem.first_noticed_at&.strftime("%B %d, %Y at %I:%M %p") %></td>
+  </tr>
+</table>
+
+<% if @notice&.backtrace&.lines&.any? %>
+<h2>Backtrace</h2>
+<pre style="background-color: #1f2937; color: #f9fafb; padding: 15px; border-radius: 8px; overflow-x: auto; font-size: 12px;"><% @notice.backtrace.lines.first(10).each do |line| %><%= "#{line['file']}:#{line['line']} in `#{line['method']}`" %>
+<% end %><% if @notice.backtrace.lines.size > 10 %>
+... and <%= @notice.backtrace.lines.size - 10 %> more lines<% end %></pre>
+<% end %>
+
+<p>
+  <%= link_to "View Error Details", app_problem_url(@app, @problem), style: "display: inline-block; background-color: #7c3aed; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 500;" %>
+</p>
+
+<p style="color: #6b7280; font-size: 12px; margin-top: 30px;">
+  You received this email because you have notifications enabled for <%= @app.name %>.
+  You can manage your notification settings in the app settings.
+</p>

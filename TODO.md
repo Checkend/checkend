@@ -1,145 +1,115 @@
-# TODO - Phase 3: Web Dashboard
+# TODO - Phase 4: Notifications
 
 ## Overview
-Build the web interface for managing apps and viewing/resolving errors.
+Implement email notifications for error events using the `noticed` gem, leveraging the existing Solid Queue infrastructure.
 
 ---
 
-## 1. Apps Management
+## 1. Setup & Configuration
 
-### 1.1 Apps Controller & Views
-- [x] Create `AppsController` with full CRUD actions
-- [x] Index page: list user's apps with error counts
-- [x] Show page: app details with recent problems
-- [x] New/Edit forms: name, environment fields
-- [x] Delete with confirmation
-- [x] Display API key (with copy button)
-- [x] Regenerate API key functionality
+### 1.1 Install Noticed Gem
+- [x] Add `gem "noticed", "~> 2.0"` to Gemfile
+- [x] Run `bundle install`
+- [x] Run `rails noticed:install:migrations`
+- [x] Run `rails db:migrate`
 
-### 1.2 Routes
-```ruby
-resources :apps do
-  member do
-    post :regenerate_api_key
-  end
-end
-```
+### 1.2 Add Notification Settings to Apps
+- [x] Generate migration: `AddNotificationSettingsToApps`
+  - `notify_on_new_problem:boolean` (default: true)
+  - `notify_on_reoccurrence:boolean` (default: true)
+- [x] Run migration
 
 ---
 
-## 2. Problems List
+## 2. Models
 
-### 2.1 Problems Controller & Views
-- [x] Create `ProblemsController` (nested under apps)
-- [x] Index page: paginated list of problems
-- [x] Filter by status (unresolved/resolved/all)
-- [x] Sort by last occurrence, error count
-- [x] Search by error class or message
-- [x] Bulk actions: resolve/unresolve selected
+### 2.1 Update User Model
+- [x] Add `has_many :notifications, as: :recipient, dependent: :destroy, class_name: "Noticed::Notification"`
 
-### 2.2 Problem List Item Display
-- [x] Error class and truncated message
-- [x] Notice count badge
-- [x] First/last seen timestamps
-- [x] Status indicator (resolved/unresolved)
-- [x] Link to problem detail
+### 2.2 Update App Model
+- [x] Notification settings auto-available via migration columns
 
 ---
 
-## 3. Problem Detail & Notices
+## 3. Notifiers
 
-### 3.1 Problem Show Page
-- [x] Error class and full message
-- [x] Status with resolve/unresolve button
-- [x] Timeline: first seen, last seen, resolved at
-- [x] Notice count and occurrence graph (Chartkick)
-- [x] List of recent notices
+### 3.1 NewProblemNotifier
+- [x] Create `app/notifiers/new_problem_notifier.rb`
+- [x] Configure email delivery with conditional (`notify_on_new_problem?`)
+- [x] Add `message` and `url` helper methods
 
-### 3.2 Notice Detail
-- [x] Full backtrace with syntax highlighting
-- [x] Context data (collapsible JSON)
-- [x] Request info (URL, method, params, headers)
-- [x] User info display
-- [x] Occurred at timestamp
+### 3.2 ProblemReoccurredNotifier
+- [x] Create `app/notifiers/problem_reoccurred_notifier.rb`
+- [x] Configure email delivery with conditional (`notify_on_reoccurrence?`)
+- [x] Add `message` and `url` helper methods
 
 ---
 
-## 4. Navigation & Layout
+## 4. Mailer
 
-### 4.1 App Layout Updates
-- [x] Sidebar or top nav with app switcher
-- [x] Breadcrumbs (App > Problems > Notice)
-- [x] Flash messages styled for Violet Bold theme
-- [x] Empty states for no apps/problems
+### 4.1 ProblemsMailer
+- [x] Create `app/mailers/problems_mailer.rb`
+- [x] Implement `new_problem` action
+- [x] Implement `problem_reoccurred` action
 
-### 4.2 Dashboard
-- [x] Update root dashboard to show:
-  - Total apps count
-  - Total unresolved problems
-  - Recent errors across all apps (clickable links to problem detail)
-  - Quick links to each app (grid with unresolved count badges)
+### 4.2 Mailer Views
+- [x] Create `app/views/problems_mailer/new_problem.html.erb`
+- [x] Create `app/views/problems_mailer/new_problem.text.erb`
+- [x] Create `app/views/problems_mailer/problem_reoccurred.html.erb`
+- [x] Create `app/views/problems_mailer/problem_reoccurred.text.erb`
 
 ---
 
-## 5. Styling
+## 5. Error Ingestion Integration
 
-### 5.1 Apply Violet Bold Theme
-- [x] Use approved design system components
-- [x] Dark zinc-900 backgrounds
-- [x] Violet-600 primary actions
-- [x] Pink-500 for error indicators
-- [x] Emerald-400 for resolved status
-- [x] Inter font family
-
-### 5.2 Components Needed
-- [x] Data tables with sorting
-- [x] Pagination controls (Pagy with Tailwind)
-- [x] Status badges (resolved/unresolved)
-- [x] Copy-to-clipboard buttons
-- [x] Collapsible sections (Alpine.js)
-- [x] Code/backtrace display
+### 5.1 Modify ErrorIngestionService
+- [x] Track if problem was resolved before new notice (`@problem_was_resolved`)
+- [x] Auto-unresolve resolved problems when new notice arrives
+- [x] Add `notify_if_needed` method
+- [x] Trigger `NewProblemNotifier` on first notice
+- [x] Trigger `ProblemReoccurredNotifier` when resolved problem gets new notice
 
 ---
 
-## 6. Testing Plan
+## 6. Settings UI
 
-### Controller Tests
-- [x] Apps CRUD operations
-- [x] Authorization (users can only see their apps)
-- [x] Problems filtering and pagination
-- [x] Resolve/unresolve actions
-- [x] Notice detail view and authorization
+### 6.1 App Form Updates
+- [x] Add checkbox for "Notify on new problems"
+- [x] Add checkbox for "Notify on reoccurrence"
+- [x] Update `apps_controller` to permit new params
 
-### System Tests
-- [x] Create and manage an app
-- [x] View problems list with filters
-- [x] View problem and notice details
-- [x] Resolve and unresolve a problem
+### 6.2 App Show Page (Optional)
+- [ ] Display current notification settings
 
 ---
 
-## 7. Current Progress
+## 7. Testing
 
-**Status:** Phase 3 Web Dashboard Complete (including System Tests)
+### 7.1 Unit Tests
+- [x] `test/notifiers/new_problem_notifier_test.rb`
+- [x] `test/notifiers/problem_reoccurred_notifier_test.rb`
+- [x] `test/mailers/problems_mailer_test.rb`
+
+### 7.2 Integration Tests
+- [x] Test notification sent on new problem via API
+- [x] Test notification sent when resolved problem reoccurs
+- [x] Test auto-unresolve behavior
+
+---
+
+## 8. Current Progress
+
+**Status:** Phase 4 Complete
 
 **Completed:**
-- AppsController with full CRUD + regenerate API key
-- Index page with error counts and status badges
-- Show page with API key display, copy button, stats, recent problems
-- New/Edit forms with environment select
-- Delete with confirmation dialog
-- ProblemsController with index and show pages
-- Problems index with filtering (status), sorting (recent, oldest, notices), and search
-- Bulk resolve/unresolve functionality with Stimulus controller
-- Problem show page with status toggle and recent notices
-- Pagy pagination with custom Tailwind styling
-- NoticesController with full notice detail page
-- Notice show page with backtrace, request, user, and context sections
-- Collapsible sections using Alpine.js
-- Navigation between notices (newer/older)
-- Dashboard with stats, quick links to apps, and clickable recent problems
-- System tests for apps CRUD, problems filtering, notice details, and resolve/unresolve
-- Occurrence chart on problem show page (Chartkick + Groupdate)
-- 199 total tests passing (162 unit/controller + 37 system tests)
+- Noticed gem installed with migrations
+- Notification settings added to apps (notify_on_new_problem, notify_on_reoccurrence)
+- User model updated with notifications association
+- NewProblemNotifier and ProblemReoccurredNotifier created
+- ProblemsMailer with HTML and text email templates
+- ErrorIngestionService modified for notification triggers
+- Auto-unresolve behavior for resolved problems
+- Notification settings UI in app edit form
+- 214 total tests passing (177 unit/controller + 37 system)
 
-**Next Step:** Move to Phase 4
+**Next Step:** Move to Phase 5 (if any) or consider future enhancements

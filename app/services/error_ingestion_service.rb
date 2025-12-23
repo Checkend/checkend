@@ -20,9 +20,11 @@ class ErrorIngestionService
       @backtrace = find_or_create_backtrace
       @problem = find_or_create_problem
       @notice = create_notice
-
-      Result.new(success?: true, notice: @notice, problem: @problem)
     end
+
+    notify_if_needed
+
+    Result.new(success?: true, notice: @notice, problem: @problem)
   rescue ValidationError => e
     Result.new(success?: false, error: e.message)
   end
@@ -64,6 +66,15 @@ class ErrorIngestionService
     fingerprint = custom_fingerprint.presence || generate_fingerprint
 
     problem = app.problems.find_or_initialize_by(fingerprint: fingerprint)
+    @problem_was_resolved = problem.persisted? && problem.resolved?
+    @problem_is_new = problem.new_record?
+
+    # Auto-unresolve if a resolved problem gets a new notice
+    if @problem_was_resolved
+      problem.status = 'unresolved'
+      problem.resolved_at = nil
+    end
+
     problem.error_class = error_class
     problem.error_message = error_message
     problem.save!
@@ -86,5 +97,15 @@ class ErrorIngestionService
       user_info: user_params.to_h,
       occurred_at: Time.current
     )
+  end
+
+  def notify_if_needed
+    recipient = @problem.app.user
+
+    if @problem_is_new
+      NewProblemNotifier.with(problem: @problem, notice: @notice).deliver_later(recipient)
+    elsif @problem_was_resolved
+      ProblemReoccurredNotifier.with(problem: @problem, notice: @notice).deliver_later(recipient)
+    end
   end
 end

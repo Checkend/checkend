@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_12_22_025556) do
+ActiveRecord::Schema[8.1].define(version: 2025_12_23_011344) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -19,6 +19,8 @@ ActiveRecord::Schema[8.1].define(version: 2025_12_22_025556) do
     t.datetime "created_at", null: false
     t.string "environment"
     t.string "name", null: false
+    t.boolean "notify_on_new_problem", default: true, null: false
+    t.boolean "notify_on_reoccurrence", default: true, null: false
     t.string "slug"
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
@@ -33,6 +35,30 @@ ActiveRecord::Schema[8.1].define(version: 2025_12_22_025556) do
     t.jsonb "lines", default: [], null: false
     t.datetime "updated_at", null: false
     t.index ["fingerprint"], name: "index_backtraces_on_fingerprint", unique: true
+  end
+
+  create_table "noticed_events", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.integer "notifications_count"
+    t.jsonb "params"
+    t.bigint "record_id"
+    t.string "record_type"
+    t.string "type"
+    t.datetime "updated_at", null: false
+    t.index ["record_type", "record_id"], name: "index_noticed_events_on_record"
+  end
+
+  create_table "noticed_notifications", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "event_id", null: false
+    t.datetime "read_at", precision: nil
+    t.bigint "recipient_id", null: false
+    t.string "recipient_type", null: false
+    t.datetime "seen_at", precision: nil
+    t.string "type"
+    t.datetime "updated_at", null: false
+    t.index ["event_id"], name: "index_noticed_notifications_on_event_id"
+    t.index ["recipient_type", "recipient_id"], name: "index_noticed_notifications_on_recipient"
   end
 
   create_table "notices", force: :cascade do |t|

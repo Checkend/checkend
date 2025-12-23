@@ -137,4 +137,46 @@ class ErrorIngestionServiceTest < ActiveSupport::TestCase
     ErrorIngestionService.call(app: @app, error_params: @valid_params)
     assert_equal 2, result1.problem.reload.notices_count
   end
+
+  # Notification tests
+
+  test 'sends notification for new problem' do
+    assert_difference 'Noticed::Notification.count', 1 do
+      ErrorIngestionService.call(app: @app, error_params: @valid_params)
+    end
+  end
+
+  test 'does not send notification for existing unresolved problem' do
+    # Create first notice (triggers notification)
+    ErrorIngestionService.call(app: @app, error_params: @valid_params)
+
+    # Second notice should not trigger notification
+    assert_no_difference 'Noticed::Notification.count' do
+      ErrorIngestionService.call(app: @app, error_params: @valid_params)
+    end
+  end
+
+  test 'sends notification when resolved problem reoccurs' do
+    # Create problem and resolve it
+    result = ErrorIngestionService.call(app: @app, error_params: @valid_params)
+    result.problem.resolve!
+
+    # New notice on resolved problem should trigger reoccurrence notification
+    assert_difference 'Noticed::Notification.count', 1 do
+      ErrorIngestionService.call(app: @app, error_params: @valid_params)
+    end
+  end
+
+  test 'auto-unresolves resolved problem when new notice arrives' do
+    # Create problem and resolve it
+    result = ErrorIngestionService.call(app: @app, error_params: @valid_params)
+    result.problem.resolve!
+    assert result.problem.resolved?
+
+    # New notice should auto-unresolve
+    ErrorIngestionService.call(app: @app, error_params: @valid_params)
+
+    assert result.problem.reload.unresolved?
+    assert_nil result.problem.resolved_at
+  end
 end

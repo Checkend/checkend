@@ -29,6 +29,31 @@
         <p class="mt-1 text-sm text-gray-500 dark:text-zinc-500">Optional. Helps organize apps by deployment environment.</p>
       <% end %>
     </div>
+
+    <%# Notification Settings %>
+    <div class="border-t border-gray-200 dark:border-zinc-700 pt-6">
+      <h3 class="text-sm font-medium text-gray-900 dark:text-white mb-4">Email Notifications</h3>
+
+      <div class="space-y-4">
+        <div class="flex items-start">
+          <%= form.check_box :notify_on_new_problem,
+              class: "h-4 w-4 rounded border-gray-300 dark:border-zinc-600 text-violet-600 focus:ring-violet-500 dark:bg-zinc-900 dark:checked:bg-violet-600 mt-0.5" %>
+          <div class="ml-3">
+            <%= form.label :notify_on_new_problem, "New errors", class: "text-sm font-medium text-gray-700 dark:text-zinc-300" %>
+            <p class="text-sm text-gray-500 dark:text-zinc-500">Get notified when a new error type is detected.</p>
+          </div>
+        </div>
+
+        <div class="flex items-start">
+          <%= form.check_box :notify_on_reoccurrence,
+              class: "h-4 w-4 rounded border-gray-300 dark:border-zinc-600 text-violet-600 focus:ring-violet-500 dark:bg-zinc-900 dark:checked:bg-violet-600 mt-0.5" %>
+          <div class="ml-3">
+            <%= form.label :notify_on_reoccurrence, "Reoccurring errors", class: "text-sm font-medium text-gray-700 dark:text-zinc-300" %>
+            <p class="text-sm text-gray-500 dark:text-zinc-500">Get notified when a resolved error occurs again.</p>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <%# Sticky footer with action buttons %>

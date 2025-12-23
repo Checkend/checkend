@@ -2,28 +2,31 @@
 
 ## Version 1.0 - Core Error Monitoring
 
-### Phase 1: Foundation
-- [ ] Rails 8 project setup with PostgreSQL, Tailwind, Importmap
-- [ ] User authentication (Rails 8 built-in)
-- [ ] Core models: App, Problem, Notice, Backtrace
+### Phase 1: Foundation ✅
+- [x] Rails 8 project setup with PostgreSQL, Tailwind, Importmap
+- [x] User authentication (Rails 8 built-in)
+- [x] Core models: App, Problem, Notice, Backtrace
 
-### Phase 2: Error Ingestion API
-- [ ] POST /api/v1/errors endpoint
-- [ ] API key authentication
-- [ ] Error processing service
-- [ ] Fingerprinting for error grouping
-- [ ] Backtrace deduplication
+### Phase 2: Error Ingestion API ✅
+- [x] POST /api/v1/errors endpoint
+- [x] API key authentication
+- [x] Error processing service
+- [x] Fingerprinting for error grouping
+- [x] Backtrace deduplication
 
-### Phase 3: Web Dashboard
-- [ ] Apps management (CRUD)
-- [ ] Problems list with filtering/search
-- [ ] Notice detail view with backtrace
-- [ ] Resolve/unresolve errors
+### Phase 3: Web Dashboard ✅
+- [x] Apps management (CRUD)
+- [x] Problems list with filtering/search
+- [x] Notice detail view with backtrace
+- [x] Resolve/unresolve errors
+- [x] Occurrence chart (Chartkick)
 
-### Phase 4: Notifications
-- [ ] Email notifications on new errors
-- [ ] Notification on error re-occurrence
-- [ ] Solid Queue for background jobs
+### Phase 4: Notifications ✅
+- [x] Email notifications on new errors (noticed gem)
+- [x] Notification on error re-occurrence
+- [x] Per-app notification settings
+- [x] Database storage for future notification center
+- [x] Auto-unresolve resolved problems on new errors
 
 ---
 

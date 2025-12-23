@@ -29,6 +29,9 @@ gem 'pagy', '~> 9.3'
 gem 'chartkick'
 gem 'groupdate'
 
+# Notifications [https://github.com/excid3/noticed]
+gem 'noticed', '~> 2.0'
+
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
 gem 'tzinfo-data', platforms: %i[ windows jruby ]
 

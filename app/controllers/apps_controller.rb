@@ -51,7 +51,7 @@ class AppsController < ApplicationController
   end
 
   def app_params
-    params.require(:app).permit(:name, :environment)
+    params.require(:app).permit(:name, :environment, :notify_on_new_problem, :notify_on_reoccurrence)
   end
 
   def set_breadcrumbs
