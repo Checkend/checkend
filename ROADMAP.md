@@ -42,12 +42,66 @@
 - [ ] Webhook notifications
 - [ ] Issue tracker integration (GitHub)
 
-### Version 2.0 - Client SDKs
-- [ ] checkend-ruby gem
-- [ ] Breadcrumbs support
-- [ ] Source map support (JavaScript)
+### Version 2.0 - Core Client SDKs
+Each SDK will be maintained in a separate repository for idiomatic packaging and release cycles.
 
-### Version 2.1 - Advanced Features
+**Ruby** (`checkend-ruby`)
+- [ ] Core error reporting library
+- [ ] Rails middleware integration
+- [ ] Rack integration
+- [ ] Sidekiq/Solid Queue hooks
+- [ ] Breadcrumbs support
+
+**JavaScript/TypeScript**
+- [ ] Browser SDK (`@checkend/browser`) - unhandled errors, rejections, source maps
+- [ ] Node.js SDK (`@checkend/node`) - Express/Koa/Fastify middleware
+
+### Version 2.1 - Backend SDKs
+
+**Python** (`checkend-python`)
+- [ ] Core error reporting library
+- [ ] Django middleware
+- [ ] Flask integration
+- [ ] FastAPI/ASGI support
+
+**Go** (`checkend-go`)
+- [ ] Core error reporting library
+- [ ] net/http middleware
+- [ ] Gin/Echo/Fiber adapters
+
+### Version 2.2 - Extended SDKs
+
+**PHP** (`checkend/checkend-php`)
+- [ ] Core error reporting library
+- [ ] Laravel integration
+- [ ] PSR-15 middleware
+
+**Elixir** (`checkend` on Hex)
+- [ ] Core error reporting library
+- [ ] Plug middleware
+- [ ] Phoenix integration
+
+**Java** (`com.checkend:checkend-java`)
+- [ ] Core error reporting library
+- [ ] Spring Boot starter
+- [ ] Servlet filter
+
+**.NET** (`Checkend.NET` on NuGet)
+- [ ] Core error reporting library
+- [ ] ASP.NET Core middleware
+
+### Version 2.3 - Common SDK Features
+All SDKs will support:
+- [ ] Automatic exception capture
+- [ ] Manual error reporting API
+- [ ] Breadcrumbs (user actions leading to error)
+- [ ] Context enrichment (user info, tags, custom data)
+- [ ] Environment detection (production/staging/dev)
+- [ ] Configurable filtering (ignore certain errors)
+- [ ] Async/batched sending
+- [ ] Offline queueing with retry
+
+### Version 3.0 - Advanced Features
 - [ ] Team/organization support
 - [ ] User roles and permissions
 - [ ] Error trends and analytics
