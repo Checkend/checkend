@@ -1,0 +1,92 @@
+---
+import DocsLayout from '../../layouts/DocsLayout.astro'
+import CodeBlock from '../../components/CodeBlock.astro'
+import Callout from '../../components/Callout.astro'
+---
+
+<DocsLayout title="Error Grouping">
+  <div class="space-y-8">
+    <div>
+      <h1 class="text-3xl font-bold text-white light:text-gray-900">Error Grouping</h1>
+      <p class="mt-4 text-lg text-zinc-400 light:text-gray-600">
+        Understand how Checkend groups similar errors together.
+      </p>
+    </div>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-semibold text-white light:text-gray-900">Automatic Fingerprinting</h2>
+      <p class="text-zinc-300 light:text-gray-600">
+        By default, Checkend generates a fingerprint for each error based on:
+      </p>
+      <ul class="mt-4 space-y-2 text-zinc-300 light:text-gray-600">
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400"></span>
+          <span>The error class name (e.g., <code class="rounded bg-zinc-800 px-1.5 py-0.5 text-violet-400 light:bg-gray-100 light:text-violet-600">NoMethodError</code>)</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400"></span>
+          <span>The first line of the backtrace from your application code</span>
+        </li>
+      </ul>
+      <p class="mt-4 text-zinc-300 light:text-gray-600">
+        This means errors with the same class occurring at the same location are grouped into a single "problem."
+      </p>
+    </section>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-semibold text-white light:text-gray-900">Custom Fingerprints</h2>
+      <p class="text-zinc-300 light:text-gray-600">
+        Sometimes you may want to group errors differently. You can provide a custom fingerprint when sending errors:
+      </p>
+      <CodeBlock title="Custom fingerprint example" lang="bash" code={`curl -X POST https://your-checkend-instance.com/ingest/v1/errors \\
+  -H "Content-Type: application/json" \\
+  -H "Checkend-Ingestion-Key: your-ingestion-key" \\
+  -d '{
+    "error_class": "PaymentError",
+    "error_message": "Card declined: insufficient funds",
+    "fingerprint": "payment-declined-insufficient-funds"
+  }'`} />
+      <Callout type="info">
+        All errors with the same custom fingerprint will be grouped together, regardless of their class or backtrace.
+      </Callout>
+    </section>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-semibold text-white light:text-gray-900">Use Cases for Custom Fingerprints</h2>
+      <ul class="mt-4 space-y-4 text-zinc-300 light:text-gray-600">
+        <li>
+          <strong class="text-white light:text-gray-900">Group by error type</strong>
+          <p class="mt-1 text-sm">Group all payment failures together regardless of the specific reason.</p>
+        </li>
+        <li>
+          <strong class="text-white light:text-gray-900">Group by feature</strong>
+          <p class="mt-1 text-sm">Group all errors from a specific feature like "checkout" or "user-registration".</p>
+        </li>
+        <li>
+          <strong class="text-white light:text-gray-900">Separate environments</strong>
+          <p class="mt-1 text-sm">Include environment in the fingerprint to separate staging from production errors.</p>
+        </li>
+      </ul>
+    </section>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-semibold text-white light:text-gray-900">Problems vs Notices</h2>
+      <p class="text-zinc-300 light:text-gray-600">
+        In Checkend terminology:
+      </p>
+      <ul class="mt-4 space-y-2 text-zinc-300 light:text-gray-600">
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400"></span>
+          <span><strong class="text-white light:text-gray-900">Notice</strong> — A single error occurrence</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400"></span>
+          <span><strong class="text-white light:text-gray-900">Problem</strong> — A group of similar notices (based on fingerprint)</span>
+        </li>
+      </ul>
+      <p class="mt-4 text-zinc-300 light:text-gray-600">
+        When you resolve a problem, you're marking all related notices as resolved. If a new notice comes in with the same fingerprint, the problem will be reopened.
+      </p>
+    </section>
+  </div>
+</DocsLayout>

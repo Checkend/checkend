@@ -285,4 +285,3 @@ class Ingest::V1::ErrorsControllerTest < ActionDispatch::IntegrationTest
     assert_nil notice.notifier['version']
   end
 end
-

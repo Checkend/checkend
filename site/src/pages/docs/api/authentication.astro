@@ -1,0 +1,90 @@
+---
+import DocsLayout from '../../../layouts/DocsLayout.astro'
+import CodeBlock from '../../../components/CodeBlock.astro'
+import Callout from '../../../components/Callout.astro'
+---
+
+<DocsLayout title="Authentication">
+  <div class="space-y-8">
+    <div>
+      <h1 class="text-3xl font-bold text-white light:text-gray-900">Authentication</h1>
+      <p class="mt-4 text-lg text-zinc-400 light:text-gray-600">
+        Learn how to authenticate with the Checkend ingestion API.
+      </p>
+    </div>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-semibold text-white light:text-gray-900">Ingestion Keys</h2>
+      <p class="text-zinc-300 light:text-gray-600">
+        Checkend uses ingestion keys to authenticate requests. Each app in your Checkend instance has its own ingestion key.
+      </p>
+      <p class="text-zinc-300 light:text-gray-600">
+        You can find your ingestion key in the Checkend dashboard under <strong class="text-white light:text-gray-900">Apps &rarr; Your App &rarr; Settings</strong>.
+      </p>
+    </section>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-semibold text-white light:text-gray-900">Using the Ingestion Key</h2>
+      <p class="text-zinc-300 light:text-gray-600">
+        Include your ingestion key in the <code class="rounded bg-zinc-800 px-1.5 py-0.5 text-violet-400 light:bg-gray-100 light:text-violet-600">Checkend-Ingestion-Key</code> header:
+      </p>
+      <CodeBlock title="cURL" lang="bash" code={`curl -X POST https://your-checkend-instance.com/ingest/v1/errors \\
+  -H "Content-Type: application/json" \\
+  -H "Checkend-Ingestion-Key: your-ingestion-key" \\
+  -d '{"error_class": "TestError", "error_message": "Test"}'`} />
+      <Callout type="info" title="Header Naming">
+        This header follows <a href="https://tools.ietf.org/html/rfc6648" class="text-violet-400 hover:text-violet-300 underline" target="_blank" rel="noopener noreferrer">RFC 6648</a> conventions by using a vendor-prefixed header name (<code class="rounded bg-zinc-800 px-1.5 py-0.5 text-violet-400 light:bg-gray-100 light:text-violet-600">Checkend-</code>) instead of the deprecated <code class="rounded bg-zinc-800 px-1.5 py-0.5 text-violet-400 light:bg-gray-100 light:text-violet-600">X-</code> prefix.
+      </Callout>
+    </section>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-semibold text-white light:text-gray-900">Security Best Practices</h2>
+      <ul class="mt-4 space-y-2 text-zinc-300 light:text-gray-600">
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400"></span>
+          <span><strong class="text-white light:text-gray-900">Keep ingestion keys secret</strong> — Never commit ingestion keys to version control</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400"></span>
+          <span><strong class="text-white light:text-gray-900">Use environment variables</strong> — Store keys in environment variables, not in code</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400"></span>
+          <span><strong class="text-white light:text-gray-900">Rotate keys</strong> — Regenerate keys periodically or if you suspect they've been compromised</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400"></span>
+          <span><strong class="text-white light:text-gray-900">Use HTTPS</strong> — Always send requests over HTTPS in production</span>
+        </li>
+      </ul>
+    </section>
+
+    <Callout type="warning" title="Invalid Ingestion Key">
+      If you provide an invalid or missing ingestion key, the ingestion API will return a <code class="rounded bg-orange-400/30 px-1 text-orange-300">401 Unauthorized</code> response.
+    </Callout>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-semibold text-white light:text-gray-900">Error Responses</h2>
+      <div class="overflow-hidden rounded-lg border border-zinc-700 light:border-gray-200">
+        <table class="min-w-full divide-y divide-zinc-700 light:divide-gray-200">
+          <thead class="bg-zinc-800 light:bg-gray-50">
+            <tr>
+              <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-400 light:text-gray-500">Status</th>
+              <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-400 light:text-gray-500">Description</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-zinc-700 bg-zinc-900 light:divide-gray-200 light:bg-white">
+            <tr>
+              <td class="whitespace-nowrap px-4 py-3 font-mono text-sm text-pink-400">401</td>
+              <td class="px-4 py-3 text-sm text-zinc-300 light:text-gray-600">Ingestion key is missing or invalid</td>
+            </tr>
+            <tr>
+              <td class="whitespace-nowrap px-4 py-3 font-mono text-sm text-pink-400">403</td>
+              <td class="px-4 py-3 text-sm text-zinc-300 light:text-gray-600">Ingestion key doesn't have permission for this action</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</DocsLayout>
