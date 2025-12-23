@@ -25,6 +25,7 @@ export const navigation: NavGroup[] = [
       { title: 'Error Grouping', href: '/docs/error-grouping' },
       { title: 'Tags', href: '/docs/tags' },
       { title: 'Filtering & Search', href: '/docs/filtering' },
+      { title: 'Teams', href: '/docs/teams' },
       { title: 'Deployment', href: '/docs/deployment' },
     ],
   },
