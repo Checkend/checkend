@@ -1,4 +1,4 @@
-require "application_system_test_case"
+require 'application_system_test_case'
 
 class ResolveProblemsTest < ApplicationSystemTestCase
   setup do
@@ -8,37 +8,37 @@ class ResolveProblemsTest < ApplicationSystemTestCase
     @resolved_problem = problems(:resolved)
   end
 
-  test "resolving a problem from the detail page" do
+  test 'resolving a problem from the detail page' do
     sign_in_as(@user)
 
     visit app_problem_path(@app, @problem)
 
-    assert_text "Unresolved"
+    assert_text 'Unresolved'
 
-    click_button "Mark as Resolved"
+    click_button 'Mark as Resolved'
 
-    assert_text "Problem marked as resolved"
+    assert_text 'Problem marked as resolved'
 
     @problem.reload
     assert @problem.resolved?
   end
 
-  test "unresolving a problem from the detail page" do
+  test 'unresolving a problem from the detail page' do
     sign_in_as(@user)
 
     visit app_problem_path(@app, @resolved_problem)
 
-    assert_text "Resolved"
+    assert_text 'Resolved'
 
-    click_button "Mark as Unresolved"
+    click_button 'Mark as Unresolved'
 
-    assert_text "Problem marked as unresolved"
+    assert_text 'Problem marked as unresolved'
 
     @resolved_problem.reload
     assert @resolved_problem.unresolved?
   end
 
-  test "quick action buttons are present in problems list" do
+  test 'quick action buttons are present in problems list' do
     sign_in_as(@user)
 
     visit app_problems_path(@app)
@@ -50,7 +50,7 @@ class ResolveProblemsTest < ApplicationSystemTestCase
     assert_selector "button[title='Mark as unresolved']"
   end
 
-  test "bulk resolving multiple problems" do
+  test 'bulk resolving multiple problems' do
     sign_in_as(@user)
 
     visit app_problems_path(@app)
@@ -60,12 +60,12 @@ class ResolveProblemsTest < ApplicationSystemTestCase
       checkbox.check
     end
 
-    click_button "Resolve Selected"
+    click_button 'Resolve Selected'
 
-    assert_text "problem(s) marked as resolved"
+    assert_text 'problem(s) marked as resolved'
   end
 
-  test "bulk unresolving multiple problems" do
+  test 'bulk unresolving multiple problems' do
     sign_in_as(@user)
 
     # First, resolve all problems
@@ -78,18 +78,18 @@ class ResolveProblemsTest < ApplicationSystemTestCase
       checkbox.check
     end
 
-    click_button "Unresolve Selected"
+    click_button 'Unresolve Selected'
 
-    assert_text "problem(s) marked as unresolved"
+    assert_text 'problem(s) marked as unresolved'
   end
 
-  test "select all checkbox works" do
+  test 'select all checkbox works' do
     sign_in_as(@user)
 
     visit app_problems_path(@app)
 
     # Click "Select all" checkbox
-    check "Select all"
+    check 'Select all'
 
     # Verify all problem checkboxes are checked
     all("input[name='problem_ids[]']").each do |checkbox|
@@ -97,7 +97,7 @@ class ResolveProblemsTest < ApplicationSystemTestCase
     end
 
     # Uncheck "Select all"
-    uncheck "Select all"
+    uncheck 'Select all'
 
     # Verify all problem checkboxes are unchecked
     all("input[name='problem_ids[]']").each do |checkbox|
@@ -105,32 +105,32 @@ class ResolveProblemsTest < ApplicationSystemTestCase
     end
   end
 
-  test "selected count updates when selecting problems" do
+  test 'selected count updates when selecting problems' do
     sign_in_as(@user)
 
     visit app_problems_path(@app)
 
-    assert_text "0 selected"
+    assert_text '0 selected'
 
     # Check first problem
     first("input[name='problem_ids[]']").check
 
-    assert_text "1 selected"
+    assert_text '1 selected'
   end
 
-  test "status indicator changes after resolving" do
+  test 'status indicator changes after resolving' do
     sign_in_as(@user)
 
     visit app_problem_path(@app, @problem)
 
     # Should show unresolved status with pink indicator
-    assert_selector ".bg-pink-100, .dark\\:bg-pink-500\\/20"
-    assert_text "Unresolved"
+    assert_selector '.bg-pink-100, .dark\\:bg-pink-500\\/20'
+    assert_text 'Unresolved'
 
-    click_button "Mark as Resolved"
+    click_button 'Mark as Resolved'
 
     # After resolving, should show resolved status with green indicator
     visit app_problem_path(@app, @problem)
-    assert_text "Resolved"
+    assert_text 'Resolved'
   end
 end

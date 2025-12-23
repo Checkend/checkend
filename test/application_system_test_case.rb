@@ -5,11 +5,11 @@ class ApplicationSystemTestCase < ActionDispatch::SystemTestCase
 
   private
 
-  def sign_in_as(user, password: "password")
+  def sign_in_as(user, password: 'password')
     visit new_session_path
-    fill_in "Email address", with: user.email_address
-    fill_in "Password", with: password
-    click_button "Sign in"
-    assert_text "Apps" # Wait for dashboard to load
+    fill_in 'Email address', with: user.email_address
+    fill_in 'Password', with: password
+    click_button 'Sign in'
+    assert_text 'Apps' # Wait for dashboard to load
   end
 end

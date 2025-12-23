@@ -55,7 +55,7 @@ class AppsController < ApplicationController
   end
 
   def set_breadcrumbs
-    add_breadcrumb "Apps", apps_path
+    add_breadcrumb 'Apps', apps_path
     add_breadcrumb @app.name
   end
 end

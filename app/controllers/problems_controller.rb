@@ -12,9 +12,9 @@ class ProblemsController < ApplicationController
 
     # Filter by status
     case params[:status]
-    when "resolved"
+    when 'resolved'
       @problems = @problems.resolved
-    when "unresolved"
+    when 'unresolved'
       @problems = @problems.unresolved
     else
       # "all" or nil - show all problems
@@ -23,14 +23,14 @@ class ProblemsController < ApplicationController
     # Search by error class or message
     if params[:search].present?
       search_term = "%#{params[:search]}%"
-      @problems = @problems.where("error_class ILIKE ? OR error_message ILIKE ?", search_term, search_term)
+      @problems = @problems.where('error_class ILIKE ? OR error_message ILIKE ?', search_term, search_term)
     end
 
     # Sort
     case params[:sort]
-    when "notices"
+    when 'notices'
       @problems = @problems.order(notices_count: :desc)
-    when "oldest"
+    when 'oldest'
       @problems = @problems.order(last_noticed_at: :asc)
     else
       # Default: most recent first
@@ -46,12 +46,12 @@ class ProblemsController < ApplicationController
 
   def resolve
     @problem.resolve!
-    redirect_to app_problems_path(@app), notice: "Problem marked as resolved."
+    redirect_to app_problems_path(@app), notice: 'Problem marked as resolved.'
   end
 
   def unresolve
     @problem.unresolve!
-    redirect_to app_problems_path(@app), notice: "Problem marked as unresolved."
+    redirect_to app_problems_path(@app), notice: 'Problem marked as unresolved.'
   end
 
   def bulk_resolve
@@ -83,10 +83,10 @@ class ProblemsController < ApplicationController
   end
 
   def set_breadcrumbs
-    add_breadcrumb "Apps", apps_path
+    add_breadcrumb 'Apps', apps_path
     add_breadcrumb @app.name, app_path(@app)
-    add_breadcrumb "Problems", app_problems_path(@app) if action_name == "show"
-    add_breadcrumb @problem.error_class if action_name == "show"
-    add_breadcrumb "Problems" if action_name == "index"
+    add_breadcrumb 'Problems', app_problems_path(@app) if action_name == 'show'
+    add_breadcrumb @problem.error_class if action_name == 'show'
+    add_breadcrumb 'Problems' if action_name == 'index'
   end
 end

@@ -30,7 +30,7 @@ class Settings::PasswordsController < ApplicationController
   end
 
   def set_breadcrumbs
-    add_breadcrumb "Settings", edit_settings_password_path
-    add_breadcrumb "Security"
+    add_breadcrumb 'Settings', edit_settings_password_path
+    add_breadcrumb 'Security'
   end
 end

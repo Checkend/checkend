@@ -22,9 +22,9 @@ class NoticesController < ApplicationController
   end
 
   def set_breadcrumbs
-    add_breadcrumb "Apps", apps_path
+    add_breadcrumb 'Apps', apps_path
     add_breadcrumb @app.name, app_path(@app)
-    add_breadcrumb "Problems", app_problems_path(@app)
+    add_breadcrumb 'Problems', app_problems_path(@app)
     add_breadcrumb @problem.error_class, app_problem_path(@app, @problem)
     add_breadcrumb "Notice ##{@notice.id}"
   end

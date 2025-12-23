@@ -30,13 +30,13 @@ module PagyTailwind
     # Page links
     pagy.series(**vars).each do |item|
       html << case item
-              when Integer
+      when Integer
                 pagy_tailwind_link(pagy, item, item.to_s, 'rounded-lg border border-gray-300 dark:border-zinc-600 text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-700')
-              when String
+      when String
                 %(<span class="px-3 py-2 rounded-lg bg-violet-600 text-white font-medium">#{pagy.label_for(item)}</span>)
-              when :gap
+      when :gap
                 %(<span class="px-3 py-2 text-gray-500 dark:text-zinc-500">&hellip;</span>)
-              end
+      end
     end
 
     # Next link
