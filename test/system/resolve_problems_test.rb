@@ -43,11 +43,20 @@ class ResolveProblemsTest < ApplicationSystemTestCase
 
     visit app_problems_path(@app)
 
+    # Wait for page to be fully loaded - assert page title first
+    assert_text 'Problems'
+
+    # Ensure both problem types are visible on the page
+    assert_text @problem.error_class
+    assert_text @resolved_problem.error_class
+
     # Verify resolve buttons exist for unresolved problems (checkmark icon)
-    assert_selector "button[title='Mark as resolved']"
+    # Wait explicitly for the button to be visible
+    assert_selector "button[title='Mark as resolved']", wait: 5
 
     # Verify unresolve buttons exist for resolved problems (refresh icon)
-    assert_selector "button[title='Mark as unresolved']"
+    # Wait explicitly for the button to be visible
+    assert_selector "button[title='Mark as unresolved']", wait: 5
   end
 
   test 'bulk resolving multiple problems' do
