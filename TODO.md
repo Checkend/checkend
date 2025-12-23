@@ -1,116 +1,167 @@
-# TODO - Phase 4: Notifications
+# TODO - Version 1.1: Enhanced Filtering
 
 ## Overview
-Implement email notifications for error events using the `noticed` gem, leveraging the existing Solid Queue infrastructure.
+Add tags support, custom fingerprint override, and improved search capabilities to the Problems dashboard.
 
 ---
 
-## 1. Setup & Configuration
+## 1. Tags Support
 
-### 1.1 Install Noticed Gem
-- [x] Add `gem "noticed", "~> 2.0"` to Gemfile
-- [x] Run `bundle install`
-- [x] Run `rails noticed:install:migrations`
-- [x] Run `rails db:migrate`
+### Approach Options
 
-### 1.2 Add Notification Settings to Apps
-- [x] Generate migration: `AddNotificationSettingsToApps`
-  - `notify_on_new_problem:boolean` (default: true)
-  - `notify_on_reoccurrence:boolean` (default: true)
-- [x] Run migration
+**Option A: Custom Implementation (Recommended)**
+- Build simple `tags` and `problem_tags` tables
+- Lightweight, no gem dependencies
+- Full control over behavior
+- Pros: Simple, fast, no bloat
+- Cons: Manual implementation of common features
 
----
+**Option B: acts-as-taggable-on Gem**
+- Popular tagging gem with many features
+- Pros: Feature-rich, tag clouds, tag counts, context tagging
+- Cons: Heavy dependency, may be overkill for our needs
 
-## 2. Models
+**Decision:** Option A - Custom implementation for simplicity
 
-### 2.1 Update User Model
-- [x] Add `has_many :notifications, as: :recipient, dependent: :destroy, class_name: "Noticed::Notification"`
+### 1.1 Database Setup
+- [ ] Generate Tag model: `name:string:uniq`
+- [ ] Generate ProblemTag join model: `problem:references tag:references`
+- [ ] Add unique index on `[problem_id, tag_id]`
+- [ ] Run migrations
 
-### 2.2 Update App Model
-- [x] Notification settings auto-available via migration columns
+### 1.2 Models
+- [ ] Create `Tag` model with validations (name presence, uniqueness, format)
+- [ ] Create `ProblemTag` model
+- [ ] Add `has_many :problem_tags` and `has_many :tags, through: :problem_tags` to Problem
+- [ ] Add `has_many :problem_tags` and `has_many :problems, through: :problem_tags` to Tag
+- [ ] Add scope `Problem.tagged_with(tag_names)` for filtering
 
----
+### 1.3 Tags Management UI
+- [ ] Add tags display to problem list items (colored badges)
+- [ ] Add tags display to problem show page
+- [ ] Create inline tag editor on problem show page (add/remove tags)
+- [ ] Add Stimulus controller for tag autocomplete and management
+- [ ] Create `/tags` endpoint for autocomplete suggestions (JSON)
 
-## 3. Notifiers
+### 1.4 Tag Filtering
+- [ ] Add tag filter dropdown/multi-select to problems index
+- [ ] Update ProblemsController to filter by tags
+- [ ] Preserve tag filter in pagination and bulk actions
+- [ ] Show active tag filters as removable chips
 
-### 3.1 NewProblemNotifier
-- [x] Create `app/notifiers/new_problem_notifier.rb`
-- [x] Configure email delivery with conditional (`notify_on_new_problem?`)
-- [x] Add `message` and `url` helper methods
-
-### 3.2 ProblemReoccurredNotifier
-- [x] Create `app/notifiers/problem_reoccurred_notifier.rb`
-- [x] Configure email delivery with conditional (`notify_on_reoccurrence?`)
-- [x] Add `message` and `url` helper methods
-
----
-
-## 4. Mailer
-
-### 4.1 ProblemsMailer
-- [x] Create `app/mailers/problems_mailer.rb`
-- [x] Implement `new_problem` action
-- [x] Implement `problem_reoccurred` action
-
-### 4.2 Mailer Views
-- [x] Create `app/views/problems_mailer/new_problem.html.erb`
-- [x] Create `app/views/problems_mailer/new_problem.text.erb`
-- [x] Create `app/views/problems_mailer/problem_reoccurred.html.erb`
-- [x] Create `app/views/problems_mailer/problem_reoccurred.text.erb`
+### 1.5 Bulk Tagging
+- [ ] Add "Add Tags" bulk action to selected problems
+- [ ] Add "Remove Tags" bulk action
 
 ---
 
-## 5. Error Ingestion Integration
+## 2. Custom Fingerprint Override
 
-### 5.1 Modify ErrorIngestionService
-- [x] Track if problem was resolved before new notice (`@problem_was_resolved`)
-- [x] Auto-unresolve resolved problems when new notice arrives
-- [x] Add `notify_if_needed` method
-- [x] Trigger `NewProblemNotifier` on first notice
-- [x] Trigger `ProblemReoccurredNotifier` when resolved problem gets new notice
+### 2.1 Database Changes
+- [ ] Add `custom_fingerprint:string` column to problems
+- [ ] Add `fingerprint_locked:boolean` column (default: false)
+- [ ] Migrate existing data
 
----
+### 2.2 Fingerprint Override Logic
+- [ ] Modify Problem model: use `custom_fingerprint` if present, else generated
+- [ ] Update ErrorIngestionService to respect locked fingerprints
+- [ ] When fingerprint is locked, new notices still match by custom fingerprint
 
-## 6. Settings UI
+### 2.3 Problem Merging
+- [ ] Create `ProblemMergeService` to combine two problems
+  - Move all notices from source to target
+  - Update counter caches
+  - Delete source problem
+  - Lock target fingerprint to prevent re-splitting
+- [ ] Add merge UI on problem show page
+- [ ] Add problem search/select modal for merge target
 
-### 6.1 App Form Updates
-- [x] Add checkbox for "Notify on new problems"
-- [x] Add checkbox for "Notify on reoccurrence"
-- [x] Update `apps_controller` to permit new params
-
-### 6.2 App Show Page
-- [x] Display current notification settings
-
----
-
-## 7. Testing
-
-### 7.1 Unit Tests
-- [x] `test/notifiers/new_problem_notifier_test.rb`
-- [x] `test/notifiers/problem_reoccurred_notifier_test.rb`
-- [x] `test/mailers/problems_mailer_test.rb`
-
-### 7.2 Integration Tests
-- [x] Test notification sent on new problem via API
-- [x] Test notification sent when resolved problem reoccurs
-- [x] Test auto-unresolve behavior
+### 2.4 Fingerprint UI
+- [ ] Display current fingerprint on problem show page
+- [ ] Add "Edit Fingerprint" form (with warning about implications)
+- [ ] Add "Lock Fingerprint" toggle
+- [ ] Add "Merge with Another Problem" action
 
 ---
 
-## 8. Current Progress
+## 3. Search Improvements
 
-**Status:** Phase 4 Complete (All Items)
+### Approach Options
 
-**Completed:**
-- Noticed gem installed with migrations
-- Notification settings added to apps (notify_on_new_problem, notify_on_reoccurrence)
-- User model updated with notifications association
-- NewProblemNotifier and ProblemReoccurredNotifier created
-- ProblemsMailer with HTML and text email templates
-- ErrorIngestionService modified for notification triggers
-- Auto-unresolve behavior for resolved problems
-- Notification settings UI in app edit form
-- Notification settings display on app show page
-- All tests passing
+**Option A: Enhanced ILIKE (Recommended for v1.1)**
+- Extend current ILIKE search to more fields
+- Add date range filtering
+- Simple, no additional setup
+- Pros: Works now, no dependencies
+- Cons: Limited full-text capabilities
 
-**Next Step:** Move to Version 1.1 (Enhanced Filtering) or other future enhancements
+**Option B: PostgreSQL Full-Text Search**
+- Use `tsvector` and `tsquery` for proper FTS
+- Pros: Ranking, stemming, better relevance
+- Cons: More complex, requires GIN indexes, migration work
+
+**Option C: pg_search Gem**
+- Wrapper around PostgreSQL FTS
+- Pros: Easy Rails integration, multi-model search
+- Cons: Another dependency
+
+**Decision:** Option A for v1.1, consider Option B/C for future
+
+### 3.1 Extended Search Fields
+- [ ] Search in `context` JSONB field (notices)
+- [ ] Search in `user_info` JSONB field (notices)
+- [ ] Search by environment (if tracked in context)
+- [ ] Option to search notice-level data (slower but more thorough)
+
+### 3.2 Date Range Filtering
+- [ ] Add "From Date" and "To Date" inputs to filter form
+- [ ] Filter by `first_noticed_at` or `last_noticed_at` (user choice)
+- [ ] Add quick filters: "Today", "Last 7 days", "Last 30 days"
+
+### 3.3 Advanced Filters
+- [ ] Filter by notice count range (e.g., "More than 10 occurrences")
+- [ ] Filter by app (for multi-app view, future consideration)
+- [ ] Save filter presets (optional, stretch goal)
+
+### 3.4 UI Improvements
+- [ ] Collapsible "Advanced Filters" section
+- [ ] Show active filter count badge
+- [ ] Keyboard shortcut for search focus (Cmd+K or /)
+
+---
+
+## 4. Testing
+
+### 4.1 Tag Tests
+- [ ] `test/models/tag_test.rb` - validations, uniqueness
+- [ ] `test/models/problem_tag_test.rb` - associations
+- [ ] `test/models/problem_test.rb` - tagged_with scope
+- [ ] `test/controllers/problems_controller_test.rb` - tag filtering
+- [ ] `test/system/tags_test.rb` - tag management UI
+
+### 4.2 Fingerprint Tests
+- [ ] Test custom fingerprint override
+- [ ] Test fingerprint locking
+- [ ] `test/services/problem_merge_service_test.rb`
+- [ ] Test merge UI flow
+
+### 4.3 Search Tests
+- [ ] Test date range filtering
+- [ ] Test extended field search
+- [ ] Test filter combinations
+
+---
+
+## 5. Current Progress
+
+**Status:** Planning Complete - Ready to Begin
+
+**Next Step:** Start with Section 1.1 (Tags Database Setup)
+
+---
+
+## Implementation Order
+
+1. Tags (1.1 → 1.5) - Most user-visible feature
+2. Search Improvements (3.1 → 3.4) - Quick wins
+3. Custom Fingerprint (2.1 → 2.4) - More complex, do last
