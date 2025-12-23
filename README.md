@@ -52,16 +52,16 @@ Visit `http://localhost:3000` and create your account.
 
 ### Quick Start
 
-1. **Create an app** - Log in and click "New App" to get an API key
+1. **Create an app** - Log in and click "New App" to get an ingestion key
 2. **Send errors** - Use the API to report errors from your application
 3. **Monitor** - View grouped errors in the dashboard and mark them resolved
 
 ### Sending Your First Error
 
 ```bash
-curl -X POST http://localhost:3000/api/v1/errors \
+curl -X POST http://localhost:3000/ingest/v1/errors \
   -H "Content-Type: application/json" \
-  -H "X-API-Key: your_api_key" \
+  -H "X-API-Key: your_ingestion_key" \
   -d '{
     "error": {
       "class": "NoMethodError",
@@ -75,13 +75,13 @@ curl -X POST http://localhost:3000/api/v1/errors \
 
 ## API Reference
 
-### POST /api/v1/errors
+### POST /ingest/v1/errors
 
 Report an error to Checkend.
 
 **Headers:**
 - `Content-Type: application/json`
-- `X-API-Key: your_app_api_key`
+- `X-API-Key: your_app_ingestion_key`
 
 **Payload:**
 
@@ -160,7 +160,7 @@ bin/dev
 ```
 app/
 ├── controllers/
-│   └── api/v1/          # API endpoints
+│   └── ingest/v1/       # Ingestion API endpoints
 ├── models/
 │   ├── app.rb           # Client applications
 │   ├── problem.rb       # Grouped errors

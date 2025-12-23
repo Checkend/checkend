@@ -10,20 +10,20 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_12_23_203617) do
+ActiveRecord::Schema[8.1].define(version: 2025_12_23_214720) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
   create_table "apps", force: :cascade do |t|
-    t.string "api_key", null: false
     t.datetime "created_at", null: false
     t.string "environment"
+    t.string "ingestion_key", null: false
     t.string "name", null: false
     t.boolean "notify_on_new_problem", default: true, null: false
     t.boolean "notify_on_reoccurrence", default: true, null: false
     t.string "slug"
     t.datetime "updated_at", null: false
-    t.index ["api_key"], name: "index_apps_on_api_key", unique: true
+    t.index ["ingestion_key"], name: "index_apps_on_ingestion_key", unique: true
     t.index ["slug"], name: "index_apps_on_slug", unique: true
   end
 

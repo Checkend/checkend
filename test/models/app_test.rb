@@ -7,18 +7,18 @@ class AppTest < ActiveSupport::TestCase
     assert_includes app.errors[:name], "can't be blank"
   end
 
-  test 'generates api_key automatically' do
+  test 'generates ingestion_key automatically' do
     app = App.new(name: 'Test App')
     # has_secure_token generates on initialize
-    assert_not_nil app.api_key
-    assert app.api_key.length >= 24
+    assert_not_nil app.ingestion_key
+    assert app.ingestion_key.length >= 24
   end
 
-  test 'api_key must be unique' do
+  test 'ingestion_key must be unique' do
     existing = apps(:one)
-    app = App.new(name: 'Test App', api_key: existing.api_key)
+    app = App.new(name: 'Test App', ingestion_key: existing.ingestion_key)
     assert_not app.valid?
-    assert_includes app.errors[:api_key], 'has already been taken'
+    assert_includes app.errors[:ingestion_key], 'has already been taken'
   end
 
   test 'valid app can be created' do

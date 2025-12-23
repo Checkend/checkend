@@ -1,6 +1,6 @@
 require 'test_helper'
 
-class Api::V1::ErrorsControllerTest < ActionDispatch::IntegrationTest
+class Ingest::V1::ErrorsControllerTest < ActionDispatch::IntegrationTest
   setup do
     @app = apps(:one)
     @valid_payload = {
@@ -17,27 +17,27 @@ class Api::V1::ErrorsControllerTest < ActionDispatch::IntegrationTest
 
   # Authentication tests
 
-  test 'returns 401 when no API key provided' do
-    post api_v1_errors_url, params: @valid_payload, as: :json
+  test 'returns 401 when no ingestion key provided' do
+    post ingest_v1_errors_url, params: @valid_payload, as: :json
 
     assert_response :unauthorized
-    assert_equal({ 'error' => 'Invalid or missing API key' }, response.parsed_body)
+    assert_equal({ 'error' => 'Invalid or missing ingestion key' }, response.parsed_body)
   end
 
-  test 'returns 401 when invalid API key provided' do
-    post api_v1_errors_url,
+  test 'returns 401 when invalid ingestion key provided' do
+    post ingest_v1_errors_url,
       params: @valid_payload,
       headers: { 'X-API-Key' => 'invalid-key' },
       as: :json
 
     assert_response :unauthorized
-    assert_equal({ 'error' => 'Invalid or missing API key' }, response.parsed_body)
+    assert_equal({ 'error' => 'Invalid or missing ingestion key' }, response.parsed_body)
   end
 
-  test 'returns 201 when valid API key provided' do
-    post api_v1_errors_url,
+  test 'returns 201 when valid ingestion key provided' do
+    post ingest_v1_errors_url,
       params: @valid_payload,
-      headers: { 'X-API-Key' => @app.api_key },
+      headers: { 'X-API-Key' => @app.ingestion_key },
       as: :json
 
     assert_response :created
@@ -48,9 +48,9 @@ class Api::V1::ErrorsControllerTest < ActionDispatch::IntegrationTest
   test 'returns 422 when error class is missing' do
     payload = { error: { message: 'some error' } }
 
-    post api_v1_errors_url,
+    post ingest_v1_errors_url,
       params: payload,
-      headers: { 'X-API-Key' => @app.api_key },
+      headers: { 'X-API-Key' => @app.ingestion_key },
       as: :json
 
     assert_response :unprocessable_entity
@@ -58,9 +58,9 @@ class Api::V1::ErrorsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test 'returns 422 when error key is missing' do
-    post api_v1_errors_url,
+    post ingest_v1_errors_url,
       params: { foo: 'bar' },
-      headers: { 'X-API-Key' => @app.api_key },
+      headers: { 'X-API-Key' => @app.ingestion_key },
       as: :json
 
     assert_response :unprocessable_entity
@@ -70,9 +70,9 @@ class Api::V1::ErrorsControllerTest < ActionDispatch::IntegrationTest
 
   test 'creates a notice and returns its data' do
     assert_difference 'Notice.count', 1 do
-      post api_v1_errors_url,
+      post ingest_v1_errors_url,
         params: @valid_payload,
-        headers: { 'X-API-Key' => @app.api_key },
+        headers: { 'X-API-Key' => @app.ingestion_key },
         as: :json
     end
 
@@ -84,26 +84,26 @@ class Api::V1::ErrorsControllerTest < ActionDispatch::IntegrationTest
 
   test 'creates a problem for new error fingerprint' do
     assert_difference 'Problem.count', 1 do
-      post api_v1_errors_url,
+      post ingest_v1_errors_url,
         params: @valid_payload,
-        headers: { 'X-API-Key' => @app.api_key },
+        headers: { 'X-API-Key' => @app.ingestion_key },
         as: :json
     end
   end
 
   test 'reuses existing problem for same fingerprint' do
     # First request creates problem
-    post api_v1_errors_url,
+    post ingest_v1_errors_url,
       params: @valid_payload,
-      headers: { 'X-API-Key' => @app.api_key },
+      headers: { 'X-API-Key' => @app.ingestion_key },
       as: :json
 
     # Second request reuses problem
     assert_no_difference 'Problem.count' do
       assert_difference 'Notice.count', 1 do
-        post api_v1_errors_url,
+        post ingest_v1_errors_url,
           params: @valid_payload,
-          headers: { 'X-API-Key' => @app.api_key },
+          headers: { 'X-API-Key' => @app.ingestion_key },
           as: :json
       end
     end
@@ -113,9 +113,9 @@ class Api::V1::ErrorsControllerTest < ActionDispatch::IntegrationTest
     payload_with_fingerprint = @valid_payload.deep_dup
     payload_with_fingerprint[:error][:fingerprint] = 'custom-fingerprint-123'
 
-    post api_v1_errors_url,
+    post ingest_v1_errors_url,
       params: payload_with_fingerprint,
-      headers: { 'X-API-Key' => @app.api_key },
+      headers: { 'X-API-Key' => @app.ingestion_key },
       as: :json
 
     assert_response :created
@@ -127,9 +127,9 @@ class Api::V1::ErrorsControllerTest < ActionDispatch::IntegrationTest
     payload = @valid_payload.deep_dup
     payload[:context] = { environment: 'production', custom_key: 'custom_value' }
 
-    post api_v1_errors_url,
+    post ingest_v1_errors_url,
       params: payload,
-      headers: { 'X-API-Key' => @app.api_key },
+      headers: { 'X-API-Key' => @app.ingestion_key },
       as: :json
 
     notice = Notice.last
@@ -141,9 +141,9 @@ class Api::V1::ErrorsControllerTest < ActionDispatch::IntegrationTest
     payload = @valid_payload.deep_dup
     payload[:request] = { url: 'https://example.com/users', method: 'POST' }
 
-    post api_v1_errors_url,
+    post ingest_v1_errors_url,
       params: payload,
-      headers: { 'X-API-Key' => @app.api_key },
+      headers: { 'X-API-Key' => @app.ingestion_key },
       as: :json
 
     notice = Notice.last
@@ -155,9 +155,9 @@ class Api::V1::ErrorsControllerTest < ActionDispatch::IntegrationTest
     payload = @valid_payload.deep_dup
     payload[:user] = { id: '123', email: 'user@example.com' }
 
-    post api_v1_errors_url,
+    post ingest_v1_errors_url,
       params: payload,
-      headers: { 'X-API-Key' => @app.api_key },
+      headers: { 'X-API-Key' => @app.ingestion_key },
       as: :json
 
     notice = Notice.last
@@ -167,9 +167,9 @@ class Api::V1::ErrorsControllerTest < ActionDispatch::IntegrationTest
 
   test 'creates backtrace from raw backtrace lines' do
     assert_difference 'Backtrace.count', 1 do
-      post api_v1_errors_url,
+      post ingest_v1_errors_url,
         params: @valid_payload,
-        headers: { 'X-API-Key' => @app.api_key },
+        headers: { 'X-API-Key' => @app.ingestion_key },
         as: :json
     end
 
@@ -180,16 +180,16 @@ class Api::V1::ErrorsControllerTest < ActionDispatch::IntegrationTest
 
   test 'deduplicates identical backtraces' do
     # First request creates backtrace
-    post api_v1_errors_url,
+    post ingest_v1_errors_url,
       params: @valid_payload,
-      headers: { 'X-API-Key' => @app.api_key },
+      headers: { 'X-API-Key' => @app.ingestion_key },
       as: :json
 
     # Second request with same backtrace reuses it
     assert_no_difference 'Backtrace.count' do
-      post api_v1_errors_url,
+      post ingest_v1_errors_url,
         params: @valid_payload,
-        headers: { 'X-API-Key' => @app.api_key },
+        headers: { 'X-API-Key' => @app.ingestion_key },
         as: :json
     end
 
@@ -199,9 +199,9 @@ class Api::V1::ErrorsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test 'updates problem timestamps on new notice' do
-    post api_v1_errors_url,
+    post ingest_v1_errors_url,
       params: @valid_payload,
-      headers: { 'X-API-Key' => @app.api_key },
+      headers: { 'X-API-Key' => @app.ingestion_key },
       as: :json
 
     problem = Problem.last
@@ -209,9 +209,9 @@ class Api::V1::ErrorsControllerTest < ActionDispatch::IntegrationTest
     last_noticed = problem.last_noticed_at
 
     travel 1.hour do
-      post api_v1_errors_url,
+      post ingest_v1_errors_url,
         params: @valid_payload,
-        headers: { 'X-API-Key' => @app.api_key },
+        headers: { 'X-API-Key' => @app.ingestion_key },
         as: :json
 
       problem.reload
@@ -221,17 +221,17 @@ class Api::V1::ErrorsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test 'increments problem notices_count' do
-    post api_v1_errors_url,
+    post ingest_v1_errors_url,
       params: @valid_payload,
-      headers: { 'X-API-Key' => @app.api_key },
+      headers: { 'X-API-Key' => @app.ingestion_key },
       as: :json
 
     problem = Problem.last
     assert_equal 1, problem.notices_count
 
-    post api_v1_errors_url,
+    post ingest_v1_errors_url,
       params: @valid_payload,
-      headers: { 'X-API-Key' => @app.api_key },
+      headers: { 'X-API-Key' => @app.ingestion_key },
       as: :json
 
     assert_equal 2, problem.reload.notices_count
@@ -248,9 +248,9 @@ class Api::V1::ErrorsControllerTest < ActionDispatch::IntegrationTest
       language_version: '3.2.0'
     }
 
-    post api_v1_errors_url,
+    post ingest_v1_errors_url,
       params: payload,
-      headers: { 'X-API-Key' => @app.api_key },
+      headers: { 'X-API-Key' => @app.ingestion_key },
       as: :json
 
     notice = Notice.last
@@ -261,9 +261,9 @@ class Api::V1::ErrorsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test 'notifier is optional for backward compatibility' do
-    post api_v1_errors_url,
+    post ingest_v1_errors_url,
       params: @valid_payload,
-      headers: { 'X-API-Key' => @app.api_key },
+      headers: { 'X-API-Key' => @app.ingestion_key },
       as: :json
 
     assert_response :created
@@ -275,9 +275,9 @@ class Api::V1::ErrorsControllerTest < ActionDispatch::IntegrationTest
     payload = @valid_payload.deep_dup
     payload[:notifier] = { name: 'checkend-js' }
 
-    post api_v1_errors_url,
+    post ingest_v1_errors_url,
       params: payload,
-      headers: { 'X-API-Key' => @app.api_key },
+      headers: { 'X-API-Key' => @app.ingestion_key },
       as: :json
 
     notice = Notice.last
@@ -285,3 +285,4 @@ class Api::V1::ErrorsControllerTest < ActionDispatch::IntegrationTest
     assert_nil notice.notifier['version']
   end
 end
+

@@ -8,8 +8,8 @@
 - [x] Core models: App, Problem, Notice, Backtrace
 
 ### Phase 2: Error Ingestion API ✅
-- [x] POST /api/v1/errors endpoint
-- [x] API key authentication
+- [x] POST /ingest/v1/errors endpoint
+- [x] Ingestion key authentication
 - [x] Error processing service
 - [x] Fingerprinting for error grouping
 - [x] Backtrace deduplication

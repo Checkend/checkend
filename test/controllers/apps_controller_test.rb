@@ -45,7 +45,7 @@ class AppsControllerTest < ActionDispatch::IntegrationTest
     get app_path(@app)
     assert_response :success
     assert_select 'h1', @app.name
-    assert_match @app.api_key, response.body
+    assert_match @app.ingestion_key, response.body
   end
 
   test 'show cannot view inaccessible app' do
@@ -71,7 +71,7 @@ class AppsControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to setup_wizard_app_path(app)
     assert_equal 'New Test App', app.name
     assert_equal 'production', app.environment
-    assert app.api_key.present?
+    assert app.ingestion_key.present?
   end
 
   test 'create with invalid params' do
@@ -134,20 +134,20 @@ class AppsControllerTest < ActionDispatch::IntegrationTest
     assert_response :not_found
   end
 
-  # Regenerate API key tests
-  test 'regenerate_api_key updates the api key' do
-    old_key = @app.api_key
+  # Regenerate ingestion key tests
+  test 'regenerate_ingestion_key updates the ingestion key' do
+    old_key = @app.ingestion_key
 
-    post regenerate_api_key_app_path(@app)
+    post regenerate_ingestion_key_app_path(@app)
 
     assert_redirected_to app_path(@app)
     @app.reload
-    assert_not_equal old_key, @app.api_key
+    assert_not_equal old_key, @app.ingestion_key
   end
 
-  test 'regenerate_api_key cannot regenerate inaccessible app key' do
+  test 'regenerate_ingestion_key cannot regenerate inaccessible app key' do
     other_app = apps(:two)
-    post regenerate_api_key_app_path(other_app)
+    post regenerate_ingestion_key_app_path(other_app)
     assert_response :not_found
   end
 

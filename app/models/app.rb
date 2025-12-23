@@ -4,10 +4,10 @@ class App < ApplicationRecord
   has_many :teams, through: :team_assignments
   has_many :user_notification_preferences, dependent: :destroy
 
-  has_secure_token :api_key
+  has_secure_token :ingestion_key
 
   validates :name, presence: true
-  validates :api_key, uniqueness: true
+  validates :ingestion_key, uniqueness: true
   validates :slug, presence: true, uniqueness: true
 
   before_validation :generate_slug, on: :create

@@ -1,6 +1,6 @@
 Rails.application.routes.draw do
-  # API routes
-  namespace :api do
+  # Ingestion API routes
+  namespace :ingest do
     namespace :v1 do
       resources :errors, only: [ :create ]
     end
@@ -23,7 +23,7 @@ Rails.application.routes.draw do
   # Apps management
   resources :apps do
     member do
-      post :regenerate_api_key
+      post :regenerate_ingestion_key
       get :setup_wizard
       post :assign_team
       delete :remove_team_assignment

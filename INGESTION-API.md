@@ -8,24 +8,24 @@ The Ingestion API allows client applications to send error reports to Checkend. 
 
 ## Authentication
 
-All API requests must include the `X-API-Key` header with a valid app API key.
+All API requests must include the `X-API-Key` header with a valid app ingestion key.
 
 ```http
-X-API-Key: your_api_key_here
+X-API-Key: your_ingestion_key_here
 ```
 
 **Error Responses:**
 
 | Status | Description |
 |--------|-------------|
-| 401 | Missing or invalid API key |
-| 403 | API key is valid but app is disabled |
+| 401 | Missing or invalid ingestion key |
+| 403 | Ingestion key is valid but app is disabled |
 
 ---
 
 ## Endpoints
 
-### POST /api/v1/errors
+### POST /ingest/v1/errors
 
 Report a new error occurrence.
 
@@ -33,7 +33,7 @@ Report a new error occurrence.
 
 | Header | Required | Description |
 |--------|----------|-------------|
-| `X-API-Key` | Yes | App API key for authentication |
+| `X-API-Key` | Yes | App ingestion key for authentication |
 | `Content-Type` | Yes | Must be `application/json` |
 
 #### Request Body
@@ -184,12 +184,12 @@ ISO 8601 timestamp of when the error occurred. Defaults to server receipt time.
 }
 ```
 
-**401 Unauthorized** - Missing or invalid API key
+**401 Unauthorized** - Missing or invalid ingestion key
 
 ```json
 {
   "error": "unauthorized",
-  "message": "Invalid or missing API key"
+  "message": "Invalid or missing ingestion key"
 }
 ```
 
@@ -306,9 +306,9 @@ If the API is unavailable:
 ## Example: cURL
 
 ```bash
-curl -X POST https://checkend.example.com/api/v1/errors \
+curl -X POST https://checkend.example.com/ingest/v1/errors \
   -H "Content-Type: application/json" \
-  -H "X-API-Key: your_api_key_here" \
+  -H "X-API-Key: your_ingestion_key_here" \
   -d '{
     "error": {
       "class": "RuntimeError",
@@ -331,9 +331,9 @@ require "net/http"
 require "json"
 
 class CheckendClient
-  def initialize(api_key)
-    @api_key = api_key
-    @uri = URI("https://checkend.example.com/api/v1/errors")
+  def initialize(ingestion_key)
+    @ingestion_key = ingestion_key
+    @uri = URI("https://checkend.example.com/ingest/v1/errors")
   end
 
   def report(exception, context: {}, request: nil, user: nil)
@@ -361,7 +361,7 @@ class CheckendClient
 
     request = Net::HTTP::Post.new(@uri.path)
     request["Content-Type"] = "application/json"
-    request["X-API-Key"] = @api_key
+    request["X-API-Key"] = @ingestion_key
     request.body = payload.to_json
 
     response = http.request(request)
@@ -374,7 +374,7 @@ end
 
 ## Versioning
 
-The API is versioned via URL path (`/api/v1/`). Breaking changes will increment the version number. Non-breaking additions (new optional fields) may be added without version change.
+The API is versioned via URL path (`/ingest/v1/`). Breaking changes will increment the version number. Non-breaking additions (new optional fields) may be added without version change.
 
 ---
 
@@ -382,7 +382,7 @@ The API is versioned via URL path (`/api/v1/`). Breaking changes will increment 
 
 | Endpoint | Description |
 |----------|-------------|
-| `GET /api/v1/problems` | List problems for an app |
-| `GET /api/v1/problems/:id` | Get problem details |
-| `POST /api/v1/problems/:id/resolve` | Mark problem as resolved |
-| `GET /api/v1/health` | API health check |
+| `GET /api/v1/problems` | List problems for an app (Application API) |
+| `GET /api/v1/problems/:id` | Get problem details (Application API) |
+| `POST /api/v1/problems/:id/resolve` | Mark problem as resolved (Application API) |
+| `GET /api/v1/health` | API health check (Application API) |

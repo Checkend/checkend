@@ -55,7 +55,7 @@ cd checkend`} />
     <section class="space-y-4">
       <h2 class="text-xl font-semibold text-white light:text-gray-900">5. Create your first app</h2>
       <p class="text-zinc-300 light:text-gray-600">
-        In the dashboard, create a new app to get your API key. You'll use this key to send errors to Checkend.
+        In the dashboard, create a new app to get your ingestion key. You'll use this key to send errors to Checkend.
       </p>
       <p class="mt-2 text-zinc-300 light:text-gray-600">
         After creating the app, you can optionally assign it to a team to collaborate with others. See the
@@ -69,9 +69,9 @@ cd checkend`} />
       <p class="text-zinc-300 light:text-gray-600">
         Use curl to send a test error to your Checkend instance:
       </p>
-      <CodeBlock title="Terminal" lang="bash" code={`curl -X POST http://localhost:3000/api/v1/errors \\
+      <CodeBlock title="Terminal" lang="bash" code={`curl -X POST http://localhost:3000/ingest/v1/errors \\
   -H "Content-Type: application/json" \\
-  -H "X-API-Key: your-api-key" \\
+  -H "X-API-Key: your-ingestion-key" \\
   -d '{
     "error_class": "TestError",
     "error_message": "This is a test error",

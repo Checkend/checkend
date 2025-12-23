@@ -16,7 +16,7 @@ import Callout from '../../../components/Callout.astro'
     <section class="space-y-4">
       <div class="flex items-center gap-3">
         <span class="rounded bg-emerald-500/20 px-2 py-1 text-xs font-semibold text-emerald-400">POST</span>
-        <code class="text-lg font-mono text-white light:text-gray-900">/api/v1/errors</code>
+        <code class="text-lg font-mono text-white light:text-gray-900">/ingest/v1/errors</code>
       </div>
       <p class="text-zinc-300 light:text-gray-600">
         Report a new error to Checkend. The error will be grouped with similar errors based on its fingerprint.
@@ -40,7 +40,7 @@ import Callout from '../../../components/Callout.astro'
             </tr>
             <tr>
               <td class="whitespace-nowrap px-4 py-3 font-mono text-sm text-violet-400">X-API-Key</td>
-              <td class="px-4 py-3 text-sm text-zinc-300 light:text-gray-600">Your app's API key</td>
+              <td class="px-4 py-3 text-sm text-zinc-300 light:text-gray-600">Your app's ingestion key</td>
             </tr>
           </tbody>
         </table>
@@ -71,7 +71,7 @@ import Callout from '../../../components/Callout.astro'
 
     <section class="space-y-4">
       <h2 class="text-xl font-semibold text-white light:text-gray-900">Example Request</h2>
-      <CodeBlock title="cURL" lang="bash" code={`curl -X POST https://checkend.example.com/api/v1/errors \\
+      <CodeBlock title="cURL" lang="bash" code={`curl -X POST https://checkend.example.com/ingest/v1/errors \\
   -H "Content-Type: application/json" \\
   -H "X-API-Key: ck_live_abc123" \\
   -d '{
@@ -123,7 +123,7 @@ import Callout from '../../../components/Callout.astro'
             </tr>
             <tr>
               <td class="whitespace-nowrap px-4 py-3 font-mono text-sm text-pink-400">401</td>
-              <td class="px-4 py-3 text-sm text-zinc-300 light:text-gray-600">Invalid or missing API key</td>
+              <td class="px-4 py-3 text-sm text-zinc-300 light:text-gray-600">Invalid or missing ingestion key</td>
             </tr>
             <tr>
               <td class="whitespace-nowrap px-4 py-3 font-mono text-sm text-pink-400">422</td>

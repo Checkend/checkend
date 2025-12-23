@@ -1,6 +1,6 @@
 class AppsController < ApplicationController
-  before_action :set_app, only: [ :show, :edit, :update, :destroy, :regenerate_api_key, :assign_team, :remove_team_assignment, :setup_wizard ]
-  before_action :require_app_access!, only: [ :show, :edit, :update, :destroy, :regenerate_api_key ]
+  before_action :set_app, only: [ :show, :edit, :update, :destroy, :regenerate_ingestion_key, :assign_team, :remove_team_assignment, :setup_wizard ]
+  before_action :require_app_access!, only: [ :show, :edit, :update, :destroy, :regenerate_ingestion_key ]
   before_action :set_breadcrumbs, only: [ :show ]
 
   def index
@@ -46,9 +46,9 @@ class AppsController < ApplicationController
     redirect_to apps_path, notice: 'App was successfully deleted.'
   end
 
-  def regenerate_api_key
-    @app.regenerate_api_key
-    redirect_to @app, notice: 'API key was successfully regenerated.'
+  def regenerate_ingestion_key
+    @app.regenerate_ingestion_key
+    redirect_to @app, notice: 'Ingestion key was successfully regenerated.'
   end
 
   def assign_team

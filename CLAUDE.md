@@ -72,8 +72,8 @@ Per ROADMAP.md, the core models will be:
 - **Backtrace** - Deduplicated stack traces
 
 ### API Design
-The primary API endpoint is `POST /api/v1/errors`:
-- Authentication via `X-API-Key` header
+The primary API endpoint is `POST /ingest/v1/errors`:
+- Authentication via `X-API-Key` header (ingestion key)
 - Accepts error class, message, backtrace, context, request info, and user info
 - Supports custom fingerprints for error grouping
 

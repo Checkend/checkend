@@ -1,4 +1,4 @@
-module Api
+module Ingest
   module V1
     class ErrorsController < BaseController
       def create
@@ -45,3 +45,4 @@ module Api
     end
   end
 end
+

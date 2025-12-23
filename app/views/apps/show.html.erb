@@ -57,19 +57,19 @@
     </div>
   </div>
 
-  <%# API Key Section %>
+  <%# Ingestion Key Section %>
   <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-6 mb-6">
     <div class="flex items-center justify-between mb-4">
-      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">API Key</h2>
-      <%= button_to regenerate_api_key_app_path(@app), method: :post, data: { turbo_confirm: "Are you sure you want to regenerate the API key? The old key will stop working immediately." }, class: "text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 font-medium transition-colors" do %>
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Ingestion Key</h2>
+      <%= button_to regenerate_ingestion_key_app_path(@app), method: :post, data: { turbo_confirm: "Are you sure you want to regenerate the ingestion key? The old key will stop working immediately." }, class: "text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 font-medium transition-colors" do %>
         Regenerate
       <% end %>
     </div>
     <p class="text-sm text-gray-600 dark:text-zinc-400 mb-4">Use this key in your application's error reporting client.</p>
     <div x-data="{ copied: false }" class="flex items-center space-x-2">
-      <code class="flex-1 px-4 py-3 bg-gray-100 dark:bg-zinc-900 rounded-lg text-sm font-mono text-gray-800 dark:text-zinc-300 select-all overflow-x-auto"><%= @app.api_key %></code>
+      <code class="flex-1 px-4 py-3 bg-gray-100 dark:bg-zinc-900 rounded-lg text-sm font-mono text-gray-800 dark:text-zinc-300 select-all overflow-x-auto"><%= @app.ingestion_key %></code>
       <button
-        @click="navigator.clipboard.writeText('<%= @app.api_key %>'); copied = true; setTimeout(() => copied = false, 2000)"
+        @click="navigator.clipboard.writeText('<%= @app.ingestion_key %>'); copied = true; setTimeout(() => copied = false, 2000)"
         class="flex-shrink-0 p-3 bg-gray-100 dark:bg-zinc-900 rounded-lg text-gray-600 dark:text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400 hover:bg-gray-200 dark:hover:bg-zinc-700 focus:outline-none focus:ring-2 focus:ring-violet-500 transition-colors"
         title="Copy to clipboard"
       >

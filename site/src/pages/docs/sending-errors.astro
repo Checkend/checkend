@@ -16,11 +16,11 @@ import Callout from '../../components/Callout.astro'
     <section class="space-y-4">
       <h2 class="text-xl font-semibold text-white light:text-gray-900">Basic Request</h2>
       <p class="text-zinc-300 light:text-gray-600">
-        Send errors to Checkend using a simple POST request to the <code class="rounded bg-zinc-800 px-1.5 py-0.5 text-violet-400 light:bg-gray-100 light:text-violet-600">/api/v1/errors</code> endpoint.
+        Send errors to Checkend using a simple POST request to the <code class="rounded bg-zinc-800 px-1.5 py-0.5 text-violet-400 light:bg-gray-100 light:text-violet-600">/ingest/v1/errors</code> endpoint.
       </p>
-      <CodeBlock title="cURL" lang="bash" code={`curl -X POST https://your-checkend-instance.com/api/v1/errors \\
+      <CodeBlock title="cURL" lang="bash" code={`curl -X POST https://your-checkend-instance.com/ingest/v1/errors \\
   -H "Content-Type: application/json" \\
-  -H "X-API-Key: your-api-key" \\
+  -H "X-API-Key: your-ingestion-key" \\
   -d '{
     "error_class": "NoMethodError",
     "error_message": "undefined method foo for nil:NilClass",
@@ -100,9 +100,9 @@ import Callout from '../../components/Callout.astro'
       <p class="text-zinc-300 light:text-gray-600">
         Here's an example with all optional fields:
       </p>
-      <CodeBlock title="cURL" lang="bash" code={`curl -X POST https://your-checkend-instance.com/api/v1/errors \\
+      <CodeBlock title="cURL" lang="bash" code={`curl -X POST https://your-checkend-instance.com/ingest/v1/errors \\
   -H "Content-Type: application/json" \\
-  -H "X-API-Key: your-api-key" \\
+  -H "X-API-Key: your-ingestion-key" \\
   -d '{
     "error_class": "ActiveRecord::RecordNotFound",
     "error_message": "Could not find User with id=123",

@@ -38,9 +38,9 @@ import Callout from '../../components/Callout.astro'
       <p class="text-zinc-300 light:text-gray-600">
         Sometimes you may want to group errors differently. You can provide a custom fingerprint when sending errors:
       </p>
-      <CodeBlock title="Custom fingerprint example" lang="bash" code={`curl -X POST https://your-checkend-instance.com/api/v1/errors \\
+      <CodeBlock title="Custom fingerprint example" lang="bash" code={`curl -X POST https://your-checkend-instance.com/ingest/v1/errors \\
   -H "Content-Type: application/json" \\
-  -H "X-API-Key: your-api-key" \\
+  -H "X-API-Key: your-ingestion-key" \\
   -d '{
     "error_class": "PaymentError",
     "error_message": "Card declined: insufficient funds",

@@ -26,9 +26,9 @@ puts "Created team member: #{user.email_address} as #{team_member.role}"
 # App (matching fixture name and structure)
 app = App.find_or_create_by!(name: "My Rails App") do |a|
   a.environment = "production"
-  a.api_key = "demo_api_key_123456789012345678901234" # Fixed API key for reproducibility
+  a.ingestion_key = "demo_ingestion_key_123456789012345678901234" # Fixed ingestion key for reproducibility
 end
-puts "Created app: #{app.name} (slug: #{app.slug}, API key: #{app.api_key})"
+puts "Created app: #{app.name} (slug: #{app.slug}, Ingestion key: #{app.ingestion_key})"
 
 # TeamAssignment - link team to app
 team_assignment = TeamAssignment.find_or_create_by!(team: team, app: app)
