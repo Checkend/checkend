@@ -65,7 +65,11 @@ class AppsTest < ApplicationSystemTestCase
     # Open the actions dropdown menu (three dots button)
     find("button[class*='rounded-lg'][class*='text-gray-500']").click
 
-    click_link 'Edit'
+    # Wait for dropdown to be visible, then scope the Edit link click to the dropdown menu
+    assert_selector "div[x-show='open']", wait: 2
+    within("div[x-show='open']") do
+      click_link 'Edit'
+    end
 
     # Wait for slide-over to be visible before interacting with form
     assert_text 'Edit App'
