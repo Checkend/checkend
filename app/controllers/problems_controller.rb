@@ -8,7 +8,7 @@ class ProblemsController < ApplicationController
   before_action :set_breadcrumbs
 
   def index
-    @problems = @app.problems
+    @problems = @app.problems.includes(:tags)
 
     # Filter by status
     case params[:status]
@@ -24,6 +24,11 @@ class ProblemsController < ApplicationController
     if params[:search].present?
       search_term = "%#{params[:search]}%"
       @problems = @problems.where('error_class ILIKE ? OR error_message ILIKE ?', search_term, search_term)
+    end
+
+    # Filter by tags
+    if params[:tags].present?
+      @problems = @problems.tagged_with(params[:tags])
     end
 
     # Sort
@@ -57,15 +62,57 @@ class ProblemsController < ApplicationController
   def bulk_resolve
     problem_ids = params[:problem_ids] || []
     @app.problems.where(id: problem_ids).find_each(&:resolve!)
-    redirect_to app_problems_path(@app, status: params[:status], search: params[:search], sort: params[:sort]),
+    redirect_to app_problems_path(@app, filter_params),
                 notice: "#{problem_ids.size} problem(s) marked as resolved."
   end
 
   def bulk_unresolve
     problem_ids = params[:problem_ids] || []
     @app.problems.where(id: problem_ids).find_each(&:unresolve!)
-    redirect_to app_problems_path(@app, status: params[:status], search: params[:search], sort: params[:sort]),
+    redirect_to app_problems_path(@app, filter_params),
                 notice: "#{problem_ids.size} problem(s) marked as unresolved."
+  end
+
+  def bulk_add_tags
+    problem_ids = params[:problem_ids] || []
+    tag_name = params[:tag_name].to_s.downcase.strip
+    return redirect_to app_problems_path(@app, filter_params), alert: 'Please select a tag.' if tag_name.blank?
+
+    tag = Tag.find_or_create_by(name: tag_name)
+    return redirect_to app_problems_path(@app, filter_params), alert: tag.errors.full_messages.join(', ') unless tag.persisted?
+
+    problems = @app.problems.where(id: problem_ids)
+    count = 0
+    problems.find_each do |problem|
+      unless problem.tags.include?(tag)
+        problem.tags << tag
+        count += 1
+      end
+    end
+
+    redirect_to app_problems_path(@app, filter_params),
+                notice: "Tag '#{tag.name}' added to #{count} problem(s)."
+  end
+
+  def bulk_remove_tags
+    problem_ids = params[:problem_ids] || []
+    tag_name = params[:tag_name].to_s.downcase.strip
+    return redirect_to app_problems_path(@app, filter_params), alert: 'Please select a tag.' if tag_name.blank?
+
+    tag = Tag.find_by(name: tag_name)
+    return redirect_to app_problems_path(@app, filter_params), alert: 'Tag not found.' unless tag
+
+    problems = @app.problems.where(id: problem_ids)
+    count = 0
+    problems.find_each do |problem|
+      if problem.tags.include?(tag)
+        problem.tags.delete(tag)
+        count += 1
+      end
+    end
+
+    redirect_to app_problems_path(@app, filter_params),
+                notice: "Tag '#{tag.name}' removed from #{count} problem(s)."
   end
 
   private
@@ -75,11 +122,15 @@ class ProblemsController < ApplicationController
   end
 
   def set_problem
-    @problem = @app.problems.find(params[:id])
+    @problem = @app.problems.includes(:tags).find(params[:id])
   end
 
   def redirect_to_first_page
-    redirect_to app_problems_path(@app, status: params[:status], search: params[:search], sort: params[:sort])
+    redirect_to app_problems_path(@app, filter_params)
+  end
+
+  def filter_params
+    params.permit(:status, :search, :sort, tags: []).to_h.compact_blank
   end
 
   def set_breadcrumbs

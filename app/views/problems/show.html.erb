@@ -40,6 +40,36 @@
     </div>
   </div>
 
+  <%# Tags Section %>
+  <div class="mb-6" data-controller="tags" data-tags-url-value="<%= app_problem_tags_path(@app, @problem) %>">
+    <div class="flex items-center flex-wrap gap-2">
+      <span class="text-sm font-medium text-gray-700 dark:text-zinc-300">Tags:</span>
+      <div class="flex items-center flex-wrap gap-2" data-tags-target="list">
+        <% @problem.tags.each do |tag| %>
+          <span class="inline-flex items-center px-2.5 py-1 rounded-md text-sm font-medium bg-violet-100 dark:bg-violet-500/20 text-violet-700 dark:text-violet-300 group" data-tag-id="<%= tag.id %>">
+            <%= tag.name %>
+            <button type="button" data-action="tags#remove" data-tag-id="<%= tag.id %>" class="ml-1.5 text-violet-500 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-200 focus:outline-none">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+          </span>
+        <% end %>
+      </div>
+      <div class="relative" data-tags-target="inputWrapper">
+        <input
+          type="text"
+          data-tags-target="input"
+          data-action="input->tags#search keydown->tags#keydown focus->tags#showSuggestions"
+          placeholder="Add tag..."
+          class="px-3 py-1 text-sm rounded-md border border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-violet-500 focus:border-violet-500 w-32"
+        >
+        <div data-tags-target="suggestions" class="hidden absolute z-10 mt-1 w-48 bg-white dark:bg-zinc-800 rounded-md shadow-lg border border-gray-200 dark:border-zinc-700 max-h-48 overflow-auto">
+        </div>
+      </div>
+    </div>
+  </div>
+
   <%# Stats Overview %>
   <div class="grid grid-cols-4 gap-4 mb-8">
     <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-4">

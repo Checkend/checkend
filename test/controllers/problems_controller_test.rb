@@ -84,6 +84,35 @@ class ProblemsControllerTest < ActionDispatch::IntegrationTest
     assert_match @problem.error_class, response.body
   end
 
+  # Tag filter tests
+  test 'index filters by single tag' do
+    get app_problems_path(@app, tags: ['critical'])
+    assert_response :success
+    assert_match @problem.error_class, response.body
+  end
+
+  test 'index filters by multiple tags' do
+    get app_problems_path(@app, tags: %w[critical frontend])
+    assert_response :success
+    assert_match @problem.error_class, response.body
+  end
+
+  test 'index excludes problems without specified tag' do
+    get app_problems_path(@app, tags: ['backend'])
+    assert_response :success
+    # problems(:one) only has critical and frontend tags, not backend
+    # problems(:two) has backend tag
+    assert_match problems(:two).error_class, response.body
+  end
+
+  test 'bulk actions preserve tag filter' do
+    post bulk_resolve_app_problems_path(@app), params: {
+      problem_ids: [@problem.id],
+      tags: ['critical']
+    }
+    assert_redirected_to app_problems_path(@app, tags: ['critical'])
+  end
+
   # Sort tests
   test 'index sorts by most recent by default' do
     get app_problems_path(@app)
@@ -173,6 +202,83 @@ class ProblemsControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to app_problems_path(@app)
     @problem.reload
     assert @problem.unresolved?
+  end
+
+  # Bulk tagging tests
+  test 'bulk_add_tags adds existing tag to problems' do
+    tag = Tag.create!(name: 'new-bulk-tag')
+    problem_two = problems(:two)
+    assert_not @problem.tags.include?(tag)
+    assert_not problem_two.tags.include?(tag)
+
+    post bulk_add_tags_app_problems_path(@app), params: {
+      problem_ids: [@problem.id, problem_two.id],
+      tag_name: 'new-bulk-tag'
+    }
+
+    assert_redirected_to app_problems_path(@app)
+    @problem.reload
+    problem_two.reload
+    assert @problem.tags.include?(tag)
+    assert problem_two.tags.include?(tag)
+  end
+
+  test 'bulk_add_tags creates new tag if not exists' do
+    assert_not Tag.exists?(name: 'brand-new-tag')
+
+    assert_difference 'Tag.count', 1 do
+      post bulk_add_tags_app_problems_path(@app), params: {
+        problem_ids: [@problem.id],
+        tag_name: 'brand-new-tag'
+      }
+    end
+
+    assert_redirected_to app_problems_path(@app)
+    assert @problem.reload.tags.find_by(name: 'brand-new-tag')
+  end
+
+  test 'bulk_add_tags with blank tag name shows error' do
+    post bulk_add_tags_app_problems_path(@app), params: {
+      problem_ids: [@problem.id],
+      tag_name: ''
+    }
+
+    assert_redirected_to app_problems_path(@app)
+    assert_equal 'Please select a tag.', flash[:alert]
+  end
+
+  test 'bulk_remove_tags removes tag from problems' do
+    tag = tags(:critical)
+    assert @problem.tags.include?(tag)
+
+    post bulk_remove_tags_app_problems_path(@app), params: {
+      problem_ids: [@problem.id],
+      tag_name: 'critical'
+    }
+
+    assert_redirected_to app_problems_path(@app)
+    assert_not @problem.reload.tags.include?(tag)
+  end
+
+  test 'bulk_remove_tags with nonexistent tag shows error' do
+    post bulk_remove_tags_app_problems_path(@app), params: {
+      problem_ids: [@problem.id],
+      tag_name: 'nonexistent-tag'
+    }
+
+    assert_redirected_to app_problems_path(@app)
+    assert_equal 'Tag not found.', flash[:alert]
+  end
+
+  test 'bulk_add_tags preserves filters' do
+    post bulk_add_tags_app_problems_path(@app), params: {
+      problem_ids: [@problem.id],
+      tag_name: 'test-tag',
+      status: 'unresolved',
+      tags: ['critical']
+    }
+
+    assert_redirected_to app_problems_path(@app, status: 'unresolved', tags: ['critical'])
   end
 
   # Pagination tests

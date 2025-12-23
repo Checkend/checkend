@@ -70,11 +70,35 @@
         Search
       </button>
 
-      <% if params[:search].present? || params[:status].present? || params[:sort].present? %>
+      <% if params[:search].present? || params[:status].present? || params[:sort].present? || params[:tags].present? %>
         <%= link_to app_problems_path(@app), class: "text-sm text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-300" do %>
           Clear filters
         <% end %>
       <% end %>
+    <% end %>
+
+    <%# Tag Filters %>
+    <% available_tags = Tag.joins(:problems).where(problems: { app_id: @app.id }).distinct.order(:name) %>
+    <% if available_tags.any? %>
+      <div class="mt-4 pt-4 border-t border-gray-200 dark:border-zinc-700">
+        <div class="flex items-center flex-wrap gap-2">
+          <span class="text-sm font-medium text-gray-700 dark:text-zinc-300">Filter by tag:</span>
+          <% selected_tags = Array(params[:tags]) %>
+          <% available_tags.each do |tag| %>
+            <% is_selected = selected_tags.include?(tag.name) %>
+            <% new_tags = is_selected ? selected_tags - [tag.name] : selected_tags + [tag.name] %>
+            <%= link_to app_problems_path(@app, status: params[:status], search: params[:search], sort: params[:sort], tags: new_tags.presence),
+                        class: "inline-flex items-center px-2.5 py-1 rounded-md text-sm font-medium transition-colors #{is_selected ? 'bg-violet-600 text-white' : 'bg-gray-100 dark:bg-zinc-700 text-gray-700 dark:text-zinc-300 hover:bg-gray-200 dark:hover:bg-zinc-600'}" do %>
+              <%= tag.name %>
+              <% if is_selected %>
+                <svg class="w-3.5 h-3.5 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+              <% end %>
+            <% end %>
+          <% end %>
+        </div>
+      </div>
     <% end %>
   </div>
 
@@ -84,6 +108,9 @@
       <%= hidden_field_tag :status, params[:status] %>
       <%= hidden_field_tag :search, params[:search] %>
       <%= hidden_field_tag :sort, params[:sort] %>
+      <% Array(params[:tags]).each do |tag_name| %>
+        <%= hidden_field_tag 'tags[]', tag_name %>
+      <% end %>
 
       <%# Bulk action bar %>
       <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-3 mb-4 flex items-center justify-between">
@@ -101,6 +128,59 @@
           <button type="submit" formaction="<%= bulk_unresolve_app_problems_path(@app) %>" class="px-3 py-1.5 text-sm font-medium text-pink-600 dark:text-pink-400 hover:bg-pink-50 dark:hover:bg-pink-500/10 rounded-lg transition-colors">
             Unresolve Selected
           </button>
+
+          <%# Bulk Tag Actions %>
+          <div class="border-l border-gray-200 dark:border-zinc-600 pl-2 ml-2 flex items-center space-x-2">
+            <%# Add Tag Dropdown %>
+            <div class="relative" data-controller="dropdown">
+              <button type="button" data-action="dropdown#toggle" class="px-3 py-1.5 text-sm font-medium text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-500/10 rounded-lg transition-colors inline-flex items-center">
+                Add Tag
+                <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </button>
+              <div data-dropdown-target="menu" class="hidden absolute right-0 mt-1 w-48 bg-white dark:bg-zinc-800 rounded-md shadow-lg border border-gray-200 dark:border-zinc-700 z-10">
+                <div class="p-2">
+                  <input type="text" name="tag_name" placeholder="Enter tag name..." class="w-full px-2 py-1 text-sm rounded border border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-gray-900 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-violet-500">
+                </div>
+                <% all_tags = Tag.order(:name) %>
+                <% if all_tags.any? %>
+                  <div class="border-t border-gray-200 dark:border-zinc-700 max-h-32 overflow-auto">
+                    <% all_tags.each do |tag| %>
+                      <button type="submit" formaction="<%= bulk_add_tags_app_problems_path(@app) %>" name="tag_name" value="<%= tag.name %>" class="w-full text-left px-3 py-1.5 text-sm text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-700">
+                        <%= tag.name %>
+                      </button>
+                    <% end %>
+                  </div>
+                <% end %>
+                <div class="border-t border-gray-200 dark:border-zinc-700 p-2">
+                  <button type="submit" formaction="<%= bulk_add_tags_app_problems_path(@app) %>" class="w-full px-3 py-1.5 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 rounded transition-colors">
+                    Add Tag
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <%# Remove Tag Dropdown %>
+            <% problem_tags = Tag.joins(:problems).where(problems: { app_id: @app.id }).distinct.order(:name) %>
+            <% if problem_tags.any? %>
+              <div class="relative" data-controller="dropdown">
+                <button type="button" data-action="dropdown#toggle" class="px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-lg transition-colors inline-flex items-center">
+                  Remove Tag
+                  <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                  </svg>
+                </button>
+                <div data-dropdown-target="menu" class="hidden absolute right-0 mt-1 w-48 bg-white dark:bg-zinc-800 rounded-md shadow-lg border border-gray-200 dark:border-zinc-700 z-10 max-h-48 overflow-auto">
+                  <% problem_tags.each do |tag| %>
+                    <button type="submit" formaction="<%= bulk_remove_tags_app_problems_path(@app) %>" name="tag_name" value="<%= tag.name %>" class="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-700">
+                      <%= tag.name %>
+                    </button>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+          </div>
         </div>
       </div>
 
@@ -123,7 +203,7 @@
 
                 <%# Problem info %>
                 <%= link_to app_problem_path(@app, problem), class: "flex-1 min-w-0" do %>
-                  <div class="flex items-center space-x-2">
+                  <div class="flex items-center space-x-2 flex-wrap gap-y-1">
                     <% if problem.resolved? %>
                       <span class="flex-shrink-0 w-2 h-2 rounded-full bg-emerald-500" title="Resolved"></span>
                     <% else %>
@@ -133,6 +213,11 @@
                     <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-zinc-700 text-gray-600 dark:text-zinc-400">
                       <%= problem.notices_count %> notice<%= problem.notices_count == 1 ? '' : 's' %>
                     </span>
+                    <% problem.tags.each do |tag| %>
+                      <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-violet-100 dark:bg-violet-500/20 text-violet-700 dark:text-violet-300">
+                        <%= tag.name %>
+                      </span>
+                    <% end %>
                   </div>
                   <p class="text-sm text-gray-600 dark:text-zinc-400 truncate mt-1"><%= truncate(problem.error_message, length: 100) %></p>
                   <div class="flex items-center space-x-4 mt-2 text-xs text-gray-500 dark:text-zinc-500">

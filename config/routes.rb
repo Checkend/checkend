@@ -33,8 +33,11 @@ Rails.application.routes.draw do
       collection do
         post :bulk_resolve
         post :bulk_unresolve
+        post :bulk_add_tags
+        post :bulk_remove_tags
       end
       resources :notices, only: [ :show ]
+      resources :tags, only: [ :index, :create, :destroy ], controller: 'problem_tags'
     end
   end
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
