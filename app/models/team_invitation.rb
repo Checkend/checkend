@@ -39,4 +39,3 @@ class TeamInvitation < ApplicationRecord
     self.expires_at ||= 7.days.from_now
   end
 end
-

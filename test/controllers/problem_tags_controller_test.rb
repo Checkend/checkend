@@ -161,7 +161,7 @@ class ProblemTagsControllerTest < ActionDispatch::IntegrationTest
     # Remove any existing team memberships that might give access
     @team.team_members.where(user: other_user).destroy_all
     # Create a separate team for other_user that is NOT assigned to @app
-    other_team = Team.create!(name: "Other Team", owner: other_user)
+    other_team = Team.create!(name: 'Other Team', owner: other_user)
     other_team.team_members.create!(user: other_user, role: 'admin')
     # Ensure @app is only assigned to @team, not other_team
     @app.team_assignments.where(team: other_team).destroy_all

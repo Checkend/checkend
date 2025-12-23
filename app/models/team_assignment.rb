@@ -4,4 +4,3 @@ class TeamAssignment < ApplicationRecord
 
   validates :team_id, uniqueness: { scope: :app_id }
 end
-

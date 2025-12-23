@@ -10,4 +10,3 @@ class TeamInvitationsMailer < ApplicationMailer
     )
   end
 end
-

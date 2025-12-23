@@ -58,7 +58,7 @@ if app.problems.empty?
   end
 
   # Backtrace 1 (from fixtures)
-  backtrace1_lines = [{"file" => "app/models/user.rb", "line" => 42, "method" => "save"}]
+  backtrace1_lines = [ { "file" => "app/models/user.rb", "line" => 42, "method" => "save" } ]
   backtrace1 = Backtrace.find_or_create_by_lines(backtrace1_lines)
 
   # Create 5 notices for problem 1 (matching fixture notices_count)
@@ -79,9 +79,9 @@ if app.problems.empty?
       occurred_at: notice_times_1[i]
     ) do |n|
       if i == 4 # Last notice with context (matching fixture pattern)
-        n.context = {"environment" => "production", "server" => "web-01", "version" => "1.2.3"}
+        n.context = { "environment" => "production", "server" => "web-01", "version" => "1.2.3" }
       else
-        n.context = {"environment" => "production"}
+        n.context = { "environment" => "production" }
       end
     end
   end
@@ -102,7 +102,7 @@ if app.problems.empty?
   end
 
   # Backtrace 2 (from fixtures)
-  backtrace2_lines = [{"file" => "app/controllers/api_controller.rb", "line" => 15, "method" => "handle_error"}]
+  backtrace2_lines = [ { "file" => "app/controllers/api_controller.rb", "line" => 15, "method" => "handle_error" } ]
   backtrace2 = Backtrace.find_or_create_by_lines(backtrace2_lines)
 
   # Create 2 notices for problem 2 (matching fixture notices_count) with request and user_info
@@ -119,7 +119,7 @@ if app.problems.empty?
     occurred_at: notice_times_2[0]
   ) do |n|
     n.backtrace = backtrace2
-    n.request = {"method" => "GET", "url" => "/users/123", "params" => {"id" => "123"}}
+    n.request = { "method" => "GET", "url" => "/users/123", "params" => { "id" => "123" } }
   end
 
   # Second notice with user_info (matching fixture "with_user")
@@ -130,7 +130,7 @@ if app.problems.empty?
     occurred_at: notice_times_2[1]
   ) do |n|
     n.backtrace = backtrace2
-    n.user_info = {"id" => 42, "email" => "john@example.com", "name" => "John Doe"}
+    n.user_info = { "id" => 42, "email" => "john@example.com", "name" => "John Doe" }
   end
 
   puts "Created problem: #{problem2.error_class} with #{problem2.reload.notices_count} notices"
@@ -165,7 +165,7 @@ if app.problems.empty?
       error_message: "wrong number of arguments",
       occurred_at: notice_times_3[i]
     ) do |n|
-      n.context = {"environment" => "production"}
+      n.context = { "environment" => "production" }
     end
   end
   puts "Created problem: #{problem3.error_class} (resolved) with #{problem3.reload.notices_count} notices"

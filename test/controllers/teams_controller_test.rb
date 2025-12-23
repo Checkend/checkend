@@ -1,4 +1,4 @@
-require "test_helper"
+require 'test_helper'
 
 class TeamsControllerTest < ActionDispatch::IntegrationTest
   setup do
@@ -7,19 +7,19 @@ class TeamsControllerTest < ActionDispatch::IntegrationTest
     @team = teams(:one)
   end
 
-  test "should get index" do
+  test 'should get index' do
     get teams_url
     assert_response :success
   end
 
-  test "should get new" do
+  test 'should get new' do
     get new_team_url
     assert_response :success
   end
 
-  test "should create team" do
-    assert_difference("Team.count") do
-      post teams_url, params: { team: { name: "New Team" } }
+  test 'should create team' do
+    assert_difference('Team.count') do
+      post teams_url, params: { team: { name: 'New Team' } }
     end
 
     assert_redirected_to team_url(Team.last)
@@ -27,35 +27,35 @@ class TeamsControllerTest < ActionDispatch::IntegrationTest
     assert Team.last.team_members.exists?(user: @user, role: 'admin')
   end
 
-  test "should show team" do
+  test 'should show team' do
     get team_url(@team)
     assert_response :success
   end
 
-  test "should get edit" do
+  test 'should get edit' do
     get edit_team_url(@team)
     assert_response :success
   end
 
-  test "should update team" do
-    patch team_url(@team), params: { team: { name: "Updated Team" } }
+  test 'should update team' do
+    patch team_url(@team), params: { team: { name: 'Updated Team' } }
     assert_redirected_to team_url(@team)
     @team.reload
-    assert_equal "Updated Team", @team.name
+    assert_equal 'Updated Team', @team.name
   end
 
-  test "should destroy team" do
-    assert_difference("Team.count", -1) do
+  test 'should destroy team' do
+    assert_difference('Team.count', -1) do
       delete team_url(@team)
     end
 
     assert_redirected_to teams_url
   end
 
-  test "should not allow non-owner to delete team" do
+  test 'should not allow non-owner to delete team' do
     other_user = users(:two)
     sign_in_as(other_user)
-    assert_no_difference("Team.count") do
+    assert_no_difference('Team.count') do
       delete team_url(@team)
     end
   end
@@ -63,7 +63,6 @@ class TeamsControllerTest < ActionDispatch::IntegrationTest
   private
 
   def sign_in_as(user)
-    post session_path, params: { email_address: user.email_address, password: "password" }
+    post session_path, params: { email_address: user.email_address, password: 'password' }
   end
 end
-

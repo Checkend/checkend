@@ -7,6 +7,6 @@ class CreateTeamAssignments < ActiveRecord::Migration[8.1]
       t.timestamps
     end
 
-    add_index :team_assignments, [:team_id, :app_id], unique: true
+    add_index :team_assignments, [ :team_id, :app_id ], unique: true
   end
 end

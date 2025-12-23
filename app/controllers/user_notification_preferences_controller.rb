@@ -31,4 +31,3 @@ class UserNotificationPreferencesController < ApplicationController
     params.require(:user_notification_preference).permit(:notify_on_new_problem, :notify_on_reoccurrence)
   end
 end
-

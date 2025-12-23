@@ -59,4 +59,3 @@ class TeamsController < ApplicationController
     params.require(:team).permit(:name)
   end
 end
-

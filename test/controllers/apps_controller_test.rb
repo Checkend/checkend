@@ -26,7 +26,7 @@ class AppsControllerTest < ActionDispatch::IntegrationTest
   end
 
   # Index tests
-  test "index shows accessible apps" do
+  test 'index shows accessible apps' do
     get apps_path
     assert_response :success
     assert_select 'h1', 'Apps'
@@ -153,7 +153,7 @@ class AppsControllerTest < ActionDispatch::IntegrationTest
 
   # Team assignment tests
   test 'assign_team assigns team to app' do
-    new_team = Team.create!(name: "New Team", owner: @user)
+    new_team = Team.create!(name: 'New Team', owner: @user)
     new_team.team_members.create!(user: @user, role: 'admin')
 
     assert_difference('TeamAssignment.count', 1) do
@@ -165,7 +165,7 @@ class AppsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test 'assign_team requires admin role' do
-    new_team = Team.create!(name: "New Team", owner: @other_user)
+    new_team = Team.create!(name: 'New Team', owner: @other_user)
     new_team.team_members.create!(user: @other_user, role: 'admin')
 
     assert_no_difference('TeamAssignment.count') do

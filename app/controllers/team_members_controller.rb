@@ -56,4 +56,3 @@ class TeamMembersController < ApplicationController
     redirect_to team_path(@team), alert: 'You must be a team admin to perform this action.'
   end
 end
-

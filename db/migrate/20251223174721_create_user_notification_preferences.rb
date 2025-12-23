@@ -9,6 +9,6 @@ class CreateUserNotificationPreferences < ActiveRecord::Migration[8.1]
       t.timestamps
     end
 
-    add_index :user_notification_preferences, [:user_id, :app_id], unique: true
+    add_index :user_notification_preferences, [ :user_id, :app_id ], unique: true
   end
 end

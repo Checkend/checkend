@@ -16,4 +16,3 @@ class TeamMember < ApplicationRecord
     role == 'member'
   end
 end
-

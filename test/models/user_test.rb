@@ -43,9 +43,9 @@ class UserTest < ActiveSupport::TestCase
   test 'accessible_apps does not return apps from other teams' do
     user = users(:one)
     other_user = users(:two)
-    other_team = Team.create!(name: "Other Team", owner: other_user)
+    other_team = Team.create!(name: 'Other Team', owner: other_user)
     other_team.team_members.create!(user: other_user, role: 'admin')
-    other_app = App.create!(name: "Other App", slug: "other-app")
+    other_app = App.create!(name: 'Other App', slug: 'other-app')
     other_team.team_assignments.create!(app: other_app)
 
     assert_not_includes user.accessible_apps, other_app
@@ -93,7 +93,7 @@ class UserTest < ActiveSupport::TestCase
 
   test 'admin_of_team? returns false for non-members' do
     user = users(:one)
-    other_team = Team.create!(name: "Other Team", owner: users(:two))
+    other_team = Team.create!(name: 'Other Team', owner: users(:two))
 
     assert_not user.admin_of_team?(other_team)
   end

@@ -1,4 +1,4 @@
-require "test_helper"
+require 'test_helper'
 
 class TeamInvitationsControllerTest < ActionDispatch::IntegrationTest
   setup do
@@ -9,41 +9,41 @@ class TeamInvitationsControllerTest < ActionDispatch::IntegrationTest
     @team.team_members.find_or_create_by!(user: @user, role: 'admin')
   end
 
-  test "should get index" do
+  test 'should get index' do
     get team_team_invitations_url(@team)
     assert_response :success
   end
 
-  test "should create team invitation" do
-    assert_difference("TeamInvitation.count") do
-      post team_team_invitations_url(@team), params: { email: "newuser@example.com" }
+  test 'should create team invitation' do
+    assert_difference('TeamInvitation.count') do
+      post team_team_invitations_url(@team), params: { email: 'newuser@example.com' }
     end
 
     assert_redirected_to team_team_invitations_url(@team)
     invitation = TeamInvitation.last
-    assert_equal "newuser@example.com", invitation.email
+    assert_equal 'newuser@example.com', invitation.email
     assert_not_nil invitation.token
   end
 
-  test "should destroy team invitation" do
+  test 'should destroy team invitation' do
     invitation = @team.team_invitations.create!(
-      email: "test@example.com",
+      email: 'test@example.com',
       invited_by: @user,
-      token: "test-token"
+      token: 'test-token'
     )
 
-    assert_difference("TeamInvitation.count", -1) do
+    assert_difference('TeamInvitation.count', -1) do
       delete team_team_invitation_url(@team, invitation)
     end
 
     assert_redirected_to team_team_invitations_url(@team)
   end
 
-  test "should accept invitation when authenticated" do
+  test 'should accept invitation when authenticated' do
     invitation = @team.team_invitations.create!(
       email: @user.email_address,
       invited_by: @user,
-      token: "accept-token"
+      token: 'accept-token'
     )
 
     get accept_team_invitation_path(invitation.token)
@@ -56,7 +56,6 @@ class TeamInvitationsControllerTest < ActionDispatch::IntegrationTest
   private
 
   def sign_in_as(user)
-    post session_path, params: { email_address: user.email_address, password: "password" }
+    post session_path, params: { email_address: user.email_address, password: 'password' }
   end
 end
-

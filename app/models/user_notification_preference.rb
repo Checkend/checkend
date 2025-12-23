@@ -4,4 +4,3 @@ class UserNotificationPreference < ApplicationRecord
 
   validates :user_id, uniqueness: { scope: :app_id }
 end
-

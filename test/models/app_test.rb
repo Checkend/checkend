@@ -47,9 +47,9 @@ class AppTest < ActiveSupport::TestCase
 
   test 'accessible_by? returns true for team members' do
     user = users(:one)
-    team = Team.create!(name: "Test Team", owner: user)
+    team = Team.create!(name: 'Test Team', owner: user)
     team.team_members.create!(user: user, role: 'admin')
-    app = App.create!(name: "Test App", slug: "test-app")
+    app = App.create!(name: 'Test App', slug: 'test-app')
     team.team_assignments.create!(app: app)
 
     assert app.accessible_by?(user)
@@ -57,10 +57,10 @@ class AppTest < ActiveSupport::TestCase
 
   test 'accessible_by? returns false for non-members' do
     user = users(:one)
-    other_user = users(:two) || User.create!(email_address: "other@example.com", password: "password123")
-    team = Team.create!(name: "Test Team", owner: user)
+    other_user = users(:two) || User.create!(email_address: 'other@example.com', password: 'password123')
+    team = Team.create!(name: 'Test Team', owner: user)
     team.team_members.create!(user: user, role: 'admin')
-    app = App.create!(name: "Test App", slug: "test-app")
+    app = App.create!(name: 'Test App', slug: 'test-app')
     team.team_assignments.create!(app: app)
 
     assert_not app.accessible_by?(other_user)
