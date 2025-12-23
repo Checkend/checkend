@@ -32,6 +32,9 @@ gem 'groupdate'
 # Notifications [https://github.com/excid3/noticed]
 gem 'noticed', '~> 2.0'
 
+# Friendly URLs [https://github.com/norman/friendly_id]
+gem 'friendly_id', '~> 5.5'
+
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
 gem 'tzinfo-data', platforms: %i[ windows jruby ]
 

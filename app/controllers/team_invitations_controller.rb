@@ -64,9 +64,9 @@ class TeamInvitationsController < ApplicationController
   private
 
   def set_team
-    @team = Current.user.teams.find(params[:team_id])
+    @team = Current.user.teams.friendly.find(params[:team_id])
   rescue ActiveRecord::RecordNotFound
-    @team = Current.user.owned_teams.find(params[:team_id])
+    @team = Current.user.owned_teams.friendly.find(params[:team_id])
     raise ActiveRecord::RecordNotFound unless @team
   end
 

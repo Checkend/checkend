@@ -9,7 +9,7 @@
       <div>
         <%= form.label :team_id, "Select a team", class: "block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1.5" %>
         <%= form.select :team_id,
-            options_from_collection_for_select(@teams, :id, :name),
+            options_from_collection_for_select(@teams, :slug, :name),
             { include_blank: "Skip for now" },
             { name: 'team_id', class: "block w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:border-violet-500 focus:ring-violet-500" } %>
       </div>

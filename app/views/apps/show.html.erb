@@ -91,7 +91,7 @@
       <% if admin_teams.any? %>
         <%= form_with url: assign_team_app_path(@app), method: :post, class: "inline-flex items-center space-x-2" do |form| %>
           <%= form.select :team_id,
-              options_from_collection_for_select(admin_teams, :id, :name),
+              options_from_collection_for_select(admin_teams, :slug, :name),
               { include_blank: "Assign team..." },
               { name: 'team_id', class: "text-sm px-3 py-1.5 bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:border-violet-500 focus:ring-violet-500" } %>
           <%= form.submit "Assign", class: "text-sm px-3 py-1.5 bg-violet-600 text-white rounded-lg font-medium hover:bg-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500 transition-colors cursor-pointer" %>
@@ -114,7 +114,7 @@
               </div>
             </div>
             <% if Current.user.admin_of_team?(team) %>
-              <%= button_to remove_team_assignment_app_path(@app, team_id: team.id), method: :delete, data: { turbo_confirm: "Remove this team from the app?" }, class: "text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium transition-colors" do %>
+              <%= button_to remove_team_assignment_app_path(@app, team_id: team.slug), method: :delete, data: { turbo_confirm: "Remove this team from the app?" }, class: "text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium transition-colors" do %>
                 Remove
               <% end %>
             <% end %>

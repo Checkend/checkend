@@ -1,8 +1,10 @@
 one:
   name: Test Team
+  slug: test-team
   owner: one
 
 two:
   name: Another Team
+  slug: another-team
   owner: two
 

@@ -49,9 +49,9 @@ class TeamsController < ApplicationController
   private
 
   def set_team
-    @team = Current.user.teams.find(params[:id])
+    @team = Current.user.teams.friendly.find(params[:id])
   rescue ActiveRecord::RecordNotFound
-    @team = Current.user.owned_teams.find(params[:id])
+    @team = Current.user.owned_teams.friendly.find(params[:id])
     raise ActiveRecord::RecordNotFound unless @team
   end
 

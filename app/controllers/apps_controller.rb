@@ -53,7 +53,7 @@ class AppsController < ApplicationController
 
   def assign_team
     if params[:team_id].present?
-      team = Team.find(params[:team_id])
+      team = Team.friendly.find(params[:team_id])
       require_team_admin!(team)
 
       @app.team_assignments.find_or_create_by!(team: team)
@@ -66,7 +66,7 @@ class AppsController < ApplicationController
   end
 
   def remove_team_assignment
-    team = Team.find(params[:team_id])
+    team = Team.friendly.find(params[:team_id])
     require_team_admin!(team)
 
     @app.team_assignments.where(team: team).destroy_all
