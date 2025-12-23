@@ -27,15 +27,15 @@ module Api
       end
 
       def context_params
-        params[:context]&.permit! || {}
+        params[:context]&.to_unsafe_h || {}
       end
 
       def request_info_params
-        params[:request]&.permit! || {}
+        params[:request]&.to_unsafe_h || {}
       end
 
       def user_params
-        params[:user]&.permit! || {}
+        params[:user]&.to_unsafe_h || {}
       end
     end
   end
