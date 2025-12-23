@@ -47,11 +47,13 @@ export default class extends Controller {
       if (query) {
         this.suggestionsTarget.innerHTML = `
           <div class="px-3 py-2 text-sm text-gray-500 dark:text-zinc-400">
-            No matching tags
+            Tag already added
           </div>
         `
+        this.showSuggestions()
+      } else {
+        this.hideSuggestions()
       }
-      this.showSuggestions()
       return
     }
 
