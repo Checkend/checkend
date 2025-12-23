@@ -78,8 +78,8 @@ Implement email notifications for error events using the `noticed` gem, leveragi
 - [x] Add checkbox for "Notify on reoccurrence"
 - [x] Update `apps_controller` to permit new params
 
-### 6.2 App Show Page (Optional)
-- [ ] Display current notification settings
+### 6.2 App Show Page
+- [x] Display current notification settings
 
 ---
 
@@ -99,7 +99,7 @@ Implement email notifications for error events using the `noticed` gem, leveragi
 
 ## 8. Current Progress
 
-**Status:** Phase 4 Complete
+**Status:** Phase 4 Complete (All Items)
 
 **Completed:**
 - Noticed gem installed with migrations
@@ -110,6 +110,7 @@ Implement email notifications for error events using the `noticed` gem, leveragi
 - ErrorIngestionService modified for notification triggers
 - Auto-unresolve behavior for resolved problems
 - Notification settings UI in app edit form
-- 214 total tests passing (177 unit/controller + 37 system)
+- Notification settings display on app show page
+- All tests passing
 
-**Next Step:** Move to Phase 5 (if any) or consider future enhancements
+**Next Step:** Move to Version 1.1 (Enhanced Filtering) or other future enhancements

@@ -19,7 +19,7 @@ class ProblemsMailerTest < ActionMailer::TestCase
       email.deliver_now
     end
 
-    assert_equal [@user.email_address], email.to
+    assert_equal [ @user.email_address ], email.to
     assert_match @app.name, email.subject
     assert_match @problem.error_class, email.subject
     assert_match 'New error', email.subject
@@ -47,7 +47,7 @@ class ProblemsMailerTest < ActionMailer::TestCase
       email.deliver_now
     end
 
-    assert_equal [@user.email_address], email.to
+    assert_equal [ @user.email_address ], email.to
     assert_match @app.name, email.subject
     assert_match @problem.error_class, email.subject
     assert_match 'reoccurred', email.subject

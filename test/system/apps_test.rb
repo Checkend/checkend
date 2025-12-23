@@ -39,6 +39,9 @@ class AppsTest < ApplicationSystemTestCase
 
     assert_text @app.name
     assert_text 'API Key'
+    assert_text 'Notifications'
+    assert_text 'New errors'
+    assert_text 'Reoccurring errors'
     assert_text 'Recent Problems'
   end
 
