@@ -147,4 +147,47 @@ class ProblemTest < ActiveSupport::TestCase
     assert_includes Problem.resolved, problems(:resolved)
     assert_not_includes Problem.resolved, problems(:one)
   end
+
+  test 'occurrence_chart_data returns 31 days of data' do
+    problem = problems(:one)
+    data = problem.occurrence_chart_data(days: 30)
+
+    assert_equal 31, data.size # inclusive range (30 days ago to today)
+    assert data.keys.all? { |k| k.is_a?(Date) }
+    assert data.values.all? { |v| v.is_a?(Integer) }
+  end
+
+  test 'occurrence_chart_data fills missing days with zeros' do
+    problem = Problem.create!(
+      app: apps(:one),
+      error_class: 'TestError',
+      fingerprint: SecureRandom.hex(32),
+      first_noticed_at: Time.current,
+      last_noticed_at: Time.current
+    )
+    # Create a notice only today
+    problem.notices.create!(error_class: 'TestError', occurred_at: Time.current)
+
+    data = problem.occurrence_chart_data(days: 30)
+    zero_days = data.values.count(&:zero?)
+
+    assert_equal 30, zero_days # All but today should be zero
+    assert_equal 1, data[Date.current]
+  end
+
+  test 'occurrence_chart_data counts notices correctly' do
+    problem = Problem.create!(
+      app: apps(:one),
+      error_class: 'TestError',
+      fingerprint: SecureRandom.hex(32),
+      first_noticed_at: Time.current,
+      last_noticed_at: Time.current
+    )
+    # Create 3 notices today
+    3.times { problem.notices.create!(error_class: 'TestError', occurred_at: Time.current) }
+
+    data = problem.occurrence_chart_data(days: 30)
+
+    assert_equal 3, data[Date.current]
+  end
 end

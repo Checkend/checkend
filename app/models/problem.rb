@@ -28,4 +28,16 @@ class Problem < ApplicationRecord
     # Group by error class + location, not message (messages can vary)
     Digest::SHA256.hexdigest("#{error_class}|#{location}")
   end
+
+  def occurrence_chart_data(days: 30)
+    start_date = days.days.ago.beginning_of_day
+    counts = notices.where('occurred_at >= ?', start_date)
+                    .group_by_day(:occurred_at)
+                    .count
+
+    # Fill in zeros for missing days
+    (start_date.to_date..Date.current).each_with_object({}) do |date, hash|
+      hash[date] = counts[date] || 0
+    end
+  end
 end

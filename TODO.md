@@ -52,7 +52,7 @@ end
 - [x] Error class and full message
 - [x] Status with resolve/unresolve button
 - [x] Timeline: first seen, last seen, resolved at
-- [ ] Notice count and occurrence graph (optional)
+- [x] Notice count and occurrence graph (Chartkick)
 - [x] List of recent notices
 
 ### 3.2 Notice Detail
@@ -139,6 +139,7 @@ end
 - Navigation between notices (newer/older)
 - Dashboard with stats, quick links to apps, and clickable recent problems
 - System tests for apps CRUD, problems filtering, notice details, and resolve/unresolve
-- 195 total tests passing (159 unit/controller + 36 system tests)
+- Occurrence chart on problem show page (Chartkick + Groupdate)
+- 199 total tests passing (162 unit/controller + 37 system tests)
 
 **Next Step:** Move to Phase 4

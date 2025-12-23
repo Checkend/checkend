@@ -24,6 +24,15 @@ class ProblemDetailsTest < ApplicationSystemTestCase
     assert_text "Last Seen"
   end
 
+  test "viewing problem shows occurrence chart" do
+    sign_in_as(@user)
+
+    visit app_problem_path(@app, @problem)
+
+    assert_text "Error Occurrences"
+    assert_text "Last 30 days"
+  end
+
   test "problem shows recent notices list" do
     sign_in_as(@user)
 
