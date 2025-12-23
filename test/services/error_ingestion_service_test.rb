@@ -179,4 +179,48 @@ class ErrorIngestionServiceTest < ActiveSupport::TestCase
     assert result.problem.reload.unresolved?
     assert_nil result.problem.resolved_at
   end
+
+  # Notifier tracking tests
+
+  test 'stores notifier params on notice' do
+    notifier_params = {
+      'name' => 'checkend-ruby',
+      'version' => '1.0.0',
+      'language' => 'ruby',
+      'language_version' => '3.2.0'
+    }
+
+    result = ErrorIngestionService.call(
+      app: @app,
+      error_params: @valid_params,
+      notifier_params: notifier_params
+    )
+
+    notice = result.notice
+    assert_equal 'checkend-ruby', notice.notifier['name']
+    assert_equal '1.0.0', notice.notifier['version']
+    assert_equal 'ruby', notice.notifier['language']
+    assert_equal '3.2.0', notice.notifier['language_version']
+  end
+
+  test 'notifier is optional' do
+    result = ErrorIngestionService.call(
+      app: @app,
+      error_params: @valid_params
+    )
+
+    assert result.success?
+    assert_nil result.notice.notifier
+  end
+
+  test 'stores nil for empty notifier params' do
+    result = ErrorIngestionService.call(
+      app: @app,
+      error_params: @valid_params,
+      notifier_params: {}
+    )
+
+    assert result.success?
+    assert_nil result.notice.notifier
+  end
 end

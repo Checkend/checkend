@@ -236,4 +236,52 @@ class Api::V1::ErrorsControllerTest < ActionDispatch::IntegrationTest
 
     assert_equal 2, problem.reload.notices_count
   end
+
+  # Notifier tracking tests
+
+  test 'stores notifier data' do
+    payload = @valid_payload.deep_dup
+    payload[:notifier] = {
+      name: 'checkend-ruby',
+      version: '1.0.0',
+      language: 'ruby',
+      language_version: '3.2.0'
+    }
+
+    post api_v1_errors_url,
+      params: payload,
+      headers: { 'X-API-Key' => @app.api_key },
+      as: :json
+
+    notice = Notice.last
+    assert_equal 'checkend-ruby', notice.notifier['name']
+    assert_equal '1.0.0', notice.notifier['version']
+    assert_equal 'ruby', notice.notifier['language']
+    assert_equal '3.2.0', notice.notifier['language_version']
+  end
+
+  test 'notifier is optional for backward compatibility' do
+    post api_v1_errors_url,
+      params: @valid_payload,
+      headers: { 'X-API-Key' => @app.api_key },
+      as: :json
+
+    assert_response :created
+    notice = Notice.last
+    assert_nil notice.notifier
+  end
+
+  test 'stores partial notifier data' do
+    payload = @valid_payload.deep_dup
+    payload[:notifier] = { name: 'checkend-js' }
+
+    post api_v1_errors_url,
+      params: payload,
+      headers: { 'X-API-Key' => @app.api_key },
+      as: :json
+
+    notice = Notice.last
+    assert_equal 'checkend-js', notice.notifier['name']
+    assert_nil notice.notifier['version']
+  end
 end

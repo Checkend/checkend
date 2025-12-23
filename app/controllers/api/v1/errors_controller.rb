@@ -7,7 +7,8 @@ module Api
           error_params: error_params,
           context_params: context_params,
           request_params: request_info_params,
-          user_params: user_params
+          user_params: user_params,
+          notifier_params: notifier_params
         )
 
         if result.success?
@@ -36,6 +37,10 @@ module Api
 
       def user_params
         params[:user]&.to_unsafe_h || {}
+      end
+
+      def notifier_params
+        params[:notifier]&.permit(:name, :version, :language, :language_version)&.to_h || {}
       end
     end
   end

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_12_23_120648) do
+ActiveRecord::Schema[8.1].define(version: 2025_12_23_125305) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -67,6 +67,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_12_23_120648) do
     t.datetime "created_at", null: false
     t.string "error_class", null: false
     t.text "error_message"
+    t.jsonb "notifier"
     t.datetime "occurred_at", null: false
     t.bigint "problem_id", null: false
     t.jsonb "request", default: {}

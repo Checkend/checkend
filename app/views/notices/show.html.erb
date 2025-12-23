@@ -189,6 +189,53 @@
     </div>
   <% end %>
 
+  <%# Notifier Section %>
+  <% if @notice.notifier.present? && @notice.notifier.any? %>
+    <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 overflow-hidden mb-6" x-data="{ expanded: true }">
+      <button @click="expanded = !expanded" class="w-full px-6 py-4 border-b border-gray-200 dark:border-zinc-700 flex items-center justify-between text-left hover:bg-gray-50 dark:hover:bg-zinc-700/50 transition-colors">
+        <div class="flex items-center space-x-3">
+          <svg class="w-5 h-5 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+          </svg>
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Notifier</h2>
+        </div>
+        <svg class="w-5 h-5 text-gray-400 dark:text-zinc-500 transition-transform" :class="{ 'rotate-180': expanded }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+        </svg>
+      </button>
+      <div x-show="expanded" x-collapse>
+        <div class="p-6">
+          <dl class="grid grid-cols-2 gap-4">
+            <% if @notice.notifier['name'] %>
+              <div>
+                <dt class="text-sm font-medium text-gray-500 dark:text-zinc-400">SDK Name</dt>
+                <dd class="mt-1 text-sm text-gray-900 dark:text-white"><%= @notice.notifier['name'] %></dd>
+              </div>
+            <% end %>
+            <% if @notice.notifier['version'] %>
+              <div>
+                <dt class="text-sm font-medium text-gray-500 dark:text-zinc-400">SDK Version</dt>
+                <dd class="mt-1 text-sm text-gray-900 dark:text-white"><%= @notice.notifier['version'] %></dd>
+              </div>
+            <% end %>
+            <% if @notice.notifier['language'] %>
+              <div>
+                <dt class="text-sm font-medium text-gray-500 dark:text-zinc-400">Language</dt>
+                <dd class="mt-1 text-sm text-gray-900 dark:text-white"><%= @notice.notifier['language'] %></dd>
+              </div>
+            <% end %>
+            <% if @notice.notifier['language_version'] %>
+              <div>
+                <dt class="text-sm font-medium text-gray-500 dark:text-zinc-400">Language Version</dt>
+                <dd class="mt-1 text-sm text-gray-900 dark:text-white"><%= @notice.notifier['language_version'] %></dd>
+              </div>
+            <% end %>
+          </dl>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
   <%# Context Section %>
   <% if @notice.context.present? && @notice.context.any? %>
     <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 overflow-hidden mb-6" x-data="{ expanded: true }">
@@ -241,6 +288,7 @@
   context: @notice.context,
   request: @notice.request,
   user_info: @notice.user_info,
+  notifier: @notice.notifier,
   backtrace: @notice.backtrace&.lines
 }) %></pre>
       </div>

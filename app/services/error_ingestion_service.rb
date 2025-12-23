@@ -5,12 +5,13 @@ class ErrorIngestionService
     new(...).call
   end
 
-  def initialize(app:, error_params:, context_params: {}, request_params: {}, user_params: {})
+  def initialize(app:, error_params:, context_params: {}, request_params: {}, user_params: {}, notifier_params: {})
     @app = app
     @error_params = error_params
     @context_params = context_params
     @request_params = request_params
     @user_params = user_params
+    @notifier_params = notifier_params
   end
 
   def call
@@ -31,7 +32,7 @@ class ErrorIngestionService
 
   private
 
-  attr_reader :app, :error_params, :context_params, :request_params, :user_params
+  attr_reader :app, :error_params, :context_params, :request_params, :user_params, :notifier_params
 
   class ValidationError < StandardError; end
 
@@ -95,6 +96,7 @@ class ErrorIngestionService
       context: context_params.to_h,
       request: request_params.to_h,
       user_info: user_params.to_h,
+      notifier: notifier_params.presence,
       occurred_at: Time.current
     )
   end

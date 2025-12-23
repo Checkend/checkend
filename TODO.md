@@ -112,27 +112,27 @@ Add tags support, custom fingerprint override, and improved search capabilities 
 
 ---
 
-## 4. Notifier Tracking
+## 4. Notifier Tracking ✅
 
 Track which client SDK sent each error to prepare for v2.0 client libraries.
 
-### 4.1 Database Changes
-- [ ] Add `notifier` jsonb column to notices table
-- [ ] Run migration
+### 4.1 Database Changes ✅
+- [x] Add `notifier` jsonb column to notices table
+- [x] Run migration
 
-### 4.2 API Changes
-- [ ] Add `notifier_params` to ErrorsController
-- [ ] Permit notifier fields: `name`, `version`, `language`, `language_version`
-- [ ] Pass notifier params to ErrorIngestionService
-- [ ] Store notifier data on Notice creation
+### 4.2 API Changes ✅
+- [x] Add `notifier_params` to ErrorsController
+- [x] Permit notifier fields: `name`, `version`, `language`, `language_version`
+- [x] Pass notifier params to ErrorIngestionService
+- [x] Store notifier data on Notice creation
 
-### 4.3 UI Display
-- [ ] Display notifier info on notice detail page (if present)
-- [ ] Show SDK name/version badge in notice list
+### 4.3 UI Display ✅
+- [x] Display notifier info on notice detail page (if present)
+- [x] Show SDK name/version badge in notice list
 
-### 4.4 Testing
-- [ ] Test notifier params are stored correctly
-- [ ] Test backward compatibility (notifier is optional)
+### 4.4 Testing ✅
+- [x] Test notifier params are stored correctly
+- [x] Test backward compatibility (notifier is optional)
 
 ---
 
@@ -155,7 +155,7 @@ Track which client SDK sent each error to prepare for v2.0 client libraries.
 
 ## 6. Current Progress
 
-**Status:** Sections 1 (Tags) and 3 (Search Improvements) Complete!
+**Status:** v1.1 Complete! All sections finished.
 
 **Completed:**
 - Tag and ProblemTag models with migrations
@@ -172,9 +172,11 @@ Track which client SDK sent each error to prepare for v2.0 client libraries.
 - Date range filtering (From/To dates with quick filters)
 - Minimum notices filter
 - Collapsible "Advanced Filters" section with badge
-- Full test coverage (241 tests passing)
+- Notifier tracking (SDK name, version, language info)
+- Notifier display in UI (detail page section + list badge)
+- Full test coverage (247 tests passing)
 
-**Next Step:** Section 4 (Notifier Tracking) or v1.1 release
+**Next Step:** v1.1 release or start v1.2 planning
 
 ---
 
@@ -183,4 +185,4 @@ Track which client SDK sent each error to prepare for v2.0 client libraries.
 1. ~~Tags (1.1 → 1.5) - Most user-visible feature~~ ✅ Complete
 2. ~~Custom Fingerprint (2.1 → 2.4)~~ ⏭️ Skipped
 3. ~~Search Improvements (3.2 → 3.4)~~ ✅ Complete
-4. Notifier Tracking (4.1 → 4.4) - Small, prepares for v2.0 SDKs
+4. ~~Notifier Tracking (4.1 → 4.4) - Small, prepares for v2.0 SDKs~~ ✅ Complete
