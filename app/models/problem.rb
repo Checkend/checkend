@@ -51,4 +51,22 @@ class Problem < ApplicationRecord
       hash[date] = counts[date] || 0
     end
   end
+
+  def as_json(options = {})
+    super(options).merge(
+      'id' => id,
+      'app_id' => app_id,
+      'error_class' => error_class,
+      'error_message' => error_message,
+      'fingerprint' => fingerprint,
+      'status' => status,
+      'notices_count' => notices_count,
+      'first_noticed_at' => first_noticed_at&.iso8601,
+      'last_noticed_at' => last_noticed_at&.iso8601,
+      'resolved_at' => resolved_at&.iso8601,
+      'created_at' => created_at&.iso8601,
+      'updated_at' => updated_at&.iso8601,
+      'tags' => tags.map { |t| { id: t.id, name: t.name } }
+    )
+  end
 end

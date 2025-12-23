@@ -35,6 +35,19 @@ class App < ApplicationRecord
     users.select { |u| u.wants_notification?(self, event_type) }
   end
 
+  def as_json(options = {})
+    super(options).merge(
+      'id' => id,
+      'slug' => slug,
+      'name' => name,
+      'environment' => environment,
+      'notify_on_new_problem' => notify_on_new_problem,
+      'notify_on_reoccurrence' => notify_on_reoccurrence,
+      'created_at' => created_at&.iso8601,
+      'updated_at' => updated_at&.iso8601
+    ).except('ingestion_key')
+  end
+
   private
 
   def generate_slug

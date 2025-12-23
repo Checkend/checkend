@@ -15,4 +15,15 @@ class Team < ApplicationRecord
   def should_generate_new_friendly_id?
     name_changed? || slug.blank?
   end
+
+  def as_json(options = {})
+    super(options).merge(
+      'id' => id,
+      'slug' => slug,
+      'name' => name,
+      'owner_id' => owner_id,
+      'created_at' => created_at&.iso8601,
+      'updated_at' => updated_at&.iso8601
+    )
+  end
 end

@@ -5,6 +5,8 @@
 
 Self-hosted error monitoring for your applications. Track, group, and resolve errors with a clean web interface.
 
+> **Note:** The documentation site is located in a separate repository at `../checkend-site`.
+
 ## Features
 
 - **Error Ingestion** - Simple REST API to receive errors from any language or framework

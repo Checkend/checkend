@@ -15,4 +15,16 @@ class TeamMember < ApplicationRecord
   def member?
     role == 'member'
   end
+
+  def as_json(options = {})
+    {
+      'id' => id,
+      'team_id' => team_id,
+      'user_id' => user_id,
+      'role' => role,
+      'user' => user&.as_json&.except('password_digest'),
+      'created_at' => created_at&.iso8601,
+      'updated_at' => updated_at&.iso8601
+    }
+  end
 end

@@ -30,4 +30,13 @@ class User < ApplicationRecord
   def admin_of_team?(team)
     team_members.find_by(team: team)&.admin? || false
   end
+
+  def as_json(options = {})
+    super(options).merge(
+      'id' => id,
+      'email_address' => email_address,
+      'created_at' => created_at&.iso8601,
+      'updated_at' => updated_at&.iso8601
+    ).except('password_digest')
+  end
 end

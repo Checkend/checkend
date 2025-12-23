@@ -6,6 +6,35 @@ Rails.application.routes.draw do
     end
   end
 
+  # Application API routes
+  namespace :api do
+    namespace :v1 do
+      get 'health', to: 'health#show'
+      resources :apps do
+        resources :problems, only: [:index, :show] do
+          member do
+            post :resolve
+            post :unresolve
+          end
+          collection do
+            post :bulk_resolve
+          end
+          resources :notices, only: [:index, :show]
+          resources :tags, only: [:index, :create, :destroy]
+        end
+      end
+      resources :teams do
+        resources :members, controller: 'team_members', only: [:index, :create, :update, :destroy]
+        member do
+          get :apps, action: :apps
+          post :apps, action: :apps
+          delete 'apps/:app_id', action: :apps_destroy
+        end
+      end
+      resources :users
+    end
+  end
+
   # Development-only design routes
   if Rails.env.development?
     get 'design-internal', to: 'design#internal'
@@ -49,6 +78,13 @@ Rails.application.routes.draw do
   resources :teams do
     resources :team_members, only: [ :index, :create, :update, :destroy ]
     resources :team_invitations, only: [ :index, :create, :update, :destroy ]
+  end
+
+  # API Key management
+  resources :api_keys, only: [:index, :show, :new, :create, :destroy] do
+    member do
+      delete :revoke
+    end
   end
 
   # Team invitation acceptance (public route)
