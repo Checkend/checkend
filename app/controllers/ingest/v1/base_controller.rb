@@ -6,7 +6,7 @@ module Ingest
       private
 
       def authenticate_ingestion_key!
-        ingestion_key = request.headers['X-API-Key']
+        ingestion_key = request.headers['Checkend-Ingestion-Key']
         @current_app = App.find_by(ingestion_key: ingestion_key) if ingestion_key.present?
 
         unless @current_app

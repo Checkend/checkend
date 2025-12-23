@@ -73,7 +73,7 @@ Per ROADMAP.md, the core models will be:
 
 ### API Design
 The primary API endpoint is `POST /ingest/v1/errors`:
-- Authentication via `X-API-Key` header (ingestion key)
+- Authentication via `Checkend-Ingestion-Key` header
 - Accepts error class, message, backtrace, context, request info, and user info
 - Supports custom fingerprints for error grouping
 

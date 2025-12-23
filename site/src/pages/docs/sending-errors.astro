@@ -20,7 +20,7 @@ import Callout from '../../components/Callout.astro'
       </p>
       <CodeBlock title="cURL" lang="bash" code={`curl -X POST https://your-checkend-instance.com/ingest/v1/errors \\
   -H "Content-Type: application/json" \\
-  -H "X-API-Key: your-ingestion-key" \\
+  -H "Checkend-Ingestion-Key: your-ingestion-key" \\
   -d '{
     "error_class": "NoMethodError",
     "error_message": "undefined method foo for nil:NilClass",
@@ -102,7 +102,7 @@ import Callout from '../../components/Callout.astro'
       </p>
       <CodeBlock title="cURL" lang="bash" code={`curl -X POST https://your-checkend-instance.com/ingest/v1/errors \\
   -H "Content-Type: application/json" \\
-  -H "X-API-Key: your-ingestion-key" \\
+  -H "Checkend-Ingestion-Key: your-ingestion-key" \\
   -d '{
     "error_class": "ActiveRecord::RecordNotFound",
     "error_message": "Could not find User with id=123",
@@ -146,7 +146,7 @@ import Callout from '../../components/Callout.astro'
           <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
           </svg>
-          API reference
+          Ingestion reference
         </a>
       </div>
     </div>

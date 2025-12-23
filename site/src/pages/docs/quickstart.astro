@@ -71,7 +71,7 @@ cd checkend`} />
       </p>
       <CodeBlock title="Terminal" lang="bash" code={`curl -X POST http://localhost:3000/ingest/v1/errors \\
   -H "Content-Type: application/json" \\
-  -H "X-API-Key: your-ingestion-key" \\
+  -H "Checkend-Ingestion-Key: your-ingestion-key" \\
   -d '{
     "error_class": "TestError",
     "error_message": "This is a test error",
@@ -80,7 +80,7 @@ cd checkend`} />
       <Callout type="success" title="That's it!">
         You should now see the error appear in your Checkend dashboard. Check out the
         <a href="/docs/sending-errors" class="text-violet-400 hover:text-violet-300 underline light:text-violet-600">Sending Errors</a>
-        guide for more details on the API.
+        guide for more details on the ingestion API.
       </Callout>
     </section>
 

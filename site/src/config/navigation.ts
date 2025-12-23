@@ -30,7 +30,7 @@ export const navigation: NavGroup[] = [
     ],
   },
   {
-    title: 'API Reference',
+    title: 'Ingestion Reference',
     items: [
       { title: 'Authentication', href: '/docs/api/authentication' },
       { title: 'Errors Endpoint', href: '/docs/api/errors' },

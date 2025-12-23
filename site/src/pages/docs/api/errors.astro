@@ -9,7 +9,7 @@ import Callout from '../../../components/Callout.astro'
     <div>
       <h1 class="text-3xl font-bold text-white light:text-gray-900">Errors Endpoint</h1>
       <p class="mt-4 text-lg text-zinc-400 light:text-gray-600">
-        API reference for the errors endpoint.
+        Ingestion reference for the errors endpoint.
       </p>
     </div>
 
@@ -39,7 +39,7 @@ import Callout from '../../../components/Callout.astro'
               <td class="px-4 py-3 font-mono text-sm text-zinc-300 light:text-gray-600">application/json</td>
             </tr>
             <tr>
-              <td class="whitespace-nowrap px-4 py-3 font-mono text-sm text-violet-400">X-API-Key</td>
+              <td class="whitespace-nowrap px-4 py-3 font-mono text-sm text-violet-400">Checkend-Ingestion-Key</td>
               <td class="px-4 py-3 text-sm text-zinc-300 light:text-gray-600">Your app's ingestion key</td>
             </tr>
           </tbody>
@@ -73,7 +73,7 @@ import Callout from '../../../components/Callout.astro'
       <h2 class="text-xl font-semibold text-white light:text-gray-900">Example Request</h2>
       <CodeBlock title="cURL" lang="bash" code={`curl -X POST https://checkend.example.com/ingest/v1/errors \\
   -H "Content-Type: application/json" \\
-  -H "X-API-Key: ck_live_abc123" \\
+  -H "Checkend-Ingestion-Key: ck_live_abc123" \\
   -d '{
     "error_class": "NoMethodError",
     "error_message": "undefined method foo for nil:NilClass",
@@ -139,7 +139,7 @@ import Callout from '../../../components/Callout.astro'
     </section>
 
     <Callout type="info" title="Rate Limiting">
-      Currently, there are no rate limits on the API. However, we recommend implementing client-side rate limiting
+      Currently, there are no rate limits on the ingestion API. However, we recommend implementing client-side rate limiting
       to avoid overwhelming your Checkend instance during error spikes.
     </Callout>
   </div>

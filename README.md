@@ -61,7 +61,7 @@ Visit `http://localhost:3000` and create your account.
 ```bash
 curl -X POST http://localhost:3000/ingest/v1/errors \
   -H "Content-Type: application/json" \
-  -H "X-API-Key: your_ingestion_key" \
+  -H "Checkend-Ingestion-Key: your_ingestion_key" \
   -d '{
     "error": {
       "class": "NoMethodError",
@@ -81,7 +81,7 @@ Report an error to Checkend.
 
 **Headers:**
 - `Content-Type: application/json`
-- `X-API-Key: your_app_ingestion_key`
+- `Checkend-Ingestion-Key: your_app_ingestion_key`
 
 **Payload:**
 

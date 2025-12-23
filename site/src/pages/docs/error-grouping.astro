@@ -40,7 +40,7 @@ import Callout from '../../components/Callout.astro'
       </p>
       <CodeBlock title="Custom fingerprint example" lang="bash" code={`curl -X POST https://your-checkend-instance.com/ingest/v1/errors \\
   -H "Content-Type: application/json" \\
-  -H "X-API-Key: your-ingestion-key" \\
+  -H "Checkend-Ingestion-Key: your-ingestion-key" \\
   -d '{
     "error_class": "PaymentError",
     "error_message": "Card declined: insufficient funds",

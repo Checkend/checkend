@@ -27,7 +27,7 @@ class Ingest::V1::ErrorsControllerTest < ActionDispatch::IntegrationTest
   test 'returns 401 when invalid ingestion key provided' do
     post ingest_v1_errors_url,
       params: @valid_payload,
-      headers: { 'X-API-Key' => 'invalid-key' },
+      headers: { 'Checkend-Ingestion-Key' => 'invalid-key' },
       as: :json
 
     assert_response :unauthorized
@@ -37,7 +37,7 @@ class Ingest::V1::ErrorsControllerTest < ActionDispatch::IntegrationTest
   test 'returns 201 when valid ingestion key provided' do
     post ingest_v1_errors_url,
       params: @valid_payload,
-      headers: { 'X-API-Key' => @app.ingestion_key },
+      headers: { 'Checkend-Ingestion-Key' => @app.ingestion_key },
       as: :json
 
     assert_response :created
@@ -50,7 +50,7 @@ class Ingest::V1::ErrorsControllerTest < ActionDispatch::IntegrationTest
 
     post ingest_v1_errors_url,
       params: payload,
-      headers: { 'X-API-Key' => @app.ingestion_key },
+      headers: { 'Checkend-Ingestion-Key' => @app.ingestion_key },
       as: :json
 
     assert_response :unprocessable_entity
@@ -60,7 +60,7 @@ class Ingest::V1::ErrorsControllerTest < ActionDispatch::IntegrationTest
   test 'returns 422 when error key is missing' do
     post ingest_v1_errors_url,
       params: { foo: 'bar' },
-      headers: { 'X-API-Key' => @app.ingestion_key },
+      headers: { 'Checkend-Ingestion-Key' => @app.ingestion_key },
       as: :json
 
     assert_response :unprocessable_entity
@@ -72,7 +72,7 @@ class Ingest::V1::ErrorsControllerTest < ActionDispatch::IntegrationTest
     assert_difference 'Notice.count', 1 do
       post ingest_v1_errors_url,
         params: @valid_payload,
-        headers: { 'X-API-Key' => @app.ingestion_key },
+        headers: { 'Checkend-Ingestion-Key' => @app.ingestion_key },
         as: :json
     end
 
@@ -86,7 +86,7 @@ class Ingest::V1::ErrorsControllerTest < ActionDispatch::IntegrationTest
     assert_difference 'Problem.count', 1 do
       post ingest_v1_errors_url,
         params: @valid_payload,
-        headers: { 'X-API-Key' => @app.ingestion_key },
+        headers: { 'Checkend-Ingestion-Key' => @app.ingestion_key },
         as: :json
     end
   end
@@ -95,7 +95,7 @@ class Ingest::V1::ErrorsControllerTest < ActionDispatch::IntegrationTest
     # First request creates problem
     post ingest_v1_errors_url,
       params: @valid_payload,
-      headers: { 'X-API-Key' => @app.ingestion_key },
+      headers: { 'Checkend-Ingestion-Key' => @app.ingestion_key },
       as: :json
 
     # Second request reuses problem
@@ -103,7 +103,7 @@ class Ingest::V1::ErrorsControllerTest < ActionDispatch::IntegrationTest
       assert_difference 'Notice.count', 1 do
         post ingest_v1_errors_url,
           params: @valid_payload,
-          headers: { 'X-API-Key' => @app.ingestion_key },
+          headers: { 'Checkend-Ingestion-Key' => @app.ingestion_key },
           as: :json
       end
     end
@@ -115,7 +115,7 @@ class Ingest::V1::ErrorsControllerTest < ActionDispatch::IntegrationTest
 
     post ingest_v1_errors_url,
       params: payload_with_fingerprint,
-      headers: { 'X-API-Key' => @app.ingestion_key },
+      headers: { 'Checkend-Ingestion-Key' => @app.ingestion_key },
       as: :json
 
     assert_response :created
@@ -129,7 +129,7 @@ class Ingest::V1::ErrorsControllerTest < ActionDispatch::IntegrationTest
 
     post ingest_v1_errors_url,
       params: payload,
-      headers: { 'X-API-Key' => @app.ingestion_key },
+      headers: { 'Checkend-Ingestion-Key' => @app.ingestion_key },
       as: :json
 
     notice = Notice.last
@@ -143,7 +143,7 @@ class Ingest::V1::ErrorsControllerTest < ActionDispatch::IntegrationTest
 
     post ingest_v1_errors_url,
       params: payload,
-      headers: { 'X-API-Key' => @app.ingestion_key },
+      headers: { 'Checkend-Ingestion-Key' => @app.ingestion_key },
       as: :json
 
     notice = Notice.last
@@ -157,7 +157,7 @@ class Ingest::V1::ErrorsControllerTest < ActionDispatch::IntegrationTest
 
     post ingest_v1_errors_url,
       params: payload,
-      headers: { 'X-API-Key' => @app.ingestion_key },
+      headers: { 'Checkend-Ingestion-Key' => @app.ingestion_key },
       as: :json
 
     notice = Notice.last
@@ -169,7 +169,7 @@ class Ingest::V1::ErrorsControllerTest < ActionDispatch::IntegrationTest
     assert_difference 'Backtrace.count', 1 do
       post ingest_v1_errors_url,
         params: @valid_payload,
-        headers: { 'X-API-Key' => @app.ingestion_key },
+        headers: { 'Checkend-Ingestion-Key' => @app.ingestion_key },
         as: :json
     end
 
@@ -182,14 +182,14 @@ class Ingest::V1::ErrorsControllerTest < ActionDispatch::IntegrationTest
     # First request creates backtrace
     post ingest_v1_errors_url,
       params: @valid_payload,
-      headers: { 'X-API-Key' => @app.ingestion_key },
+      headers: { 'Checkend-Ingestion-Key' => @app.ingestion_key },
       as: :json
 
     # Second request with same backtrace reuses it
     assert_no_difference 'Backtrace.count' do
       post ingest_v1_errors_url,
         params: @valid_payload,
-        headers: { 'X-API-Key' => @app.ingestion_key },
+        headers: { 'Checkend-Ingestion-Key' => @app.ingestion_key },
         as: :json
     end
 
@@ -201,7 +201,7 @@ class Ingest::V1::ErrorsControllerTest < ActionDispatch::IntegrationTest
   test 'updates problem timestamps on new notice' do
     post ingest_v1_errors_url,
       params: @valid_payload,
-      headers: { 'X-API-Key' => @app.ingestion_key },
+      headers: { 'Checkend-Ingestion-Key' => @app.ingestion_key },
       as: :json
 
     problem = Problem.last
@@ -211,7 +211,7 @@ class Ingest::V1::ErrorsControllerTest < ActionDispatch::IntegrationTest
     travel 1.hour do
       post ingest_v1_errors_url,
         params: @valid_payload,
-        headers: { 'X-API-Key' => @app.ingestion_key },
+        headers: { 'Checkend-Ingestion-Key' => @app.ingestion_key },
         as: :json
 
       problem.reload
@@ -223,7 +223,7 @@ class Ingest::V1::ErrorsControllerTest < ActionDispatch::IntegrationTest
   test 'increments problem notices_count' do
     post ingest_v1_errors_url,
       params: @valid_payload,
-      headers: { 'X-API-Key' => @app.ingestion_key },
+      headers: { 'Checkend-Ingestion-Key' => @app.ingestion_key },
       as: :json
 
     problem = Problem.last
@@ -231,7 +231,7 @@ class Ingest::V1::ErrorsControllerTest < ActionDispatch::IntegrationTest
 
     post ingest_v1_errors_url,
       params: @valid_payload,
-      headers: { 'X-API-Key' => @app.ingestion_key },
+      headers: { 'Checkend-Ingestion-Key' => @app.ingestion_key },
       as: :json
 
     assert_equal 2, problem.reload.notices_count
@@ -250,7 +250,7 @@ class Ingest::V1::ErrorsControllerTest < ActionDispatch::IntegrationTest
 
     post ingest_v1_errors_url,
       params: payload,
-      headers: { 'X-API-Key' => @app.ingestion_key },
+      headers: { 'Checkend-Ingestion-Key' => @app.ingestion_key },
       as: :json
 
     notice = Notice.last
@@ -263,7 +263,7 @@ class Ingest::V1::ErrorsControllerTest < ActionDispatch::IntegrationTest
   test 'notifier is optional for backward compatibility' do
     post ingest_v1_errors_url,
       params: @valid_payload,
-      headers: { 'X-API-Key' => @app.ingestion_key },
+      headers: { 'Checkend-Ingestion-Key' => @app.ingestion_key },
       as: :json
 
     assert_response :created
@@ -277,7 +277,7 @@ class Ingest::V1::ErrorsControllerTest < ActionDispatch::IntegrationTest
 
     post ingest_v1_errors_url,
       params: payload,
-      headers: { 'X-API-Key' => @app.ingestion_key },
+      headers: { 'Checkend-Ingestion-Key' => @app.ingestion_key },
       as: :json
 
     notice = Notice.last

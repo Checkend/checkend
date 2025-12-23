@@ -8,11 +8,13 @@ The Ingestion API allows client applications to send error reports to Checkend. 
 
 ## Authentication
 
-All API requests must include the `X-API-Key` header with a valid app ingestion key.
+All API requests must include the `Checkend-Ingestion-Key` header with a valid app ingestion key.
 
 ```http
-X-API-Key: your_ingestion_key_here
+Checkend-Ingestion-Key: your_ingestion_key_here
 ```
+
+> **Note:** This header follows [RFC 6648](https://tools.ietf.org/html/rfc6648) conventions by using a vendor-prefixed header name (`Checkend-`) instead of the deprecated `X-` prefix.
 
 **Error Responses:**
 
@@ -33,7 +35,7 @@ Report a new error occurrence.
 
 | Header | Required | Description |
 |--------|----------|-------------|
-| `X-API-Key` | Yes | App ingestion key for authentication |
+| `Checkend-Ingestion-Key` | Yes | App ingestion key for authentication |
 | `Content-Type` | Yes | Must be `application/json` |
 
 #### Request Body
@@ -308,7 +310,7 @@ If the API is unavailable:
 ```bash
 curl -X POST https://checkend.example.com/ingest/v1/errors \
   -H "Content-Type: application/json" \
-  -H "X-API-Key: your_ingestion_key_here" \
+  -H "Checkend-Ingestion-Key: your_ingestion_key_here" \
   -d '{
     "error": {
       "class": "RuntimeError",
@@ -361,7 +363,7 @@ class CheckendClient
 
     request = Net::HTTP::Post.new(@uri.path)
     request["Content-Type"] = "application/json"
-    request["X-API-Key"] = @ingestion_key
+    request["Checkend-Ingestion-Key"] = @ingestion_key
     request.body = payload.to_json
 
     response = http.request(request)

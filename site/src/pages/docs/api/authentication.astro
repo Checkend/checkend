@@ -9,7 +9,7 @@ import Callout from '../../../components/Callout.astro'
     <div>
       <h1 class="text-3xl font-bold text-white light:text-gray-900">Authentication</h1>
       <p class="mt-4 text-lg text-zinc-400 light:text-gray-600">
-        Learn how to authenticate with the Checkend API.
+        Learn how to authenticate with the Checkend ingestion API.
       </p>
     </div>
 
@@ -26,12 +26,15 @@ import Callout from '../../../components/Callout.astro'
     <section class="space-y-4">
       <h2 class="text-xl font-semibold text-white light:text-gray-900">Using the Ingestion Key</h2>
       <p class="text-zinc-300 light:text-gray-600">
-        Include your ingestion key in the <code class="rounded bg-zinc-800 px-1.5 py-0.5 text-violet-400 light:bg-gray-100 light:text-violet-600">X-API-Key</code> header:
+        Include your ingestion key in the <code class="rounded bg-zinc-800 px-1.5 py-0.5 text-violet-400 light:bg-gray-100 light:text-violet-600">Checkend-Ingestion-Key</code> header:
       </p>
       <CodeBlock title="cURL" lang="bash" code={`curl -X POST https://your-checkend-instance.com/ingest/v1/errors \\
   -H "Content-Type: application/json" \\
-  -H "X-API-Key: your-ingestion-key" \\
+  -H "Checkend-Ingestion-Key: your-ingestion-key" \\
   -d '{"error_class": "TestError", "error_message": "Test"}'`} />
+      <Callout type="info" title="Header Naming">
+        This header follows <a href="https://tools.ietf.org/html/rfc6648" class="text-violet-400 hover:text-violet-300 underline" target="_blank" rel="noopener noreferrer">RFC 6648</a> conventions by using a vendor-prefixed header name (<code class="rounded bg-zinc-800 px-1.5 py-0.5 text-violet-400 light:bg-gray-100 light:text-violet-600">Checkend-</code>) instead of the deprecated <code class="rounded bg-zinc-800 px-1.5 py-0.5 text-violet-400 light:bg-gray-100 light:text-violet-600">X-</code> prefix.
+      </Callout>
     </section>
 
     <section class="space-y-4">
@@ -57,7 +60,7 @@ import Callout from '../../../components/Callout.astro'
     </section>
 
     <Callout type="warning" title="Invalid Ingestion Key">
-      If you provide an invalid or missing ingestion key, the API will return a <code class="rounded bg-orange-400/30 px-1 text-orange-300">401 Unauthorized</code> response.
+      If you provide an invalid or missing ingestion key, the ingestion API will return a <code class="rounded bg-orange-400/30 px-1 text-orange-300">401 Unauthorized</code> response.
     </Callout>
 
     <section class="space-y-4">
