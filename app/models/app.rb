@@ -13,6 +13,9 @@ class App < ApplicationRecord
   before_validation :generate_slug, on: :create
   before_validation :update_slug, on: :update, if: -> { name_changed? && name.present? }
 
+  # Ensure ingestion_key is generated on initialization
+  after_initialize :ensure_ingestion_key, if: :new_record?
+
   def to_param
     slug
   end
@@ -49,6 +52,11 @@ class App < ApplicationRecord
   end
 
   private
+
+  def ensure_ingestion_key
+    # has_secure_token should generate this automatically, but ensure it's set
+    self.ingestion_key ||= SecureRandom.base58(24)
+  end
 
   def generate_slug
     self.slug = slugify(name)
