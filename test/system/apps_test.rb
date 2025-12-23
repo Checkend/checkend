@@ -22,6 +22,9 @@ class AppsTest < ApplicationSystemTestCase
     visit apps_path
     click_link 'New App', match: :first
 
+    # Wait for slide-over to be visible before interacting with form
+    assert_text 'Create a new application to start monitoring errors.'
+
     fill_in 'Name', with: 'Test Application'
     select 'Staging', from: 'Environment'
 
@@ -54,6 +57,9 @@ class AppsTest < ApplicationSystemTestCase
     find("button[class*='rounded-lg'][class*='text-gray-500']").click
 
     click_link 'Edit'
+
+    # Wait for slide-over to be visible before interacting with form
+    assert_text 'Edit App'
 
     fill_in 'Name', with: 'Updated App Name'
     select 'Development', from: 'Environment'
