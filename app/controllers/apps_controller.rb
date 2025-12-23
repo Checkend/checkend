@@ -70,9 +70,19 @@ class AppsController < ApplicationController
     require_team_admin!(team)
 
     @app.team_assignments.where(team: team).destroy_all
-    redirect_to @app, notice: 'Team assignment removed successfully.'
+
+    # Reload to get updated team associations
+    @app.reload
+
+    # If user still has access to the app (through other teams), redirect to app
+    # Otherwise, redirect to apps index since they no longer have access
+    if can_access_app?(@app)
+      redirect_to @app, notice: 'Team assignment removed successfully.'
+    else
+      redirect_to apps_path, notice: 'Team assignment removed successfully.'
+    end
   rescue ActiveRecord::RecordNotFound
-    redirect_to @app, alert: 'Team not found or you are not an admin.'
+    redirect_to apps_path, alert: 'Team not found or you are not an admin.'
   end
 
   private
