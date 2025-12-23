@@ -21,7 +21,7 @@ module Authorizable
     app ||= @app
     return if app && can_access_app?(app)
 
-    raise ActiveRecord::RecordNotFound, "App not found or access denied"
+    raise ActiveRecord::RecordNotFound, 'App not found or access denied'
   end
 
   def accessible_apps
@@ -38,7 +38,6 @@ module Authorizable
     team ||= @team
     return if team && can_manage_team_assignment?(team)
 
-    raise ActiveRecord::RecordNotFound, "Team not found or you are not an admin"
+    raise ActiveRecord::RecordNotFound, 'Team not found or you are not an admin'
   end
 end
-

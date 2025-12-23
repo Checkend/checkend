@@ -195,6 +195,18 @@ class ProblemsControllerTest < ActionDispatch::IntegrationTest
     assert_response :not_found
   end
 
+  test 'show displays recent notices list' do
+    get app_problem_path(@app, @problem)
+    assert_response :success
+    assert_match 'Recent Notices', response.body
+  end
+
+  test 'show displays tags when present' do
+    get app_problem_path(@app, @problem)
+    assert_response :success
+    assert_match 'Tags:', response.body
+  end
+
   # Resolve tests
   test 'resolve marks problem as resolved' do
     assert @problem.unresolved?
@@ -351,5 +363,19 @@ class ProblemsControllerTest < ActionDispatch::IntegrationTest
   test 'index handles overflow page numbers by redirecting to first page' do
     get app_problems_path(@app, page: 9999)
     assert_redirected_to app_problems_path(@app)
+  end
+
+  test 'index shows empty state when no problems match filters' do
+    get app_problems_path(@app, search: 'nonexistent error that does not exist anywhere')
+    assert_response :success
+    assert_match 'No problems found', response.body
+    assert_match 'Try adjusting your search', response.body
+  end
+
+  test 'index displays notice counts for problems' do
+    get app_problems_path(@app)
+    assert_response :success
+    # Check that notice count is displayed for problems
+    assert_match "#{@problem.notices_count} notice", response.body
   end
 end

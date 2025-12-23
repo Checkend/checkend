@@ -112,4 +112,10 @@ class NoticesControllerTest < ActionDispatch::IntegrationTest
     assert_match 'Newer Notice', response.body
     assert_match 'Older Notice', response.body
   end
+
+  test 'show displays raw JSON section' do
+    get app_problem_notice_path(@app, @problem, @notice)
+    assert_response :success
+    assert_match 'Raw JSON', response.body
+  end
 end
