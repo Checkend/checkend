@@ -1,11 +1,6 @@
-<div>
-  <div class="mb-6">
-    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">New Team</h1>
-    <p class="text-gray-600 dark:text-zinc-400 mt-1">Create a new team to collaborate on apps.</p>
-  </div>
-
-  <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-6">
-    <%= render 'form', team: @team %>
-  </div>
-</div>
+<%= turbo_frame_tag "modal" do %>
+  <%= render layout: "shared/slide_over", locals: { title: "New Team", subtitle: "Create a new team to collaborate on apps." } do %>
+    <%= render "form", team: @team %>
+  <% end %>
+<% end %>
 

@@ -6,7 +6,7 @@
     </div>
     <% if @team.owner == Current.user %>
       <div class="flex space-x-3">
-        <%= link_to edit_team_path(@team), class: "inline-flex items-center px-4 py-2 border border-gray-300 dark:border-zinc-600 text-gray-700 dark:text-zinc-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-zinc-700 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-900 transition-colors" do %>
+        <%= link_to edit_team_path(@team), data: { turbo_frame: "modal" }, class: "inline-flex items-center px-4 py-2 border border-gray-300 dark:border-zinc-600 text-gray-700 dark:text-zinc-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-zinc-700 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-900 transition-colors" do %>
           Edit
         <% end %>
       </div>
