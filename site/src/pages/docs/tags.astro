@@ -1,0 +1,150 @@
+---
+import DocsLayout from '../../layouts/DocsLayout.astro'
+import Callout from '../../components/Callout.astro'
+---
+
+<DocsLayout title="Tags">
+  <div class="space-y-8">
+    <div>
+      <h1 class="text-3xl font-bold text-white light:text-gray-900">Tags</h1>
+      <p class="mt-4 text-lg text-zinc-400 light:text-gray-600">
+        Organize and categorize your problems with custom tags.
+      </p>
+    </div>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-semibold text-white light:text-gray-900">Overview</h2>
+      <p class="text-zinc-300 light:text-gray-600">
+        Tags help you organize problems beyond automatic fingerprint grouping. Use tags to categorize errors by:
+      </p>
+      <ul class="mt-4 space-y-2 text-zinc-300 light:text-gray-600">
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400"></span>
+          <span>Feature area (e.g., <code class="rounded bg-zinc-800 px-1.5 py-0.5 text-violet-400 light:bg-gray-100 light:text-violet-600">checkout</code>, <code class="rounded bg-zinc-800 px-1.5 py-0.5 text-violet-400 light:bg-gray-100 light:text-violet-600">authentication</code>)</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400"></span>
+          <span>Priority level (e.g., <code class="rounded bg-zinc-800 px-1.5 py-0.5 text-violet-400 light:bg-gray-100 light:text-violet-600">critical</code>, <code class="rounded bg-zinc-800 px-1.5 py-0.5 text-violet-400 light:bg-gray-100 light:text-violet-600">low-priority</code>)</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400"></span>
+          <span>Team assignment (e.g., <code class="rounded bg-zinc-800 px-1.5 py-0.5 text-violet-400 light:bg-gray-100 light:text-violet-600">backend-team</code>, <code class="rounded bg-zinc-800 px-1.5 py-0.5 text-violet-400 light:bg-gray-100 light:text-violet-600">frontend-team</code>)</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400"></span>
+          <span>Status tracking (e.g., <code class="rounded bg-zinc-800 px-1.5 py-0.5 text-violet-400 light:bg-gray-100 light:text-violet-600">needs-investigation</code>, <code class="rounded bg-zinc-800 px-1.5 py-0.5 text-violet-400 light:bg-gray-100 light:text-violet-600">known-issue</code>)</span>
+        </li>
+      </ul>
+    </section>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-semibold text-white light:text-gray-900">Adding Tags</h2>
+      <p class="text-zinc-300 light:text-gray-600">
+        To add a tag to a problem:
+      </p>
+      <ol class="mt-4 space-y-3 text-zinc-300 light:text-gray-600">
+        <li class="flex items-start gap-3">
+          <span class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-violet-600/20 text-sm font-medium text-violet-400">1</span>
+          <span>Navigate to the problem detail page</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-violet-600/20 text-sm font-medium text-violet-400">2</span>
+          <span>Find the tags section in the sidebar</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-violet-600/20 text-sm font-medium text-violet-400">3</span>
+          <span>Type a tag name in the input field</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-violet-600/20 text-sm font-medium text-violet-400">4</span>
+          <span>Press Enter or select from the autocomplete suggestions</span>
+        </li>
+      </ol>
+      <Callout type="info">
+        As you type, existing tags will appear as suggestions. Select an existing tag to reuse it, or create a new one by pressing Enter.
+      </Callout>
+    </section>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-semibold text-white light:text-gray-900">Tag Naming Rules</h2>
+      <p class="text-zinc-300 light:text-gray-600">
+        Tag names must follow these rules:
+      </p>
+      <ul class="mt-4 space-y-2 text-zinc-300 light:text-gray-600">
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400"></span>
+          <span><strong class="text-white light:text-gray-900">Allowed characters:</strong> Letters, numbers, hyphens, and underscores</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400"></span>
+          <span><strong class="text-white light:text-gray-900">Maximum length:</strong> 50 characters</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400"></span>
+          <span><strong class="text-white light:text-gray-900">Case insensitive:</strong> Tags are stored in lowercase (<code class="rounded bg-zinc-800 px-1.5 py-0.5 text-violet-400 light:bg-gray-100 light:text-violet-600">Backend</code> becomes <code class="rounded bg-zinc-800 px-1.5 py-0.5 text-violet-400 light:bg-gray-100 light:text-violet-600">backend</code>)</span>
+        </li>
+      </ul>
+      <p class="mt-4 text-zinc-300 light:text-gray-600">
+        Examples of valid tags: <code class="rounded bg-zinc-800 px-1.5 py-0.5 text-violet-400 light:bg-gray-100 light:text-violet-600">critical</code>, <code class="rounded bg-zinc-800 px-1.5 py-0.5 text-violet-400 light:bg-gray-100 light:text-violet-600">needs-review</code>, <code class="rounded bg-zinc-800 px-1.5 py-0.5 text-violet-400 light:bg-gray-100 light:text-violet-600">api_v2</code>, <code class="rounded bg-zinc-800 px-1.5 py-0.5 text-violet-400 light:bg-gray-100 light:text-violet-600">sprint-42</code>
+      </p>
+    </section>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-semibold text-white light:text-gray-900">Removing Tags</h2>
+      <p class="text-zinc-300 light:text-gray-600">
+        To remove a tag from a problem, click the <strong class="text-white light:text-gray-900">X</strong> button next to the tag badge on the problem detail page.
+      </p>
+    </section>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-semibold text-white light:text-gray-900">Filtering by Tags</h2>
+      <p class="text-zinc-300 light:text-gray-600">
+        Filter the problems list to show only problems with specific tags:
+      </p>
+      <ol class="mt-4 space-y-3 text-zinc-300 light:text-gray-600">
+        <li class="flex items-start gap-3">
+          <span class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-violet-600/20 text-sm font-medium text-violet-400">1</span>
+          <span>Go to your app's problems list</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-violet-600/20 text-sm font-medium text-violet-400">2</span>
+          <span>Click on tag badges to toggle filtering by that tag</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-violet-600/20 text-sm font-medium text-violet-400">3</span>
+          <span>Selected tags appear as filter chips that can be removed</span>
+        </li>
+      </ol>
+      <p class="mt-4 text-zinc-300 light:text-gray-600">
+        You can filter by multiple tags at once. Problems matching <strong class="text-white light:text-gray-900">any</strong> of the selected tags will be shown.
+      </p>
+      <Callout type="info">
+        Tag filters are preserved in the URL, so you can bookmark filtered views or share them with your team.
+      </Callout>
+    </section>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-semibold text-white light:text-gray-900">Bulk Tagging</h2>
+      <p class="text-zinc-300 light:text-gray-600">
+        Add or remove tags from multiple problems at once:
+      </p>
+      <ol class="mt-4 space-y-3 text-zinc-300 light:text-gray-600">
+        <li class="flex items-start gap-3">
+          <span class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-violet-600/20 text-sm font-medium text-violet-400">1</span>
+          <span>Select problems using the checkboxes in the problems list</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-violet-600/20 text-sm font-medium text-violet-400">2</span>
+          <span>Click the <strong class="text-white light:text-gray-900">Add Tag</strong> or <strong class="text-white light:text-gray-900">Remove Tag</strong> dropdown</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-violet-600/20 text-sm font-medium text-violet-400">3</span>
+          <span>Enter the tag name and confirm</span>
+        </li>
+      </ol>
+      <p class="mt-4 text-zinc-300 light:text-gray-600">
+        Bulk operations apply to all selected problems. Use this feature to quickly categorize multiple related errors.
+      </p>
+    </section>
+  </div>
+</DocsLayout>

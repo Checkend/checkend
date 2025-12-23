@@ -1,0 +1,204 @@
+---
+import DocsLayout from '../../layouts/DocsLayout.astro'
+import Callout from '../../components/Callout.astro'
+---
+
+<DocsLayout title="Filtering & Search">
+  <div class="space-y-8">
+    <div>
+      <h1 class="text-3xl font-bold text-white light:text-gray-900">Filtering & Search</h1>
+      <p class="mt-4 text-lg text-zinc-400 light:text-gray-600">
+        Find and filter problems using powerful search and filtering options.
+      </p>
+    </div>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-semibold text-white light:text-gray-900">Overview</h2>
+      <p class="text-zinc-300 light:text-gray-600">
+        The problems list provides several ways to find the errors you're looking for. Combine multiple filters to narrow down results, and all filters are preserved in the URL for easy bookmarking and sharing.
+      </p>
+    </section>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-semibold text-white light:text-gray-900">Status Filter</h2>
+      <p class="text-zinc-300 light:text-gray-600">
+        Filter problems by their resolution status:
+      </p>
+      <ul class="mt-4 space-y-2 text-zinc-300 light:text-gray-600">
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400"></span>
+          <span><strong class="text-white light:text-gray-900">All</strong> — Show all problems regardless of status</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400"></span>
+          <span><strong class="text-white light:text-gray-900">Unresolved</strong> — Show only problems that haven't been resolved (default)</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400"></span>
+          <span><strong class="text-white light:text-gray-900">Resolved</strong> — Show only problems that have been marked as resolved</span>
+        </li>
+      </ul>
+    </section>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-semibold text-white light:text-gray-900">Text Search</h2>
+      <p class="text-zinc-300 light:text-gray-600">
+        Search problems by error class or error message. The search is case-insensitive and matches partial text.
+      </p>
+      <p class="mt-4 text-zinc-300 light:text-gray-600">
+        Examples:
+      </p>
+      <ul class="mt-2 space-y-2 text-zinc-300 light:text-gray-600">
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400"></span>
+          <span>Search <code class="rounded bg-zinc-800 px-1.5 py-0.5 text-violet-400 light:bg-gray-100 light:text-violet-600">timeout</code> to find all timeout-related errors</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400"></span>
+          <span>Search <code class="rounded bg-zinc-800 px-1.5 py-0.5 text-violet-400 light:bg-gray-100 light:text-violet-600">NoMethodError</code> to find all nil reference errors</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400"></span>
+          <span>Search <code class="rounded bg-zinc-800 px-1.5 py-0.5 text-violet-400 light:bg-gray-100 light:text-violet-600">undefined</code> to find JavaScript undefined errors</span>
+        </li>
+      </ul>
+    </section>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-semibold text-white light:text-gray-900">Tag Filtering</h2>
+      <p class="text-zinc-300 light:text-gray-600">
+        Filter problems by one or more tags. Click on tag badges in the problems list to add them as filters. Active tag filters appear as chips that can be removed by clicking them again.
+      </p>
+      <p class="mt-4 text-zinc-300 light:text-gray-600">
+        When filtering by multiple tags, problems matching <strong class="text-white light:text-gray-900">any</strong> of the selected tags are shown.
+      </p>
+      <Callout type="info">
+        See the <a href="/docs/tags" class="text-violet-400 hover:text-violet-300 light:text-violet-600 light:hover:text-violet-700">Tags documentation</a> for more details on creating and managing tags.
+      </Callout>
+    </section>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-semibold text-white light:text-gray-900">Advanced Filters</h2>
+      <p class="text-zinc-300 light:text-gray-600">
+        Click <strong class="text-white light:text-gray-900">Advanced Filters</strong> to reveal additional filtering options:
+      </p>
+
+      <h3 class="mt-6 text-lg font-medium text-white light:text-gray-900">Date Range</h3>
+      <p class="text-zinc-300 light:text-gray-600">
+        Filter problems by when they were last seen. Use the quick presets or set custom dates:
+      </p>
+      <ul class="mt-2 space-y-2 text-zinc-300 light:text-gray-600">
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400"></span>
+          <span><strong class="text-white light:text-gray-900">Today</strong> — Problems seen in the last 24 hours</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400"></span>
+          <span><strong class="text-white light:text-gray-900">Last 7 days</strong> — Problems seen in the past week</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400"></span>
+          <span><strong class="text-white light:text-gray-900">Last 30 days</strong> — Problems seen in the past month</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400"></span>
+          <span><strong class="text-white light:text-gray-900">Custom range</strong> — Set specific start and end dates</span>
+        </li>
+      </ul>
+
+      <h3 class="mt-6 text-lg font-medium text-white light:text-gray-900">Minimum Occurrences</h3>
+      <p class="text-zinc-300 light:text-gray-600">
+        Filter to show only problems that have occurred a minimum number of times. This helps you focus on frequent errors that may have higher impact.
+      </p>
+      <p class="mt-2 text-zinc-300 light:text-gray-600">
+        Example: Set minimum occurrences to <code class="rounded bg-zinc-800 px-1.5 py-0.5 text-violet-400 light:bg-gray-100 light:text-violet-600">10</code> to find errors that have happened at least 10 times.
+      </p>
+    </section>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-semibold text-white light:text-gray-900">Sorting</h2>
+      <p class="text-zinc-300 light:text-gray-600">
+        Change how problems are ordered in the list:
+      </p>
+      <ul class="mt-4 space-y-2 text-zinc-300 light:text-gray-600">
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400"></span>
+          <span><strong class="text-white light:text-gray-900">Most Recent</strong> — Problems with the most recent occurrences first (default)</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400"></span>
+          <span><strong class="text-white light:text-gray-900">By Occurrence Count</strong> — Problems with the most occurrences first</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400"></span>
+          <span><strong class="text-white light:text-gray-900">Oldest</strong> — Problems with the oldest last occurrence first</span>
+        </li>
+      </ul>
+    </section>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-semibold text-white light:text-gray-900">URL Parameters</h2>
+      <p class="text-zinc-300 light:text-gray-600">
+        All filters are reflected in the URL, making it easy to bookmark specific views or share them with your team.
+      </p>
+      <div class="mt-4 overflow-x-auto">
+        <table class="w-full text-sm text-zinc-300 light:text-gray-600">
+          <thead>
+            <tr class="border-b border-zinc-700 light:border-gray-200">
+              <th class="pb-3 pr-4 text-left font-medium text-white light:text-gray-900">Parameter</th>
+              <th class="pb-3 pr-4 text-left font-medium text-white light:text-gray-900">Description</th>
+              <th class="pb-3 text-left font-medium text-white light:text-gray-900">Example</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-zinc-800 light:divide-gray-100">
+            <tr>
+              <td class="py-3 pr-4"><code class="rounded bg-zinc-800 px-1.5 py-0.5 text-violet-400 light:bg-gray-100 light:text-violet-600">status</code></td>
+              <td class="py-3 pr-4">Filter by status</td>
+              <td class="py-3"><code class="text-xs">?status=resolved</code></td>
+            </tr>
+            <tr>
+              <td class="py-3 pr-4"><code class="rounded bg-zinc-800 px-1.5 py-0.5 text-violet-400 light:bg-gray-100 light:text-violet-600">search</code></td>
+              <td class="py-3 pr-4">Text search</td>
+              <td class="py-3"><code class="text-xs">?search=timeout</code></td>
+            </tr>
+            <tr>
+              <td class="py-3 pr-4"><code class="rounded bg-zinc-800 px-1.5 py-0.5 text-violet-400 light:bg-gray-100 light:text-violet-600">tags[]</code></td>
+              <td class="py-3 pr-4">Filter by tags (repeatable)</td>
+              <td class="py-3"><code class="text-xs">?tags[]=critical&tags[]=backend</code></td>
+            </tr>
+            <tr>
+              <td class="py-3 pr-4"><code class="rounded bg-zinc-800 px-1.5 py-0.5 text-violet-400 light:bg-gray-100 light:text-violet-600">date_from</code></td>
+              <td class="py-3 pr-4">Start date (YYYY-MM-DD)</td>
+              <td class="py-3"><code class="text-xs">?date_from=2024-01-01</code></td>
+            </tr>
+            <tr>
+              <td class="py-3 pr-4"><code class="rounded bg-zinc-800 px-1.5 py-0.5 text-violet-400 light:bg-gray-100 light:text-violet-600">date_to</code></td>
+              <td class="py-3 pr-4">End date (YYYY-MM-DD)</td>
+              <td class="py-3"><code class="text-xs">?date_to=2024-12-31</code></td>
+            </tr>
+            <tr>
+              <td class="py-3 pr-4"><code class="rounded bg-zinc-800 px-1.5 py-0.5 text-violet-400 light:bg-gray-100 light:text-violet-600">min_notices</code></td>
+              <td class="py-3 pr-4">Minimum occurrences</td>
+              <td class="py-3"><code class="text-xs">?min_notices=10</code></td>
+            </tr>
+            <tr>
+              <td class="py-3 pr-4"><code class="rounded bg-zinc-800 px-1.5 py-0.5 text-violet-400 light:bg-gray-100 light:text-violet-600">sort</code></td>
+              <td class="py-3 pr-4">Sort order</td>
+              <td class="py-3"><code class="text-xs">?sort=notices</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <Callout type="info">
+        Combine multiple parameters to create specific views. For example: <code class="text-xs">?status=unresolved&tags[]=critical&sort=notices</code>
+      </Callout>
+    </section>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-semibold text-white light:text-gray-900">Active Filters Indicator</h2>
+      <p class="text-zinc-300 light:text-gray-600">
+        When filters are active, a badge shows the number of applied filters. Click it to quickly see and modify your current filters.
+      </p>
+    </section>
+  </div>
+</DocsLayout>

@@ -23,6 +23,8 @@ export const navigation: NavGroup[] = [
     items: [
       { title: 'Sending Errors', href: '/docs/sending-errors' },
       { title: 'Error Grouping', href: '/docs/error-grouping' },
+      { title: 'Tags', href: '/docs/tags' },
+      { title: 'Filtering & Search', href: '/docs/filtering' },
       { title: 'Deployment', href: '/docs/deployment' },
     ],
   },
