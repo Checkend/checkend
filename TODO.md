@@ -23,18 +23,18 @@ Add tags support, custom fingerprint override, and improved search capabilities 
 
 **Decision:** Option A - Custom implementation for simplicity
 
-### 1.1 Database Setup
-- [ ] Generate Tag model: `name:string:uniq`
-- [ ] Generate ProblemTag join model: `problem:references tag:references`
-- [ ] Add unique index on `[problem_id, tag_id]`
-- [ ] Run migrations
+### 1.1 Database Setup ✅
+- [x] Generate Tag model: `name:string:uniq`
+- [x] Generate ProblemTag join model: `problem:references tag:references`
+- [x] Add unique index on `[problem_id, tag_id]`
+- [x] Run migrations
 
-### 1.2 Models
-- [ ] Create `Tag` model with validations (name presence, uniqueness, format)
-- [ ] Create `ProblemTag` model
-- [ ] Add `has_many :problem_tags` and `has_many :tags, through: :problem_tags` to Problem
-- [ ] Add `has_many :problem_tags` and `has_many :problems, through: :problem_tags` to Tag
-- [ ] Add scope `Problem.tagged_with(tag_names)` for filtering
+### 1.2 Models ✅
+- [x] Create `Tag` model with validations (name presence, uniqueness, format)
+- [x] Create `ProblemTag` model
+- [x] Add `has_many :problem_tags` and `has_many :tags, through: :problem_tags` to Problem
+- [x] Add `has_many :problem_tags` and `has_many :problems, through: :problem_tags` to Tag
+- [x] Add scope `Problem.tagged_with(tag_names)` for filtering
 
 ### 1.3 Tags Management UI
 - [ ] Add tags display to problem list items (colored badges)
@@ -133,9 +133,9 @@ Add tags support, custom fingerprint override, and improved search capabilities 
 ## 4. Testing
 
 ### 4.1 Tag Tests
-- [ ] `test/models/tag_test.rb` - validations, uniqueness
-- [ ] `test/models/problem_tag_test.rb` - associations
-- [ ] `test/models/problem_test.rb` - tagged_with scope
+- [x] `test/models/tag_test.rb` - validations, uniqueness
+- [x] `test/models/problem_tag_test.rb` - associations
+- [x] `test/models/problem_test.rb` - tagged_with scope
 - [ ] `test/controllers/problems_controller_test.rb` - tag filtering
 - [ ] `test/system/tags_test.rb` - tag management UI
 
@@ -154,9 +154,16 @@ Add tags support, custom fingerprint override, and improved search capabilities 
 
 ## 5. Current Progress
 
-**Status:** Planning Complete - Ready to Begin
+**Status:** In Progress - Section 1.1 & 1.2 Complete
 
-**Next Step:** Start with Section 1.1 (Tags Database Setup)
+**Completed:**
+- Tag and ProblemTag models with migrations
+- Tag validations (name format, uniqueness, normalization)
+- Many-to-many relationship between Problem and Tag
+- `Problem.tagged_with(tag_names)` scope for filtering
+- Model tests (45 tests passing)
+
+**Next Step:** Start with Section 1.3 (Tags Management UI)
 
 ---
 

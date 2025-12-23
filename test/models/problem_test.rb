@@ -190,4 +190,56 @@ class ProblemTest < ActiveSupport::TestCase
 
     assert_equal 3, data[Date.current]
   end
+
+  # Tag association tests
+  test 'has many problem_tags' do
+    problem = problems(:one)
+    assert_respond_to problem, :problem_tags
+  end
+
+  test 'has many tags through problem_tags' do
+    problem = problems(:one)
+    assert_respond_to problem, :tags
+    assert_includes problem.tags, tags(:critical)
+    assert_includes problem.tags, tags(:frontend)
+  end
+
+  test 'destroying problem destroys associated problem_tags' do
+    problem = problems(:one)
+    problem_tag_count = problem.problem_tags.count
+    assert problem_tag_count > 0
+
+    assert_difference 'ProblemTag.count', -problem_tag_count do
+      problem.destroy
+    end
+  end
+
+  # tagged_with scope tests
+  test 'tagged_with returns problems with specified tag' do
+    results = Problem.tagged_with('critical')
+    assert_includes results, problems(:one)
+    assert_not_includes results, problems(:two)
+  end
+
+  test 'tagged_with accepts array of tag names' do
+    results = Problem.tagged_with(%w[critical frontend])
+    assert_includes results, problems(:one)
+  end
+
+  test 'tagged_with is case insensitive' do
+    results = Problem.tagged_with('CRITICAL')
+    assert_includes results, problems(:one)
+  end
+
+  test 'tagged_with returns all when given blank input' do
+    assert_equal Problem.all.to_a.sort, Problem.tagged_with(nil).to_a.sort
+    assert_equal Problem.all.to_a.sort, Problem.tagged_with([]).to_a.sort
+    assert_equal Problem.all.to_a.sort, Problem.tagged_with('').to_a.sort
+  end
+
+  test 'tagged_with returns distinct results' do
+    # problems(:one) has both :critical and :frontend tags
+    results = Problem.tagged_with(%w[critical frontend])
+    assert_equal 1, results.where(id: problems(:one).id).count
+  end
 end

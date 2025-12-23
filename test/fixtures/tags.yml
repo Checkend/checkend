@@ -1,0 +1,13 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+critical:
+  name: critical
+
+frontend:
+  name: frontend
+
+backend:
+  name: backend
+
+database:
+  name: database
