@@ -39,3 +39,6 @@
 
 # Ignore Playwright MCP data
 /.playwright-mcp/
+
+# Ignore Cursor IDE data
+/.cursor/
