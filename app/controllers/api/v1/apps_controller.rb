@@ -1,7 +1,6 @@
 module Api
   module V1
     class AppsController < BaseController
-
       def index
         return unless require_permission!('apps:read')
         apps = App.all.order(created_at: :desc)
@@ -51,4 +50,3 @@ module Api
     end
   end
 end
-

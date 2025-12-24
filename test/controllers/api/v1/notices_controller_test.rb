@@ -7,7 +7,7 @@ class Api::V1::NoticesControllerTest < ActionDispatch::IntegrationTest
     @notice = notices(:one)
     @read_key = ApiKey.create!(
       name: 'Read Key',
-      permissions: ['notices:read']
+      permissions: [ 'notices:read' ]
     )
   end
 
@@ -24,7 +24,7 @@ class Api::V1::NoticesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test 'index returns 403 without notices:read permission' do
-    no_permission_key = ApiKey.create!(name: 'No Perms', permissions: ['apps:read'])
+    no_permission_key = ApiKey.create!(name: 'No Perms', permissions: [ 'apps:read' ])
 
     get api_v1_app_problem_notices_url(@app, @problem),
       headers: { 'Checkend-API-Key' => no_permission_key.key },
@@ -47,7 +47,7 @@ class Api::V1::NoticesControllerTest < ActionDispatch::IntegrationTest
   test 'show includes backtrace' do
     backtrace = Backtrace.create!(
       fingerprint: 'bt-fp',
-      lines: ['line1', 'line2']
+      lines: [ 'line1', 'line2' ]
     )
     @notice.update!(backtrace: backtrace)
 
@@ -60,4 +60,3 @@ class Api::V1::NoticesControllerTest < ActionDispatch::IntegrationTest
     assert_equal 2, body['backtrace'].length
   end
 end
-

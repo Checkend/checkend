@@ -9,7 +9,7 @@ module Noticed
         response = post_request url, headers: headers, json: json
 
         if raise_if_not_ok? && !success?(response)
-          raise ResponseUnsuccessful.new(response, url, {headers: headers, json: json})
+          raise ResponseUnsuccessful.new(response, url, { headers: headers, json: json })
         end
 
         response
@@ -30,4 +30,3 @@ module Noticed
     end
   end
 end
-

@@ -6,11 +6,11 @@ class Api::V1::TagsControllerTest < ActionDispatch::IntegrationTest
     @problem = problems(:one)
     @read_key = ApiKey.create!(
       name: 'Read Key',
-      permissions: ['tags:read']
+      permissions: [ 'tags:read' ]
     )
     @write_key = ApiKey.create!(
       name: 'Write Key',
-      permissions: ['tags:read', 'tags:write']
+      permissions: [ 'tags:read', 'tags:write' ]
     )
   end
 
@@ -84,4 +84,3 @@ class Api::V1::TagsControllerTest < ActionDispatch::IntegrationTest
     assert_response :not_found
   end
 end
-

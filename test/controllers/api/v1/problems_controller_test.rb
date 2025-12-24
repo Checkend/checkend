@@ -6,11 +6,11 @@ class Api::V1::ProblemsControllerTest < ActionDispatch::IntegrationTest
     @problem = problems(:one)
     @read_key = ApiKey.create!(
       name: 'Read Key',
-      permissions: ['problems:read']
+      permissions: [ 'problems:read' ]
     )
     @write_key = ApiKey.create!(
       name: 'Write Key',
-      permissions: ['problems:read', 'problems:write']
+      permissions: [ 'problems:read', 'problems:write' ]
     )
   end
 
@@ -108,7 +108,7 @@ class Api::V1::ProblemsControllerTest < ActionDispatch::IntegrationTest
     )
 
     post bulk_resolve_api_v1_app_problems_url(@app),
-      params: { problem_ids: [@problem.id, problem2.id] },
+      params: { problem_ids: [ @problem.id, problem2.id ] },
       headers: { 'Checkend-API-Key' => @write_key.key },
       as: :json
 
@@ -141,4 +141,3 @@ class Api::V1::ProblemsControllerTest < ActionDispatch::IntegrationTest
     assert_equal tag.name, tag_data['name']
   end
 end
-

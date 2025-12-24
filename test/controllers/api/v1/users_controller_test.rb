@@ -5,11 +5,11 @@ class Api::V1::UsersControllerTest < ActionDispatch::IntegrationTest
     @user = users(:one)
     @read_key = ApiKey.create!(
       name: 'Read Key',
-      permissions: ['users:read']
+      permissions: [ 'users:read' ]
     )
     @write_key = ApiKey.create!(
       name: 'Write Key',
-      permissions: ['users:read', 'users:write']
+      permissions: [ 'users:read', 'users:write' ]
     )
   end
 
@@ -120,4 +120,3 @@ class Api::V1::UsersControllerTest < ActionDispatch::IntegrationTest
     assert_response :no_content
   end
 end
-

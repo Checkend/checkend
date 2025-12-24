@@ -6,11 +6,11 @@ class Api::V1::TeamsControllerTest < ActionDispatch::IntegrationTest
     @team = teams(:one)
     @read_key = ApiKey.create!(
       name: 'Read Key',
-      permissions: ['teams:read']
+      permissions: [ 'teams:read' ]
     )
     @write_key = ApiKey.create!(
       name: 'Write Key',
-      permissions: ['teams:read', 'teams:write']
+      permissions: [ 'teams:read', 'teams:write' ]
     )
   end
 
@@ -122,4 +122,3 @@ class Api::V1::TeamsControllerTest < ActionDispatch::IntegrationTest
     assert_not @team.reload.team_assignments.where(app: app).exists?
   end
 end
-

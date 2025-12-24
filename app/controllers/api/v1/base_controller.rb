@@ -21,7 +21,7 @@ module Api
 
         unless @current_api_key
           render json: { error: 'unauthorized', message: 'Invalid or revoked API key' }, status: :unauthorized
-          return
+          nil
         end
       end
 
@@ -51,4 +51,3 @@ module Api
     end
   end
 end
-

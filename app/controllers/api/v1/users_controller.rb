@@ -1,7 +1,7 @@
 module Api
   module V1
     class UsersController < BaseController
-      before_action :set_user, only: [:show, :update, :destroy]
+      before_action :set_user, only: [ :show, :update, :destroy ]
 
       def index
         return unless require_permission!('users:read')
@@ -64,4 +64,3 @@ module Api
     end
   end
 end
-

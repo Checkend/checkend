@@ -10,4 +10,3 @@ class Api::V1::HealthControllerTest < ActionDispatch::IntegrationTest
     assert body['timestamp'].present?
   end
 end
-

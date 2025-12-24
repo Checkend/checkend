@@ -112,7 +112,7 @@ class SlackDeliveryTest < ActiveSupport::TestCase
     end
 
     # Verify the exception was raised and the request was made
-    assert_not_nil error, "Expected Noticed::ResponseUnsuccessful to be raised when Slack returns 404"
+    assert_not_nil error, 'Expected Noticed::ResponseUnsuccessful to be raised when Slack returns 404'
     assert_instance_of Noticed::ResponseUnsuccessful, error
     assert_requested :post, @app.slack_webhook_url, times: 1
     assert_match(/404/, error.message)

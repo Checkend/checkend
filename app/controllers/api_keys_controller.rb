@@ -1,6 +1,6 @@
 class ApiKeysController < ApplicationController
   before_action :require_site_admin!
-  before_action :set_api_key, only: [:show, :destroy, :revoke]
+  before_action :set_api_key, only: [ :show, :destroy, :revoke ]
   before_action :set_breadcrumbs, only: [ :index, :show, :new ]
 
   def index
@@ -13,12 +13,12 @@ class ApiKeysController < ApplicationController
   def new
     @api_key = ApiKey.new
     @available_permissions = [
-      ['Apps', 'apps:read', 'apps:write'],
-      ['Problems', 'problems:read', 'problems:write'],
-      ['Notices', 'notices:read'],
-      ['Tags', 'tags:read', 'tags:write'],
-      ['Teams', 'teams:read', 'teams:write'],
-      ['Users', 'users:read', 'users:write']
+      [ 'Apps', 'apps:read', 'apps:write' ],
+      [ 'Problems', 'problems:read', 'problems:write' ],
+      [ 'Notices', 'notices:read' ],
+      [ 'Tags', 'tags:read', 'tags:write' ],
+      [ 'Teams', 'teams:read', 'teams:write' ],
+      [ 'Users', 'users:read', 'users:write' ]
     ]
   end
 
@@ -29,12 +29,12 @@ class ApiKeysController < ApplicationController
       redirect_to api_key_path(@api_key), notice: 'API key created successfully. Save this key now - you won\'t be able to see it again!'
     else
       @available_permissions = [
-        ['Apps', 'apps:read', 'apps:write'],
-        ['Problems', 'problems:read', 'problems:write'],
-        ['Notices', 'notices:read'],
-        ['Tags', 'tags:read', 'tags:write'],
-        ['Teams', 'teams:read', 'teams:write'],
-        ['Users', 'users:read', 'users:write']
+        [ 'Apps', 'apps:read', 'apps:write' ],
+        [ 'Problems', 'problems:read', 'problems:write' ],
+        [ 'Notices', 'notices:read' ],
+        [ 'Tags', 'tags:read', 'tags:write' ],
+        [ 'Teams', 'teams:read', 'teams:write' ],
+        [ 'Users', 'users:read', 'users:write' ]
       ]
       render :new, status: :unprocessable_entity
     end
@@ -73,4 +73,3 @@ class ApiKeysController < ApplicationController
     end
   end
 end
-

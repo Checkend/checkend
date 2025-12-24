@@ -4,7 +4,7 @@ class Api::V1::BaseControllerTest < ActionDispatch::IntegrationTest
   setup do
     @api_key = ApiKey.create!(
       name: 'Test Key',
-      permissions: ['apps:read', 'apps:write']
+      permissions: [ 'apps:read', 'apps:write' ]
     )
   end
 
@@ -52,7 +52,7 @@ class Api::V1::BaseControllerTest < ActionDispatch::IntegrationTest
   test 'returns 403 when missing required permission' do
     read_only_key = ApiKey.create!(
       name: 'Read Only',
-      permissions: ['apps:read']
+      permissions: [ 'apps:read' ]
     )
 
     post api_v1_apps_url,
@@ -76,4 +76,3 @@ class Api::V1::BaseControllerTest < ActionDispatch::IntegrationTest
     assert_equal 'not_found', body['error']
   end
 end
-

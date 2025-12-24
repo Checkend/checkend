@@ -3,7 +3,7 @@ module Api
     class NoticesController < BaseController
       before_action :set_app
       before_action :set_problem
-      before_action :set_notice, only: [:show]
+      before_action :set_notice, only: [ :show ]
 
       def index
         return unless require_permission!('notices:read')
@@ -20,7 +20,7 @@ module Api
 
         # Pagination
         page = params[:page]&.to_i || 1
-        per_page = [params[:per_page]&.to_i || 25, 100].min
+        per_page = [ params[:per_page]&.to_i || 25, 100 ].min
         offset = (page - 1) * per_page
 
         total = notices.count
@@ -58,4 +58,3 @@ module Api
     end
   end
 end
-

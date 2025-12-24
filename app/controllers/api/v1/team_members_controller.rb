@@ -2,7 +2,7 @@ module Api
   module V1
     class TeamMembersController < BaseController
       before_action :set_team
-      before_action :set_team_member, only: [:update, :destroy]
+      before_action :set_team_member, only: [ :update, :destroy ]
 
       def index
         return unless require_permission!('teams:read')
@@ -75,4 +75,3 @@ module Api
     end
   end
 end
-

@@ -45,4 +45,3 @@ class ApiKey < ApplicationRecord
     end
   end
 end
-

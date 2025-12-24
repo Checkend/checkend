@@ -10,11 +10,11 @@ class Api::V1::TeamMembersControllerTest < ActionDispatch::IntegrationTest
     )
     @read_key = ApiKey.create!(
       name: 'Read Key',
-      permissions: ['teams:read']
+      permissions: [ 'teams:read' ]
     )
     @write_key = ApiKey.create!(
       name: 'Write Key',
-      permissions: ['teams:read', 'teams:write']
+      permissions: [ 'teams:read', 'teams:write' ]
     )
   end
 
@@ -101,4 +101,3 @@ class Api::V1::TeamMembersControllerTest < ActionDispatch::IntegrationTest
     assert_includes body['message'], 'last admin'
   end
 end
-

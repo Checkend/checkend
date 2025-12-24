@@ -45,4 +45,3 @@ module Ingest
     end
   end
 end
-

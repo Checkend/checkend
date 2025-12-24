@@ -2,7 +2,7 @@ module Api
   module V1
     class ProblemsController < BaseController
       before_action :set_app
-      before_action :set_problem, only: [:show, :resolve, :unresolve]
+      before_action :set_problem, only: [ :show, :resolve, :unresolve ]
 
       def index
         return unless require_permission!('problems:read')
@@ -54,7 +54,7 @@ module Api
 
         # Pagination
         page = params[:page]&.to_i || 1
-        per_page = [params[:per_page]&.to_i || 25, 100].min # Max 100 per page
+        per_page = [ params[:per_page]&.to_i || 25, 100 ].min # Max 100 per page
         offset = (page - 1) * per_page
 
         total = problems.count
@@ -118,4 +118,3 @@ module Api
     end
   end
 end
-

@@ -5,11 +5,11 @@ class Api::V1::AppsControllerTest < ActionDispatch::IntegrationTest
     @app = apps(:one)
     @read_key = ApiKey.create!(
       name: 'Read Key',
-      permissions: ['apps:read']
+      permissions: [ 'apps:read' ]
     )
     @write_key = ApiKey.create!(
       name: 'Write Key',
-      permissions: ['apps:read', 'apps:write']
+      permissions: [ 'apps:read', 'apps:write' ]
     )
   end
 
@@ -23,7 +23,7 @@ class Api::V1::AppsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test 'index returns 403 without apps:read permission' do
-    no_permission_key = ApiKey.create!(name: 'No Perms', permissions: ['problems:read'])
+    no_permission_key = ApiKey.create!(name: 'No Perms', permissions: [ 'problems:read' ])
 
     get api_v1_apps_url,
       headers: { 'Checkend-API-Key' => no_permission_key.key },
@@ -137,4 +137,3 @@ class Api::V1::AppsControllerTest < ActionDispatch::IntegrationTest
     assert_not_includes body.keys, 'ingestion_key'
   end
 end
-
