@@ -6,9 +6,10 @@
 </div>
 
 <nav class="flex flex-1 flex-col">
-  <ul role="list" class="flex flex-1 flex-col gap-y-7">
-    <%# Primary navigation %>
+  <ul role="list" class="flex flex-1 flex-col gap-y-4">
+    <%# Main navigation %>
     <li>
+      <div class="text-xs font-semibold text-gray-400 dark:text-zinc-500 uppercase tracking-wider mb-2 px-2">Main</div>
       <ul role="list" class="-mx-2 space-y-1">
         <li>
           <%= link_to root_path, class: nav_link_classes(active: current_controller?("dashboard")) do %>
@@ -34,39 +35,13 @@
             Teams
           <% end %>
         </li>
-        <li>
-          <%= link_to users_path, class: nav_link_classes(active: current_controller?("users")) do %>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" class="<%= nav_icon_classes(active: current_controller?("users")) %>">
-              <path d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
-            Users
-          <% end %>
-        </li>
-        <li>
-          <%= link_to api_keys_path, class: nav_link_classes(active: current_controller?("api_keys")) do %>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" class="<%= nav_icon_classes(active: current_controller?("api_keys")) %>">
-              <path d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
-            API Keys
-          <% end %>
-        </li>
-        <% if Current.user&.site_admin? %>
-          <li>
-            <%= link_to settings_smtp_path, class: nav_link_classes(active: current_controller?("settings/smtp")) do %>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" class="<%= nav_icon_classes(active: current_controller?("settings/smtp")) %>">
-                <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" />
-              </svg>
-              Email Settings
-            <% end %>
-          </li>
-        <% end %>
       </ul>
     </li>
 
     <%# User's apps section %>
     <% if @sidebar_apps.present? %>
       <li>
-        <div class="text-xs/6 font-semibold text-gray-400 dark:text-zinc-500">Your Apps</div>
+        <div class="text-xs font-semibold text-gray-400 dark:text-zinc-500 uppercase tracking-wider mb-2 px-2">Your Apps</div>
         <ul role="list" class="-mx-2 mt-2 space-y-1">
           <% @sidebar_apps.each do |app| %>
             <li>
@@ -95,6 +70,46 @@
             <% end %>
           </li>
         </ul>
+      </li>
+    <% end %>
+
+    <%# Administration section (admin-only, collapsible) %>
+    <% if Current.user&.site_admin? %>
+      <li>
+        <details class="group">
+          <summary class="flex items-center justify-between cursor-pointer px-2 py-1 text-xs font-semibold text-gray-400 dark:text-zinc-500 uppercase tracking-wider hover:text-gray-600 dark:hover:text-zinc-400 transition-colors">
+            <span>Administration</span>
+            <svg class="size-4 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </summary>
+          <ul role="list" class="mt-2 -mx-2 space-y-1">
+            <li>
+              <%= link_to users_path, class: nav_link_classes(active: current_controller?("users")) do %>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" class="<%= nav_icon_classes(active: current_controller?("users")) %>">
+                  <path d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                Users
+              <% end %>
+            </li>
+            <li>
+              <%= link_to api_keys_path, class: nav_link_classes(active: current_controller?("api_keys")) do %>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" class="<%= nav_icon_classes(active: current_controller?("api_keys")) %>">
+                  <path d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                API Keys
+              <% end %>
+            </li>
+            <li>
+              <%= link_to settings_smtp_path, class: nav_link_classes(active: current_controller?("settings/smtp")) do %>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" class="<%= nav_icon_classes(active: current_controller?("settings/smtp")) %>">
+                  <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                Email Settings
+              <% end %>
+            </li>
+          </ul>
+        </details>
       </li>
     <% end %>
 

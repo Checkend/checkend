@@ -57,284 +57,226 @@
     </div>
   </div>
 
-  <%# Ingestion Key Section %>
-  <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-6 mb-6">
-    <div class="flex items-center justify-between mb-4">
-      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Ingestion Key</h2>
-      <%= button_to regenerate_ingestion_key_app_path(@app), method: :post, data: { turbo_confirm: "Are you sure you want to regenerate the ingestion key? The old key will stop working immediately." }, class: "text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 font-medium transition-colors" do %>
-        Regenerate
-      <% end %>
-    </div>
-    <p class="text-sm text-gray-600 dark:text-zinc-400 mb-4">Use this key in your application's error reporting client.</p>
-    <div x-data="{ copied: false }" class="flex items-center space-x-2">
-      <code class="flex-1 px-4 py-3 bg-gray-100 dark:bg-zinc-900 rounded-lg text-sm font-mono text-gray-800 dark:text-zinc-300 select-all overflow-x-auto"><%= @app.ingestion_key %></code>
-      <button
-        @click="navigator.clipboard.writeText('<%= @app.ingestion_key %>'); copied = true; setTimeout(() => copied = false, 2000)"
-        class="flex-shrink-0 p-3 bg-gray-100 dark:bg-zinc-900 rounded-lg text-gray-600 dark:text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400 hover:bg-gray-200 dark:hover:bg-zinc-700 focus:outline-none focus:ring-2 focus:ring-violet-500 transition-colors"
-        title="Copy to clipboard"
-      >
-        <svg x-show="!copied" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
-        </svg>
-        <svg x-show="copied" x-cloak class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-        </svg>
-      </button>
-    </div>
-  </div>
+  <%# Two-Column Layout: Main Content + Sidebar %>
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <%# Main Content (2 columns on large screens) %>
+    <div class="lg:col-span-2 space-y-6">
+      <%# Stats Overview %>
+      <div class="grid grid-cols-3 gap-4">
+        <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-4">
+          <div class="text-sm text-gray-500 dark:text-zinc-400 mb-1">Total Problems</div>
+          <div class="text-2xl font-bold text-gray-900 dark:text-white"><%= @app.problems.count %></div>
+        </div>
+        <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-4">
+          <div class="text-sm text-gray-500 dark:text-zinc-400 mb-1">Unresolved</div>
+          <div class="text-2xl font-bold text-pink-600 dark:text-pink-400"><%= @app.problems.unresolved.count %></div>
+        </div>
+        <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-4">
+          <div class="text-sm text-gray-500 dark:text-zinc-400 mb-1">Resolved</div>
+          <div class="text-2xl font-bold text-emerald-600 dark:text-emerald-400"><%= @app.problems.resolved.count %></div>
+        </div>
+      </div>
 
-  <%# Teams Section %>
-  <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-6 mb-6">
-    <div class="flex items-center justify-between mb-4">
-      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Teams</h2>
-      <% admin_teams = Current.user.teams.joins(:team_members).where(team_members: { user_id: Current.user.id, role: 'admin' }).distinct %>
-      <% if admin_teams.any? %>
-        <%= form_with url: assign_team_app_path(@app), method: :post, class: "inline-flex items-center space-x-2" do |form| %>
-          <div class="relative">
-            <%= form.select :team_id,
-                options_from_collection_for_select(admin_teams, :slug, :name),
-                { include_blank: "Assign team..." },
-                { name: 'team_id', class: "appearance-none text-sm px-3 py-2 pr-9 bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 rounded-md text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-violet-500 focus:border-violet-500" } %>
-            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-              <svg class="h-4 w-4 text-gray-500 dark:text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+      <%# Recent Problems %>
+      <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-zinc-700 flex items-center justify-between">
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Recent Problems</h2>
+          <%= link_to app_problems_path(@app), class: "text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 font-medium transition-colors" do %>
+            View all
+          <% end %>
+        </div>
+        <% recent_problems = @app.problems.order(last_noticed_at: :desc).limit(5) %>
+        <% if recent_problems.any? %>
+          <ul class="divide-y divide-gray-200 dark:divide-zinc-700">
+            <% recent_problems.each do |problem| %>
+              <li>
+                <%= link_to app_problem_path(@app, problem), class: "block px-6 py-4 hover:bg-gray-50 dark:hover:bg-zinc-700/50 transition-colors" do %>
+                  <div class="flex items-center justify-between">
+                    <div class="min-w-0 flex-1">
+                      <div class="flex items-center space-x-2">
+                        <% if problem.resolved? %>
+                          <span class="flex-shrink-0 w-2 h-2 rounded-full bg-emerald-500"></span>
+                        <% else %>
+                          <span class="flex-shrink-0 w-2 h-2 rounded-full bg-pink-500"></span>
+                        <% end %>
+                        <span class="font-medium text-gray-900 dark:text-white truncate"><%= problem.error_class %></span>
+                      </div>
+                      <p class="text-sm text-gray-600 dark:text-zinc-400 truncate mt-1"><%= problem.error_message %></p>
+                    </div>
+                    <div class="flex items-center space-x-4 ml-4">
+                      <span class="text-sm text-gray-500 dark:text-zinc-500"><%= problem.notices_count %> notices</span>
+                      <span class="text-sm text-gray-500 dark:text-zinc-500"><%= time_ago_in_words(problem.last_noticed_at) %> ago</span>
+                      <svg class="w-5 h-5 text-gray-400 dark:text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                      </svg>
+                    </div>
+                  </div>
+                <% end %>
+              </li>
+            <% end %>
+          </ul>
+        <% else %>
+          <div class="px-6 py-12 text-center">
+            <div class="w-12 h-12 bg-emerald-100 dark:bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
+              <svg class="w-6 h-6 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
               </svg>
             </div>
-          </div>
-          <%= form.submit "Assign", class: "text-sm px-3 py-1.5 bg-violet-600 text-white rounded-lg font-medium hover:bg-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500 transition-colors cursor-pointer" %>
-        <% end %>
-      <% end %>
-    </div>
-    <% if @app.teams.any? %>
-      <div class="space-y-2">
-        <% @app.teams.each do |team| %>
-          <div class="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-zinc-700">
-            <div class="flex items-center space-x-3">
-              <div class="flex-shrink-0 w-8 h-8 bg-violet-100 dark:bg-violet-500/20 rounded-lg flex items-center justify-center">
-                <svg class="w-4 h-4 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                </svg>
-              </div>
-              <div>
-                <p class="text-sm font-medium text-gray-900 dark:text-white"><%= team.name %></p>
-                <p class="text-xs text-gray-500 dark:text-zinc-400"><%= team.team_members.count %> member(s)</p>
-              </div>
-            </div>
-            <% if Current.user.admin_of_team?(team) %>
-              <%= button_to remove_team_assignment_app_path(@app, team_id: team.slug), method: :delete, data: { turbo_confirm: "Remove this team from the app?" }, class: "text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium transition-colors" do %>
-                Remove
-              <% end %>
-            <% end %>
+            <h3 class="text-base font-medium text-gray-900 dark:text-white mb-1">No problems yet</h3>
+            <p class="text-sm text-gray-600 dark:text-zinc-400">Errors from this app will appear here.</p>
           </div>
         <% end %>
       </div>
-    <% else %>
-      <p class="text-sm text-gray-500 dark:text-zinc-400">No teams assigned to this app yet.</p>
-    <% end %>
-  </div>
 
-  <%# Notification Settings %>
-  <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-6 mb-6">
-    <div class="flex items-center justify-between mb-4">
-      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Notifications</h2>
-      <%= link_to edit_app_path(@app), data: { turbo_frame: "modal" }, class: "text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 font-medium transition-colors" do %>
-        Edit
-      <% end %>
-    </div>
-    <div class="flex flex-wrap gap-3">
-      <div class="flex items-center space-x-2">
-        <% if @app.notify_on_new_problem? %>
-          <span class="flex-shrink-0 w-2 h-2 rounded-full bg-emerald-500"></span>
-          <span class="text-sm text-gray-700 dark:text-zinc-300">New errors</span>
-        <% else %>
-          <span class="flex-shrink-0 w-2 h-2 rounded-full bg-gray-300 dark:bg-zinc-600"></span>
-          <span class="text-sm text-gray-500 dark:text-zinc-500">New errors</span>
-        <% end %>
-      </div>
-      <div class="flex items-center space-x-2">
-        <% if @app.notify_on_reoccurrence? %>
-          <span class="flex-shrink-0 w-2 h-2 rounded-full bg-emerald-500"></span>
-          <span class="text-sm text-gray-700 dark:text-zinc-300">Reoccurring errors</span>
-        <% else %>
-          <span class="flex-shrink-0 w-2 h-2 rounded-full bg-gray-300 dark:bg-zinc-600"></span>
-          <span class="text-sm text-gray-500 dark:text-zinc-500">Reoccurring errors</span>
-        <% end %>
-      </div>
-    </div>
-  </div>
-
-  <%# Slack Integration %>
-  <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-6 mb-6">
-    <div class="flex items-center justify-between mb-4">
-      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Slack Integration</h2>
-      <%= link_to edit_app_path(@app), data: { turbo_frame: "modal" }, class: "text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 font-medium transition-colors" do %>
-        Edit
-      <% end %>
-    </div>
-    <% if @app.slack_webhook_url.present? %>
-      <div class="flex items-center space-x-2">
-        <span class="flex-shrink-0 w-2 h-2 rounded-full bg-emerald-500"></span>
-        <span class="text-sm text-gray-700 dark:text-zinc-300">Slack webhook configured</span>
-      </div>
-      <p class="text-xs text-gray-500 dark:text-zinc-400 mt-2">
-        Error notifications will be sent to your Slack channel.
-      </p>
-    <% else %>
-      <div class="flex items-center space-x-2">
-        <span class="flex-shrink-0 w-2 h-2 rounded-full bg-gray-300 dark:bg-zinc-600"></span>
-        <span class="text-sm text-gray-500 dark:text-zinc-500">Slack webhook not configured</span>
-      </div>
-      <p class="text-xs text-gray-500 dark:text-zinc-400 mt-2">
-        Add a Slack webhook URL to receive error notifications in Slack.
-      </p>
-    <% end %>
-  </div>
-
-  <%# Discord Integration %>
-  <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-6 mb-6">
-    <div class="flex items-center justify-between mb-4">
-      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Discord Integration</h2>
-      <%= link_to edit_app_path(@app), data: { turbo_frame: "modal" }, class: "text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 font-medium transition-colors" do %>
-        Edit
-      <% end %>
-    </div>
-    <% if @app.discord_webhook_url.present? %>
-      <div class="flex items-center space-x-2">
-        <span class="flex-shrink-0 w-2 h-2 rounded-full bg-emerald-500"></span>
-        <span class="text-sm text-gray-700 dark:text-zinc-300">Discord webhook configured</span>
-      </div>
-      <p class="text-xs text-gray-500 dark:text-zinc-400 mt-2">
-        Error notifications will be sent to your Discord channel with rich embeds.
-      </p>
-    <% else %>
-      <div class="flex items-center space-x-2">
-        <span class="flex-shrink-0 w-2 h-2 rounded-full bg-gray-300 dark:bg-zinc-600"></span>
-        <span class="text-sm text-gray-500 dark:text-zinc-500">Discord webhook not configured</span>
-      </div>
-      <p class="text-xs text-gray-500 dark:text-zinc-400 mt-2">
-        Add a Discord webhook URL to receive error notifications in Discord.
-      </p>
-    <% end %>
-  </div>
-
-  <%# Generic Webhook Integration %>
-  <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-6 mb-6">
-    <div class="flex items-center justify-between mb-4">
-      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Generic Webhook</h2>
-      <%= link_to edit_app_path(@app), data: { turbo_frame: "modal" }, class: "text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 font-medium transition-colors" do %>
-        Edit
-      <% end %>
-    </div>
-    <% if @app.webhook_url.present? %>
-      <div class="flex items-center space-x-2">
-        <span class="flex-shrink-0 w-2 h-2 rounded-full bg-emerald-500"></span>
-        <span class="text-sm text-gray-700 dark:text-zinc-300">Webhook URL configured</span>
-      </div>
-      <p class="text-xs text-gray-500 dark:text-zinc-400 mt-2">
-        Error notifications will be sent to your webhook endpoint via POST request.
-      </p>
-    <% else %>
-      <div class="flex items-center space-x-2">
-        <span class="flex-shrink-0 w-2 h-2 rounded-full bg-gray-300 dark:bg-zinc-600"></span>
-        <span class="text-sm text-gray-500 dark:text-zinc-500">Webhook URL not configured</span>
-      </div>
-      <p class="text-xs text-gray-500 dark:text-zinc-400 mt-2">
-        Add a webhook URL to receive error notifications at any HTTP endpoint.
-      </p>
-    <% end %>
-  </div>
-
-  <%# GitHub Integration %>
-  <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-6 mb-6">
-    <div class="flex items-center justify-between mb-4">
-      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">GitHub Integration</h2>
-      <%= link_to edit_app_path(@app), data: { turbo_frame: "modal" }, class: "text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 font-medium transition-colors" do %>
-        Edit
-      <% end %>
-    </div>
-    <% if @app.github_enabled? && @app.github_repository.present? && @app.github_token.present? %>
-      <div class="flex items-center space-x-2">
-        <span class="flex-shrink-0 w-2 h-2 rounded-full bg-emerald-500"></span>
-        <span class="text-sm text-gray-700 dark:text-zinc-300">GitHub integration enabled</span>
-      </div>
-      <p class="text-xs text-gray-500 dark:text-zinc-400 mt-2">
-        Issues will be created in <code class="text-xs bg-gray-100 dark:bg-zinc-700 px-1 py-0.5 rounded"><%= @app.github_repository %></code> when errors occur.
-      </p>
-    <% else %>
-      <div class="flex items-center space-x-2">
-        <span class="flex-shrink-0 w-2 h-2 rounded-full bg-gray-300 dark:bg-zinc-600"></span>
-        <span class="text-sm text-gray-500 dark:text-zinc-500">GitHub integration not configured</span>
-      </div>
-      <p class="text-xs text-gray-500 dark:text-zinc-400 mt-2">
-        Enable GitHub integration and configure repository/token to automatically create issues for errors.
-      </p>
-    <% end %>
-  </div>
-
-  <%# Stats Overview %>
-  <div class="grid grid-cols-3 gap-4 mb-8">
-    <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-4">
-      <div class="text-sm text-gray-500 dark:text-zinc-400 mb-1">Total Problems</div>
-      <div class="text-2xl font-bold text-gray-900 dark:text-white"><%= @app.problems.count %></div>
-    </div>
-    <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-4">
-      <div class="text-sm text-gray-500 dark:text-zinc-400 mb-1">Unresolved</div>
-      <div class="text-2xl font-bold text-pink-600 dark:text-pink-400"><%= @app.problems.unresolved.count %></div>
-    </div>
-    <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-4">
-      <div class="text-sm text-gray-500 dark:text-zinc-400 mb-1">Resolved</div>
-      <div class="text-2xl font-bold text-emerald-600 dark:text-emerald-400"><%= @app.problems.resolved.count %></div>
-    </div>
-  </div>
-
-  <%# Recent Problems %>
-  <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 overflow-hidden">
-    <div class="px-6 py-4 border-b border-gray-200 dark:border-zinc-700 flex items-center justify-between">
-      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Recent Problems</h2>
-      <%= link_to app_problems_path(@app), class: "text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 font-medium transition-colors" do %>
-        View all
-      <% end %>
-    </div>
-    <% recent_problems = @app.problems.order(last_noticed_at: :desc).limit(5) %>
-    <% if recent_problems.any? %>
-      <ul class="divide-y divide-gray-200 dark:divide-zinc-700">
-        <% recent_problems.each do |problem| %>
-          <li>
-            <%= link_to app_problem_path(@app, problem), class: "block px-6 py-4 hover:bg-gray-50 dark:hover:bg-zinc-700/50 transition-colors" do %>
-              <div class="flex items-center justify-between">
-                <div class="min-w-0 flex-1">
-                  <div class="flex items-center space-x-2">
-                    <% if problem.resolved? %>
-                      <span class="flex-shrink-0 w-2 h-2 rounded-full bg-emerald-500"></span>
-                    <% else %>
-                      <span class="flex-shrink-0 w-2 h-2 rounded-full bg-pink-500"></span>
-                    <% end %>
-                    <span class="font-medium text-gray-900 dark:text-white truncate"><%= problem.error_class %></span>
-                  </div>
-                  <p class="text-sm text-gray-600 dark:text-zinc-400 truncate mt-1"><%= problem.error_message %></p>
-                </div>
-                <div class="flex items-center space-x-4 ml-4">
-                  <span class="text-sm text-gray-500 dark:text-zinc-500"><%= problem.notices_count %> notices</span>
-                  <span class="text-sm text-gray-500 dark:text-zinc-500"><%= time_ago_in_words(problem.last_noticed_at) %> ago</span>
-                  <svg class="w-5 h-5 text-gray-400 dark:text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+      <%# Teams Section (in main content area) %>
+      <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Teams</h2>
+          <% admin_teams = Current.user.teams.joins(:team_members).where(team_members: { user_id: Current.user.id, role: 'admin' }).distinct %>
+          <% if admin_teams.any? %>
+            <%= form_with url: assign_team_app_path(@app), method: :post, class: "inline-flex items-center space-x-2" do |form| %>
+              <div class="relative">
+                <%= form.select :team_id,
+                    options_from_collection_for_select(admin_teams, :slug, :name),
+                    { include_blank: "Assign team..." },
+                    { name: 'team_id', class: "appearance-none text-sm px-3 py-2 pr-9 bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 rounded-md text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-violet-500 focus:border-violet-500" } %>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                  <svg class="h-4 w-4 text-gray-500 dark:text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                   </svg>
                 </div>
               </div>
+              <%= form.submit "Assign", class: "text-sm px-3 py-1.5 bg-violet-600 text-white rounded-lg font-medium hover:bg-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500 transition-colors cursor-pointer" %>
             <% end %>
-          </li>
-        <% end %>
-      </ul>
-    <% else %>
-      <div class="px-6 py-12 text-center">
-        <div class="w-12 h-12 bg-emerald-100 dark:bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
-          <svg class="w-6 h-6 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-          </svg>
+          <% end %>
         </div>
-        <h3 class="text-base font-medium text-gray-900 dark:text-white mb-1">No problems yet</h3>
-        <p class="text-sm text-gray-600 dark:text-zinc-400">Errors from this app will appear here.</p>
+        <% if @app.teams.any? %>
+          <div class="space-y-2">
+            <% @app.teams.each do |team| %>
+              <div class="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-zinc-700">
+                <div class="flex items-center space-x-3">
+                  <div class="flex-shrink-0 w-8 h-8 bg-violet-100 dark:bg-violet-500/20 rounded-lg flex items-center justify-center">
+                    <svg class="w-4 h-4 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                    </svg>
+                  </div>
+                  <div>
+                    <p class="text-sm font-medium text-gray-900 dark:text-white"><%= team.name %></p>
+                    <p class="text-xs text-gray-500 dark:text-zinc-400"><%= team.team_members.count %> member(s)</p>
+                  </div>
+                </div>
+                <% if Current.user.admin_of_team?(team) %>
+                  <%= button_to remove_team_assignment_app_path(@app, team_id: team.slug), method: :delete, data: { turbo_confirm: "Remove this team from the app?" }, class: "text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium transition-colors" do %>
+                    Remove
+                  <% end %>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        <% else %>
+          <p class="text-sm text-gray-500 dark:text-zinc-400">No teams assigned to this app yet.</p>
+        <% end %>
       </div>
-    <% end %>
+    </div>
+
+    <%# Sidebar (1 column on large screens) %>
+    <div class="space-y-4">
+      <%# Ingestion Key %>
+      <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-4">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Ingestion Key</h3>
+          <%= button_to regenerate_ingestion_key_app_path(@app), method: :post, data: { turbo_confirm: "Are you sure you want to regenerate the ingestion key? The old key will stop working immediately." }, class: "text-xs text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 font-medium transition-colors" do %>
+            Regenerate
+          <% end %>
+        </div>
+        <div x-data="{ copied: false }" class="flex items-center space-x-2">
+          <code class="flex-1 px-2 py-1.5 bg-gray-100 dark:bg-zinc-900 rounded text-xs font-mono text-gray-800 dark:text-zinc-300 select-all overflow-x-auto truncate"><%= @app.ingestion_key %></code>
+          <button
+            @click="navigator.clipboard.writeText('<%= @app.ingestion_key %>'); copied = true; setTimeout(() => copied = false, 2000)"
+            class="flex-shrink-0 p-1.5 bg-gray-100 dark:bg-zinc-900 rounded text-gray-600 dark:text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400 hover:bg-gray-200 dark:hover:bg-zinc-700 focus:outline-none focus:ring-2 focus:ring-violet-500 transition-colors"
+            title="Copy to clipboard"
+          >
+            <svg x-show="!copied" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+            </svg>
+            <svg x-show="copied" x-cloak class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <%# Quick Settings %>
+      <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Quick Settings</h3>
+          <%= link_to edit_app_path(@app), data: { turbo_frame: "modal" }, class: "text-xs text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 font-medium transition-colors" do %>
+            Edit
+          <% end %>
+        </div>
+        <div class="space-y-2 text-xs">
+          <div class="flex items-center justify-between">
+            <span class="text-gray-600 dark:text-zinc-400">New errors</span>
+            <% if @app.notify_on_new_problem? %>
+              <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <% else %>
+              <span class="w-2 h-2 rounded-full bg-gray-300 dark:bg-zinc-600"></span>
+            <% end %>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-gray-600 dark:text-zinc-400">Reoccurring</span>
+            <% if @app.notify_on_reoccurrence? %>
+              <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <% else %>
+              <span class="w-2 h-2 rounded-full bg-gray-300 dark:bg-zinc-600"></span>
+            <% end %>
+          </div>
+        </div>
+      </div>
+
+      <%# Integrations Summary %>
+      <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Integrations</h3>
+          <%= link_to edit_app_path(@app), data: { turbo_frame: "modal" }, class: "text-xs text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 font-medium transition-colors" do %>
+            Manage
+          <% end %>
+        </div>
+        <div class="space-y-2 text-xs">
+          <div class="flex items-center justify-between">
+            <span class="text-gray-600 dark:text-zinc-400">Slack</span>
+            <% if @app.slack_webhook_url.present? %>
+              <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <% else %>
+              <span class="w-2 h-2 rounded-full bg-gray-300 dark:bg-zinc-600"></span>
+            <% end %>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-gray-600 dark:text-zinc-400">Discord</span>
+            <% if @app.discord_webhook_url.present? %>
+              <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <% else %>
+              <span class="w-2 h-2 rounded-full bg-gray-300 dark:bg-zinc-600"></span>
+            <% end %>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-gray-600 dark:text-zinc-400">Webhook</span>
+            <% if @app.webhook_url.present? %>
+              <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <% else %>
+              <span class="w-2 h-2 rounded-full bg-gray-300 dark:bg-zinc-600"></span>
+            <% end %>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-gray-600 dark:text-zinc-400">GitHub</span>
+            <% if @app.github_enabled? && @app.github_repository.present? && @app.github_token.present? %>
+              <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <% else %>
+              <span class="w-2 h-2 rounded-full bg-gray-300 dark:bg-zinc-600"></span>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
