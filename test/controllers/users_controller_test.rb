@@ -12,9 +12,8 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
   test 'index requires site admin' do
     sign_in_as(@regular_user)
 
-    assert_raises(ActiveRecord::RecordNotFound) do
-      get users_url
-    end
+    get users_url
+    assert_response :not_found
   end
 
   test 'index allows site admin' do
@@ -29,9 +28,8 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
   test 'show requires site admin' do
     sign_in_as(@regular_user)
 
-    assert_raises(ActiveRecord::RecordNotFound) do
-      get user_url(@other_user)
-    end
+    get user_url(@other_user)
+    assert_response :not_found
   end
 
   test 'show allows site admin' do
@@ -46,9 +44,8 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
   test 'edit requires site admin' do
     sign_in_as(@regular_user)
 
-    assert_raises(ActiveRecord::RecordNotFound) do
-      get edit_user_url(@other_user)
-    end
+    get edit_user_url(@other_user)
+    assert_response :not_found
   end
 
   test 'edit allows site admin' do
@@ -63,13 +60,12 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
   test 'update requires site admin' do
     sign_in_as(@regular_user)
 
-    assert_raises(ActiveRecord::RecordNotFound) do
-      patch user_url(@other_user), params: {
-        user: {
-          email_address: 'updated@example.com'
-        }
+    patch user_url(@other_user), params: {
+      user: {
+        email_address: 'updated@example.com'
       }
-    end
+    }
+    assert_response :not_found
   end
 
   test 'update allows site admin' do
@@ -102,9 +98,8 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
   test 'destroy requires site admin' do
     sign_in_as(@regular_user)
 
-    assert_raises(ActiveRecord::RecordNotFound) do
-      delete user_url(@other_user)
-    end
+    delete user_url(@other_user)
+    assert_response :not_found
   end
 
   test 'destroy allows site admin' do
@@ -120,16 +115,13 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
   test 'all actions require authentication' do
     sign_out
 
-    assert_raises(ActiveRecord::RecordNotFound) do
-      get users_url
-    end
+    get users_url
+    assert_redirected_to new_session_path
 
-    assert_raises(ActiveRecord::RecordNotFound) do
-      get user_url(@other_user)
-    end
+    get user_url(@other_user)
+    assert_redirected_to new_session_path
 
-    assert_raises(ActiveRecord::RecordNotFound) do
-      get edit_user_url(@other_user)
-    end
+    get edit_user_url(@other_user)
+    assert_redirected_to new_session_path
   end
 end
