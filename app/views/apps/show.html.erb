@@ -163,6 +163,87 @@
     </div>
   </div>
 
+  <%# Slack Integration %>
+  <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-6 mb-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Slack Integration</h2>
+      <%= link_to edit_app_path(@app), data: { turbo_frame: "modal" }, class: "text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 font-medium transition-colors" do %>
+        Edit
+      <% end %>
+    </div>
+    <% if @app.slack_webhook_url.present? %>
+      <div class="flex items-center space-x-2">
+        <span class="flex-shrink-0 w-2 h-2 rounded-full bg-emerald-500"></span>
+        <span class="text-sm text-gray-700 dark:text-zinc-300">Slack webhook configured</span>
+      </div>
+      <p class="text-xs text-gray-500 dark:text-zinc-400 mt-2">
+        Error notifications will be sent to your Slack channel.
+      </p>
+    <% else %>
+      <div class="flex items-center space-x-2">
+        <span class="flex-shrink-0 w-2 h-2 rounded-full bg-gray-300 dark:bg-zinc-600"></span>
+        <span class="text-sm text-gray-500 dark:text-zinc-500">Slack webhook not configured</span>
+      </div>
+      <p class="text-xs text-gray-500 dark:text-zinc-400 mt-2">
+        Add a Slack webhook URL to receive error notifications in Slack.
+      </p>
+    <% end %>
+  </div>
+
+  <%# Discord Integration %>
+  <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-6 mb-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Discord Integration</h2>
+      <%= link_to edit_app_path(@app), data: { turbo_frame: "modal" }, class: "text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 font-medium transition-colors" do %>
+        Edit
+      <% end %>
+    </div>
+    <% if @app.discord_webhook_url.present? %>
+      <div class="flex items-center space-x-2">
+        <span class="flex-shrink-0 w-2 h-2 rounded-full bg-emerald-500"></span>
+        <span class="text-sm text-gray-700 dark:text-zinc-300">Discord webhook configured</span>
+      </div>
+      <p class="text-xs text-gray-500 dark:text-zinc-400 mt-2">
+        Error notifications will be sent to your Discord channel with rich embeds.
+      </p>
+    <% else %>
+      <div class="flex items-center space-x-2">
+        <span class="flex-shrink-0 w-2 h-2 rounded-full bg-gray-300 dark:bg-zinc-600"></span>
+        <span class="text-sm text-gray-500 dark:text-zinc-500">Discord webhook not configured</span>
+      </div>
+      <p class="text-xs text-gray-500 dark:text-zinc-400 mt-2">
+        Add a Discord webhook URL to receive error notifications in Discord.
+      </p>
+    <% end %>
+  </div>
+
+  <%# Generic Webhook Integration %>
+  <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-6 mb-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Generic Webhook</h2>
+      <%= link_to edit_app_path(@app), data: { turbo_frame: "modal" }, class: "text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 font-medium transition-colors" do %>
+        Edit
+      <% end %>
+    </div>
+    <% if @app.webhook_url.present? %>
+      <div class="flex items-center space-x-2">
+        <span class="flex-shrink-0 w-2 h-2 rounded-full bg-emerald-500"></span>
+        <span class="text-sm text-gray-700 dark:text-zinc-300">Webhook URL configured</span>
+      </div>
+      <p class="text-xs text-gray-500 dark:text-zinc-400 mt-2">
+        Error notifications will be sent to your webhook endpoint via POST request.
+      </p>
+    <% else %>
+      <div class="flex items-center space-x-2">
+        <span class="flex-shrink-0 w-2 h-2 rounded-full bg-gray-300 dark:bg-zinc-600"></span>
+        <span class="text-sm text-gray-500 dark:text-zinc-500">Webhook URL not configured</span>
+      </div>
+      <p class="text-xs text-gray-500 dark:text-zinc-400 mt-2">
+        Add a webhook URL to receive error notifications at any HTTP endpoint.
+      </p>
+    <% end %>
+  </div>
+
   <%# Stats Overview %>
   <div class="grid grid-cols-3 gap-4 mb-8">
     <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-4">

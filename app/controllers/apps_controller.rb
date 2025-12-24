@@ -34,7 +34,13 @@ class AppsController < ApplicationController
   end
 
   def update
-    if @app.update(app_params)
+    update_params = app_params.to_h
+    # Don't update encrypted webhook URLs if blank (keep existing encrypted values)
+    update_params.delete('slack_webhook_url') if update_params['slack_webhook_url'].blank?
+    update_params.delete('discord_webhook_url') if update_params['discord_webhook_url'].blank?
+    update_params.delete('webhook_url') if update_params['webhook_url'].blank?
+
+    if @app.update(update_params)
       redirect_to @app, notice: 'App was successfully updated.'
     else
       render :edit, status: :unprocessable_entity
@@ -114,7 +120,7 @@ class AppsController < ApplicationController
   end
 
   def app_params
-    params.require(:app).permit(:name, :environment, :notify_on_new_problem, :notify_on_reoccurrence)
+    params.require(:app).permit(:name, :environment, :notify_on_new_problem, :notify_on_reoccurrence, :slack_webhook_url, :discord_webhook_url, :webhook_url)
   end
 
   def set_breadcrumbs

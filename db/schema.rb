@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_12_24_013212) do
+ActiveRecord::Schema[8.1].define(version: 2025_12_24_022446) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -27,6 +27,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_12_24_013212) do
 
   create_table "apps", force: :cascade do |t|
     t.datetime "created_at", null: false
+    t.text "discord_webhook_url"
     t.string "environment"
     t.string "ingestion_key", null: false
     t.string "name", null: false
@@ -35,6 +36,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_12_24_013212) do
     t.text "slack_webhook_url"
     t.string "slug"
     t.datetime "updated_at", null: false
+    t.text "webhook_url"
     t.index ["ingestion_key"], name: "index_apps_on_ingestion_key", unique: true
     t.index ["slug"], name: "index_apps_on_slug", unique: true
   end

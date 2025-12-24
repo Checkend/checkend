@@ -54,6 +54,62 @@
         </div>
       </div>
     </div>
+
+    <%# Slack Integration %>
+    <div class="border-t border-gray-200 dark:border-zinc-700 pt-6">
+      <h3 class="text-sm font-medium text-gray-900 dark:text-white mb-4">Slack Integration</h3>
+
+      <div>
+        <%= form.label :slack_webhook_url, "Slack Webhook URL", class: "block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1.5" %>
+        <%= form.password_field :slack_webhook_url,
+            placeholder: "https://hooks.slack.com/services/...",
+            class: "block w-full px-3 py-2 bg-white dark:bg-zinc-900 border rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-1 transition-colors #{form.has_error_on(:slack_webhook_url) ? 'border-pink-500 focus:border-pink-500 focus:ring-pink-500' : 'border-gray-300 dark:border-zinc-700 focus:border-violet-500 focus:ring-violet-500'}" %>
+        <%= form.errors_on(:slack_webhook_url) %>
+        <% unless form.has_error_on(:slack_webhook_url) %>
+          <p class="mt-1 text-sm text-gray-500 dark:text-zinc-500">
+            Optional. Receive error notifications in Slack.
+            <a href="https://api.slack.com/messaging/webhooks" target="_blank" class="text-violet-600 dark:text-violet-400 hover:underline">Create a webhook</a>
+          </p>
+        <% end %>
+      </div>
+    </div>
+
+    <%# Discord Integration %>
+    <div class="border-t border-gray-200 dark:border-zinc-700 pt-6">
+      <h3 class="text-sm font-medium text-gray-900 dark:text-white mb-4">Discord Integration</h3>
+
+      <div>
+        <%= form.label :discord_webhook_url, "Discord Webhook URL", class: "block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1.5" %>
+        <%= form.password_field :discord_webhook_url,
+            placeholder: "https://discord.com/api/webhooks/...",
+            class: "block w-full px-3 py-2 bg-white dark:bg-zinc-900 border rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-1 transition-colors #{form.has_error_on(:discord_webhook_url) ? 'border-pink-500 focus:border-pink-500 focus:ring-pink-500' : 'border-gray-300 dark:border-zinc-700 focus:border-violet-500 focus:ring-violet-500'}" %>
+        <%= form.errors_on(:discord_webhook_url) %>
+        <% unless form.has_error_on(:discord_webhook_url) %>
+          <p class="mt-1 text-sm text-gray-500 dark:text-zinc-500">
+            Optional. Receive error notifications in Discord with rich embeds.
+            <a href="https://support.discord.com/hc/en-us/articles/228383668-Intro-to-Webhooks" target="_blank" class="text-violet-600 dark:text-violet-400 hover:underline">Create a webhook</a>
+          </p>
+        <% end %>
+      </div>
+    </div>
+
+    <%# Generic Webhook Integration %>
+    <div class="border-t border-gray-200 dark:border-zinc-700 pt-6">
+      <h3 class="text-sm font-medium text-gray-900 dark:text-white mb-4">Generic Webhook</h3>
+
+      <div>
+        <%= form.label :webhook_url, "Webhook URL", class: "block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1.5" %>
+        <%= form.password_field :webhook_url,
+            placeholder: "https://your-server.com/webhooks/errors",
+            class: "block w-full px-3 py-2 bg-white dark:bg-zinc-900 border rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-1 transition-colors #{form.has_error_on(:webhook_url) ? 'border-pink-500 focus:border-pink-500 focus:ring-pink-500' : 'border-gray-300 dark:border-zinc-700 focus:border-violet-500 focus:ring-violet-500'}" %>
+        <%= form.errors_on(:webhook_url) %>
+        <% unless form.has_error_on(:webhook_url) %>
+          <p class="mt-1 text-sm text-gray-500 dark:text-zinc-500">
+            Optional. Send error notifications to any HTTP endpoint via POST request with JSON payload.
+          </p>
+        <% end %>
+      </div>
+    </div>
   </div>
 
   <%# Sticky footer with action buttons %>

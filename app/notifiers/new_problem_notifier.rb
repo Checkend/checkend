@@ -7,8 +7,22 @@ class NewProblemNotifier < Noticed::Event
 
   deliver_by :slack do |config|
     config.url = -> { params[:problem].app.slack_webhook_url }
-    config.json = -> { build_slack_payload(params) }
+    config.json = -> { NewProblemNotifier.build_slack_payload(params) }
     config.if = -> { params[:problem].app.slack_webhook_url.present? }
+    # raise_if_not_ok defaults to true, which means exceptions are raised
+    # This is fine - errors should be visible and handled by the application
+  end
+
+  deliver_by :discord, class: 'Noticed::DeliveryMethods::DiscordDelivery' do |config|
+    config.url = -> { params[:problem].app.discord_webhook_url }
+    config.json = -> { NewProblemNotifier.build_discord_payload(params) }
+    config.if = -> { params[:problem].app.discord_webhook_url.present? }
+  end
+
+  deliver_by :webhook, class: 'Noticed::DeliveryMethods::WebhookDelivery' do |config|
+    config.url = -> { params[:problem].app.webhook_url }
+    config.json = -> { NewProblemNotifier.build_webhook_payload(params) }
+    config.if = -> { params[:problem].app.webhook_url.present? }
   end
 
   def self.build_slack_payload(params, is_new: true)
@@ -106,6 +120,106 @@ class NewProblemNotifier < Noticed::Event
           ]
         }
       ]
+    }
+  end
+
+  def self.build_discord_payload(params, is_new: true)
+    problem = params[:problem]
+    app = problem.app
+
+    error_msg = problem.error_message.to_s
+    truncated_msg = error_msg.length > 2000 ? "#{error_msg[0...2000]}..." : error_msg
+
+    host = Rails.application.config.action_mailer.default_url_options&.dig(:host) || 'localhost'
+    problem_url = Rails.application.routes.url_helpers.app_problem_url(app, problem, host: host)
+
+    first_seen = problem.first_noticed_at ? time_ago_in_words(problem.first_noticed_at) : 'Never'
+    last_seen = problem.last_noticed_at ? time_ago_in_words(problem.last_noticed_at) : 'Never'
+
+    # Discord Rich Embed format
+    {
+      embeds: [
+        {
+          title: "#{is_new ? '🚨 New Error' : '⚠️ Error Reoccurred'}: #{problem.error_class}",
+          description: truncated_msg,
+          color: is_new ? 15158332 : 15844367, # Red for new, gold for reoccurred
+          fields: [
+            {
+              name: 'App',
+              value: app.name,
+              inline: true
+            },
+            {
+              name: 'Environment',
+              value: app.environment || 'Not set',
+              inline: true
+            },
+            {
+              name: 'Error Class',
+              value: "`#{problem.error_class}`",
+              inline: true
+            },
+            {
+              name: 'Notices',
+              value: problem.notices_count.to_s,
+              inline: true
+            },
+            {
+              name: 'First Seen',
+              value: first_seen,
+              inline: true
+            },
+            {
+              name: 'Last Seen',
+              value: last_seen,
+              inline: true
+            }
+          ],
+          url: problem_url,
+          timestamp: problem.last_noticed_at&.iso8601,
+          footer: {
+            text: 'Checkend Error Monitoring'
+          }
+        }
+      ]
+    }
+  end
+
+  def self.build_webhook_payload(params, is_new: true)
+    problem = params[:problem]
+    notice = params[:notice]
+    app = problem.app
+
+    host = Rails.application.config.action_mailer.default_url_options&.dig(:host) || 'localhost'
+    problem_url = Rails.application.routes.url_helpers.app_problem_url(app, problem, host: host)
+
+    # Generic webhook payload - simple JSON structure
+    {
+      event: is_new ? 'new_problem' : 'problem_reoccurred',
+      problem: {
+        id: problem.id,
+        error_class: problem.error_class,
+        error_message: problem.error_message,
+        notices_count: problem.notices_count,
+        first_noticed_at: problem.first_noticed_at&.iso8601,
+        last_noticed_at: problem.last_noticed_at&.iso8601,
+        status: problem.status,
+        url: problem_url
+      },
+      app: {
+        id: app.id,
+        name: app.name,
+        environment: app.environment,
+        slug: app.slug
+      },
+      notice: notice ? {
+        id: notice.id,
+        occurred_at: notice.occurred_at&.iso8601,
+        context: notice.context,
+        request: notice.request,
+        user_info: notice.user_info
+      } : nil,
+      timestamp: Time.current.iso8601
     }
   end
 

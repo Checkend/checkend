@@ -6,6 +6,8 @@ class App < ApplicationRecord
 
   has_secure_token :ingestion_key
   encrypts :slack_webhook_url
+  encrypts :discord_webhook_url
+  encrypts :webhook_url
 
   validates :name, presence: true
   validates :ingestion_key, uniqueness: true
