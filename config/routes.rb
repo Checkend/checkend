@@ -80,6 +80,9 @@ Rails.application.routes.draw do
     resources :team_invitations, only: [ :index, :create, :update, :destroy ]
   end
 
+  # Users management (admin only)
+  resources :users, only: [:index, :show, :edit, :update, :destroy]
+
   # API Key management
   resources :api_keys, only: [:index, :show, :new, :create, :destroy] do
     member do

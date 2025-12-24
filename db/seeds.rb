@@ -8,8 +8,11 @@ base_date = Time.zone.parse("2024-12-20 00:00:00")
 # Demo user (matching fixture pattern)
 user = User.find_or_create_by!(email_address: "demo@example.com") do |u|
   u.password = "password"
+  u.site_admin = true
 end
-puts "Created user: #{user.email_address} (password: password)"
+# Ensure site_admin is set even if user already exists
+user.update!(site_admin: true) unless user.site_admin?
+puts "Created user: #{user.email_address} (password: password, site_admin: #{user.site_admin?})"
 
 # Team structure (new architecture)
 team = Team.find_or_create_by!(name: "Demo Team", owner: user) do |t|

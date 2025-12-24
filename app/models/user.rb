@@ -12,6 +12,12 @@ class User < ApplicationRecord
 
   validates :email_address, presence: true, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }
 
+  scope :site_admins, -> { where(site_admin: true) }
+
+  def site_admin?
+    site_admin
+  end
+
   def accessible_apps
     App.joins(team_assignments: { team: :team_members })
        .where(team_members: { user_id: id })
@@ -35,6 +41,8 @@ class User < ApplicationRecord
     super(options).merge(
       'id' => id,
       'email_address' => email_address,
+      'site_admin' => site_admin,
+      'last_logged_in_at' => last_logged_in_at&.iso8601,
       'created_at' => created_at&.iso8601,
       'updated_at' => updated_at&.iso8601
     ).except('password_digest')

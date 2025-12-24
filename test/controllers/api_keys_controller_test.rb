@@ -4,8 +4,9 @@ class ApiKeysControllerTest < ActionDispatch::IntegrationTest
   include SessionTestHelper
 
   setup do
-    @user = users(:one)
-    sign_in_as(@user)
+    @admin_user = users(:admin)
+    @regular_user = users(:one)
+    sign_in_as(@admin_user)
     @api_key = ApiKey.create!(
       name: 'Test Key',
       permissions: ['apps:read']
@@ -20,7 +21,15 @@ class ApiKeysControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to new_session_path
   end
 
-  test 'index shows all API keys' do
+  test 'index requires site admin' do
+    sign_in_as(@regular_user)
+
+    assert_raises(ActiveRecord::RecordNotFound) do
+      get api_keys_url
+    end
+  end
+
+  test 'index allows site admin' do
     get api_keys_url
 
     assert_response :success
@@ -35,7 +44,15 @@ class ApiKeysControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to new_session_path
   end
 
-  test 'show displays API key details' do
+  test 'show requires site admin' do
+    sign_in_as(@regular_user)
+
+    assert_raises(ActiveRecord::RecordNotFound) do
+      get api_key_url(@api_key)
+    end
+  end
+
+  test 'show allows site admin' do
     get api_key_url(@api_key)
 
     assert_response :success
@@ -50,7 +67,15 @@ class ApiKeysControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to new_session_path
   end
 
-  test 'new displays form with permission checkboxes' do
+  test 'new requires site admin' do
+    sign_in_as(@regular_user)
+
+    assert_raises(ActiveRecord::RecordNotFound) do
+      get new_api_key_url
+    end
+  end
+
+  test 'new allows site admin' do
     get new_api_key_url
 
     assert_response :success
@@ -73,7 +98,20 @@ class ApiKeysControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to new_session_path
   end
 
-  test 'create creates new API key with permissions' do
+  test 'create requires site admin' do
+    sign_in_as(@regular_user)
+
+    assert_raises(ActiveRecord::RecordNotFound) do
+      post api_keys_url, params: {
+        api_key: {
+          name: 'New Key',
+          permissions: ['apps:read']
+        }
+      }
+    end
+  end
+
+  test 'create allows site admin' do
     assert_difference 'ApiKey.count', 1 do
       post api_keys_url, params: {
         api_key: {
@@ -127,7 +165,15 @@ class ApiKeysControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to new_session_path
   end
 
-  test 'destroy deletes API key' do
+  test 'destroy requires site admin' do
+    sign_in_as(@regular_user)
+
+    assert_raises(ActiveRecord::RecordNotFound) do
+      delete api_key_url(@api_key)
+    end
+  end
+
+  test 'destroy allows site admin' do
     assert_difference 'ApiKey.count', -1 do
       delete api_key_url(@api_key)
     end
@@ -145,7 +191,15 @@ class ApiKeysControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to new_session_path
   end
 
-  test 'revoke sets revoked_at timestamp' do
+  test 'revoke requires site admin' do
+    sign_in_as(@regular_user)
+
+    assert_raises(ActiveRecord::RecordNotFound) do
+      delete revoke_api_key_url(@api_key)
+    end
+  end
+
+  test 'revoke allows site admin' do
     assert_nil @api_key.revoked_at
 
     assert_changes '@api_key.reload.revoked_at', from: nil do

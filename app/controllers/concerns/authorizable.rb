@@ -2,7 +2,7 @@ module Authorizable
   extend ActiveSupport::Concern
 
   included do
-    helper_method :can_access_app?, :can_manage_team_assignment?
+    helper_method :can_access_app?, :can_manage_team_assignment?, :site_admin?
   end
 
   private
@@ -39,5 +39,16 @@ module Authorizable
     return if team && can_manage_team_assignment?(team)
 
     raise ActiveRecord::RecordNotFound, 'Team not found or you are not an admin'
+  end
+
+  def site_admin?
+    return false unless Current.user
+    Current.user.site_admin?
+  end
+
+  def require_site_admin!
+    return if site_admin?
+
+    raise ActiveRecord::RecordNotFound, 'Access denied. Site admin required.'
   end
 end

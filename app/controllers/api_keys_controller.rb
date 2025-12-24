@@ -1,4 +1,5 @@
 class ApiKeysController < ApplicationController
+  before_action :require_site_admin!
   before_action :set_api_key, only: [:show, :destroy, :revoke]
 
   def index
