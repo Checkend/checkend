@@ -11,7 +11,7 @@ Rails.application.routes.draw do
     namespace :v1 do
       get 'health', to: 'health#show'
       resources :apps do
-        resources :problems, only: [:index, :show] do
+        resources :problems, only: [ :index, :show ] do
           member do
             post :resolve
             post :unresolve
@@ -19,12 +19,12 @@ Rails.application.routes.draw do
           collection do
             post :bulk_resolve
           end
-          resources :notices, only: [:index, :show]
-          resources :tags, only: [:index, :create, :destroy]
+          resources :notices, only: [ :index, :show ]
+          resources :tags, only: [ :index, :create, :destroy ]
         end
       end
       resources :teams do
-        resources :members, controller: 'team_members', only: [:index, :create, :update, :destroy]
+        resources :members, controller: 'team_members', only: [ :index, :create, :update, :destroy ]
         member do
           get :apps, action: :apps
           post :apps, action: :apps
@@ -47,6 +47,9 @@ Rails.application.routes.draw do
   # User settings
   namespace :settings do
     resource :password, only: [ :edit, :update ]
+    resource :smtp, only: [ :show, :edit, :update ], controller: 'smtp' do
+      post :test_connection, on: :collection
+    end
   end
 
   # Apps management
@@ -81,10 +84,10 @@ Rails.application.routes.draw do
   end
 
   # Users management (admin only)
-  resources :users, only: [:index, :show, :edit, :update, :destroy]
+  resources :users, only: [ :index, :show, :edit, :update, :destroy ]
 
   # API Key management
-  resources :api_keys, only: [:index, :show, :new, :create, :destroy] do
+  resources :api_keys, only: [ :index, :show, :new, :create, :destroy ] do
     member do
       delete :revoke
     end

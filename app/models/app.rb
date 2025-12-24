@@ -5,6 +5,7 @@ class App < ApplicationRecord
   has_many :user_notification_preferences, dependent: :destroy
 
   has_secure_token :ingestion_key
+  encrypts :slack_webhook_url
 
   validates :name, presence: true
   validates :ingestion_key, uniqueness: true
