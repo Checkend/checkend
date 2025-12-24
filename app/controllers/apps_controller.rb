@@ -1,7 +1,7 @@
 class AppsController < ApplicationController
   before_action :set_app, only: [ :show, :edit, :update, :destroy, :regenerate_ingestion_key, :assign_team, :remove_team_assignment, :setup_wizard ]
   before_action :require_app_access!, only: [ :show, :edit, :update, :destroy, :regenerate_ingestion_key ]
-  before_action :set_breadcrumbs, only: [ :show ]
+  before_action :set_breadcrumbs, only: [ :index, :show, :setup_wizard ]
 
   def index
     @apps = accessible_apps.includes(:problems).order(created_at: :desc)
@@ -125,7 +125,16 @@ class AppsController < ApplicationController
   end
 
   def set_breadcrumbs
-    add_breadcrumb 'Apps', apps_path
-    add_breadcrumb @app.name
+    case action_name
+    when 'index'
+      add_breadcrumb 'Apps'
+    when 'show'
+      add_breadcrumb 'Apps', apps_path
+      add_breadcrumb @app.name
+    when 'setup_wizard'
+      add_breadcrumb 'Apps', apps_path
+      add_breadcrumb @app.name, app_path(@app)
+      add_breadcrumb 'Setup'
+    end
   end
 end

@@ -1,6 +1,7 @@
 class ApiKeysController < ApplicationController
   before_action :require_site_admin!
   before_action :set_api_key, only: [:show, :destroy, :revoke]
+  before_action :set_breadcrumbs, only: [ :index, :show, :new ]
 
   def index
     @api_keys = ApiKey.all.order(created_at: :desc)
@@ -57,6 +58,19 @@ class ApiKeysController < ApplicationController
 
   def api_key_params
     params.require(:api_key).permit(:name, permissions: [])
+  end
+
+  def set_breadcrumbs
+    case action_name
+    when 'index'
+      add_breadcrumb 'API Keys'
+    when 'show'
+      add_breadcrumb 'API Keys', api_keys_path
+      add_breadcrumb @api_key.name
+    when 'new'
+      add_breadcrumb 'API Keys', api_keys_path
+      add_breadcrumb 'New Key'
+    end
   end
 end
 

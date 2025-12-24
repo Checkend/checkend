@@ -1,6 +1,7 @@
 class TeamMembersController < ApplicationController
   before_action :set_team
   before_action :require_team_admin!, only: [ :create, :update, :destroy ]
+  before_action :set_breadcrumbs, only: [ :index ]
 
   def index
     @team_members = @team.team_members.includes(:user).order(role: :desc, created_at: :asc)
@@ -54,5 +55,11 @@ class TeamMembersController < ApplicationController
     return if can_manage_team_assignment?(@team)
 
     redirect_to team_path(@team), alert: 'You must be a team admin to perform this action.'
+  end
+
+  def set_breadcrumbs
+    add_breadcrumb 'Teams', teams_path
+    add_breadcrumb @team.name, team_path(@team)
+    add_breadcrumb 'Members'
   end
 end

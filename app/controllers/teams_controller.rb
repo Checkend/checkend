@@ -1,5 +1,6 @@
 class TeamsController < ApplicationController
   before_action :set_team, only: [ :show, :edit, :update, :destroy ]
+  before_action :set_breadcrumbs, only: [ :index, :show ]
 
   def index
     @teams = Current.user.teams.includes(:owner, :team_members).order(created_at: :desc)
@@ -57,5 +58,15 @@ class TeamsController < ApplicationController
 
   def team_params
     params.require(:team).permit(:name)
+  end
+
+  def set_breadcrumbs
+    case action_name
+    when 'index'
+      add_breadcrumb 'Teams'
+    when 'show'
+      add_breadcrumb 'Teams', teams_path
+      add_breadcrumb @team.name
+    end
   end
 end

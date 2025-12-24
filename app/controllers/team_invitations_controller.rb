@@ -1,6 +1,7 @@
 class TeamInvitationsController < ApplicationController
   before_action :set_team, only: [ :index, :create, :update, :destroy ]
   before_action :require_team_admin!, only: [ :create, :update, :destroy ]
+  before_action :set_breadcrumbs, only: [ :index ]
   allow_unauthenticated_access only: [ :accept ]
 
   def index
@@ -74,5 +75,11 @@ class TeamInvitationsController < ApplicationController
     return if can_manage_team_assignment?(@team)
 
     redirect_to team_path(@team), alert: 'You must be a team admin to perform this action.'
+  end
+
+  def set_breadcrumbs
+    add_breadcrumb 'Teams', teams_path
+    add_breadcrumb @team.name, team_path(@team)
+    add_breadcrumb 'Invitations'
   end
 end

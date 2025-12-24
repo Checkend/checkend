@@ -2,6 +2,7 @@ class UserNotificationPreferencesController < ApplicationController
   before_action :set_app
   before_action :set_preference
   before_action :require_app_access!
+  before_action :set_breadcrumbs, only: [ :edit ]
 
   def edit
   end
@@ -29,5 +30,11 @@ class UserNotificationPreferencesController < ApplicationController
 
   def preference_params
     params.require(:user_notification_preference).permit(:notify_on_new_problem, :notify_on_reoccurrence)
+  end
+
+  def set_breadcrumbs
+    add_breadcrumb 'Apps', apps_path
+    add_breadcrumb @app.name, app_path(@app)
+    add_breadcrumb 'Notification Preferences'
   end
 end

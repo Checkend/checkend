@@ -1,4 +1,6 @@
 class DashboardController < ApplicationController
+  before_action :set_breadcrumbs, only: [ :index ]
+
   def index
     @apps = accessible_apps
     @apps_count = @apps.count
@@ -19,5 +21,11 @@ class DashboardController < ApplicationController
     @recent_problems = @problems.includes(:app)
                                 .order(last_noticed_at: :desc)
                                 .limit(10)
+  end
+
+  private
+
+  def set_breadcrumbs
+    add_breadcrumb 'Dashboard'
   end
 end

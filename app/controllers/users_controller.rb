@@ -1,6 +1,7 @@
 class UsersController < ApplicationController
   before_action :require_site_admin!
   before_action :set_user, only: [:show, :edit, :update, :destroy]
+  before_action :set_breadcrumbs, only: [ :index, :show, :edit ]
 
   def index
     @users = User.all.order(created_at: :desc)
@@ -34,6 +35,20 @@ class UsersController < ApplicationController
 
   def user_params
     params.require(:user).permit(:email_address, :site_admin)
+  end
+
+  def set_breadcrumbs
+    case action_name
+    when 'index'
+      add_breadcrumb 'Users'
+    when 'show'
+      add_breadcrumb 'Users', users_path
+      add_breadcrumb @user.email_address
+    when 'edit'
+      add_breadcrumb 'Users', users_path
+      add_breadcrumb @user.email_address, user_path(@user)
+      add_breadcrumb 'Edit'
+    end
   end
 end
 
