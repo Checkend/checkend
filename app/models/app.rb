@@ -8,6 +8,7 @@ class App < ApplicationRecord
   encrypts :slack_webhook_url
   encrypts :discord_webhook_url
   encrypts :webhook_url
+  encrypts :github_token
 
   validates :name, presence: true
   validates :ingestion_key, uniqueness: true

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_12_24_022446) do
+ActiveRecord::Schema[8.1].define(version: 2025_12_24_023348) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -29,6 +29,9 @@ ActiveRecord::Schema[8.1].define(version: 2025_12_24_022446) do
     t.datetime "created_at", null: false
     t.text "discord_webhook_url"
     t.string "environment"
+    t.boolean "github_enabled", default: false, null: false
+    t.string "github_repository"
+    t.text "github_token"
     t.string "ingestion_key", null: false
     t.string "name", null: false
     t.boolean "notify_on_new_problem", default: true, null: false

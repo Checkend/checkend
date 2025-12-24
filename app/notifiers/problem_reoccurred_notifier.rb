@@ -23,6 +23,13 @@ class ProblemReoccurredNotifier < Noticed::Event
     config.if = -> { params[:problem].app.webhook_url.present? }
   end
 
+  deliver_by :github, class: 'Noticed::DeliveryMethods::GitHubDelivery' do |config|
+    config.url = -> { NewProblemNotifier.github_issues_url(params) }
+    config.json = -> { NewProblemNotifier.build_github_issue_payload(params, is_new: false) }
+    config.token = -> { params[:problem].app.github_token }
+    config.if = -> { params[:problem].app.github_enabled? && params[:problem].app.github_repository.present? && params[:problem].app.github_token.present? }
+  end
+
   notification_methods do
     def message
       problem = params[:problem]

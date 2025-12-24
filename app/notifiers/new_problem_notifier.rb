@@ -25,6 +25,13 @@ class NewProblemNotifier < Noticed::Event
     config.if = -> { params[:problem].app.webhook_url.present? }
   end
 
+  deliver_by :github, class: 'Noticed::DeliveryMethods::GitHubDelivery' do |config|
+    config.url = -> { NewProblemNotifier.github_issues_url(params) }
+    config.json = -> { NewProblemNotifier.build_github_issue_payload(params) }
+    config.token = -> { params[:problem].app.github_token }
+    config.if = -> { params[:problem].app.github_enabled? && params[:problem].app.github_repository.present? && params[:problem].app.github_token.present? }
+  end
+
   def self.build_slack_payload(params, is_new: true)
     problem = params[:problem]
     notice = params[:notice]
@@ -220,6 +227,55 @@ class NewProblemNotifier < Noticed::Event
         user_info: notice.user_info
       } : nil,
       timestamp: Time.current.iso8601
+    }
+  end
+
+  def self.github_issues_url(params)
+    problem = params[:problem]
+    app = problem.app
+    owner, repo = app.github_repository.split('/')
+    "https://api.github.com/repos/#{owner}/#{repo}/issues"
+  end
+
+  def self.build_github_issue_payload(params, is_new: true)
+    problem = params[:problem]
+    notice = params[:notice]
+    app = problem.app
+
+    host = Rails.application.config.action_mailer.default_url_options&.dig(:host) || 'localhost'
+    problem_url = Rails.application.routes.url_helpers.app_problem_url(app, problem, host: host)
+
+    error_msg = problem.error_message.to_s
+    truncated_msg = error_msg.length > 500 ? "#{error_msg[0...500]}..." : error_msg
+
+    backtrace_section = if notice&.backtrace&.lines&.any?
+      lines = notice.backtrace.lines.first(20)
+      backtrace_text = lines.map { |line| "#{line['file']}:#{line['line']} in `#{line['method']}`" }.join("\n")
+      "\n\n## Backtrace\n\n```\n#{backtrace_text}\n```"
+    else
+      ''
+    end
+
+    body = <<~MARKDOWN
+      ## Error Details
+
+      **Error Class:** `#{problem.error_class}`
+      **Error Message:** #{truncated_msg}
+      **Environment:** #{app.environment || 'Not set'}
+      **Notices Count:** #{problem.notices_count}
+      **First Seen:** #{problem.first_noticed_at ? problem.first_noticed_at.strftime('%Y-%m-%d %H:%M:%S UTC') : 'Never'}
+      **Last Seen:** #{problem.last_noticed_at ? problem.last_noticed_at.strftime('%Y-%m-%d %H:%M:%S UTC') : 'Never'}
+      #{backtrace_section}
+
+      ## View in Checkend
+
+      [View Problem](#{problem_url})
+    MARKDOWN
+
+    {
+      title: "[#{app.name}] #{problem.error_class}: #{truncated_msg.split("\n").first}",
+      body: body,
+      labels: is_new ? [ 'bug', 'error-report' ] : [ 'bug', 'error-report', 'reoccurred' ]
     }
   end
 

@@ -39,6 +39,7 @@ class AppsController < ApplicationController
     update_params.delete('slack_webhook_url') if update_params['slack_webhook_url'].blank?
     update_params.delete('discord_webhook_url') if update_params['discord_webhook_url'].blank?
     update_params.delete('webhook_url') if update_params['webhook_url'].blank?
+    update_params.delete('github_token') if update_params['github_token'].blank?
 
     if @app.update(update_params)
       redirect_to @app, notice: 'App was successfully updated.'
@@ -120,7 +121,7 @@ class AppsController < ApplicationController
   end
 
   def app_params
-    params.require(:app).permit(:name, :environment, :notify_on_new_problem, :notify_on_reoccurrence, :slack_webhook_url, :discord_webhook_url, :webhook_url)
+    params.require(:app).permit(:name, :environment, :notify_on_new_problem, :notify_on_reoccurrence, :slack_webhook_url, :discord_webhook_url, :webhook_url, :github_repository, :github_token, :github_enabled)
   end
 
   def set_breadcrumbs
