@@ -38,10 +38,12 @@
 - [x] Notifier tracking (SDK name, version, language info for v2.0 preparation)
 - [~] Custom fingerprint override (skipped - client-side already supported via API)
 
-### Version 1.2 - Integrations
-- [ ] Slack notifications
-- [ ] Webhook notifications
-- [ ] Issue tracker integration (GitHub)
+### Version 1.2 - Integrations ✅
+- [x] Slack notifications (Block Kit formatting, encrypted webhook URLs)
+- [x] Discord notifications (webhook integration)
+- [x] Webhook notifications (generic webhook support)
+- [x] Issue tracker integration (GitHub Issues with automatic creation)
+- [x] SMTP configuration management (database-backed, encrypted passwords)
 
 ### Version 2.0 - Core Client SDKs
 Each SDK will be maintained in a separate repository for idiomatic packaging and release cycles.
@@ -103,7 +105,7 @@ All SDKs will support:
 - [ ] Offline queueing with retry
 
 ### Version 3.0 - Advanced Features
-- [ ] Team/organization support
-- [ ] User roles and permissions
+- [x] Team/organization support (Team, TeamMember, TeamAssignment models, team-based authorization)
+- [x] User roles and permissions (team ownership, member management, invitation system)
 - [ ] Error trends and analytics
 - [ ] Airbrake API compatibility layer
