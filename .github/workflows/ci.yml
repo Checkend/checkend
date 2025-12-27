@@ -112,6 +112,12 @@ jobs:
           BUNDLE_JOBS: 4
           BUNDLE_RETRY: 3
 
+      - name: Setup encryption keys
+        run: |
+          echo "ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY=$(openssl rand -hex 32)" >> $GITHUB_ENV
+          echo "ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY=$(openssl rand -hex 32)" >> $GITHUB_ENV
+          echo "ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT=$(openssl rand -hex 32)" >> $GITHUB_ENV
+
       - name: Run tests
         env:
           RAILS_ENV: test
