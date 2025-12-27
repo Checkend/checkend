@@ -46,3 +46,6 @@
 # Ignore all environment-specific credentials files
 /config/credentials/
 
+# Ignore AI assistant config files
+CLAUDE.md
+
