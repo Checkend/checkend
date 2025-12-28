@@ -28,6 +28,9 @@ Official SDKs are available for popular languages and frameworks:
 | **Python** | `checkend` | [checkend-python](https://github.com/furvur/checkend-python) |
 | **Go** | `github.com/furvur/checkend-go` | [checkend-go](https://github.com/furvur/checkend-go) |
 | **PHP** | `checkend/checkend` | [checkend-php](https://github.com/furvur/checkend-php) |
+| **Elixir** | `checkend` | [checkend-elixir](https://github.com/furvur/checkend-elixir) |
+| **Java** | `com.checkend:checkend` | [checkend-java](https://github.com/furvur/checkend-java) |
+| **.NET** | `Checkend` | [checkend-dotnet](https://github.com/furvur/checkend-dotnet) |
 
 ### Framework Integrations
 
@@ -38,6 +41,9 @@ Each SDK includes integrations for popular frameworks:
 - **Python**: Django, Flask, FastAPI/ASGI
 - **Go**: net/http, Gin, Echo
 - **PHP**: Laravel, generic error handler
+- **Elixir**: Plug middleware, Phoenix
+- **Java**: Spring Boot, Servlet filter
+- **.NET**: ASP.NET Core middleware
 
 ### Quick Install
 
@@ -59,6 +65,19 @@ go get github.com/furvur/checkend-go
 
 # PHP
 composer require checkend/checkend
+
+# Elixir (add to mix.exs)
+{:checkend, "~> 0.1.0"}
+
+# Java (Maven)
+<dependency>
+  <groupId>com.checkend</groupId>
+  <artifactId>checkend</artifactId>
+  <version>0.1.0</version>
+</dependency>
+
+# .NET
+dotnet add package Checkend
 ```
 
 ## Tech Stack
