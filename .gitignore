@@ -49,3 +49,4 @@
 # Ignore AI assistant config files
 CLAUDE.md
 
+.DS_Store
