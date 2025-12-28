@@ -16,6 +16,51 @@ Self-hosted error monitoring for your applications. Track, group, and resolve er
 - **Backtrace Deduplication** - Efficient storage by deduplicating identical stack traces
 - **Self-Hosted** - Your data stays on your infrastructure
 
+## Client SDKs
+
+Official SDKs are available for popular languages and frameworks:
+
+| Language | Package | Repository |
+|----------|---------|------------|
+| **Ruby** | `checkend` | [checkend-ruby](https://github.com/furvur/checkend-ruby) |
+| **JavaScript (Browser)** | `@checkend/browser` | [checkend-browser](https://github.com/furvur/checkend-browser) |
+| **JavaScript (Node.js)** | `@checkend/node` | [checkend-node](https://github.com/furvur/checkend-node) |
+| **Python** | `checkend` | [checkend-python](https://github.com/furvur/checkend-python) |
+| **Go** | `github.com/furvur/checkend-go` | [checkend-go](https://github.com/furvur/checkend-go) |
+| **PHP** | `checkend/checkend` | [checkend-php](https://github.com/furvur/checkend-php) |
+
+### Framework Integrations
+
+Each SDK includes integrations for popular frameworks:
+
+- **Ruby**: Rails (Railtie), Rack middleware, Sidekiq, Solid Queue
+- **Node.js**: Express, Koa, Fastify
+- **Python**: Django, Flask, FastAPI/ASGI
+- **Go**: net/http, Gin, Echo
+- **PHP**: Laravel, generic error handler
+
+### Quick Install
+
+```bash
+# Ruby
+gem install checkend
+
+# JavaScript (Browser)
+npm install @checkend/browser
+
+# JavaScript (Node.js)
+npm install @checkend/node
+
+# Python
+pip install checkend
+
+# Go
+go get github.com/furvur/checkend-go
+
+# PHP
+composer require checkend/checkend
+```
+
 ## Tech Stack
 
 - Ruby on Rails 8.1
