@@ -40,13 +40,18 @@
 # Ignore Playwright MCP data
 /.playwright-mcp/
 
-# Ignore Cursor IDE data
+# Ignore Cursor & Claude IDE data
 /.cursor/
+/.claude/
 
 # Ignore all environment-specific credentials files
 /config/credentials/
 
 # Ignore AI assistant config files
 CLAUDE.md
+ROADMAP.md
+TODO.md
+API-KEYS.md
+INGESTION-API.md
 
 .DS_Store
