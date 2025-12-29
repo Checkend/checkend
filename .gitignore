@@ -47,6 +47,9 @@
 # Ignore all environment-specific credentials files
 /config/credentials/
 
+# Ignore Kamal secrets (contains deployment credentials)
+/.kamal/secrets
+
 # Ignore AI assistant config files
 CLAUDE.md
 ROADMAP.md
