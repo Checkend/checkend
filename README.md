@@ -187,7 +187,61 @@ Report an error to Checkend.
 }
 ```
 
-## Deployment with Kamal
+## Deployment
+
+### Option 1: Docker (Recommended for Quick Start)
+
+The easiest way to run Checkend is with our pre-built Docker image from GitHub Container Registry:
+
+```bash
+docker pull ghcr.io/checkend/checkend:latest
+```
+
+**Quick start with Docker Compose:**
+
+```yaml
+# docker-compose.yml
+services:
+  checkend:
+    image: ghcr.io/checkend/checkend:latest
+    ports:
+      - "80:80"
+    environment:
+      - RAILS_MASTER_KEY=${RAILS_MASTER_KEY}
+      - DATABASE_URL=postgres://postgres:${POSTGRES_PASSWORD}@db/checkend
+      - SOLID_QUEUE_IN_PUMA=true
+    depends_on:
+      - db
+
+  db:
+    image: postgres:17
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=checkend
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
+```
+
+```bash
+# Generate secrets
+export POSTGRES_PASSWORD=$(openssl rand -hex 16)
+export RAILS_MASTER_KEY=$(openssl rand -hex 32)
+
+# Start the services
+docker compose up -d
+```
+
+Visit `http://localhost` and create your account.
+
+**Available image tags:**
+- `latest` - Latest stable release
+- `v1.0.0` - Specific version (recommended for production)
+- `v1.0`, `v1` - Major/minor version tracking
+
+### Option 2: Kamal (Zero-Downtime Deployments)
 
 Checkend uses [Kamal](https://kamal-deploy.org/) for zero-downtime deployments to any server. This guide walks you through deploying Checkend to a fresh VPS.
 
