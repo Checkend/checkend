@@ -189,7 +189,22 @@ Report an error to Checkend.
 
 ## Deployment
 
-### Option 1: Docker (Recommended for Quick Start)
+### Community Edition (Recommended for Self-Hosting)
+
+The easiest way to self-host Checkend is with our [Community Edition](https://github.com/Checkend/community-edition):
+
+```bash
+git clone https://github.com/Checkend/community-edition.git checkend
+cd checkend
+./setup.sh
+docker compose up -d
+```
+
+The interactive setup handles secret generation and supports both direct SSL (Let's Encrypt) and reverse proxy configurations.
+
+---
+
+### Option 1: Docker (Manual Setup)
 
 The easiest way to run Checkend is with our pre-built Docker image from GitHub Container Registry:
 
@@ -243,13 +258,13 @@ Visit `http://localhost` and create your account.
 
 ### Option 2: Kamal (Zero-Downtime Deployments)
 
-Checkend uses [Kamal](https://kamal-deploy.org/) for zero-downtime deployments to any server. This guide walks you through deploying Checkend to a fresh VPS.
+Checkend uses [Kamal](https://kamal-deploy.org/) for zero-downtime deployments to any server, using pre-built images from GitHub Container Registry.
 
 ### Prerequisites
 
 **On your local machine:**
 - Docker installed and running
-- A Docker Hub account (or other container registry)
+- Ruby and Bundler (for Kamal CLI)
 
 **On your server:**
 - Ubuntu 22.04+ (or similar Linux distribution)
@@ -276,74 +291,50 @@ Ensure your local machine can SSH to the server without a password:
 ssh-copy-id root@your-server-ip
 ```
 
-### Step 2: Configure Kamal
+### Step 2: Configure and Deploy
 
-Edit `config/deploy.yml` and replace the placeholder values:
-
-```yaml
-# Name of the container image
-image: your-dockerhub-username/checkend
-
-servers:
-  web:
-    - 123.456.789.0  # Your server's IP address
-
-proxy:
-  ssl: true
-  host: checkend.yourdomain.com  # Your domain
-
-registry:
-  server: docker.io
-  username: your-dockerhub-username
-  password:
-    - KAMAL_REGISTRY_PASSWORD
-
-accessories:
-  db:
-    host: 123.456.789.0  # Same as your web server IP
-```
-
-### Step 3: Set Up Secrets
-
-Create a `.kamal/secrets` file (already gitignored) with your credentials:
+Run the interactive configuration script:
 
 ```bash
-# .kamal/secrets
-KAMAL_REGISTRY_PASSWORD=your-dockerhub-password-or-token
-RAILS_MASTER_KEY=$(cat config/master.key)
-POSTGRES_PASSWORD=generate-a-strong-password-here
+bin/checkend-configure
 ```
 
-Generate a secure PostgreSQL password:
+This will prompt you for:
+- Server IP address
+- Domain name
+- SSH user
+- PostgreSQL password (auto-generated if not provided)
+
+Then deploy:
 
 ```bash
-openssl rand -hex 32
+# First-time setup
+bin/checkend-deploy --setup
+
+# Subsequent updates
+bin/checkend-deploy
 ```
 
-### Step 4: Deploy
-
-Run the initial setup (this provisions the server, database, and app):
+The deploy script automatically fetches the latest release from GitHub. To deploy a specific version:
 
 ```bash
-bin/kamal setup
+bin/checkend-deploy v1.0.0
 ```
 
-This command will:
-1. Install Docker on the server (if needed)
-2. Push your Docker image to the registry
-3. Start the PostgreSQL database container
-4. Run database migrations
-5. Start the Checkend application
-6. Configure SSL certificates via Let's Encrypt
+### Updating Checkend
 
-The first deploy takes a few minutes. Subsequent deploys are faster.
+To update to the latest version:
+
+```bash
+git pull                  # Get latest configuration
+bin/checkend-deploy       # Deploy latest release
+```
+
+Your configuration in `.kamal/secrets` is gitignored, so `git pull` won't overwrite it.
 
 ### Common Operations
 
 ```bash
-# Deploy updates (after code changes)
-bin/kamal deploy
-
 # View application logs
 bin/kamal logs
 
