@@ -1,0 +1,69 @@
+<%= render 'step_indicator', current_step: 1 %>
+
+<h1 class="text-xl font-semibold text-white mb-2">Welcome to Checkend</h1>
+<p class="text-zinc-400 text-sm mb-6">Let's set up your error monitoring instance. First, create your admin account.</p>
+
+<%= form_with model: @user, url: setup_admin_path, class: "space-y-5" do |form| %>
+  <div>
+    <%= form.label :email_address, "Email address", class: "block text-sm font-medium text-zinc-300 mb-1.5" %>
+    <div class="relative">
+      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+        <svg class="w-5 h-5 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"></path>
+        </svg>
+      </div>
+      <%= form.email_field :email_address,
+          required: true,
+          autofocus: true,
+          autocomplete: "email",
+          placeholder: "admin@example.com",
+          class: "block w-full pl-10 pr-3 py-2 bg-zinc-900 border border-zinc-700 rounded text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-colors" %>
+    </div>
+    <% if @user.errors[:email_address].any? %>
+      <p class="mt-1 text-sm text-pink-400"><%= @user.errors[:email_address].first %></p>
+    <% end %>
+  </div>
+
+  <div>
+    <%= form.label :password, "Password", class: "block text-sm font-medium text-zinc-300 mb-1.5" %>
+    <div class="relative">
+      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+        <svg class="w-5 h-5 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+        </svg>
+      </div>
+      <%= form.password_field :password,
+          required: true,
+          autocomplete: "new-password",
+          placeholder: "Create a secure password",
+          class: "block w-full pl-10 pr-3 py-2 bg-zinc-900 border border-zinc-700 rounded text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-colors" %>
+    </div>
+    <% if @user.errors[:password].any? %>
+      <p class="mt-1 text-sm text-pink-400"><%= @user.errors[:password].first %></p>
+    <% end %>
+  </div>
+
+  <div>
+    <%= form.label :password_confirmation, "Confirm password", class: "block text-sm font-medium text-zinc-300 mb-1.5" %>
+    <div class="relative">
+      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+        <svg class="w-5 h-5 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+        </svg>
+      </div>
+      <%= form.password_field :password_confirmation,
+          required: true,
+          autocomplete: "new-password",
+          placeholder: "Confirm your password",
+          class: "block w-full pl-10 pr-3 py-2 bg-zinc-900 border border-zinc-700 rounded text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-colors" %>
+    </div>
+    <% if @user.errors[:password_confirmation].any? %>
+      <p class="mt-1 text-sm text-pink-400"><%= @user.errors[:password_confirmation].first %></p>
+    <% end %>
+  </div>
+
+  <div class="pt-2">
+    <%= form.submit "Create Admin Account",
+        class: "w-full px-4 py-2 bg-violet-600 text-white rounded font-medium hover:bg-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 focus:ring-offset-zinc-800 transition-colors cursor-pointer" %>
+  </div>
+<% end %>

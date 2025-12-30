@@ -1,4 +1,15 @@
 Rails.application.routes.draw do
+  # Setup wizard (only accessible when no users exist)
+  constraints SetupRequiredConstraint do
+    get 'setup', to: 'setup#index', as: :setup
+    post 'setup/admin', to: 'setup#create_admin', as: :setup_admin
+    get 'setup/team', to: 'setup#team', as: :setup_team
+    post 'setup/team', to: 'setup#create_team', as: :setup_create_team
+    get 'setup/app', to: 'setup#app', as: :setup_app
+    post 'setup/app', to: 'setup#create_app', as: :setup_create_app
+    get 'setup/complete', to: 'setup#complete', as: :setup_complete
+  end
+
   # Ingestion API routes
   namespace :ingest do
     namespace :v1 do

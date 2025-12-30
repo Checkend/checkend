@@ -18,6 +18,12 @@ module Authentication
     end
 
     def require_authentication
+      # Redirect to setup wizard if no users exist (first boot)
+      if User.count.zero? && request.format.html? && !request.path.start_with?('/setup')
+        redirect_to setup_path
+        return
+      end
+
       resume_session || request_authentication
     end
 
