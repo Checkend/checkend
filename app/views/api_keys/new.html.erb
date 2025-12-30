@@ -28,14 +28,24 @@
           <div class="border border-gray-200 dark:border-zinc-700 rounded-lg p-4">
             <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-3"><%= resource_name %></h4>
             <div class="space-y-2">
-              <label class="flex items-center">
-                <%= check_box_tag "api_key[permissions][]", read_perm, false, id: "permission_#{read_perm}", class: "w-4 h-4 text-violet-600 border-gray-300 dark:border-zinc-600 rounded focus:ring-violet-500 dark:bg-zinc-900" %>
-                <span class="ml-2 text-sm text-gray-700 dark:text-zinc-300">Read</span>
+              <label class="flex items-center gap-2">
+                <div class="group grid size-4 grid-cols-1">
+                  <%= check_box_tag "api_key[permissions][]", read_perm, false, id: "permission_#{read_perm}", class: "col-start-1 row-start-1 appearance-none rounded border border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 checked:border-violet-500 checked:bg-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-zinc-900" %>
+                  <svg class="pointer-events-none col-start-1 row-start-1 size-3.5 self-center justify-self-center stroke-white group-has-[:disabled]:stroke-zinc-500" viewBox="0 0 14 14" fill="none">
+                    <path class="opacity-0 group-has-[:checked]:opacity-100" d="M3 8L6 11L11 3.5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                  </svg>
+                </div>
+                <span class="text-sm text-gray-700 dark:text-zinc-300">Read</span>
               </label>
               <% if write_perm %>
-                <label class="flex items-center">
-                  <%= check_box_tag "api_key[permissions][]", write_perm, false, id: "permission_#{write_perm}", class: "w-4 h-4 text-violet-600 border-gray-300 dark:border-zinc-600 rounded focus:ring-violet-500 dark:bg-zinc-900" %>
-                  <span class="ml-2 text-sm text-gray-700 dark:text-zinc-300">Write</span>
+                <label class="flex items-center gap-2">
+                  <div class="group grid size-4 grid-cols-1">
+                    <%= check_box_tag "api_key[permissions][]", write_perm, false, id: "permission_#{write_perm}", class: "col-start-1 row-start-1 appearance-none rounded border border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 checked:border-violet-500 checked:bg-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-zinc-900" %>
+                    <svg class="pointer-events-none col-start-1 row-start-1 size-3.5 self-center justify-self-center stroke-white group-has-[:disabled]:stroke-zinc-500" viewBox="0 0 14 14" fill="none">
+                      <path class="opacity-0 group-has-[:checked]:opacity-100" d="M3 8L6 11L11 3.5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                    </svg>
+                  </div>
+                  <span class="text-sm text-gray-700 dark:text-zinc-300">Write</span>
                 </label>
               <% end %>
             </div>

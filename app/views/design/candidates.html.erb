@@ -4176,4 +4176,424 @@
     </div>
 
   </section>
+
+  <!-- Profile/Settings Page Design Candidates -->
+  <section class="mb-12">
+    <h2 class="text-xl font-semibold text-gray-900 mb-4 border-b pb-2">Profile & Settings Page Designs</h2>
+    <p class="text-sm text-gray-600 mb-4">User profile and settings page accessible from the sidebar "Signed in as" section. Should include profile info, security settings, and account management.</p>
+
+    <!-- CANDIDATE 1: Simple Single Column -->
+    <div class="mb-8 p-4 border border-gray-200 rounded-lg">
+      <h3 class="text-lg font-medium text-gray-900 mb-2">Candidate 1: Simple Single Column</h3>
+      <p class="text-sm text-gray-500 mb-4">Classic stacked sections with clear visual hierarchy. Clean and straightforward.</p>
+
+      <div class="bg-zinc-900 p-6 rounded-lg">
+        <div class="max-w-2xl mx-auto space-y-8">
+          <!-- Header -->
+          <div>
+            <h1 class="text-2xl font-bold text-white">Profile & Settings</h1>
+            <p class="text-zinc-400 mt-1">Manage your account settings and preferences.</p>
+          </div>
+
+          <!-- Profile Section -->
+          <div class="bg-zinc-800 rounded-lg border border-zinc-700 p-6">
+            <h2 class="text-lg font-semibold text-white mb-4">Profile</h2>
+            <div class="flex items-center gap-4 mb-6">
+              <span class="inline-flex size-16 items-center justify-center rounded-full bg-violet-600">
+                <span class="text-xl font-medium text-white">SK</span>
+              </span>
+              <div>
+                <p class="text-lg font-semibold text-white">skhchiu@gmail.com</p>
+                <p class="text-sm text-zinc-400">Member since January 2025</p>
+              </div>
+            </div>
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-zinc-300 mb-1.5">Email Address</label>
+                <input type="email" value="skhchiu@gmail.com" class="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white" readonly>
+              </div>
+            </div>
+          </div>
+
+          <!-- Security Section -->
+          <div class="bg-zinc-800 rounded-lg border border-zinc-700 p-6">
+            <h2 class="text-lg font-semibold text-white mb-4">Security</h2>
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-zinc-300 mb-1.5">Current Password</label>
+                <input type="password" placeholder="Enter current password" class="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white placeholder-zinc-500">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-zinc-300 mb-1.5">New Password</label>
+                <input type="password" placeholder="Enter new password" class="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white placeholder-zinc-500">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-zinc-300 mb-1.5">Confirm New Password</label>
+                <input type="password" placeholder="Confirm new password" class="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white placeholder-zinc-500">
+              </div>
+              <button class="px-4 py-2 bg-violet-600 text-white rounded-lg font-medium hover:bg-violet-500">Update Password</button>
+            </div>
+          </div>
+
+          <!-- Sessions Section -->
+          <div class="bg-zinc-800 rounded-lg border border-zinc-700 p-6">
+            <h2 class="text-lg font-semibold text-white mb-4">Active Sessions</h2>
+            <div class="space-y-3">
+              <div class="flex items-center justify-between p-3 bg-zinc-900 rounded-lg border border-zinc-700">
+                <div class="flex items-center gap-3">
+                  <svg class="size-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0V12a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 12V5.25" />
+                  </svg>
+                  <div>
+                    <p class="text-sm font-medium text-white">macOS • Chrome</p>
+                    <p class="text-xs text-zinc-500">Current session • San Francisco, CA</p>
+                  </div>
+                </div>
+                <span class="text-xs font-medium text-emerald-400 bg-emerald-400/10 px-2 py-1 rounded">Active</span>
+              </div>
+              <div class="flex items-center justify-between p-3 bg-zinc-900 rounded-lg border border-zinc-700">
+                <div class="flex items-center gap-3">
+                  <svg class="size-5 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
+                  </svg>
+                  <div>
+                    <p class="text-sm font-medium text-white">iOS • Safari</p>
+                    <p class="text-xs text-zinc-500">Last active 2 days ago • New York, NY</p>
+                  </div>
+                </div>
+                <button class="text-xs font-medium text-pink-400 hover:text-pink-300">Revoke</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Danger Zone -->
+          <div class="bg-zinc-800 rounded-lg border border-pink-500/30 p-6">
+            <h2 class="text-lg font-semibold text-pink-400 mb-2">Danger Zone</h2>
+            <p class="text-sm text-zinc-400 mb-4">Once you delete your account, there is no going back. Please be certain.</p>
+            <button class="px-4 py-2 bg-pink-600 text-white rounded-lg font-medium hover:bg-pink-500">Delete Account</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-4 text-sm text-gray-600">
+        <strong>Pros:</strong> Simple, familiar pattern, easy to scan, works well on mobile
+        <br>
+        <strong>Cons:</strong> Long page with lots of scrolling, sections feel disconnected
+      </div>
+    </div>
+
+    <!-- CANDIDATE 2: Two-Column Layout -->
+    <div class="mb-8 p-4 border border-gray-200 rounded-lg">
+      <h3 class="text-lg font-medium text-gray-900 mb-2">Candidate 2: Two-Column with Sticky Sidebar</h3>
+      <p class="text-sm text-gray-500 mb-4">Profile summary on left with settings navigation, main content on right.</p>
+
+      <div class="bg-zinc-900 p-6 rounded-lg">
+        <div class="max-w-5xl mx-auto">
+          <div class="flex gap-8">
+            <!-- Left Sidebar -->
+            <div class="w-64 shrink-0">
+              <div class="sticky top-6 space-y-6">
+                <!-- Profile Card -->
+                <div class="bg-zinc-800 rounded-lg border border-zinc-700 p-6 text-center">
+                  <span class="inline-flex size-20 items-center justify-center rounded-full bg-violet-600 mb-4">
+                    <span class="text-2xl font-medium text-white">SK</span>
+                  </span>
+                  <p class="text-lg font-semibold text-white">skhchiu@gmail.com</p>
+                  <p class="text-sm text-zinc-400 mt-1">Member since Jan 2025</p>
+                </div>
+
+                <!-- Navigation -->
+                <nav class="bg-zinc-800 rounded-lg border border-zinc-700 p-2">
+                  <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-md bg-violet-600/20 text-violet-400">
+                    <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                    </svg>
+                    <span class="text-sm font-medium">Profile</span>
+                  </a>
+                  <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-md text-zinc-300 hover:bg-zinc-700/50">
+                    <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                    </svg>
+                    <span class="text-sm font-medium">Security</span>
+                  </a>
+                  <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-md text-zinc-300 hover:bg-zinc-700/50">
+                    <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0V12a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 12V5.25" />
+                    </svg>
+                    <span class="text-sm font-medium">Sessions</span>
+                  </a>
+                  <div class="border-t border-zinc-700 my-2"></div>
+                  <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-md text-pink-400 hover:bg-pink-500/10">
+                    <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                    </svg>
+                    <span class="text-sm font-medium">Delete Account</span>
+                  </a>
+                </nav>
+              </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="flex-1 min-w-0">
+              <div class="bg-zinc-800 rounded-lg border border-zinc-700 p-6">
+                <h1 class="text-xl font-bold text-white mb-6">Profile Settings</h1>
+
+                <div class="space-y-6">
+                  <div>
+                    <label class="block text-sm font-medium text-zinc-300 mb-1.5">Email Address</label>
+                    <input type="email" value="skhchiu@gmail.com" class="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white">
+                    <p class="mt-1 text-sm text-zinc-500">This is the email you use to sign in.</p>
+                  </div>
+
+                  <div class="border-t border-zinc-700 pt-6">
+                    <h3 class="text-sm font-semibold text-white mb-4">Change Password</h3>
+                    <div class="space-y-4">
+                      <div>
+                        <label class="block text-sm font-medium text-zinc-300 mb-1.5">Current Password</label>
+                        <input type="password" placeholder="Enter current password" class="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white placeholder-zinc-500">
+                      </div>
+                      <div class="grid grid-cols-2 gap-4">
+                        <div>
+                          <label class="block text-sm font-medium text-zinc-300 mb-1.5">New Password</label>
+                          <input type="password" placeholder="Enter new password" class="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white placeholder-zinc-500">
+                        </div>
+                        <div>
+                          <label class="block text-sm font-medium text-zinc-300 mb-1.5">Confirm Password</label>
+                          <input type="password" placeholder="Confirm password" class="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white placeholder-zinc-500">
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="flex justify-end pt-4 border-t border-zinc-700">
+                    <button class="px-4 py-2 bg-violet-600 text-white rounded-lg font-medium hover:bg-violet-500">Save Changes</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-4 text-sm text-gray-600">
+        <strong>Pros:</strong> Clear navigation, profile always visible, settings feel organized, scalable for more sections
+        <br>
+        <strong>Cons:</strong> More complex layout, may feel cramped on smaller screens
+      </div>
+    </div>
+
+    <!-- CANDIDATE 3: Card-Based Grid -->
+    <div class="mb-8 p-4 border border-gray-200 rounded-lg">
+      <h3 class="text-lg font-medium text-gray-900 mb-2">Candidate 3: Card-Based Grid</h3>
+      <p class="text-sm text-gray-500 mb-4">Settings organized into distinct cards in a grid layout. Each card handles one concern.</p>
+
+      <div class="bg-zinc-900 p-6 rounded-lg">
+        <div class="max-w-4xl mx-auto">
+          <!-- Header with Profile -->
+          <div class="flex items-center gap-4 mb-8">
+            <span class="inline-flex size-16 items-center justify-center rounded-full bg-violet-600">
+              <span class="text-xl font-medium text-white">SK</span>
+            </span>
+            <div>
+              <h1 class="text-2xl font-bold text-white">skhchiu@gmail.com</h1>
+              <p class="text-zinc-400">Manage your account settings</p>
+            </div>
+          </div>
+
+          <!-- Cards Grid -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Email Card -->
+            <div class="bg-zinc-800 rounded-lg border border-zinc-700 p-5">
+              <div class="flex items-center gap-3 mb-4">
+                <div class="p-2 bg-violet-600/20 rounded-lg">
+                  <svg class="size-5 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="text-sm font-semibold text-white">Email Address</h3>
+                  <p class="text-xs text-zinc-500">Your account identifier</p>
+                </div>
+              </div>
+              <p class="text-sm text-zinc-300 mb-3">skhchiu@gmail.com</p>
+              <button class="text-sm text-violet-400 hover:text-violet-300 font-medium">Change email →</button>
+            </div>
+
+            <!-- Password Card -->
+            <div class="bg-zinc-800 rounded-lg border border-zinc-700 p-5">
+              <div class="flex items-center gap-3 mb-4">
+                <div class="p-2 bg-violet-600/20 rounded-lg">
+                  <svg class="size-5 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="text-sm font-semibold text-white">Password</h3>
+                  <p class="text-xs text-zinc-500">Secure your account</p>
+                </div>
+              </div>
+              <p class="text-sm text-zinc-300 mb-3">Last changed 30 days ago</p>
+              <button class="text-sm text-violet-400 hover:text-violet-300 font-medium">Change password →</button>
+            </div>
+
+            <!-- Sessions Card -->
+            <div class="bg-zinc-800 rounded-lg border border-zinc-700 p-5">
+              <div class="flex items-center gap-3 mb-4">
+                <div class="p-2 bg-emerald-600/20 rounded-lg">
+                  <svg class="size-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0V12a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 12V5.25" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="text-sm font-semibold text-white">Active Sessions</h3>
+                  <p class="text-xs text-zinc-500">Manage your devices</p>
+                </div>
+              </div>
+              <p class="text-sm text-zinc-300 mb-3">2 active sessions</p>
+              <button class="text-sm text-violet-400 hover:text-violet-300 font-medium">Manage sessions →</button>
+            </div>
+
+            <!-- Two-Factor Card -->
+            <div class="bg-zinc-800 rounded-lg border border-zinc-700 p-5">
+              <div class="flex items-center gap-3 mb-4">
+                <div class="p-2 bg-amber-600/20 rounded-lg">
+                  <svg class="size-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="text-sm font-semibold text-white">Two-Factor Auth</h3>
+                  <p class="text-xs text-zinc-500">Extra security layer</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-2 mb-3">
+                <span class="w-2 h-2 rounded-full bg-zinc-500"></span>
+                <p class="text-sm text-zinc-400">Not enabled</p>
+              </div>
+              <button class="text-sm text-violet-400 hover:text-violet-300 font-medium">Enable 2FA →</button>
+            </div>
+
+            <!-- Delete Account Card -->
+            <div class="md:col-span-2 bg-zinc-800 rounded-lg border border-pink-500/30 p-5">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="p-2 bg-pink-600/20 rounded-lg">
+                    <svg class="size-5 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 class="text-sm font-semibold text-pink-400">Delete Account</h3>
+                    <p class="text-xs text-zinc-500">Permanently remove your account and all data</p>
+                  </div>
+                </div>
+                <button class="px-4 py-2 bg-pink-600 text-white rounded-lg text-sm font-medium hover:bg-pink-500">Delete Account</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-4 text-sm text-gray-600">
+        <strong>Pros:</strong> Clean visual separation, easy to scan, each card is focused, modern feel
+        <br>
+        <strong>Cons:</strong> Requires clicking into each card for actions, less efficient for power users
+      </div>
+    </div>
+
+    <!-- CANDIDATE 4: Compact Single Page -->
+    <div class="mb-8 p-4 border border-gray-200 rounded-lg">
+      <h3 class="text-lg font-medium text-gray-900 mb-2">Candidate 4: Compact All-in-One</h3>
+      <p class="text-sm text-gray-500 mb-4">Everything on one compact page with inline editing. Minimal clicks required.</p>
+
+      <div class="bg-zinc-900 p-6 rounded-lg">
+        <div class="max-w-xl mx-auto">
+          <!-- Compact Header -->
+          <div class="flex items-center justify-between mb-6 pb-6 border-b border-zinc-700">
+            <div class="flex items-center gap-4">
+              <span class="inline-flex size-12 items-center justify-center rounded-full bg-violet-600">
+                <span class="text-lg font-medium text-white">SK</span>
+              </span>
+              <div>
+                <h1 class="text-lg font-bold text-white">Account Settings</h1>
+                <p class="text-sm text-zinc-400">skhchiu@gmail.com</p>
+              </div>
+            </div>
+            <span class="text-xs text-zinc-500">Member since Jan 2025</span>
+          </div>
+
+          <!-- Compact Form -->
+          <div class="space-y-5">
+            <!-- Email Row -->
+            <div class="flex items-center justify-between py-3 border-b border-zinc-800">
+              <div>
+                <p class="text-sm font-medium text-white">Email</p>
+                <p class="text-sm text-zinc-400">skhchiu@gmail.com</p>
+              </div>
+              <button class="text-sm text-violet-400 hover:text-violet-300">Edit</button>
+            </div>
+
+            <!-- Password Row -->
+            <div class="flex items-center justify-between py-3 border-b border-zinc-800">
+              <div>
+                <p class="text-sm font-medium text-white">Password</p>
+                <p class="text-sm text-zinc-400">Last changed 30 days ago</p>
+              </div>
+              <button class="text-sm text-violet-400 hover:text-violet-300">Change</button>
+            </div>
+
+            <!-- Sessions Row -->
+            <div class="flex items-center justify-between py-3 border-b border-zinc-800">
+              <div>
+                <p class="text-sm font-medium text-white">Active Sessions</p>
+                <p class="text-sm text-zinc-400">2 devices logged in</p>
+              </div>
+              <button class="text-sm text-violet-400 hover:text-violet-300">Manage</button>
+            </div>
+
+            <!-- 2FA Row -->
+            <div class="flex items-center justify-between py-3 border-b border-zinc-800">
+              <div>
+                <p class="text-sm font-medium text-white">Two-Factor Authentication</p>
+                <p class="text-sm text-zinc-400">Not enabled</p>
+              </div>
+              <button class="text-sm text-violet-400 hover:text-violet-300">Enable</button>
+            </div>
+
+            <!-- Inline Password Change (shown when "Change" is clicked) -->
+            <div class="bg-zinc-800 rounded-lg p-4 border border-zinc-700">
+              <h3 class="text-sm font-semibold text-white mb-3">Change Password</h3>
+              <div class="space-y-3">
+                <input type="password" placeholder="Current password" class="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-sm text-white placeholder-zinc-500">
+                <input type="password" placeholder="New password" class="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-sm text-white placeholder-zinc-500">
+                <input type="password" placeholder="Confirm new password" class="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-sm text-white placeholder-zinc-500">
+                <div class="flex gap-2">
+                  <button class="px-3 py-1.5 bg-violet-600 text-white rounded-lg text-sm font-medium hover:bg-violet-500">Update</button>
+                  <button class="px-3 py-1.5 text-zinc-400 hover:text-white text-sm font-medium">Cancel</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Danger Zone -->
+            <div class="pt-6 mt-6 border-t border-zinc-700">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm font-medium text-pink-400">Delete Account</p>
+                  <p class="text-sm text-zinc-500">This action cannot be undone</p>
+                </div>
+                <button class="px-3 py-1.5 border border-pink-500 text-pink-400 rounded-lg text-sm font-medium hover:bg-pink-500 hover:text-white">Delete</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-4 text-sm text-gray-600">
+        <strong>Pros:</strong> Very compact, minimal scrolling, quick access to all settings, inline editing is efficient
+        <br>
+        <strong>Cons:</strong> Can feel cramped, inline forms may be confusing, less visual hierarchy
+      </div>
+    </div>
+
+  </section>
 </div>

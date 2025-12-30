@@ -194,9 +194,14 @@
       <%# Bulk action bar %>
       <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-3 mb-4 flex items-center justify-between">
         <div class="flex items-center space-x-3">
-          <label class="flex items-center">
-            <input type="checkbox" data-action="bulk-select#toggleAll" class="rounded border-gray-300 dark:border-zinc-600 text-violet-600 focus:ring-violet-500 dark:bg-zinc-700">
-            <span class="ml-2 text-sm text-gray-600 dark:text-zinc-400">Select all</span>
+          <label class="flex items-center gap-2">
+            <div class="group grid size-4 grid-cols-1">
+              <input type="checkbox" data-action="bulk-select#toggleAll" class="col-start-1 row-start-1 appearance-none rounded border border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 checked:border-violet-500 checked:bg-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-zinc-900">
+              <svg class="pointer-events-none col-start-1 row-start-1 size-3.5 self-center justify-self-center stroke-white group-has-[:disabled]:stroke-zinc-500" viewBox="0 0 14 14" fill="none">
+                <path class="opacity-0 group-has-[:checked]:opacity-100" d="M3 8L6 11L11 3.5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+            </div>
+            <span class="text-sm text-gray-600 dark:text-zinc-400">Select all</span>
           </label>
           <span class="text-sm text-gray-500 dark:text-zinc-500" data-bulk-select-target="count">0 selected</span>
         </div>
@@ -271,13 +276,18 @@
               <div class="px-6 py-4 flex items-center">
                 <%# Checkbox %>
                 <div class="flex-shrink-0 mr-4">
-                  <input
-                    type="checkbox"
-                    name="problem_ids[]"
-                    value="<%= problem.id %>"
-                    data-action="bulk-select#toggle"
-                    class="rounded border-gray-300 dark:border-zinc-600 text-violet-600 focus:ring-violet-500 dark:bg-zinc-700"
-                  >
+                  <div class="group grid size-4 grid-cols-1">
+                    <input
+                      type="checkbox"
+                      name="problem_ids[]"
+                      value="<%= problem.id %>"
+                      data-action="bulk-select#toggle"
+                      class="col-start-1 row-start-1 appearance-none rounded border border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 checked:border-violet-500 checked:bg-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-zinc-900"
+                    >
+                    <svg class="pointer-events-none col-start-1 row-start-1 size-3.5 self-center justify-self-center stroke-white group-has-[:disabled]:stroke-zinc-500" viewBox="0 0 14 14" fill="none">
+                      <path class="opacity-0 group-has-[:checked]:opacity-100" d="M3 8L6 11L11 3.5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                    </svg>
+                  </div>
                 </div>
 
                 <%# Problem info %>

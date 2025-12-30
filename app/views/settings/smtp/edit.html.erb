@@ -30,11 +30,20 @@
         </div>
       <% end %>
 
-      <div class="flex items-center">
-        <%= form.check_box :enabled, class: "h-4 w-4 text-violet-600 focus:ring-violet-500 border-gray-300 dark:border-zinc-600 rounded" %>
-        <%= form.label :enabled, "Enable SMTP", class: "ml-2 block text-sm font-medium text-gray-700 dark:text-zinc-300" %>
+      <div class="flex gap-3">
+        <div class="flex h-6 shrink-0 items-center">
+          <div class="group grid size-4 grid-cols-1">
+            <%= form.check_box :enabled, class: "col-start-1 row-start-1 appearance-none rounded border border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 checked:border-violet-500 checked:bg-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-zinc-900" %>
+            <svg class="pointer-events-none col-start-1 row-start-1 size-3.5 self-center justify-self-center stroke-white group-has-[:disabled]:stroke-zinc-500" viewBox="0 0 14 14" fill="none">
+              <path class="opacity-0 group-has-[:checked]:opacity-100" d="M3 8L6 11L11 3.5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+          </div>
+        </div>
+        <div class="text-sm/6">
+          <%= form.label :enabled, "Enable SMTP", class: "font-medium text-gray-700 dark:text-zinc-100" %>
+          <p class="text-gray-500 dark:text-zinc-400">Enable SMTP to send email notifications.</p>
+        </div>
       </div>
-      <p class="ml-6 text-sm text-gray-500 dark:text-zinc-400">Enable SMTP to send email notifications.</p>
 
       <div>
         <%= form.label :address, "SMTP Server Address", class: "block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1.5" %>
@@ -86,11 +95,20 @@
             class: "block w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-colors" %>
       </div>
 
-      <div class="flex items-center">
-        <%= form.check_box :enable_starttls_auto, class: "h-4 w-4 text-violet-600 focus:ring-violet-500 border-gray-300 dark:border-zinc-600 rounded" %>
-        <%= form.label :enable_starttls_auto, "Enable STARTTLS Auto", class: "ml-2 block text-sm font-medium text-gray-700 dark:text-zinc-300" %>
+      <div class="flex gap-3">
+        <div class="flex h-6 shrink-0 items-center">
+          <div class="group grid size-4 grid-cols-1">
+            <%= form.check_box :enable_starttls_auto, class: "col-start-1 row-start-1 appearance-none rounded border border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 checked:border-violet-500 checked:bg-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-zinc-900" %>
+            <svg class="pointer-events-none col-start-1 row-start-1 size-3.5 self-center justify-self-center stroke-white group-has-[:disabled]:stroke-zinc-500" viewBox="0 0 14 14" fill="none">
+              <path class="opacity-0 group-has-[:checked]:opacity-100" d="M3 8L6 11L11 3.5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+          </div>
+        </div>
+        <div class="text-sm/6">
+          <%= form.label :enable_starttls_auto, "Enable STARTTLS Auto", class: "font-medium text-gray-700 dark:text-zinc-100" %>
+          <p class="text-gray-500 dark:text-zinc-400">Automatically use STARTTLS when available.</p>
+        </div>
       </div>
-      <p class="ml-6 text-sm text-gray-500 dark:text-zinc-400">Automatically use STARTTLS when available.</p>
 
       <div class="pt-4 flex gap-3">
         <%= form.submit "Save Configuration",

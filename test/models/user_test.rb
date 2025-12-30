@@ -97,4 +97,72 @@ class UserTest < ActiveSupport::TestCase
 
     assert_not user.admin_of_team?(other_team)
   end
+
+  # Password History Tests
+  test 'saves password to history when password changes' do
+    user = users(:one)
+    original_digest = user.password_digest
+
+    user.update!(password: 'newpassword123', password_confirmation: 'newpassword123')
+
+    assert_equal 1, user.password_histories.count
+    assert_equal original_digest, user.password_histories.first.password_digest
+  end
+
+  test 'prevents reusing recently used password' do
+    user = users(:one)
+    original_password = 'password' # from fixtures
+
+    # Change password first time
+    user.update!(password: 'newpassword123', password_confirmation: 'newpassword123')
+
+    # Try to reuse original password
+    user.password = original_password
+    user.password_confirmation = original_password
+
+    assert_not user.valid?
+    assert_includes user.errors[:password], 'has been used recently. Please choose a different password.'
+  end
+
+  test 'allows reusing password after history limit exceeded' do
+    user = users(:one)
+    original_password = 'password' # from fixtures
+
+    # Change password PASSWORD_HISTORY_LIMIT + 1 times
+    (User::PASSWORD_HISTORY_LIMIT + 1).times do |i|
+      user.update!(password: "newpassword#{i}abc", password_confirmation: "newpassword#{i}abc")
+    end
+
+    # Now we should be able to reuse the original password
+    user.password = original_password
+    user.password_confirmation = original_password
+
+    assert user.valid?, "Expected user to be valid but got errors: #{user.errors.full_messages}"
+  end
+
+  test 'keeps only last N passwords in history' do
+    user = users(:one)
+
+    # Change password more times than the limit
+    (User::PASSWORD_HISTORY_LIMIT + 3).times do |i|
+      user.update!(password: "testpassword#{i}x", password_confirmation: "testpassword#{i}x")
+    end
+
+    assert_equal User::PASSWORD_HISTORY_LIMIT, user.password_histories.count
+  end
+
+  test 'password_previously_used? returns true for recently used password' do
+    user = users(:one)
+    original_password = 'password'
+
+    user.update!(password: 'newpassword123', password_confirmation: 'newpassword123')
+
+    assert user.password_previously_used?(original_password)
+  end
+
+  test 'password_previously_used? returns false for never used password' do
+    user = users(:one)
+
+    assert_not user.password_previously_used?('neverusedpassword123')
+  end
 end

@@ -35,21 +35,35 @@
       <h3 class="text-sm font-medium text-gray-900 dark:text-white mb-4">Email Notifications</h3>
 
       <div class="space-y-4">
-        <div class="flex items-start">
-          <%= form.check_box :notify_on_new_problem,
-              class: "h-4 w-4 rounded border-gray-300 dark:border-zinc-600 text-violet-600 focus:ring-violet-500 dark:bg-zinc-900 dark:checked:bg-violet-600 mt-0.5" %>
-          <div class="ml-3">
-            <%= form.label :notify_on_new_problem, "New errors", class: "text-sm font-medium text-gray-700 dark:text-zinc-300" %>
-            <p class="text-sm text-gray-500 dark:text-zinc-500">Get notified when a new error type is detected.</p>
+        <div class="flex gap-3">
+          <div class="flex h-6 shrink-0 items-center">
+            <div class="group grid size-4 grid-cols-1">
+              <%= form.check_box :notify_on_new_problem,
+                  class: "col-start-1 row-start-1 appearance-none rounded border border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 checked:border-violet-500 checked:bg-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-zinc-900" %>
+              <svg class="pointer-events-none col-start-1 row-start-1 size-3.5 self-center justify-self-center stroke-white group-has-[:disabled]:stroke-zinc-500" viewBox="0 0 14 14" fill="none">
+                <path class="opacity-0 group-has-[:checked]:opacity-100" d="M3 8L6 11L11 3.5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+            </div>
+          </div>
+          <div class="text-sm/6">
+            <%= form.label :notify_on_new_problem, "New errors", class: "font-medium text-gray-700 dark:text-zinc-100" %>
+            <p class="text-gray-500 dark:text-zinc-400">Get notified when a new error type is detected.</p>
           </div>
         </div>
 
-        <div class="flex items-start">
-          <%= form.check_box :notify_on_reoccurrence,
-              class: "h-4 w-4 rounded border-gray-300 dark:border-zinc-600 text-violet-600 focus:ring-violet-500 dark:bg-zinc-900 dark:checked:bg-violet-600 mt-0.5" %>
-          <div class="ml-3">
-            <%= form.label :notify_on_reoccurrence, "Reoccurring errors", class: "text-sm font-medium text-gray-700 dark:text-zinc-300" %>
-            <p class="text-sm text-gray-500 dark:text-zinc-500">Get notified when a resolved error occurs again.</p>
+        <div class="flex gap-3">
+          <div class="flex h-6 shrink-0 items-center">
+            <div class="group grid size-4 grid-cols-1">
+              <%= form.check_box :notify_on_reoccurrence,
+                  class: "col-start-1 row-start-1 appearance-none rounded border border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 checked:border-violet-500 checked:bg-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-zinc-900" %>
+              <svg class="pointer-events-none col-start-1 row-start-1 size-3.5 self-center justify-self-center stroke-white group-has-[:disabled]:stroke-zinc-500" viewBox="0 0 14 14" fill="none">
+                <path class="opacity-0 group-has-[:checked]:opacity-100" d="M3 8L6 11L11 3.5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+            </div>
+          </div>
+          <div class="text-sm/6">
+            <%= form.label :notify_on_reoccurrence, "Reoccurring errors", class: "font-medium text-gray-700 dark:text-zinc-100" %>
+            <p class="text-gray-500 dark:text-zinc-400">Get notified when a resolved error occurs again.</p>
           </div>
         </div>
       </div>
@@ -116,12 +130,19 @@
       <h3 class="text-sm font-medium text-gray-900 dark:text-white mb-4">GitHub Integration</h3>
 
       <div class="space-y-4">
-        <div class="flex items-start">
-          <%= form.check_box :github_enabled,
-              class: "h-4 w-4 rounded border-gray-300 dark:border-zinc-600 text-violet-600 focus:ring-violet-500 dark:bg-zinc-900 dark:checked:bg-violet-600 mt-0.5" %>
-          <div class="ml-3">
-            <%= form.label :github_enabled, "Enable GitHub issue creation", class: "text-sm font-medium text-gray-700 dark:text-zinc-300" %>
-            <p class="text-sm text-gray-500 dark:text-zinc-500">Automatically create GitHub issues when errors occur.</p>
+        <div class="flex gap-3">
+          <div class="flex h-6 shrink-0 items-center">
+            <div class="group grid size-4 grid-cols-1">
+              <%= form.check_box :github_enabled,
+                  class: "col-start-1 row-start-1 appearance-none rounded border border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 checked:border-violet-500 checked:bg-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-zinc-900" %>
+              <svg class="pointer-events-none col-start-1 row-start-1 size-3.5 self-center justify-self-center stroke-white group-has-[:disabled]:stroke-zinc-500" viewBox="0 0 14 14" fill="none">
+                <path class="opacity-0 group-has-[:checked]:opacity-100" d="M3 8L6 11L11 3.5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+            </div>
+          </div>
+          <div class="text-sm/6">
+            <%= form.label :github_enabled, "Enable GitHub issue creation", class: "font-medium text-gray-700 dark:text-zinc-100" %>
+            <p class="text-gray-500 dark:text-zinc-400">Automatically create GitHub issues when errors occur.</p>
           </div>
         </div>
 

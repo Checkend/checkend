@@ -1,6 +1,9 @@
 class User < ApplicationRecord
+  PASSWORD_HISTORY_LIMIT = 5
+
   has_secure_password
   has_many :sessions, dependent: :destroy
+  has_many :password_histories, dependent: :destroy
   has_many :notifications, as: :recipient, dependent: :destroy, class_name: 'Noticed::Notification'
   has_many :team_members, dependent: :destroy
   has_many :teams, through: :team_members
@@ -11,6 +14,9 @@ class User < ApplicationRecord
   normalizes :email_address, with: ->(e) { e.strip.downcase }
 
   validates :email_address, presence: true, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }
+  validate :password_not_recently_used, if: :password_digest_changed?
+
+  before_update :save_password_to_history, if: :password_digest_changed?
 
   scope :site_admins, -> { where(site_admin: true) }
 
@@ -46,5 +52,31 @@ class User < ApplicationRecord
       'created_at' => created_at&.iso8601,
       'updated_at' => updated_at&.iso8601
     ).except('password_digest')
+  end
+
+  def password_previously_used?(new_password)
+    password_histories.order(created_at: :desc).limit(PASSWORD_HISTORY_LIMIT).any? do |history|
+      BCrypt::Password.new(history.password_digest).is_password?(new_password)
+    end
+  end
+
+  private
+
+  def password_not_recently_used
+    return unless password.present?
+
+    if password_previously_used?(password)
+      errors.add(:password, 'has been used recently. Please choose a different password.')
+    end
+  end
+
+  def save_password_to_history
+    return unless password_digest_was.present?
+
+    password_histories.create!(password_digest: password_digest_was)
+
+    # Keep only the last N passwords
+    old_histories = password_histories.order(created_at: :desc).offset(PASSWORD_HISTORY_LIMIT)
+    old_histories.destroy_all if old_histories.exists?
   end
 end

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_12_24_023348) do
+ActiveRecord::Schema[8.1].define(version: 2025_12_30_205057) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -91,6 +91,14 @@ ActiveRecord::Schema[8.1].define(version: 2025_12_24_023348) do
     t.index ["backtrace_id"], name: "index_notices_on_backtrace_id"
     t.index ["occurred_at"], name: "index_notices_on_occurred_at"
     t.index ["problem_id"], name: "index_notices_on_problem_id"
+  end
+
+  create_table "password_histories", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "password_digest"
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["user_id"], name: "index_password_histories_on_user_id"
   end
 
   create_table "problem_tags", force: :cascade do |t|
@@ -220,6 +228,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_12_24_023348) do
 
   add_foreign_key "notices", "backtraces"
   add_foreign_key "notices", "problems"
+  add_foreign_key "password_histories", "users"
   add_foreign_key "problem_tags", "problems"
   add_foreign_key "problem_tags", "tags"
   add_foreign_key "problems", "apps"

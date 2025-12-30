@@ -57,7 +57,15 @@ Rails.application.routes.draw do
 
   # User settings
   namespace :settings do
-    resource :password, only: [ :edit, :update ]
+    resource :profile, only: [ :show ]
+    resource :password, only: [ :edit, :update ] do
+      post :verify, on: :collection
+    end
+    resources :sessions, only: [ :destroy ] do
+      collection do
+        delete :destroy_all_other
+      end
+    end
     resource :smtp, only: [ :show, :edit, :update ], controller: 'smtp' do
       post :test_connection, on: :collection
     end
