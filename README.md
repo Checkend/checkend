@@ -206,10 +206,13 @@ The interactive setup handles secret generation and supports both direct SSL (Le
 
 ### Option 1: Docker (Manual Setup)
 
-The easiest way to run Checkend is with our pre-built Docker image from GitHub Container Registry:
+Build and run Checkend with Docker:
 
 ```bash
-docker pull ghcr.io/checkend/checkend:latest
+# Clone and build
+git clone https://github.com/checkend/checkend.git
+cd checkend
+docker build -t checkend .
 ```
 
 **Quick start with Docker Compose:**
@@ -218,7 +221,7 @@ docker pull ghcr.io/checkend/checkend:latest
 # docker-compose.yml
 services:
   checkend:
-    image: ghcr.io/checkend/checkend:latest
+    build: .
     ports:
       - "80:80"
     environment:
@@ -245,20 +248,17 @@ volumes:
 export POSTGRES_PASSWORD=$(openssl rand -hex 16)
 export RAILS_MASTER_KEY=$(openssl rand -hex 32)
 
-# Start the services
-docker compose up -d
+# Build and start the services
+docker compose up -d --build
 ```
 
 Visit `http://localhost` and create your account.
 
-**Available image tags:**
-- `latest` - Latest stable release
-- `v1.0.0` - Specific version (recommended for production)
-- `v1.0`, `v1` - Major/minor version tracking
+> **Note:** Building locally ensures the image is native to your architecture (AMD64, ARM64, etc.) for optimal performance.
 
 ### Option 2: Kamal (Zero-Downtime Deployments)
 
-Checkend uses [Kamal](https://kamal-deploy.org/) for zero-downtime deployments to any server, using pre-built images from GitHub Container Registry.
+Checkend uses [Kamal](https://kamal-deploy.org/) for zero-downtime deployments to any server.
 
 ### Prerequisites
 
@@ -308,17 +308,11 @@ This will prompt you for:
 Then deploy:
 
 ```bash
-# First-time setup
+# First-time setup (builds image and deploys)
 bin/checkend-deploy --setup
 
 # Subsequent updates
 bin/checkend-deploy
-```
-
-The deploy script automatically fetches the latest release from GitHub. To deploy a specific version:
-
-```bash
-bin/checkend-deploy v1.0.0
 ```
 
 ### Updating Checkend
@@ -326,8 +320,8 @@ bin/checkend-deploy v1.0.0
 To update to the latest version:
 
 ```bash
-git pull                  # Get latest configuration
-bin/checkend-deploy       # Deploy latest release
+git pull                  # Get latest code
+bin/checkend-deploy       # Build and deploy
 ```
 
 Your configuration in `.kamal/secrets` is gitignored, so `git pull` won't overwrite it.
