@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+#### Profile & Settings
+- Profile settings page with card-based layout at `/settings/profile`
+- Admin badge display for site administrators
+- Avatar with user initials in sidebar navigation
+
+#### Password Security
+- Password history tracking (prevents reuse of last 5 passwords)
+- Real-time current password verification with debounce
+- Client-side validation for new password (minimum 8 characters)
+- Password confirmation matching validation
+- Submit button disabled until all validations pass
+
+#### Session Management
+- View all active sessions with device and browser detection
+- Revoke individual sessions
+- "Revoke All Other" to terminate all sessions except current
+- Session details including IP address and last activity
+
+### Changed
+
+- Password change form now opens as slide-over drawer
+- Updated checkboxes across app to use design system pattern with SVG checkmark
+
 ## [1.0.0] - 2024-12-28
 
 ### Added
