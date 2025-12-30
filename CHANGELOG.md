@@ -100,7 +100,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Solid Queue for background jobs
 - Solid Cache for caching
 - Solid Cable for WebSockets
-- Kamal deployment configuration
+- Docker and Docker Compose deployment
 - Pre-commit hook for secret detection
 - CI/CD with GitHub Actions
 
@@ -108,7 +108,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Marketing site with Astro
 - SDK documentation for all client libraries
 - API documentation
-- Self-hosting guide with Kamal
+- Self-hosting guide with Docker
 
 [Unreleased]: https://github.com/furvur/checkend/compare/v1.0.0...HEAD
 [1.0.0]: https://github.com/furvur/checkend/releases/tag/v1.0.0
