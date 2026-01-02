@@ -200,7 +200,7 @@ cd checkend
 docker compose up -d
 ```
 
-The interactive setup handles secret generation and supports both direct SSL (Let's Encrypt) and reverse proxy configurations.
+The interactive setup can install Docker automatically on Ubuntu/Debian, handles secret generation, and supports both direct SSL (Let's Encrypt) and reverse proxy configurations.
 
 ---
 
