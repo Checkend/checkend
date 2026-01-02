@@ -117,14 +117,16 @@ bin/rails credentials:edit
 #   deterministic_key:
 #   key_derivation_salt:
 
-# Setup database
-bin/rails db:setup
+# Setup database (creates and migrates, but does NOT seed)
+bin/rails db:prepare
 
 # Start the server
 bin/dev
 ```
 
-Visit `http://localhost:3000` and create your account.
+Visit `http://localhost:3000` to complete the onboarding wizard.
+
+> **Note:** Use `db:prepare` (not `db:setup`) to avoid seeding demo data. For development with sample data, run `bin/rails db:seed` after setup.
 
 ### Quick Start
 

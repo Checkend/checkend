@@ -40,6 +40,9 @@
 # Ignore Playwright MCP data
 /.playwright-mcp/
 
+# Documentation site lives in separate repo (checkend-site)
+/site/
+
 # Ignore Cursor & Claude IDE data
 /.cursor/
 /.claude/

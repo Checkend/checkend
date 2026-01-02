@@ -1,6 +1,13 @@
-# This file should ensure the existence of records required to run the application in every environment (production,
-# development, test). The code here should be idempotent so that it can be executed at any point in every environment.
-# The data can then be loaded with the bin/rails db:seed command (or created alongside the database with db:setup).
+# Seeds demo data for development and testing only.
+# Production uses the onboarding wizard at /setup for initial configuration.
+#
+# Run with: bin/rails db:seed
+
+# Prevent seeding in production - use the onboarding wizard instead
+if Rails.env.production?
+  puts 'Seeding is disabled in production. Use the onboarding wizard at /setup instead.'
+  exit 0
+end
 
 # Base date for all timestamps - ensures reproducibility
 base_date = Time.zone.parse("2024-12-20 00:00:00")
