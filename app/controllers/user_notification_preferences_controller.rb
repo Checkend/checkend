@@ -21,7 +21,6 @@ class UserNotificationPreferencesController < ApplicationController
 
   def set_app
     @app = accessible_apps.find_by!(slug: params[:app_id])
-    raise ActiveRecord::RecordNotFound unless @app
   end
 
   def set_preference

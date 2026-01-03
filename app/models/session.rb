@@ -22,12 +22,13 @@ class Session < ApplicationRecord
   def browser_name
     return 'Unknown browser' if user_agent.blank?
 
+    # Order matters: Edge/Opera contain "Chrome" in UA, so check them first
     case user_agent
-    when /Chrome/i then 'Chrome'
-    when /Safari/i then 'Safari'
+    when /Edg/i then 'Edge'
+    when /OPR|Opera/i then 'Opera'
     when /Firefox/i then 'Firefox'
-    when /Edge/i then 'Edge'
-    when /Opera|OPR/i then 'Opera'
+    when /Chrome|CriOS/i then 'Chrome'
+    when /Safari/i then 'Safari'
     else 'Unknown browser'
     end
   end

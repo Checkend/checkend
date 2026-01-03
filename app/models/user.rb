@@ -65,6 +65,13 @@ class User < ApplicationRecord
   def password_not_recently_used
     return unless password.present?
 
+    # Check against current password (before the change)
+    if password_digest_was.present? && BCrypt::Password.new(password_digest_was).is_password?(password)
+      errors.add(:password, 'has been used recently. Please choose a different password.')
+      return
+    end
+
+    # Check against password history
     if password_previously_used?(password)
       errors.add(:password, 'has been used recently. Please choose a different password.')
     end

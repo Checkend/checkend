@@ -1,5 +1,5 @@
 class Settings::SessionsController < ApplicationController
-  before_action :set_session, only: [:destroy]
+  before_action :set_session, only: [ :destroy ]
 
   def destroy
     if @session.current?(Current.session)
