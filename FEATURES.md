@@ -1,3 +1,5 @@
+> The purpose of this document is to allow us to quickly understand what feature set this application has
+
 # Checkend Features
 
 A comprehensive self-hosted error monitoring application built with Rails 8. Checkend collects, groups, and manages errors from your applications with a modern web dashboard and flexible notification system.
