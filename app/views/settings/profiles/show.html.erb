@@ -1,0 +1,113 @@
+<%= turbo_frame_tag "modal" %>
+
+<div class="max-w-4xl mx-auto">
+  <%# Header with Profile %>
+  <div class="flex items-center gap-4 mb-8">
+    <% initials = Current.user.email_address.first(2).upcase %>
+    <span class="inline-flex size-16 items-center justify-center rounded-full bg-violet-600">
+      <span class="text-xl font-medium text-white"><%= initials %></span>
+    </span>
+    <div>
+      <div class="flex items-center gap-3">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white"><%= Current.user.email_address %></h1>
+        <% if Current.user.site_admin? %>
+          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-600/20 dark:text-amber-400">
+            <svg class="size-3" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 1l2.5 5 5.5.8-4 3.9 1 5.4-5-2.6-5 2.6 1-5.4-4-3.9 5.5-.8L10 1z" clip-rule="evenodd" />
+            </svg>
+            Admin
+          </span>
+        <% end %>
+      </div>
+      <p class="text-gray-600 dark:text-zinc-400">Manage your account settings</p>
+    </div>
+  </div>
+
+  <%# Cards Grid %>
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <%# Email Card %>
+    <div class="bg-white dark:bg-zinc-800 rounded-lg border border-gray-200 dark:border-zinc-700 p-5 shadow-sm dark:shadow-zinc-700/50">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="p-2 bg-violet-100 dark:bg-violet-600/20 rounded-lg">
+          <svg class="size-5 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+          </svg>
+        </div>
+        <div>
+          <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Email Address</h3>
+          <p class="text-xs text-gray-500 dark:text-zinc-500">Your account identifier</p>
+        </div>
+      </div>
+      <p class="text-sm text-gray-700 dark:text-zinc-300 mb-3"><%= Current.user.email_address %></p>
+      <p class="text-sm text-gray-500 dark:text-zinc-500">Contact support to change your email</p>
+    </div>
+
+    <%# Password Card %>
+    <%= link_to edit_settings_password_path, data: { turbo_frame: "modal" }, class: "block bg-white dark:bg-zinc-800 rounded-lg border border-gray-200 dark:border-zinc-700 p-5 shadow-sm dark:shadow-zinc-700/50 hover:border-violet-300 dark:hover:border-violet-500/50 transition-colors group" do %>
+      <div class="flex items-center gap-3 mb-4">
+        <div class="p-2 bg-violet-100 dark:bg-violet-600/20 rounded-lg">
+          <svg class="size-5 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+          </svg>
+        </div>
+        <div>
+          <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Password</h3>
+          <p class="text-xs text-gray-500 dark:text-zinc-500">Secure your account</p>
+        </div>
+      </div>
+      <p class="text-sm text-gray-700 dark:text-zinc-300 mb-3">Update your password regularly</p>
+      <span class="text-sm text-violet-600 dark:text-violet-400 font-medium group-hover:text-violet-500 dark:group-hover:text-violet-300">Change password &rarr;</span>
+    <% end %>
+
+    <%# Sessions Card - Full Width %>
+    <div class="md:col-span-2 bg-white dark:bg-zinc-800 rounded-lg border border-gray-200 dark:border-zinc-700 p-5 shadow-sm dark:shadow-zinc-700/50">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-3">
+          <div class="p-2 bg-emerald-100 dark:bg-emerald-600/20 rounded-lg">
+            <svg class="size-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0V12a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 12V5.25" />
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Active Sessions</h3>
+            <p class="text-xs text-gray-500 dark:text-zinc-500">Devices where you're currently signed in</p>
+          </div>
+        </div>
+        <% if Current.user.sessions.count > 1 %>
+          <%= button_to "Revoke All Other", destroy_all_other_settings_sessions_path, method: :delete, data: { turbo_confirm: "Are you sure you want to revoke all other sessions?" }, class: "text-sm text-pink-600 dark:text-pink-400 hover:text-pink-500 dark:hover:text-pink-300 font-medium" %>
+        <% end %>
+      </div>
+
+      <div class="space-y-3">
+        <% Current.user.sessions.order(created_at: :desc).each do |session| %>
+          <div class="flex items-center justify-between p-3 rounded-lg <%= session.current?(Current.session) ? 'bg-emerald-50 dark:bg-emerald-600/10 border border-emerald-200 dark:border-emerald-500/30' : 'bg-gray-50 dark:bg-zinc-700/50' %>">
+            <div class="flex items-center gap-3">
+              <% if session.current?(Current.session) %>
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+              <% else %>
+                <span class="w-2 h-2 rounded-full bg-gray-400 dark:bg-zinc-500"></span>
+              <% end %>
+              <div>
+                <p class="text-sm font-medium text-gray-900 dark:text-white">
+                  <%= session.device_description %>
+                  <% if session.current?(Current.session) %>
+                    <span class="ml-2 text-xs text-emerald-600 dark:text-emerald-400">(Current)</span>
+                  <% end %>
+                </p>
+                <p class="text-xs text-gray-500 dark:text-zinc-500">
+                  <% if session.ip_address.present? %>
+                    <%= session.ip_address %> &bull;
+                  <% end %>
+                  Last active <%= time_ago_in_words(session.updated_at) %> ago
+                </p>
+              </div>
+            </div>
+            <% unless session.current?(Current.session) %>
+              <%= button_to "Revoke", settings_session_path(session), method: :delete, data: { turbo_confirm: "Revoke this session?" }, class: "text-sm text-pink-600 dark:text-pink-400 hover:text-pink-500 dark:hover:text-pink-300 font-medium" %>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>

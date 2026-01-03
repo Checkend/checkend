@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title><%= content_for(:title) || "Checkend" %></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="Checkend">
+    <meta name="mobile-web-app-capable" content="yes">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+
+    <%= yield :head %>
+
+    <link rel="icon" href="/icon.png" type="image/png">
+    <link rel="icon" href="/icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/icon.png">
+
+    <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
+    <%= javascript_importmap_tags %>
+  </head>
+
+  <body class="bg-zinc-900 min-h-screen flex flex-col">
+    <%# Flash messages - fixed position overlay %>
+    <%= render "shared/flash" %>
+
+    <main class="flex-1 flex items-center justify-center px-4 py-12">
+      <div class="w-full <%= content_for?(:container_width) ? content_for(:container_width) : 'max-w-md' %>">
+        <!-- Logo -->
+        <div class="flex justify-center mb-8">
+          <%= link_to root_path, class: "inline-block text-white hover:text-violet-300 transition-colors" do %>
+            <%= render "shared/logo", size: :lg, show_text: true %>
+          <% end %>
+        </div>
+
+        <!-- Card -->
+        <div class="bg-zinc-800 rounded-lg border border-zinc-700 p-8">
+          <%= yield %>
+        </div>
+
+        <!-- Footer -->
+        <div class="mt-8 text-center text-sm text-zinc-500">
+          Self-hosted error monitoring
+        </div>
+      </div>
+    </main>
+  </body>
+</html>

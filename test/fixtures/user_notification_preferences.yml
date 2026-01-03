@@ -1,0 +1,4 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+# Fixtures are created dynamically in tests as needed
+# since preferences are user+app specific

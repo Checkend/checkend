@@ -1,0 +1,13 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one_critical:
+  problem: one
+  tag: critical
+
+one_frontend:
+  problem: one
+  tag: frontend
+
+two_backend:
+  problem: two
+  tag: backend

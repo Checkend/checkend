@@ -1,0 +1,6 @@
+<%= turbo_frame_tag "modal" do %>
+  <%= render layout: "shared/slide_over", locals: { title: "Edit Team", subtitle: "Update team details." } do %>
+    <%= render "form", team: @team %>
+  <% end %>
+<% end %>
+

@@ -1,0 +1,12 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+<% bt_one_lines = [{"file" => "app/models/user.rb", "line" => 42, "method" => "save"}] %>
+<% bt_two_lines = [{"file" => "app/controllers/api_controller.rb", "line" => 15, "method" => "handle_error"}] %>
+
+one:
+  fingerprint: <%= Digest::SHA256.hexdigest(bt_one_lines.to_json) %>
+  lines: <%= bt_one_lines.to_json %>
+
+two:
+  fingerprint: <%= Digest::SHA256.hexdigest(bt_two_lines.to_json) %>
+  lines: <%= bt_two_lines.to_json %>

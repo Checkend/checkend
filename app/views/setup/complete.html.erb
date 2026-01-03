@@ -1,0 +1,121 @@
+<% content_for :container_width, 'max-w-lg' %>
+
+<% unless @viewing_after_setup %>
+  <%= render 'step_indicator', current_step: 4 %>
+<% end %>
+
+<div class="text-center mb-6">
+  <div class="inline-flex items-center justify-center w-12 h-12 bg-emerald-500/20 rounded-full mb-4">
+    <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+    </svg>
+  </div>
+  <% if @viewing_after_setup %>
+    <h1 class="text-xl font-semibold text-white mb-2">Setup Information</h1>
+    <p class="text-zinc-400 text-sm">Reference your ingestion key and setup instructions below.</p>
+  <% else %>
+    <h1 class="text-xl font-semibold text-white mb-2">Setup Complete!</h1>
+    <p class="text-zinc-400 text-sm">Your Checkend instance is ready to receive errors.</p>
+  <% end %>
+</div>
+
+<div class="space-y-4">
+  <div class="bg-zinc-900 rounded-lg p-4 border border-zinc-700">
+    <h3 class="text-sm font-medium text-zinc-300 mb-2">Your Ingestion Key</h3>
+    <div class="flex items-center gap-2">
+      <code class="flex-1 bg-zinc-800 px-3 py-2 rounded text-sm text-violet-400 font-mono break-all"><%= @app.ingestion_key %></code>
+      <button type="button"
+              onclick="copyToClipboard('<%= @app.ingestion_key %>', this)"
+              class="px-3 py-2 text-zinc-400 hover:text-white transition-colors"
+              title="Copy to clipboard">
+        <svg class="w-5 h-5 copy-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+        </svg>
+        <svg class="w-5 h-5 check-icon hidden text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+        </svg>
+      </button>
+    </div>
+    <p class="mt-2 text-xs text-zinc-500">Use this key in your client application's Checkend-Ingestion-Key header.</p>
+  </div>
+
+  <div class="bg-zinc-900 rounded-lg p-4 border border-zinc-700">
+    <div class="flex items-center justify-between mb-2">
+      <h3 class="text-sm font-medium text-zinc-300">Send a Test Error</h3>
+      <button type="button"
+              onclick="copyToClipboard(document.getElementById('curl-command').textContent, this)"
+              class="text-xs text-zinc-400 hover:text-white transition-colors flex items-center gap-1"
+              title="Copy to clipboard">
+        <svg class="w-4 h-4 copy-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+        </svg>
+        <svg class="w-4 h-4 check-icon hidden text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+        </svg>
+        <span class="copy-text">Copy</span>
+        <span class="copied-text hidden">Copied!</span>
+      </button>
+    </div>
+    <p class="text-xs text-zinc-500 mb-3">Use curl to send a test error:</p>
+    <pre id="curl-command" class="bg-zinc-800 px-3 py-2 rounded text-xs text-zinc-300 font-mono overflow-x-auto whitespace-pre-wrap">curl -X POST <%= request.base_url %>/ingest/v1/errors \
+  -H "Content-Type: application/json" \
+  -H "Checkend-Ingestion-Key: <%= @app.ingestion_key %>" \
+  -d '{"error":{"class":"TestError","message":"This is a test error","backtrace":["app/test.rb:1"]}}'</pre>
+    <p class="mt-2 text-xs text-zinc-500">Official SDKs available for Ruby, JavaScript, Python, Go, PHP, Elixir, Java, and .NET.</p>
+  </div>
+
+  <div class="bg-zinc-900 rounded-lg p-4 border border-zinc-700">
+    <h3 class="text-sm font-medium text-zinc-300 mb-2">Summary</h3>
+    <dl class="space-y-2 text-sm">
+      <div class="flex justify-between">
+        <dt class="text-zinc-500">Admin Account</dt>
+        <dd class="text-white"><%= @user.email_address %></dd>
+      </div>
+      <% if @password.present? %>
+        <div class="flex justify-between">
+          <dt class="text-zinc-500">Password</dt>
+          <dd class="text-white font-mono"><%= '*' * [@password.length, 12].min %></dd>
+        </div>
+      <% end %>
+      <div class="flex justify-between">
+        <dt class="text-zinc-500">Team</dt>
+        <dd class="text-white"><%= @team.name %></dd>
+      </div>
+      <div class="flex justify-between">
+        <dt class="text-zinc-500">App</dt>
+        <dd class="text-white"><%= @app.name %></dd>
+      </div>
+    </dl>
+  </div>
+</div>
+
+<div class="mt-6">
+  <%= link_to "Go to Dashboard",
+      root_path,
+      class: "block w-full text-center px-4 py-2 bg-violet-600 text-white rounded font-medium hover:bg-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 focus:ring-offset-zinc-800 transition-colors" %>
+</div>
+
+<script>
+  function copyToClipboard(text, button) {
+    navigator.clipboard.writeText(text).then(function() {
+      // Show success state
+      var copyIcon = button.querySelector('.copy-icon');
+      var checkIcon = button.querySelector('.check-icon');
+      var copyText = button.querySelector('.copy-text');
+      var copiedText = button.querySelector('.copied-text');
+
+      if (copyIcon) copyIcon.classList.add('hidden');
+      if (checkIcon) checkIcon.classList.remove('hidden');
+      if (copyText) copyText.classList.add('hidden');
+      if (copiedText) copiedText.classList.remove('hidden');
+
+      // Reset after 2 seconds
+      setTimeout(function() {
+        if (copyIcon) copyIcon.classList.remove('hidden');
+        if (checkIcon) checkIcon.classList.add('hidden');
+        if (copyText) copyText.classList.remove('hidden');
+        if (copiedText) copiedText.classList.add('hidden');
+      }, 2000);
+    });
+  }
+</script>

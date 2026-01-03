@@ -1,0 +1,77 @@
+<div>
+  <div class="flex justify-between items-center mb-6">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Apps</h1>
+      <p class="text-gray-600 dark:text-zinc-400 mt-1">Manage your applications and monitor their errors.</p>
+    </div>
+    <%= link_to new_app_path, data: { turbo_frame: "modal" }, class: "inline-flex items-center px-4 py-2 bg-violet-600 text-white rounded-lg font-medium hover:bg-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-900 transition-colors" do %>
+      <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+      </svg>
+      New App
+    <% end %>
+  </div>
+
+  <% if @apps.any? %>
+    <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 overflow-hidden">
+      <ul class="divide-y divide-gray-200 dark:divide-zinc-700">
+        <% @apps.each do |app| %>
+          <li>
+            <%= link_to app_path(app), class: "block hover:bg-gray-50 dark:hover:bg-zinc-700/50 transition-colors" do %>
+              <div class="px-6 py-4">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center space-x-3">
+                    <div class="flex-shrink-0 w-10 h-10 bg-violet-100 dark:bg-violet-500/20 rounded-lg flex items-center justify-center">
+                      <svg class="w-5 h-5 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path>
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 class="text-base font-semibold text-gray-900 dark:text-white"><%= app.name %></h3>
+                      <% if app.environment.present? %>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-zinc-700 text-gray-600 dark:text-zinc-400 mt-1">
+                          <%= app.environment %>
+                        </span>
+                      <% end %>
+                    </div>
+                  </div>
+                  <div class="flex items-center space-x-4">
+                    <% unresolved_count = app.problems.unresolved.count %>
+                    <% if unresolved_count > 0 %>
+                      <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-pink-100 dark:bg-pink-500/20 text-pink-700 dark:text-pink-400">
+                        <%= unresolved_count %> unresolved
+                      </span>
+                    <% else %>
+                      <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400">
+                        All clear
+                      </span>
+                    <% end %>
+                    <svg class="w-5 h-5 text-gray-400 dark:text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            <% end %>
+          </li>
+        <% end %>
+      </ul>
+    </div>
+  <% else %>
+    <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-12 text-center">
+      <div class="w-16 h-16 bg-gray-100 dark:bg-zinc-700 rounded-full flex items-center justify-center mx-auto mb-4">
+        <svg class="w-8 h-8 text-gray-400 dark:text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path>
+        </svg>
+      </div>
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">No apps yet</h3>
+      <p class="text-gray-600 dark:text-zinc-400 mb-6">Create your first app to start monitoring errors.</p>
+      <%= link_to new_app_path, data: { turbo_frame: "modal" }, class: "inline-flex items-center px-4 py-2 bg-violet-600 text-white rounded-lg font-medium hover:bg-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-800 transition-colors" do %>
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+        </svg>
+        Create your first app
+      <% end %>
+    </div>
+  <% end %>
+</div>

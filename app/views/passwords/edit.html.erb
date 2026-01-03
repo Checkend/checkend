@@ -1,0 +1,39 @@
+<h1 class="text-xl font-semibold text-white mb-2">Reset your password</h1>
+<p class="text-sm text-zinc-400 mb-6">Enter your new password below.</p>
+
+<%= form_with url: password_path(params[:token]), method: :put, class: "space-y-5" do |form| %>
+  <div>
+    <%= form.label :password, "New password", class: "block text-sm font-medium text-zinc-300 mb-1.5" %>
+    <div class="relative">
+      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+        <svg class="w-5 h-5 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+      </div>
+      <%= form.password_field :password,
+          required: true,
+          autocomplete: "new-password",
+          placeholder: "Enter new password",
+          maxlength: 72,
+          class: "block w-full pl-10 pr-3 py-2 bg-zinc-900 border border-zinc-700 rounded text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-colors" %>
+    </div>
+  </div>
+
+  <div>
+    <%= form.label :password_confirmation, "Confirm password", class: "block text-sm font-medium text-zinc-300 mb-1.5" %>
+    <div class="relative">
+      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+        <svg class="w-5 h-5 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+      </div>
+      <%= form.password_field :password_confirmation,
+          required: true,
+          autocomplete: "new-password",
+          placeholder: "Confirm new password",
+          maxlength: 72,
+          class: "block w-full pl-10 pr-3 py-2 bg-zinc-900 border border-zinc-700 rounded text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-colors" %>
+    </div>
+  </div>
+
+  <div class="pt-2">
+    <%= form.submit "Reset password",
+        class: "w-full px-4 py-1.5 bg-violet-600 text-white rounded font-medium hover:bg-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 focus:ring-offset-zinc-800 transition-colors" %>
+  </div>
+<% end %>

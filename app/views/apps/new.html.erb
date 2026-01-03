@@ -1,0 +1,5 @@
+<%= turbo_frame_tag "modal" do %>
+  <%= render layout: "shared/slide_over", locals: { title: "New App", subtitle: "Create a new application to start monitoring errors." } do %>
+    <%= render "form", app: @app %>
+  <% end %>
+<% end %>

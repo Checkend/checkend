@@ -1,0 +1,297 @@
+<div>
+  <%# Header %>
+  <div class="mb-6">
+    <div class="flex justify-between items-start">
+      <div class="flex items-center space-x-4">
+        <div class="w-14 h-14 bg-pink-100 dark:bg-pink-500/20 rounded-xl flex items-center justify-center">
+          <svg class="w-7 h-7 text-pink-600 dark:text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white"><%= @notice.error_class %></h1>
+          <p class="text-gray-600 dark:text-zinc-400 mt-1"><%= @notice.error_message %></p>
+        </div>
+      </div>
+      <div class="text-right">
+        <div class="text-sm text-gray-500 dark:text-zinc-400">Occurred</div>
+        <div class="text-lg font-semibold text-gray-900 dark:text-white"><%= @notice.occurred_at.strftime("%B %d, %Y at %I:%M %p") %></div>
+        <div class="text-sm text-gray-500 dark:text-zinc-400"><%= time_ago_in_words(@notice.occurred_at) %> ago</div>
+      </div>
+    </div>
+  </div>
+
+  <%# Navigation between notices %>
+  <div class="flex items-center justify-between mb-6">
+    <% prev_notice = @problem.notices.where("occurred_at > ?", @notice.occurred_at).order(occurred_at: :asc).first %>
+    <% next_notice = @problem.notices.where("occurred_at < ?", @notice.occurred_at).order(occurred_at: :desc).first %>
+
+    <% if prev_notice %>
+      <%= link_to app_problem_notice_path(@app, @problem, prev_notice), class: "inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 dark:text-zinc-300 bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-600 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors" do %>
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+        </svg>
+        Newer Notice
+      <% end %>
+    <% else %>
+      <span class="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-400 dark:text-zinc-600 bg-gray-100 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-lg cursor-not-allowed">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+        </svg>
+        Newer Notice
+      </span>
+    <% end %>
+
+    <span class="text-sm text-gray-500 dark:text-zinc-400">
+      Notice <%= @problem.notices.where("occurred_at >= ?", @notice.occurred_at).count %> of <%= @problem.notices_count %>
+    </span>
+
+    <% if next_notice %>
+      <%= link_to app_problem_notice_path(@app, @problem, next_notice), class: "inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 dark:text-zinc-300 bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-600 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors" do %>
+        Older Notice
+        <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+        </svg>
+      <% end %>
+    <% else %>
+      <span class="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-400 dark:text-zinc-600 bg-gray-100 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-lg cursor-not-allowed">
+        Older Notice
+        <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+        </svg>
+      </span>
+    <% end %>
+  </div>
+
+  <%# Backtrace Section %>
+  <% if @notice.backtrace.present? %>
+    <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 overflow-hidden mb-6" x-data="{ expanded: true }">
+      <button @click="expanded = !expanded" class="w-full px-6 py-4 border-b border-gray-200 dark:border-zinc-700 flex items-center justify-between text-left hover:bg-gray-50 dark:hover:bg-zinc-700/50 transition-colors">
+        <div class="flex items-center space-x-3">
+          <svg class="w-5 h-5 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+          </svg>
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Backtrace</h2>
+          <span class="text-sm text-gray-500 dark:text-zinc-400">(<%= @notice.backtrace.lines.size %> lines)</span>
+        </div>
+        <svg class="w-5 h-5 text-gray-400 dark:text-zinc-500 transition-transform" :class="{ 'rotate-180': expanded }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+        </svg>
+      </button>
+      <div x-show="expanded" x-collapse>
+        <div class="bg-gray-900 dark:bg-zinc-900 p-4 overflow-x-auto">
+          <pre class="text-sm font-mono"><code><% @notice.backtrace.lines.each_with_index do |line, index| %><span class="text-gray-500 dark:text-zinc-600 select-none"><%= (index + 1).to_s.rjust(3) %></span>  <% if line['file'].to_s.start_with?('app/') %><span class="text-pink-400"><%= line['file'] %></span><span class="text-gray-400">:</span><span class="text-violet-400"><%= line['line'] %></span><span class="text-gray-400">:in </span><span class="text-emerald-400">`<%= line['method'] %>`</span><% else %><span class="text-gray-400"><%= line['file'] %>:<%= line['line'] %>:in `<%= line['method'] %>`</span><% end %>
+<% end %></code></pre>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <%# Request Section %>
+  <% if @notice.request.present? && @notice.request.any? %>
+    <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 overflow-hidden mb-6" x-data="{ expanded: true }">
+      <button @click="expanded = !expanded" class="w-full px-6 py-4 border-b border-gray-200 dark:border-zinc-700 flex items-center justify-between text-left hover:bg-gray-50 dark:hover:bg-zinc-700/50 transition-colors">
+        <div class="flex items-center space-x-3">
+          <svg class="w-5 h-5 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path>
+          </svg>
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Request</h2>
+        </div>
+        <svg class="w-5 h-5 text-gray-400 dark:text-zinc-500 transition-transform" :class="{ 'rotate-180': expanded }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+        </svg>
+      </button>
+      <div x-show="expanded" x-collapse>
+        <div class="p-6">
+          <%# Method and URL %>
+          <% if @notice.request['method'] || @notice.request['url'] %>
+            <div class="mb-4">
+              <div class="flex items-center space-x-2">
+                <% if @notice.request['method'] %>
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-bold uppercase
+                    <% case @notice.request['method'].to_s.upcase
+                       when 'GET' %>bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400<%
+                       when 'POST' %>bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400<%
+                       when 'PUT', 'PATCH' %>bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400<%
+                       when 'DELETE' %>bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400<%
+                       else %>bg-gray-100 dark:bg-zinc-700 text-gray-700 dark:text-zinc-300<%
+                       end %>">
+                    <%= @notice.request['method'].to_s.upcase %>
+                  </span>
+                <% end %>
+                <% if @notice.request['url'] %>
+                  <code class="text-sm font-mono text-gray-900 dark:text-white break-all"><%= @notice.request['url'] %></code>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+
+          <%# Params %>
+          <% if @notice.request['params'].present? %>
+            <div class="mb-4" x-data="{ showParams: false }">
+              <button @click="showParams = !showParams" class="flex items-center space-x-2 text-sm font-medium text-gray-700 dark:text-zinc-300 hover:text-violet-600 dark:hover:text-violet-400">
+                <svg class="w-4 h-4 transition-transform" :class="{ 'rotate-90': showParams }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+                <span>Parameters</span>
+              </button>
+              <div x-show="showParams" x-collapse class="mt-2">
+                <pre class="bg-gray-100 dark:bg-zinc-900 rounded-lg p-4 text-sm font-mono text-gray-800 dark:text-zinc-300 overflow-x-auto"><%= JSON.pretty_generate(@notice.request['params']) %></pre>
+              </div>
+            </div>
+          <% end %>
+
+          <%# Headers %>
+          <% if @notice.request['headers'].present? %>
+            <div x-data="{ showHeaders: false }">
+              <button @click="showHeaders = !showHeaders" class="flex items-center space-x-2 text-sm font-medium text-gray-700 dark:text-zinc-300 hover:text-violet-600 dark:hover:text-violet-400">
+                <svg class="w-4 h-4 transition-transform" :class="{ 'rotate-90': showHeaders }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+                <span>Headers</span>
+              </button>
+              <div x-show="showHeaders" x-collapse class="mt-2">
+                <pre class="bg-gray-100 dark:bg-zinc-900 rounded-lg p-4 text-sm font-mono text-gray-800 dark:text-zinc-300 overflow-x-auto"><%= JSON.pretty_generate(@notice.request['headers']) %></pre>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <%# User Info Section %>
+  <% if @notice.user_info.present? && @notice.user_info.any? %>
+    <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 overflow-hidden mb-6" x-data="{ expanded: true }">
+      <button @click="expanded = !expanded" class="w-full px-6 py-4 border-b border-gray-200 dark:border-zinc-700 flex items-center justify-between text-left hover:bg-gray-50 dark:hover:bg-zinc-700/50 transition-colors">
+        <div class="flex items-center space-x-3">
+          <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+          </svg>
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white">User</h2>
+        </div>
+        <svg class="w-5 h-5 text-gray-400 dark:text-zinc-500 transition-transform" :class="{ 'rotate-180': expanded }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+        </svg>
+      </button>
+      <div x-show="expanded" x-collapse>
+        <div class="p-6">
+          <dl class="grid grid-cols-2 gap-4">
+            <% @notice.user_info.each do |key, value| %>
+              <div>
+                <dt class="text-sm font-medium text-gray-500 dark:text-zinc-400 capitalize"><%= key.to_s.humanize %></dt>
+                <dd class="mt-1 text-sm text-gray-900 dark:text-white"><%= value %></dd>
+              </div>
+            <% end %>
+          </dl>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <%# Notifier Section %>
+  <% if @notice.notifier.present? && @notice.notifier.any? %>
+    <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 overflow-hidden mb-6" x-data="{ expanded: true }">
+      <button @click="expanded = !expanded" class="w-full px-6 py-4 border-b border-gray-200 dark:border-zinc-700 flex items-center justify-between text-left hover:bg-gray-50 dark:hover:bg-zinc-700/50 transition-colors">
+        <div class="flex items-center space-x-3">
+          <svg class="w-5 h-5 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+          </svg>
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Notifier</h2>
+        </div>
+        <svg class="w-5 h-5 text-gray-400 dark:text-zinc-500 transition-transform" :class="{ 'rotate-180': expanded }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+        </svg>
+      </button>
+      <div x-show="expanded" x-collapse>
+        <div class="p-6">
+          <dl class="grid grid-cols-2 gap-4">
+            <% if @notice.notifier['name'] %>
+              <div>
+                <dt class="text-sm font-medium text-gray-500 dark:text-zinc-400">SDK Name</dt>
+                <dd class="mt-1 text-sm text-gray-900 dark:text-white"><%= @notice.notifier['name'] %></dd>
+              </div>
+            <% end %>
+            <% if @notice.notifier['version'] %>
+              <div>
+                <dt class="text-sm font-medium text-gray-500 dark:text-zinc-400">SDK Version</dt>
+                <dd class="mt-1 text-sm text-gray-900 dark:text-white"><%= @notice.notifier['version'] %></dd>
+              </div>
+            <% end %>
+            <% if @notice.notifier['language'] %>
+              <div>
+                <dt class="text-sm font-medium text-gray-500 dark:text-zinc-400">Language</dt>
+                <dd class="mt-1 text-sm text-gray-900 dark:text-white"><%= @notice.notifier['language'] %></dd>
+              </div>
+            <% end %>
+            <% if @notice.notifier['language_version'] %>
+              <div>
+                <dt class="text-sm font-medium text-gray-500 dark:text-zinc-400">Language Version</dt>
+                <dd class="mt-1 text-sm text-gray-900 dark:text-white"><%= @notice.notifier['language_version'] %></dd>
+              </div>
+            <% end %>
+          </dl>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <%# Context Section %>
+  <% if @notice.context.present? && @notice.context.any? %>
+    <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 overflow-hidden mb-6" x-data="{ expanded: true }">
+      <button @click="expanded = !expanded" class="w-full px-6 py-4 border-b border-gray-200 dark:border-zinc-700 flex items-center justify-between text-left hover:bg-gray-50 dark:hover:bg-zinc-700/50 transition-colors">
+        <div class="flex items-center space-x-3">
+          <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Context</h2>
+        </div>
+        <svg class="w-5 h-5 text-gray-400 dark:text-zinc-500 transition-transform" :class="{ 'rotate-180': expanded }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+        </svg>
+      </button>
+      <div x-show="expanded" x-collapse>
+        <div class="p-6">
+          <dl class="grid grid-cols-2 gap-4">
+            <% @notice.context.each do |key, value| %>
+              <div>
+                <dt class="text-sm font-medium text-gray-500 dark:text-zinc-400 capitalize"><%= key.to_s.humanize %></dt>
+                <dd class="mt-1 text-sm text-gray-900 dark:text-white font-mono"><%= value.is_a?(Hash) || value.is_a?(Array) ? value.to_json : value %></dd>
+              </div>
+            <% end %>
+          </dl>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <%# Raw Data Section %>
+  <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 overflow-hidden" x-data="{ expanded: false }">
+    <button @click="expanded = !expanded" class="w-full px-6 py-4 border-b border-gray-200 dark:border-zinc-700 flex items-center justify-between text-left hover:bg-gray-50 dark:hover:bg-zinc-700/50 transition-colors">
+      <div class="flex items-center space-x-3">
+        <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
+        </svg>
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Raw JSON</h2>
+      </div>
+      <svg class="w-5 h-5 text-gray-400 dark:text-zinc-500 transition-transform" :class="{ 'rotate-180': expanded }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+      </svg>
+    </button>
+    <div x-show="expanded" x-collapse>
+      <div class="p-4">
+        <pre class="bg-gray-100 dark:bg-zinc-900 rounded-lg p-4 text-sm font-mono text-gray-800 dark:text-zinc-300 overflow-x-auto"><%= JSON.pretty_generate({
+  id: @notice.id,
+  error_class: @notice.error_class,
+  error_message: @notice.error_message,
+  occurred_at: @notice.occurred_at,
+  context: @notice.context,
+  request: @notice.request,
+  user_info: @notice.user_info,
+  notifier: @notice.notifier,
+  backtrace: @notice.backtrace&.lines
+}) %></pre>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,37 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  problem: one
+  backtrace: one
+  error_class: NoMethodError
+  error_message: "undefined method 'foo' for nil:NilClass"
+  occurred_at: <%= 1.hour.ago %>
+
+two:
+  problem: one
+  backtrace: one
+  error_class: NoMethodError
+  error_message: "undefined method 'foo' for nil:NilClass"
+  occurred_at: <%= 2.hours.ago %>
+
+with_request:
+  problem: two
+  error_class: ActiveRecord::RecordNotFound
+  error_message: "Couldn't find User with id=999"
+  request: <%= { "method" => "GET", "url" => "/users/123", "params" => { "id" => "123" } }.to_json %>
+  occurred_at: <%= 30.minutes.ago %>
+
+with_user:
+  problem: two
+  error_class: ActiveRecord::RecordNotFound
+  error_message: "Couldn't find User with id=999"
+  user_info: <%= { "id" => 42, "email" => "john@example.com", "name" => "John Doe" }.to_json %>
+  occurred_at: <%= 45.minutes.ago %>
+
+with_context:
+  problem: one
+  backtrace: two
+  error_class: NoMethodError
+  error_message: "undefined method 'bar'"
+  context: <%= { "environment" => "production", "server" => "web-01", "version" => "1.2.3" }.to_json %>
+  occurred_at: <%= 3.hours.ago %>

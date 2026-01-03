@@ -1,0 +1,63 @@
+<div>
+  <div class="mb-6">
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Create API Key</h1>
+    <p class="text-gray-600 dark:text-zinc-400 mt-1">Create a new API key with specific permissions for external access.</p>
+  </div>
+
+  <%= form_with model: @api_key, url: api_keys_path, class: "bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-6" do |form| %>
+    <% if @api_key.errors.any? %>
+      <div class="mb-4 p-4 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-lg">
+        <h3 class="text-sm font-medium text-red-800 dark:text-red-400 mb-2">Please fix the following errors:</h3>
+        <ul class="list-disc list-inside text-sm text-red-700 dark:text-red-300">
+          <% @api_key.errors.full_messages.each do |message| %>
+            <li><%= message %></li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
+
+    <div class="mb-6">
+      <%= form.label :name, class: "block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-2" %>
+      <%= form.text_field :name, class: "w-full px-4 py-2 bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:border-violet-500 focus:ring-violet-500", placeholder: "e.g., Production API Key" %>
+    </div>
+
+    <div class="mb-6">
+      <label class="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-3">Permissions</label>
+      <div class="space-y-4">
+        <% @available_permissions.each do |resource_name, read_perm, write_perm| %>
+          <div class="border border-gray-200 dark:border-zinc-700 rounded-lg p-4">
+            <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-3"><%= resource_name %></h4>
+            <div class="space-y-2">
+              <label class="flex items-center gap-2">
+                <div class="group grid size-4 grid-cols-1">
+                  <%= check_box_tag "api_key[permissions][]", read_perm, false, id: "permission_#{read_perm}", class: "col-start-1 row-start-1 appearance-none rounded border border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 checked:border-violet-500 checked:bg-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-zinc-900" %>
+                  <svg class="pointer-events-none col-start-1 row-start-1 size-3.5 self-center justify-self-center stroke-white group-has-[:disabled]:stroke-zinc-500" viewBox="0 0 14 14" fill="none">
+                    <path class="opacity-0 group-has-[:checked]:opacity-100" d="M3 8L6 11L11 3.5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                  </svg>
+                </div>
+                <span class="text-sm text-gray-700 dark:text-zinc-300">Read</span>
+              </label>
+              <% if write_perm %>
+                <label class="flex items-center gap-2">
+                  <div class="group grid size-4 grid-cols-1">
+                    <%= check_box_tag "api_key[permissions][]", write_perm, false, id: "permission_#{write_perm}", class: "col-start-1 row-start-1 appearance-none rounded border border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 checked:border-violet-500 checked:bg-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-zinc-900" %>
+                    <svg class="pointer-events-none col-start-1 row-start-1 size-3.5 self-center justify-self-center stroke-white group-has-[:disabled]:stroke-zinc-500" viewBox="0 0 14 14" fill="none">
+                      <path class="opacity-0 group-has-[:checked]:opacity-100" d="M3 8L6 11L11 3.5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                    </svg>
+                  </div>
+                  <span class="text-sm text-gray-700 dark:text-zinc-300">Write</span>
+                </label>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <div class="flex items-center justify-end space-x-3">
+      <%= link_to "Cancel", api_keys_path, class: "px-4 py-2 text-sm font-medium text-gray-700 dark:text-zinc-300 bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-violet-500 transition-colors" %>
+      <%= form.submit "Create API Key", class: "px-4 py-2 bg-violet-600 text-white rounded-lg font-medium hover:bg-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-900 transition-colors" %>
+    </div>
+  <% end %>
+</div>
+

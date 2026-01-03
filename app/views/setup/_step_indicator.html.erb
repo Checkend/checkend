@@ -1,0 +1,38 @@
+<%# Step indicator for setup wizard %>
+<% steps = [
+  { number: 1, name: 'Account' },
+  { number: 2, name: 'Team' },
+  { number: 3, name: 'App' },
+  { number: 4, name: 'Complete' }
+] %>
+
+<nav class="mb-8" aria-label="Setup progress">
+  <ol class="flex items-center justify-center space-x-2">
+    <% steps.each_with_index do |step, index| %>
+      <li class="flex items-center">
+        <% if step[:number] < current_step %>
+          <%# Completed step %>
+          <span class="flex items-center justify-center w-8 h-8 bg-violet-600 rounded-full" title="<%= step[:name] %> - Complete">
+            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+          </span>
+        <% elsif step[:number] == current_step %>
+          <%# Current step %>
+          <span class="flex items-center justify-center w-8 h-8 border-2 border-violet-500 rounded-full" title="<%= step[:name] %> - Current">
+            <span class="text-sm font-semibold text-violet-400"><%= step[:number] %></span>
+          </span>
+        <% else %>
+          <%# Future step %>
+          <span class="flex items-center justify-center w-8 h-8 border-2 border-zinc-700 rounded-full" title="<%= step[:name] %>">
+            <span class="text-sm font-semibold text-zinc-500"><%= step[:number] %></span>
+          </span>
+        <% end %>
+
+        <% if index < steps.length - 1 %>
+          <div class="w-8 h-0.5 mx-2 <%= step[:number] < current_step ? 'bg-violet-600' : 'bg-zinc-700' %>"></div>
+        <% end %>
+      </li>
+    <% end %>
+  </ol>
+</nav>

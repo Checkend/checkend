@@ -1,0 +1,28 @@
+<%# Abstract C with Dot logo - approved design %>
+<%# Usage: render "shared/logo", size: :md, show_text: true %>
+<%
+  size ||= :md
+  show_text = local_assigns.fetch(:show_text, true)
+
+  sizes = {
+    xs: { container: "w-6 h-6 rounded", icon: "w-4 h-4", text: "text-base", stroke: 3, dot: 2 },
+    sm: { container: "w-8 h-8 rounded-lg", icon: "w-5 h-5", text: "text-lg", stroke: 3, dot: 2.5 },
+    md: { container: "w-10 h-10 rounded-lg", icon: "w-6 h-6", text: "text-xl", stroke: 2.5, dot: 2 },
+    lg: { container: "w-12 h-12 rounded-xl", icon: "w-7 h-7", text: "text-2xl", stroke: 2.5, dot: 2 },
+    xl: { container: "w-16 h-16 rounded-2xl", icon: "w-10 h-10", text: "text-3xl", stroke: 2.5, dot: 2.5 }
+  }
+
+  s = sizes[size] || sizes[:md]
+%>
+
+<div class="flex items-center gap-2">
+  <div class="<%= s[:container] %> bg-violet-600 flex items-center justify-center flex-shrink-0">
+    <svg class="<%= s[:icon] %>" viewBox="0 0 24 24" fill="none">
+      <path d="M20 12a8 8 0 01-8 8 8 8 0 01-8-8 8 8 0 018-8 8 8 0 015.66 2.34" stroke="white" stroke-width="<%= s[:stroke] %>" stroke-linecap="round"/>
+      <circle cx="18" cy="6" r="<%= s[:dot] %>" fill="white"/>
+    </svg>
+  </div>
+  <% if show_text %>
+    <span class="<%= s[:text] %> font-bold text-current">Checkend</span>
+  <% end %>
+</div>
