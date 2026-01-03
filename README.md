@@ -1,6 +1,6 @@
 # Checkend
 
-[![CI](https://github.com/furvur/checkend/actions/workflows/ci.yml/badge.svg)](https://github.com/furvur/checkend/actions/workflows/ci.yml)
+[![CI](https://github.com/Checkend/checkend/actions/workflows/ci.yml/badge.svg)](https://github.com/Checkend/checkend/actions/workflows/ci.yml)
 [![License: O'Saasy](https://img.shields.io/badge/License-O'Saasy-blue.svg)](https://osaasy.dev/)
 
 Self-hosted error monitoring for your applications. Track, group, and resolve errors with a clean web interface.
