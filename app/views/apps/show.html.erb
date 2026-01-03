@@ -202,6 +202,58 @@
           <p class="text-sm text-gray-500 dark:text-zinc-400">No teams assigned to this app yet.</p>
         <% end %>
       </div>
+
+      <%# Direct User Access Section %>
+      <% if can_manage_app?(@app) %>
+        <% @record_permissions = RecordPermission.includes(:user, :permission).where(record: @app).active %>
+        <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Direct User Access</h2>
+              <p class="text-xs text-gray-500 dark:text-zinc-400 mt-1">Grant individual users access to this app outside of team membership.</p>
+            </div>
+            <%= link_to new_app_permission_path(@app),
+                class: "inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-violet-600 rounded-lg hover:bg-violet-500 transition-colors",
+                data: { turbo_frame: "slide_over" } do %>
+              <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+              </svg>
+              Grant Access
+            <% end %>
+          </div>
+          <% if @record_permissions.any? %>
+            <div class="space-y-2">
+              <% @record_permissions.group_by(&:user).each do |user, perms| %>
+                <div class="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-zinc-700">
+                  <div class="flex items-center space-x-3">
+                    <div class="flex-shrink-0 w-8 h-8 bg-blue-100 dark:bg-blue-500/20 rounded-full flex items-center justify-center">
+                      <span class="text-sm font-medium text-blue-600 dark:text-blue-400"><%= user.email_address[0].upcase %></span>
+                    </div>
+                    <div>
+                      <p class="text-sm font-medium text-gray-900 dark:text-white"><%= user.email_address %></p>
+                      <div class="flex flex-wrap gap-1 mt-1">
+                        <% perms.each do |perm| %>
+                          <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium <%= perm.grant? ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300' : 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300' %>">
+                            <%= perm.grant? ? '+' : '-' %><%= perm.permission.action %>
+                            <% if perm.expires_at %>
+                              <span class="ml-1 text-gray-500 dark:text-zinc-400">(expires <%= perm.expires_at.strftime('%b %d') %>)</span>
+                            <% end %>
+                          </span>
+                        <% end %>
+                      </div>
+                    </div>
+                  </div>
+                  <%= button_to app_permission_path(@app, user.id), method: :delete, data: { turbo_confirm: "Revoke all direct access for #{user.email_address}?" }, class: "text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium transition-colors" do %>
+                    Revoke
+                  <% end %>
+                </div>
+              <% end %>
+            </div>
+          <% else %>
+            <p class="text-sm text-gray-500 dark:text-zinc-400">No users have direct access to this app. Use the button above to grant access to individual users.</p>
+          <% end %>
+        </div>
+      <% end %>
     </div>
 
     <%# Sidebar (1 column on large screens) %>
@@ -305,3 +357,5 @@
     </div>
   </div>
 </div>
+
+<%= turbo_frame_tag "slide_over" %>

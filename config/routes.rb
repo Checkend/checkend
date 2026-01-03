@@ -80,6 +80,7 @@ Rails.application.routes.draw do
       delete :remove_team_assignment
     end
     resource :user_notification_preference, only: [ :edit, :update ], path: 'notification_preferences'
+    resources :permissions, controller: 'app_permissions', only: [ :new, :create, :destroy ]
     resources :problems, only: [ :index, :show ] do
       member do
         post :resolve
@@ -98,7 +99,9 @@ Rails.application.routes.draw do
 
   # Teams management
   resources :teams do
-    resources :team_members, only: [ :index, :create, :update, :destroy ]
+    resources :team_members, only: [ :index, :create, :update, :destroy ] do
+      resource :permissions, controller: 'team_member_permissions', only: [ :edit, :update ]
+    end
     resources :team_invitations, only: [ :index, :create, :update, :destroy ]
   end
 
