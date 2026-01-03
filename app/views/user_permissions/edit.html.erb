@@ -45,16 +45,23 @@
                   <div class="grid grid-cols-2 gap-3">
                     <% perms.each do |perm| %>
                       <% has_permission = @user_permissions.any? { |up| up.permission_id == perm.id && up.grant? } %>
-                      <label class="flex items-start p-2 rounded-md hover:bg-gray-100 dark:hover:bg-zinc-700/50 cursor-pointer transition-colors">
-                        <input type="checkbox"
-                               name="permissions[<%= perm.id %>]"
-                               value="1"
-                               <%= 'checked' if has_permission %>
-                               class="mt-0.5 rounded border-gray-300 dark:border-zinc-600 text-violet-600 focus:ring-violet-500 dark:bg-zinc-700">
-                        <div class="ml-2">
-                          <span class="block text-sm font-medium text-gray-700 dark:text-zinc-200"><%= perm.action.humanize %></span>
+                      <label class="flex items-center gap-3 p-2 rounded-md hover:bg-gray-100 dark:hover:bg-zinc-700/50 cursor-pointer transition-colors">
+                        <div class="flex h-6 shrink-0 items-center">
+                          <div class="group grid size-4 grid-cols-1">
+                            <input type="checkbox"
+                                   name="permissions[<%= perm.id %>]"
+                                   value="1"
+                                   <%= 'checked' if has_permission %>
+                                   class="col-start-1 row-start-1 appearance-none rounded border border-zinc-600 bg-zinc-700 checked:border-violet-500 checked:bg-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 focus:ring-offset-zinc-900">
+                            <svg class="pointer-events-none col-start-1 row-start-1 size-3.5 self-center justify-self-center stroke-white group-has-[:disabled]:stroke-zinc-500" viewBox="0 0 14 14" fill="none">
+                              <path class="opacity-0 group-has-[:checked]:opacity-100" d="M3 8L6 11L11 3.5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                            </svg>
+                          </div>
+                        </div>
+                        <div>
+                          <span class="block text-sm font-medium text-zinc-200"><%= perm.action.humanize %></span>
                           <% if perm.description.present? %>
-                            <span class="block text-xs text-gray-500 dark:text-zinc-400 mt-0.5"><%= perm.description %></span>
+                            <span class="block text-xs text-zinc-400 mt-0.5"><%= perm.description %></span>
                           <% end %>
                         </div>
                       </label>

@@ -1,0 +1,22 @@
+<div class="flex items-center gap-4">
+  <% initials = user.email_address.first(2).upcase %>
+  <span class="inline-flex size-16 items-center justify-center rounded-full bg-violet-600">
+    <span class="text-xl font-medium text-white"><%= initials %></span>
+  </span>
+  <div>
+    <div class="flex items-center gap-3">
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white"><%= user.email_address %></h1>
+      <% if user.site_admin? %>
+        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-600/20 dark:text-amber-400">
+          <svg class="size-3" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 1l2.5 5 5.5.8-4 3.9 1 5.4-5-2.6-5 2.6 1-5.4-4-3.9 5.5-.8L10 1z" clip-rule="evenodd" />
+          </svg>
+          Admin
+        </span>
+      <% end %>
+    </div>
+    <p class="text-gray-600 dark:text-zinc-400 mt-1">
+      Member since <%= user.created_at.strftime('%B %Y') %>
+    </p>
+  </div>
+</div>

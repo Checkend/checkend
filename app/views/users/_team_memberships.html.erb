@@ -1,0 +1,66 @@
+<div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 overflow-hidden">
+  <div class="px-6 py-4 border-b border-gray-200 dark:border-zinc-700 flex items-center justify-between">
+    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Team Memberships</h2>
+    <%= link_to edit_user_team_memberships_path(user),
+        class: "inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-violet-600 rounded-lg hover:bg-violet-500 transition-colors",
+        data: { turbo_frame: "slide_over" } do %>
+      <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+      </svg>
+      Manage
+    <% end %>
+  </div>
+  <% if user.teams.any? %>
+    <ul class="divide-y divide-gray-200 dark:divide-zinc-700">
+      <% user.team_members.includes(:team).each do |member| %>
+        <li>
+          <%= link_to team_path(member.team), class: "block px-6 py-4 hover:bg-gray-50 dark:hover:bg-zinc-700/50 transition-colors" do %>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="flex-shrink-0 w-10 h-10 bg-violet-100 dark:bg-violet-500/20 rounded-lg flex items-center justify-center">
+                  <svg class="w-5 h-5 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                  </svg>
+                </div>
+                <div>
+                  <p class="text-sm font-medium text-gray-900 dark:text-white"><%= member.team.name %></p>
+                  <p class="text-xs text-gray-500 dark:text-zinc-400">
+                    <%= member.team.team_members.count %> member<%= member.team.team_members.count == 1 ? '' : 's' %>
+                  </p>
+                </div>
+              </div>
+              <div class="flex items-center gap-3">
+                <% if member.admin? %>
+                  <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-300">
+                    Admin
+                  </span>
+                <% elsif member.owner? %>
+                  <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300">
+                    Owner
+                  </span>
+                <% else %>
+                  <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 dark:bg-zinc-700 dark:text-zinc-400">
+                    Member
+                  </span>
+                <% end %>
+                <svg class="w-5 h-5 text-gray-400 dark:text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+              </div>
+            </div>
+          <% end %>
+        </li>
+      <% end %>
+    </ul>
+  <% else %>
+    <div class="px-6 py-12 text-center">
+      <div class="w-12 h-12 bg-gray-100 dark:bg-zinc-700 rounded-full flex items-center justify-center mx-auto mb-3">
+        <svg class="w-6 h-6 text-gray-400 dark:text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path>
+        </svg>
+      </div>
+      <h3 class="text-base font-medium text-gray-900 dark:text-white mb-1">No team memberships</h3>
+      <p class="text-sm text-gray-600 dark:text-zinc-400">This user is not a member of any teams yet.</p>
+    </div>
+  <% end %>
+</div>

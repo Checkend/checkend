@@ -108,6 +108,12 @@ Rails.application.routes.draw do
   # Users management (admin only)
   resources :users, only: [ :index, :show, :new, :create, :edit, :update, :destroy ] do
     resource :permissions, controller: 'user_permissions', only: [ :edit, :update ]
+    resource :team_memberships, controller: 'user_team_memberships', only: [ :edit, :update ]
+    resources :sessions, controller: 'user_sessions', only: [ :destroy ] do
+      collection do
+        delete :destroy_all
+      end
+    end
   end
 
   # API Key management

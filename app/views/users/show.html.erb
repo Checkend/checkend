@@ -1,125 +1,186 @@
 <div>
-  <div class="flex justify-between items-center mb-6">
-    <div>
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">User Details</h1>
-      <p class="text-gray-600 dark:text-zinc-400 mt-1">View and manage user information.</p>
-    </div>
-    <div class="flex space-x-3">
-      <%= link_to edit_user_path(@user), class: "inline-flex items-center px-4 py-2 border border-gray-300 dark:border-zinc-600 text-gray-700 dark:text-zinc-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-zinc-700 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-900 transition-colors" do %>
-        Edit
-      <% end %>
-      <%= button_to user_path(@user), method: :delete,
-          data: { confirm: "Are you sure you want to delete this user? This action cannot be undone." },
-          class: "inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-900 transition-colors" do %>
-        Delete
-      <% end %>
+  <%# Profile Header %>
+  <div class="flex items-start justify-between mb-8">
+    <%= turbo_frame_tag "user_header" do %>
+      <%= render "users/header", user: @user %>
+    <% end %>
+
+    <%# Actions dropdown %>
+    <div x-data="{ open: false }" class="relative">
+      <button
+        @click="open = !open"
+        @click.outside="open = false"
+        class="p-2 rounded-lg text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-gray-700 dark:hover:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-violet-500 transition-colors"
+      >
+        <span class="sr-only">Open menu</span>
+        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+          <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+        </svg>
+      </button>
+
+      <div
+        x-show="open"
+        x-transition:enter="transition ease-out duration-100"
+        x-transition:enter-start="transform opacity-0 scale-95"
+        x-transition:enter-end="transform opacity-100 scale-100"
+        x-transition:leave="transition ease-in duration-75"
+        x-transition:leave-start="transform opacity-100 scale-100"
+        x-transition:leave-end="transform opacity-0 scale-95"
+        class="absolute right-0 mt-2 w-48 bg-white dark:bg-zinc-800 rounded-lg shadow-lg dark:shadow-zinc-900/50 border border-gray-200 dark:border-zinc-700 py-1 z-10"
+        style="display: none;"
+      >
+        <%= link_to edit_user_path(@user), data: { turbo_frame: "slide_over" }, class: "flex items-center px-4 py-2 text-sm text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors" do %>
+          <svg class="w-4 h-4 mr-3 text-gray-400 dark:text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+          </svg>
+          Edit User
+        <% end %>
+        <%= link_to edit_user_permissions_path(@user), data: { turbo_frame: "slide_over" }, class: "flex items-center px-4 py-2 text-sm text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors" do %>
+          <svg class="w-4 h-4 mr-3 text-gray-400 dark:text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+          </svg>
+          Manage Permissions
+        <% end %>
+        <%= link_to edit_user_team_memberships_path(@user), data: { turbo_frame: "slide_over" }, class: "flex items-center px-4 py-2 text-sm text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors" do %>
+          <svg class="w-4 h-4 mr-3 text-gray-400 dark:text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path>
+          </svg>
+          Manage Teams
+        <% end %>
+        <div class="border-t border-gray-100 dark:border-zinc-700 my-1"></div>
+        <%= button_to user_path(@user), method: :delete, data: { turbo_confirm: "Are you sure you want to delete this user? This action cannot be undone." }, class: "flex items-center w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors" do %>
+          <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+          </svg>
+          Delete User
+        <% end %>
+      </div>
     </div>
   </div>
 
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-6">
-      <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">User Information</h2>
-      <dl class="space-y-4">
-        <div>
-          <dt class="text-sm font-medium text-gray-500 dark:text-zinc-400">Email Address</dt>
-          <dd class="mt-1 text-sm text-gray-900 dark:text-white"><%= @user.email_address %></dd>
+  <%# Stats Overview %>
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-4">
+      <div class="flex items-center gap-3">
+        <div class="p-2 bg-violet-100 dark:bg-violet-600/20 rounded-lg">
+          <svg class="size-5 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path>
+          </svg>
         </div>
         <div>
-          <dt class="text-sm font-medium text-gray-500 dark:text-zinc-400">Site Admin</dt>
-          <dd class="mt-1">
-            <% if @user.site_admin? %>
-              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-violet-100 dark:bg-violet-500/20 text-violet-800 dark:text-violet-300">
-                Yes
-              </span>
-            <% else %>
-              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-zinc-700 text-gray-800 dark:text-zinc-300">
-                No
-              </span>
-            <% end %>
-          </dd>
+          <div class="text-2xl font-bold text-gray-900 dark:text-white"><%= @user.teams.count %></div>
+          <div class="text-xs text-gray-500 dark:text-zinc-400">Teams</div>
         </div>
-        <div>
-          <dt class="text-sm font-medium text-gray-500 dark:text-zinc-400">Created At</dt>
-          <dd class="mt-1 text-sm text-gray-900 dark:text-white"><%= @user.created_at.strftime('%B %d, %Y at %I:%M %p') %></dd>
-        </div>
-        <div>
-          <dt class="text-sm font-medium text-gray-500 dark:text-zinc-400">Last Updated</dt>
-          <dd class="mt-1 text-sm text-gray-900 dark:text-white"><%= @user.updated_at.strftime('%B %d, %Y at %I:%M %p') %></dd>
-        </div>
-        <div>
-          <dt class="text-sm font-medium text-gray-500 dark:text-zinc-400">Last Logged In</dt>
-          <dd class="mt-1 text-sm text-gray-900 dark:text-white">
-            <% if @user.last_logged_in_at %>
-              <%= @user.last_logged_in_at.strftime('%B %d, %Y at %I:%M %p') %>
-            <% else %>
-              <span class="text-gray-400 dark:text-zinc-500">Never</span>
-            <% end %>
-          </dd>
-        </div>
-      </dl>
+      </div>
     </div>
+    <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-4">
+      <div class="flex items-center gap-3">
+        <div class="p-2 bg-emerald-100 dark:bg-emerald-600/20 rounded-lg">
+          <svg class="size-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path>
+          </svg>
+        </div>
+        <div>
+          <div class="text-2xl font-bold text-gray-900 dark:text-white"><%= @user.accessible_apps.count %></div>
+          <div class="text-xs text-gray-500 dark:text-zinc-400">Apps</div>
+        </div>
+      </div>
+    </div>
+    <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-4">
+      <div class="flex items-center gap-3">
+        <div class="p-2 bg-blue-100 dark:bg-blue-600/20 rounded-lg">
+          <svg class="size-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0V12a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 12V5.25"></path>
+          </svg>
+        </div>
+        <div>
+          <div class="text-2xl font-bold text-gray-900 dark:text-white"><%= @user.sessions.count %></div>
+          <div class="text-xs text-gray-500 dark:text-zinc-400">Sessions</div>
+        </div>
+      </div>
+    </div>
+    <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-4">
+      <div class="flex items-center gap-3">
+        <div class="p-2 bg-pink-100 dark:bg-pink-600/20 rounded-lg">
+          <svg class="size-5 text-pink-600 dark:text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+          </svg>
+        </div>
+        <div>
+          <div class="text-2xl font-bold text-gray-900 dark:text-white"><%= @user.user_permissions.where(team: nil).count %></div>
+          <div class="text-xs text-gray-500 dark:text-zinc-400">Permissions</div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-    <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-6">
-      <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Teams</h2>
-      <% if @user.teams.any? %>
-        <div class="space-y-3">
-          <% @user.teams.each do |team| %>
-            <%= link_to team_path(team), class: "block p-3 rounded-lg border border-gray-200 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-700/50 transition-colors" do %>
-              <p class="text-sm font-medium text-gray-900 dark:text-white"><%= team.name %></p>
-              <p class="text-xs text-gray-500 dark:text-zinc-400 mt-1">
-                <%= @user.admin_of_team?(team) ? 'Admin' : 'Member' %>
-              </p>
-            <% end %>
+  <%# Two-Column Layout %>
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <%# Main Content (2 columns) %>
+    <div class="lg:col-span-2 space-y-6">
+      <%# Teams Section %>
+      <%= turbo_frame_tag "user_team_memberships", class: "block" do %>
+        <%= render "users/team_memberships", user: @user %>
+      <% end %>
+
+      <%# Permissions Section %>
+      <%= turbo_frame_tag "user_permissions", class: "block" do %>
+        <%= render "users/permissions", user: @user %>
+      <% end %>
+
+      <%# Active Sessions Section %>
+      <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-zinc-700 flex items-center justify-between">
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Active Sessions</h2>
+          <% if @user.sessions.count > 0 %>
+            <%= button_to "Revoke All", destroy_all_user_sessions_path(@user), method: :delete, data: { turbo_confirm: "Are you sure you want to revoke all sessions for this user?" }, class: "text-sm text-pink-600 dark:text-pink-400 hover:text-pink-500 dark:hover:text-pink-300 font-medium" %>
           <% end %>
         </div>
-      <% else %>
-        <p class="text-sm text-gray-500 dark:text-zinc-400">This user is not a member of any teams.</p>
-      <% end %>
-    </div>
-
-    <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-6">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Permissions</h2>
-        <%= link_to edit_user_permissions_path(@user),
-            class: "inline-flex items-center px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-zinc-300 bg-gray-100 dark:bg-zinc-700 rounded-lg hover:bg-gray-200 dark:hover:bg-zinc-600 transition-colors",
-            data: { turbo_frame: "slide_over" } do %>
-          <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
-          </svg>
-          Edit
+        <% if @user.sessions.any? %>
+          <div class="divide-y divide-gray-200 dark:divide-zinc-700">
+            <% @user.sessions.order(updated_at: :desc).each do |session| %>
+              <div class="px-6 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="p-2 bg-gray-100 dark:bg-zinc-700 rounded-lg">
+                    <svg class="size-5 text-gray-500 dark:text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0V12a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 12V5.25"></path>
+                    </svg>
+                  </div>
+                  <div>
+                    <p class="text-sm font-medium text-gray-900 dark:text-white"><%= session.device_description %></p>
+                    <p class="text-xs text-gray-500 dark:text-zinc-500">
+                      <% if session.ip_address.present? %>
+                        <%= session.ip_address %> &bull;
+                      <% end %>
+                      Last active <%= time_ago_in_words(session.updated_at) %> ago
+                    </p>
+                  </div>
+                </div>
+                <%= button_to "Revoke", user_session_path(@user, session), method: :delete, data: { turbo_confirm: "Revoke this session?" }, class: "text-sm text-pink-600 dark:text-pink-400 hover:text-pink-500 dark:hover:text-pink-300 font-medium" %>
+              </div>
+            <% end %>
+          </div>
+        <% else %>
+          <div class="px-6 py-12 text-center">
+            <div class="w-12 h-12 bg-gray-100 dark:bg-zinc-700 rounded-full flex items-center justify-center mx-auto mb-3">
+              <svg class="w-6 h-6 text-gray-400 dark:text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0V12a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 12V5.25"></path>
+              </svg>
+            </div>
+            <h3 class="text-base font-medium text-gray-900 dark:text-white mb-1">No active sessions</h3>
+            <p class="text-sm text-gray-600 dark:text-zinc-400">This user has no active login sessions.</p>
+          </div>
         <% end %>
       </div>
-      <% user_permissions = @user.user_permissions.where(team: nil).includes(:permission) %>
-      <% if user_permissions.any? %>
-        <div class="space-y-2">
-          <% user_permissions.group_by { |up| up.permission.resource }.each do |resource, perms| %>
-            <div>
-              <h4 class="text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wide mb-1"><%= resource.humanize %></h4>
-              <div class="flex flex-wrap gap-1">
-                <% perms.each do |up| %>
-                  <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium <%= up.grant? ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300' : 'bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-300' %>">
-                    <%= up.grant? ? '+' : '-' %><%= up.permission.action %>
-                  </span>
-                <% end %>
-              </div>
-            </div>
-          <% end %>
-        </div>
-      <% else %>
-        <p class="text-sm text-gray-500 dark:text-zinc-400">No custom permissions. Using role defaults.</p>
-      <% end %>
     </div>
+
+    <%# Sidebar %>
+    <%= turbo_frame_tag "user_sidebar" do %>
+      <div class="space-y-4">
+        <%= render "users/sidebar", user: @user %>
+      </div>
+    <% end %>
   </div>
 
   <%= turbo_frame_tag "slide_over" %>
-
-  <div class="mt-6">
-    <%= link_to users_path, class: "inline-flex items-center text-sm text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-300" do %>
-      <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-      </svg>
-      Back to Users
-    <% end %>
-  </div>
 </div>
-

@@ -1,0 +1,42 @@
+<div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-6">
+  <div class="flex items-center justify-between mb-4">
+    <div>
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Custom Permissions</h2>
+      <p class="text-xs text-gray-500 dark:text-zinc-400 mt-1">Site-wide permission overrides for this user.</p>
+    </div>
+    <%= link_to edit_user_permissions_path(user),
+        class: "inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-violet-600 rounded-lg hover:bg-violet-500 transition-colors",
+        data: { turbo_frame: "slide_over" } do %>
+      <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+      </svg>
+      Manage
+    <% end %>
+  </div>
+  <% user_permissions = user.user_permissions.where(team: nil).includes(:permission) %>
+  <% if user_permissions.any? %>
+    <div class="space-y-3">
+      <% user_permissions.group_by { |up| up.permission.resource }.each do |resource, perms| %>
+        <div class="p-3 rounded-lg border border-gray-200 dark:border-zinc-700">
+          <h4 class="text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wide mb-2"><%= resource.humanize %></h4>
+          <div class="flex flex-wrap gap-2">
+            <% perms.each do |up| %>
+              <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium <%= up.grant? ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300' : 'bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-300' %>">
+                <%= up.grant? ? '+' : '-' %><%= up.permission.action %>
+              </span>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  <% else %>
+    <div class="text-center py-8">
+      <div class="w-12 h-12 bg-gray-100 dark:bg-zinc-700 rounded-full flex items-center justify-center mx-auto mb-3">
+        <svg class="w-6 h-6 text-gray-400 dark:text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+        </svg>
+      </div>
+      <p class="text-sm text-gray-600 dark:text-zinc-400">No custom permissions. Using role defaults.</p>
+    </div>
+  <% end %>
+</div>

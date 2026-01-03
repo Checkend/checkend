@@ -23,7 +23,7 @@ export default class extends Controller {
     messageDiv.setAttribute("data-type", type)
 
     const styles = this.getStyles(type)
-    messageDiv.className = `mb-2 px-4 py-3 rounded-lg border flex items-center gap-3 opacity-100 transition-opacity duration-300 ${styles.bg} ${styles.border} ${styles.text}`
+    messageDiv.className = `mb-2 px-4 py-3 rounded-lg border flex items-center gap-3 transition-opacity duration-300 bg-zinc-900/90 backdrop-blur-sm ${styles.border} ${styles.text}`
 
     messageDiv.innerHTML = `
       ${this.getIcon(type)}
@@ -52,7 +52,6 @@ export default class extends Controller {
   }
 
   fadeOutMessage(message) {
-    message.classList.remove("opacity-100")
     message.classList.add("opacity-0")
 
     message.addEventListener("transitionend", () => {

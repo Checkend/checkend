@@ -31,7 +31,17 @@ class UserPermissionsController < ApplicationController
       end
     end
 
-    redirect_to @user, notice: 'Permissions updated successfully.'
+    respond_to do |format|
+      format.turbo_stream do
+        flash.now[:notice] = 'Permissions updated successfully.'
+        render turbo_stream: [
+          turbo_stream.update('user_permissions', partial: 'users/permissions', locals: { user: @user.reload }),
+          turbo_stream.update('slide_over', ''),
+          turbo_stream.update('flash', partial: 'shared/flash')
+        ]
+      end
+      format.html { redirect_to @user, notice: 'Permissions updated successfully.' }
+    end
   rescue ActiveRecord::RecordInvalid => e
     redirect_to @user, alert: "Failed to update permissions: #{e.message}"
   end

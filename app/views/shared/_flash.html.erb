@@ -32,7 +32,7 @@
       %>
       <div data-flash-message-target="message"
            data-type="<%= type %>"
-           class="mb-2 px-4 py-3 rounded-lg border flex items-center gap-3 opacity-100 transition-opacity duration-300 <%= styles[:bg] %> <%= styles[:border] %> <%= styles[:text] %>">
+           class="mb-2 px-4 py-3 rounded-lg border flex items-center gap-3 transition-opacity duration-300 bg-zinc-900/90 backdrop-blur-sm <%= styles[:border] %> <%= styles[:text] %>">
         <%# Type-specific icon %>
         <% case type.to_s %>
         <% when "notice", "success" %>

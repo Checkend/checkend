@@ -27,13 +27,25 @@ class UsersController < ApplicationController
   end
 
   def edit
+    render layout: false
   end
 
   def update
     if @user.update(user_params)
-      redirect_to @user, notice: 'User was successfully updated.'
+      respond_to do |format|
+        format.turbo_stream do
+          flash.now[:notice] = 'User was successfully updated.'
+          render turbo_stream: [
+            turbo_stream.update('user_header', partial: 'users/header', locals: { user: @user }),
+            turbo_stream.update('user_sidebar', partial: 'users/sidebar', locals: { user: @user }),
+            turbo_stream.update('slide_over', ''),
+            turbo_stream.update('flash', partial: 'shared/flash')
+          ]
+        end
+        format.html { redirect_to @user, notice: 'User was successfully updated.' }
+      end
     else
-      render :edit, status: :unprocessable_entity
+      render :edit, layout: false, status: :unprocessable_entity
     end
   end
 

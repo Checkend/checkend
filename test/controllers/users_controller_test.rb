@@ -38,7 +38,7 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
     get user_url(@other_user)
 
     assert_response :success
-    assert_select 'h1', text: 'User Details'
+    assert_select 'h1', text: @other_user.email_address
   end
 
   test 'new requires site admin' do
@@ -128,7 +128,7 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
     get edit_user_url(@other_user)
 
     assert_response :success
-    assert_select 'h1', text: 'Edit User'
+    assert_select 'h2', text: 'Edit User'
   end
 
   test 'update requires site admin' do

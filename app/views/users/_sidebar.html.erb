@@ -1,0 +1,86 @@
+<%# Account Details Card %>
+<div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-4">
+  <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Account Details</h3>
+  <dl class="space-y-3 text-sm">
+    <div class="flex justify-between">
+      <dt class="text-gray-500 dark:text-zinc-400">Email</dt>
+      <dd class="text-gray-900 dark:text-white font-medium truncate max-w-[180px]"><%= user.email_address %></dd>
+    </div>
+    <div class="flex justify-between">
+      <dt class="text-gray-500 dark:text-zinc-400">Site Admin</dt>
+      <dd>
+        <% if user.site_admin? %>
+          <span class="w-2 h-2 inline-block rounded-full bg-emerald-500"></span>
+        <% else %>
+          <span class="w-2 h-2 inline-block rounded-full bg-gray-300 dark:bg-zinc-600"></span>
+        <% end %>
+      </dd>
+    </div>
+    <div class="flex justify-between">
+      <dt class="text-gray-500 dark:text-zinc-400">Created</dt>
+      <dd class="text-gray-900 dark:text-white"><%= user.created_at.strftime('%b %d, %Y') %></dd>
+    </div>
+    <div class="flex justify-between">
+      <dt class="text-gray-500 dark:text-zinc-400">Last Updated</dt>
+      <dd class="text-gray-900 dark:text-white"><%= user.updated_at.strftime('%b %d, %Y') %></dd>
+    </div>
+  </dl>
+</div>
+
+<%# Activity Card %>
+<div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-4">
+  <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Activity</h3>
+  <dl class="space-y-3 text-sm">
+    <div class="flex justify-between items-center">
+      <dt class="text-gray-500 dark:text-zinc-400">Last Login</dt>
+      <dd class="text-gray-900 dark:text-white">
+        <% if user.last_logged_in_at %>
+          <%= time_ago_in_words(user.last_logged_in_at) %> ago
+        <% else %>
+          <span class="text-gray-400 dark:text-zinc-500">Never</span>
+        <% end %>
+      </dd>
+    </div>
+    <div class="flex justify-between">
+      <dt class="text-gray-500 dark:text-zinc-400">Active Sessions</dt>
+      <dd class="text-gray-900 dark:text-white"><%= user.sessions.count %></dd>
+    </div>
+    <div class="flex justify-between">
+      <dt class="text-gray-500 dark:text-zinc-400">Owned Teams</dt>
+      <dd class="text-gray-900 dark:text-white"><%= user.owned_teams.count %></dd>
+    </div>
+  </dl>
+</div>
+
+<%# Quick Actions Card %>
+<div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-4">
+  <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h3>
+  <div class="space-y-2">
+    <%= link_to edit_user_path(user), data: { turbo_frame: "slide_over" }, class: "flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-zinc-300 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors" do %>
+      <svg class="w-4 h-4 text-gray-400 dark:text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+      </svg>
+      Edit Profile
+    <% end %>
+    <%= link_to edit_user_permissions_path(user), data: { turbo_frame: "slide_over" }, class: "flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-zinc-300 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors" do %>
+      <svg class="w-4 h-4 text-gray-400 dark:text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+      </svg>
+      Manage Permissions
+    <% end %>
+    <%= link_to edit_user_team_memberships_path(user), data: { turbo_frame: "slide_over" }, class: "flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-zinc-300 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors" do %>
+      <svg class="w-4 h-4 text-gray-400 dark:text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path>
+      </svg>
+      Manage Teams
+    <% end %>
+    <% if user.sessions.any? %>
+      <%= button_to destroy_all_user_sessions_path(user), method: :delete, data: { turbo_confirm: "Revoke all sessions for this user?" }, class: "flex items-center gap-2 w-full px-3 py-2 text-sm text-pink-600 dark:text-pink-400 rounded-lg hover:bg-pink-50 dark:hover:bg-pink-500/10 transition-colors text-left" do %>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+        </svg>
+        Revoke All Sessions
+      <% end %>
+    <% end %>
+  </div>
+</div>
