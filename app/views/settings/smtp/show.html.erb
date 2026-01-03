@@ -1,66 +1,394 @@
-<div>
-  <div class="flex justify-between items-center mb-6">
-    <div>
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Email Settings</h1>
-      <p class="text-gray-600 dark:text-zinc-400 mt-1">Configure SMTP settings for sending email notifications.</p>
-    </div>
-    <%= link_to edit_settings_smtp_path, class: "inline-flex items-center px-4 py-2 bg-violet-600 text-white rounded-lg font-medium hover:bg-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-800 transition-colors" do %>
-      <%= @smtp_configuration.enabled? ? 'Edit Configuration' : 'Configure SMTP' %>
-    <% end %>
-  </div>
+<%= form_with model: [:settings, @smtp_configuration], url: settings_smtp_path, method: :patch do |form| %>
+  <div x-data="{ enabled: <%= @smtp_configuration.enabled? %>, wasEnabled: <%= @smtp_configuration.enabled_in_database.present? && @smtp_configuration.enabled_in_database %> }">
+    <%= form.hidden_field :enabled, "x-bind:value": "enabled" %>
 
-  <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-6">
-    <div class="space-y-6">
-      <div class="flex items-center justify-between">
-        <div>
-          <h2 class="text-lg font-semibold text-gray-900 dark:text-white">SMTP Status</h2>
-          <p class="text-sm text-gray-500 dark:text-zinc-400 mt-1">
-            <% if @smtp_configuration.enabled? %>
-              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                Enabled
-              </span>
-            <% else %>
-              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200">
-                Disabled
-              </span>
-            <% end %>
-          </p>
+    <%# Error messages %>
+    <% if @smtp_configuration.errors.any? %>
+      <div class="mb-6 rounded-lg bg-red-50 dark:bg-red-900/20 p-4">
+        <div class="flex">
+          <div class="flex-shrink-0">
+            <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clip-rule="evenodd" />
+            </svg>
+          </div>
+          <div class="ml-3">
+            <h3 class="text-sm font-medium text-red-800 dark:text-red-200">
+              <%= pluralize(@smtp_configuration.errors.count, "error") %> prohibited this configuration from being saved:
+            </h3>
+            <div class="mt-2 text-sm text-red-700 dark:text-red-300">
+              <ul class="list-disc pl-5 space-y-1">
+                <% @smtp_configuration.errors.full_messages.each do |message| %>
+                  <li><%= message %></li>
+                <% end %>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% end %>
+
+    <div class="divide-y divide-gray-200 dark:divide-zinc-700">
+      <%# Section 1: Enable SMTP %>
+      <div class="grid grid-cols-1 gap-x-8 gap-y-8 py-10 md:grid-cols-3">
+        <div class="px-4 sm:px-0">
+          <h2 class="text-base/7 font-semibold text-gray-900 dark:text-white">Email Delivery</h2>
+          <p class="mt-1 text-sm/6 text-gray-600 dark:text-zinc-400">Enable SMTP to send email notifications when errors occur in your applications.</p>
+        </div>
+
+        <div class="bg-white dark:bg-zinc-800 shadow-sm ring-1 ring-gray-900/5 dark:ring-zinc-700 sm:rounded-xl md:col-span-2">
+          <div class="px-4 py-6 sm:p-8">
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="text-sm/6 font-medium text-gray-900 dark:text-white">SMTP Status</h3>
+                <p class="mt-1 text-sm/6 text-gray-500 dark:text-zinc-400">When enabled, Checkend will send email notifications through your SMTP server.</p>
+              </div>
+              <button type="button"
+                      role="switch"
+                      :aria-checked="enabled"
+                      @click="enabled = !enabled"
+                      :class="enabled ? 'bg-violet-600' : 'bg-gray-200 dark:bg-zinc-700'"
+                      class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-800">
+                <span class="sr-only">Enable SMTP</span>
+                <span :class="enabled ? 'translate-x-5' : 'translate-x-0'"
+                      class="pointer-events-none relative inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out">
+                  <span :class="enabled ? 'opacity-0 duration-100 ease-out' : 'opacity-100 duration-200 ease-in'"
+                        class="absolute inset-0 flex h-full w-full items-center justify-center transition-opacity">
+                    <svg class="h-3 w-3 text-gray-400" fill="none" viewBox="0 0 12 12">
+                      <path d="M4 8l2-2m0 0l2-2M6 6L4 4m2 2l2 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                  </span>
+                  <span :class="enabled ? 'opacity-100 duration-200 ease-in' : 'opacity-0 duration-100 ease-out'"
+                        class="absolute inset-0 flex h-full w-full items-center justify-center transition-opacity">
+                    <svg class="h-3 w-3 text-violet-600" fill="currentColor" viewBox="0 0 12 12">
+                      <path d="M3.707 5.293a1 1 0 00-1.414 1.414l1.414-1.414zM5 8l-.707.707a1 1 0 001.414 0L5 8zm4.707-3.293a1 1 0 00-1.414-1.414l1.414 1.414zm-7.414 2l2 2 1.414-1.414-2-2-1.414 1.414zm3.414 2l4-4-1.414-1.414-4 4 1.414 1.414z" />
+                    </svg>
+                  </span>
+                </span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
-      <% if @smtp_configuration.enabled? %>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-gray-200 dark:border-zinc-700">
-          <div>
-            <dt class="text-sm font-medium text-gray-500 dark:text-zinc-400">SMTP Server</dt>
-            <dd class="mt-1 text-sm text-gray-900 dark:text-white"><%= @smtp_configuration.address %>:<%= @smtp_configuration.port %></dd>
-          </div>
-          <div>
-            <dt class="text-sm font-medium text-gray-500 dark:text-zinc-400">Domain</dt>
-            <dd class="mt-1 text-sm text-gray-900 dark:text-white"><%= @smtp_configuration.domain.presence || 'Not set' %></dd>
-          </div>
-          <div>
-            <dt class="text-sm font-medium text-gray-500 dark:text-zinc-400">Username</dt>
-            <dd class="mt-1 text-sm text-gray-900 dark:text-white"><%= @smtp_configuration.user_name %></dd>
-          </div>
-          <div>
-            <dt class="text-sm font-medium text-gray-500 dark:text-zinc-400">Authentication</dt>
-            <dd class="mt-1 text-sm text-gray-900 dark:text-white"><%= @smtp_configuration.authentication.humanize %></dd>
-          </div>
-          <div>
-            <dt class="text-sm font-medium text-gray-500 dark:text-zinc-400">STARTTLS</dt>
-            <dd class="mt-1 text-sm text-gray-900 dark:text-white">
-              <%= @smtp_configuration.enable_starttls_auto? ? 'Enabled' : 'Disabled' %>
-            </dd>
+      <%# Section 2: Server Settings (shown when enabled) %>
+      <div x-show="enabled" x-collapse class="grid grid-cols-1 gap-x-8 gap-y-8 py-10 md:grid-cols-3">
+        <div class="px-4 sm:px-0">
+          <h2 class="text-base/7 font-semibold text-gray-900 dark:text-white">Server Settings</h2>
+          <p class="mt-1 text-sm/6 text-gray-600 dark:text-zinc-400">Configure the connection to your SMTP server. Contact your email provider if you're unsure about these settings.</p>
+        </div>
+
+        <div class="bg-white dark:bg-zinc-800 shadow-sm ring-1 ring-gray-900/5 dark:ring-zinc-700 sm:rounded-xl md:col-span-2">
+          <div class="px-4 py-6 sm:p-8">
+            <div class="space-y-6">
+              <div>
+                <label for="smtp_configuration_address" class="block text-sm/6 font-medium text-gray-900 dark:text-white">SMTP Server Address</label>
+                <div class="mt-2">
+                  <%= form.text_field :address,
+                      placeholder: "smtp.example.com",
+                      class: "block w-full rounded-md bg-white dark:bg-zinc-900 px-3 py-1.5 text-base text-gray-900 dark:text-white outline outline-1 -outline-offset-1 outline-gray-300 dark:outline-zinc-700 placeholder:text-gray-400 dark:placeholder:text-zinc-500 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-violet-600 sm:text-sm/6" %>
+                </div>
+                <p class="mt-2 text-sm/6 text-gray-500 dark:text-zinc-400">The hostname of your SMTP server (e.g., smtp.gmail.com, smtp.sendgrid.net).</p>
+              </div>
+
+              <div>
+                <label for="smtp_configuration_port" class="block text-sm/6 font-medium text-gray-900 dark:text-white">Port</label>
+                <div class="mt-2">
+                  <%= form.number_field :port,
+                      placeholder: "587",
+                      min: 1,
+                      max: 65535,
+                      class: "block w-full rounded-md bg-white dark:bg-zinc-900 px-3 py-1.5 text-base text-gray-900 dark:text-white outline outline-1 -outline-offset-1 outline-gray-300 dark:outline-zinc-700 placeholder:text-gray-400 dark:placeholder:text-zinc-500 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-violet-600 sm:text-sm/6" %>
+                </div>
+                <p class="mt-2 text-sm/6 text-gray-500 dark:text-zinc-400">Use 587 for TLS (recommended), 465 for SSL, or 25 for unencrypted.</p>
+              </div>
+            </div>
           </div>
         </div>
-      <% else %>
-        <div class="pt-4 border-t border-gray-200 dark:border-zinc-700">
-          <p class="text-sm text-gray-500 dark:text-zinc-400">
-            SMTP is currently disabled. Configure your SMTP settings to enable email notifications.
-          </p>
+      </div>
+
+      <%# Section 3: Authentication (shown when enabled) %>
+      <div x-show="enabled" x-collapse class="grid grid-cols-1 gap-x-8 gap-y-8 py-10 md:grid-cols-3">
+        <div class="px-4 sm:px-0">
+          <h2 class="text-base/7 font-semibold text-gray-900 dark:text-white">Authentication</h2>
+          <p class="mt-1 text-sm/6 text-gray-600 dark:text-zinc-400">Credentials used to authenticate with your SMTP server. For Gmail, use an app-specific password.</p>
+        </div>
+
+        <div class="bg-white dark:bg-zinc-800 shadow-sm ring-1 ring-gray-900/5 dark:ring-zinc-700 sm:rounded-xl md:col-span-2">
+          <div class="px-4 py-6 sm:p-8">
+            <div class="space-y-6">
+              <div>
+                <label for="smtp_configuration_user_name" class="block text-sm/6 font-medium text-gray-900 dark:text-white">Username</label>
+                <div class="mt-2">
+                  <%= form.text_field :user_name,
+                      placeholder: "user@example.com",
+                      class: "block w-full rounded-md bg-white dark:bg-zinc-900 px-3 py-1.5 text-base text-gray-900 dark:text-white outline outline-1 -outline-offset-1 outline-gray-300 dark:outline-zinc-700 placeholder:text-gray-400 dark:placeholder:text-zinc-500 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-violet-600 sm:text-sm/6" %>
+                </div>
+                <p class="mt-2 text-sm/6 text-gray-500 dark:text-zinc-400">Usually your email address or an API key, depending on your provider.</p>
+              </div>
+
+              <div>
+                <label for="smtp_configuration_password" class="block text-sm/6 font-medium text-gray-900 dark:text-white">Password</label>
+                <div class="mt-2">
+                  <%= form.password_field :password,
+                      placeholder: @smtp_configuration.password.present? ? "••••••••" : "Enter password",
+                      class: "block w-full rounded-md bg-white dark:bg-zinc-900 px-3 py-1.5 text-base text-gray-900 dark:text-white outline outline-1 -outline-offset-1 outline-gray-300 dark:outline-zinc-700 placeholder:text-gray-400 dark:placeholder:text-zinc-500 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-violet-600 sm:text-sm/6" %>
+                </div>
+                <p class="mt-2 text-sm/6 text-gray-500 dark:text-zinc-400">
+                  <% if @smtp_configuration.password.present? %>
+                    Leave blank to keep your current password.
+                  <% else %>
+                    Your SMTP password or app-specific password.
+                  <% end %>
+                </p>
+              </div>
+
+              <div>
+                <label for="smtp_configuration_authentication" class="block text-sm/6 font-medium text-gray-900 dark:text-white">Authentication Method</label>
+                <div class="mt-2 grid grid-cols-1">
+                  <%= form.select :authentication,
+                      options_for_select([
+                        ['Plain', 'plain'],
+                        ['Login', 'login'],
+                        ['CRAM-MD5', 'cram_md5']
+                      ], @smtp_configuration.authentication),
+                      {},
+                      class: "col-start-1 row-start-1 w-full appearance-none rounded-md bg-white dark:bg-zinc-900 py-1.5 pr-8 pl-3 text-base text-gray-900 dark:text-white outline outline-1 -outline-offset-1 outline-gray-300 dark:outline-zinc-700 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-violet-600 sm:text-sm/6" %>
+                </div>
+                <p class="mt-2 text-sm/6 text-gray-500 dark:text-zinc-400">Plain works with most providers. Use Login for older servers.</p>
+              </div>
+
+              <div class="flex gap-3">
+                <div class="flex h-6 shrink-0 items-center">
+                  <div class="group grid size-4 grid-cols-1">
+                    <%= form.check_box :enable_starttls_auto, class: "col-start-1 row-start-1 appearance-none rounded border border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 checked:border-violet-600 checked:bg-violet-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-600" %>
+                    <svg viewBox="0 0 14 14" fill="none" class="pointer-events-none col-start-1 row-start-1 size-3.5 self-center justify-self-center stroke-white group-has-[:disabled]:stroke-gray-950/25">
+                      <path d="M3 8L6 11L11 3.5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="opacity-0 group-has-[:checked]:opacity-100" />
+                    </svg>
+                  </div>
+                </div>
+                <div class="text-sm/6">
+                  <label for="smtp_configuration_enable_starttls_auto" class="font-medium text-gray-900 dark:text-white">Enable STARTTLS</label>
+                  <p class="text-gray-500 dark:text-zinc-400">Automatically upgrade to a secure TLS connection. Recommended.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <%# Section 4: Email Addresses (shown when enabled) %>
+      <div x-show="enabled" x-collapse class="grid grid-cols-1 gap-x-8 gap-y-8 py-10 md:grid-cols-3">
+        <div class="px-4 sm:px-0">
+          <h2 class="text-base/7 font-semibold text-gray-900 dark:text-white">Email Addresses</h2>
+          <p class="mt-1 text-sm/6 text-gray-600 dark:text-zinc-400">Configure the sender information that recipients will see when they receive notifications.</p>
+        </div>
+
+        <div class="bg-white dark:bg-zinc-800 shadow-sm ring-1 ring-gray-900/5 dark:ring-zinc-700 sm:rounded-xl md:col-span-2">
+          <div class="px-4 py-6 sm:p-8">
+            <div class="space-y-6">
+              <div>
+                <label for="smtp_configuration_from_email" class="block text-sm/6 font-medium text-gray-900 dark:text-white">From Email</label>
+                <div class="mt-2">
+                  <%= form.email_field :from_email,
+                      placeholder: "noreply@yourdomain.com",
+                      class: "block w-full rounded-md bg-white dark:bg-zinc-900 px-3 py-1.5 text-base text-gray-900 dark:text-white outline outline-1 -outline-offset-1 outline-gray-300 dark:outline-zinc-700 placeholder:text-gray-400 dark:placeholder:text-zinc-500 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-violet-600 sm:text-sm/6" %>
+                </div>
+                <p class="mt-2 text-sm/6 text-gray-500 dark:text-zinc-400">The address shown in the "From" field. Must be authorized by your SMTP server.</p>
+              </div>
+
+              <div>
+                <label for="smtp_configuration_reply_to_email" class="block text-sm/6 font-medium text-gray-900 dark:text-white">Reply-to Email <span class="font-normal text-gray-400 dark:text-zinc-500">(optional)</span></label>
+                <div class="mt-2">
+                  <%= form.email_field :reply_to_email,
+                      placeholder: "support@yourdomain.com",
+                      class: "block w-full rounded-md bg-white dark:bg-zinc-900 px-3 py-1.5 text-base text-gray-900 dark:text-white outline outline-1 -outline-offset-1 outline-gray-300 dark:outline-zinc-700 placeholder:text-gray-400 dark:placeholder:text-zinc-500 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-violet-600 sm:text-sm/6" %>
+                </div>
+                <p class="mt-2 text-sm/6 text-gray-500 dark:text-zinc-400">Where replies will be sent. Defaults to the from email if not set.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <% if @smtp_configuration.persisted? %>
+        <%# Section 5: Diagnostics (shown only when persisted) %>
+        <div x-show="enabled" x-collapse class="grid grid-cols-1 gap-x-8 gap-y-8 py-10 md:grid-cols-3">
+          <div class="px-4 sm:px-0">
+            <h2 class="text-base/7 font-semibold text-gray-900 dark:text-white">Diagnostics</h2>
+            <p class="mt-1 text-sm/6 text-gray-600 dark:text-zinc-400">Test your configuration and view current settings to ensure email delivery is working correctly.</p>
+          </div>
+
+          <div class="bg-white dark:bg-zinc-800 shadow-sm ring-1 ring-gray-900/5 dark:ring-zinc-700 sm:rounded-xl md:col-span-2">
+            <div class="px-4 py-6 sm:p-8">
+              <div class="space-y-6">
+                <%# Current Configuration Summary %>
+                <div>
+                  <h3 class="text-sm/6 font-medium text-gray-900 dark:text-white">Current Configuration</h3>
+                  <dl class="mt-3 divide-y divide-gray-100 dark:divide-zinc-700 border border-gray-200 dark:border-zinc-700 rounded-lg">
+                    <div class="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4">
+                      <dt class="text-sm/6 font-medium text-gray-500 dark:text-zinc-400">Status</dt>
+                      <dd class="mt-1 text-sm/6 text-gray-900 dark:text-white sm:col-span-2 sm:mt-0">
+                        <% if @smtp_configuration.enabled? %>
+                          <span class="inline-flex items-center gap-x-1.5 rounded-md bg-green-100 dark:bg-green-900/30 px-2 py-1 text-xs font-medium text-green-700 dark:text-green-400">
+                            <svg class="h-1.5 w-1.5 fill-green-500" viewBox="0 0 6 6" aria-hidden="true">
+                              <circle cx="3" cy="3" r="3" />
+                            </svg>
+                            Enabled
+                          </span>
+                        <% else %>
+                          <span class="inline-flex items-center gap-x-1.5 rounded-md bg-gray-100 dark:bg-zinc-700 px-2 py-1 text-xs font-medium text-gray-600 dark:text-zinc-400">
+                            <svg class="h-1.5 w-1.5 fill-gray-400" viewBox="0 0 6 6" aria-hidden="true">
+                              <circle cx="3" cy="3" r="3" />
+                            </svg>
+                            Disabled
+                          </span>
+                        <% end %>
+                      </dd>
+                    </div>
+                    <div class="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4">
+                      <dt class="text-sm/6 font-medium text-gray-500 dark:text-zinc-400">Server</dt>
+                      <dd class="mt-1 text-sm/6 text-gray-900 dark:text-white sm:col-span-2 sm:mt-0">
+                        <% if @smtp_configuration.address.present? %>
+                          <code class="text-xs bg-gray-100 dark:bg-zinc-700 px-1.5 py-0.5 rounded"><%= @smtp_configuration.address %>:<%= @smtp_configuration.port %></code>
+                        <% else %>
+                          <span class="text-gray-400 dark:text-zinc-500">Not configured</span>
+                        <% end %>
+                      </dd>
+                    </div>
+                    <div class="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4">
+                      <dt class="text-sm/6 font-medium text-gray-500 dark:text-zinc-400">From</dt>
+                      <dd class="mt-1 text-sm/6 text-gray-900 dark:text-white sm:col-span-2 sm:mt-0">
+                        <% if @smtp_configuration.from_email.present? %>
+                          <%= @smtp_configuration.from_email %>
+                        <% else %>
+                          <span class="text-gray-400 dark:text-zinc-500">Not configured</span>
+                        <% end %>
+                      </dd>
+                    </div>
+                    <div class="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4">
+                      <dt class="text-sm/6 font-medium text-gray-500 dark:text-zinc-400">Authentication</dt>
+                      <dd class="mt-1 text-sm/6 text-gray-900 dark:text-white sm:col-span-2 sm:mt-0">
+                        <% if @smtp_configuration.user_name.present? %>
+                          <%= @smtp_configuration.authentication&.upcase || 'PLAIN' %> as <%= @smtp_configuration.user_name %>
+                        <% else %>
+                          <span class="text-gray-400 dark:text-zinc-500">Not configured</span>
+                        <% end %>
+                      </dd>
+                    </div>
+                    <div class="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4">
+                      <dt class="text-sm/6 font-medium text-gray-500 dark:text-zinc-400">TLS</dt>
+                      <dd class="mt-1 text-sm/6 text-gray-900 dark:text-white sm:col-span-2 sm:mt-0">
+                        <% if @smtp_configuration.enable_starttls_auto? %>
+                          <span class="text-green-600 dark:text-green-400">STARTTLS enabled</span>
+                        <% else %>
+                          <span class="text-amber-600 dark:text-amber-400">STARTTLS disabled</span>
+                        <% end %>
+                      </dd>
+                    </div>
+                    <div class="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4">
+                      <dt class="text-sm/6 font-medium text-gray-500 dark:text-zinc-400">Last updated</dt>
+                      <dd class="mt-1 text-sm/6 text-gray-900 dark:text-white sm:col-span-2 sm:mt-0">
+                        <%= time_ago_in_words(@smtp_configuration.updated_at) %> ago
+                      </dd>
+                    </div>
+                  </dl>
+                </div>
+
+                <%# Test Connection %>
+                <div>
+                  <h3 class="text-sm/6 font-medium text-gray-900 dark:text-white">Test Connection</h3>
+                  <p class="mt-1 text-sm/6 text-gray-500 dark:text-zinc-400">Send a test email to verify your SMTP configuration is working correctly.</p>
+                  <div class="mt-4" x-data="{ testing: false, result: null, error: null }">
+                    <button type="button"
+                            id="test-connection-btn"
+                            @click="
+                              testing = true;
+                              result = null;
+                              error = null;
+                              fetch('<%= test_connection_settings_smtp_path %>', {
+                                method: 'POST',
+                                headers: {
+                                  'X-CSRF-Token': document.querySelector('meta[name=csrf-token]').content,
+                                  'Accept': 'application/json'
+                                }
+                              })
+                              .then(response => response.json())
+                              .then(data => {
+                                if (data.success) {
+                                  result = data.message || 'Test email sent successfully!';
+                                } else {
+                                  error = data.error || 'Failed to send test email';
+                                }
+                              })
+                              .catch(err => {
+                                error = err.message || 'An error occurred';
+                              })
+                              .finally(() => {
+                                testing = false;
+                              });
+                            "
+                            :disabled="testing || !<%= @smtp_configuration.enabled? && @smtp_configuration.valid? %>"
+                            class="inline-flex items-center gap-x-2 rounded-md bg-white dark:bg-zinc-700 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-white shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-zinc-600 hover:bg-gray-50 dark:hover:bg-zinc-600 disabled:opacity-50 disabled:cursor-not-allowed">
+                      <svg x-show="!testing" class="h-4 w-4 text-gray-500 dark:text-zinc-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+                      </svg>
+                      <svg x-show="testing" class="animate-spin h-4 w-4 text-gray-500 dark:text-zinc-400" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <span x-text="testing ? 'Sending...' : 'Send Test Email'"></span>
+                    </button>
+                    <p class="mt-2 text-sm/6 text-gray-500 dark:text-zinc-400">
+                      A test email will be sent to <strong class="text-gray-700 dark:text-zinc-300"><%= Current.user.email_address %></strong>
+                    </p>
+
+                    <%# Success message %>
+                    <div x-show="result" x-cloak class="mt-4 rounded-md bg-green-50 dark:bg-green-900/20 p-4">
+                      <div class="flex">
+                        <div class="flex-shrink-0">
+                          <svg class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd" />
+                          </svg>
+                        </div>
+                        <div class="ml-3">
+                          <p class="text-sm font-medium text-green-800 dark:text-green-200" x-text="result"></p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <%# Error message %>
+                    <div x-show="error" x-cloak class="mt-4 rounded-md bg-red-50 dark:bg-red-900/20 p-4">
+                      <div class="flex">
+                        <div class="flex-shrink-0">
+                          <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clip-rule="evenodd" />
+                          </svg>
+                        </div>
+                        <div class="ml-3">
+                          <p class="text-sm font-medium text-red-800 dark:text-red-200" x-text="error"></p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       <% end %>
     </div>
-  </div>
-</div>
 
+    <%# Footer Actions %>
+    <div x-show="enabled || wasEnabled" x-collapse class="mt-6 flex items-center justify-end gap-x-4">
+      <div x-show="!enabled" class="mr-auto text-sm text-gray-500 dark:text-zinc-400">
+        <span class="inline-flex items-center gap-1.5">
+          <svg class="h-4 w-4 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+          </svg>
+          SMTP will be disabled
+        </span>
+      </div>
+      <%= form.submit "Save Settings", class: "rounded-md bg-violet-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-violet-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-600 cursor-pointer" %>
+    </div>
+  </div>
+<% end %>

@@ -24,10 +24,10 @@ class Settings::SmtpControllerTest < ActionDispatch::IntegrationTest
     assert_response :not_found
   end
 
-  test 'edit allows site admin' do
+  test 'edit redirects to show' do
     sign_in_as(@admin_user)
     get edit_settings_smtp_path
-    assert_response :success
+    assert_redirected_to settings_smtp_path
   end
 
   test 'update requires site admin' do
@@ -50,11 +50,12 @@ class Settings::SmtpControllerTest < ActionDispatch::IntegrationTest
         enabled: true,
         address: 'smtp.example.com',
         port: 587,
-        domain: 'example.com',
         user_name: 'user@example.com',
         password: 'secret_password',
         authentication: 'plain',
-        enable_starttls_auto: true
+        enable_starttls_auto: true,
+        from_email: 'noreply@example.com',
+        reply_to_email: 'support@example.com'
       }
     }
 
@@ -63,11 +64,12 @@ class Settings::SmtpControllerTest < ActionDispatch::IntegrationTest
     assert config.enabled?
     assert_equal 'smtp.example.com', config.address
     assert_equal 587, config.port
-    assert_equal 'example.com', config.domain
     assert_equal 'user@example.com', config.user_name
     assert_equal 'secret_password', config.password
     assert_equal 'plain', config.authentication
     assert config.enable_starttls_auto?
+    assert_equal 'noreply@example.com', config.from_email
+    assert_equal 'support@example.com', config.reply_to_email
   end
 
   test 'update shows errors for invalid configuration' do
@@ -101,11 +103,11 @@ class Settings::SmtpControllerTest < ActionDispatch::IntegrationTest
       enabled: true,
       address: 'smtp.example.com',
       port: 587,
-      domain: 'example.com',
       user_name: 'user@example.com',
       password: 'secret',
       authentication: 'plain',
-      enable_starttls_auto: true
+      enable_starttls_auto: true,
+      from_email: 'noreply@example.com'
     )
 
     # Create a mock SMTP class
@@ -145,7 +147,8 @@ class Settings::SmtpControllerTest < ActionDispatch::IntegrationTest
       port: 587,
       user_name: 'user',
       password: 'pass',
-      authentication: 'plain'
+      authentication: 'plain',
+      from_email: 'noreply@example.com'
     )
 
     post test_connection_settings_smtp_path

@@ -73,43 +73,36 @@
       </li>
     <% end %>
 
-    <%# Administration section (admin-only, collapsible) %>
+    <%# Administration section (admin-only) %>
     <% if Current.user&.site_admin? %>
       <li>
-        <details class="group">
-          <summary class="flex items-center justify-between cursor-pointer px-2 py-1 text-xs font-semibold text-gray-400 dark:text-zinc-500 uppercase tracking-wider hover:text-gray-600 dark:hover:text-zinc-400 transition-colors">
-            <span>Administration</span>
-            <svg class="size-4 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-            </svg>
-          </summary>
-          <ul role="list" class="mt-2 -mx-2 space-y-1">
-            <li>
-              <%= link_to users_path, class: nav_link_classes(active: current_controller?("users")) do %>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" class="<%= nav_icon_classes(active: current_controller?("users")) %>">
-                  <path d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-                Users
-              <% end %>
-            </li>
-            <li>
-              <%= link_to api_keys_path, class: nav_link_classes(active: current_controller?("api_keys")) do %>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" class="<%= nav_icon_classes(active: current_controller?("api_keys")) %>">
-                  <path d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-                API Keys
-              <% end %>
-            </li>
-            <li>
-              <%= link_to settings_smtp_path, class: nav_link_classes(active: current_controller?("settings/smtp")) do %>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" class="<%= nav_icon_classes(active: current_controller?("settings/smtp")) %>">
-                  <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-                Email Settings
-              <% end %>
-            </li>
-          </ul>
-        </details>
+        <div class="text-xs font-semibold text-gray-400 dark:text-zinc-500 uppercase tracking-wider mb-2 px-2">Administration</div>
+        <ul role="list" class="-mx-2 space-y-1">
+          <li>
+            <%= link_to users_path, class: nav_link_classes(active: current_controller?("users")) do %>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" class="<%= nav_icon_classes(active: current_controller?("users")) %>">
+                <path d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              Users
+            <% end %>
+          </li>
+          <li>
+            <%= link_to api_keys_path, class: nav_link_classes(active: current_controller?("api_keys")) do %>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" class="<%= nav_icon_classes(active: current_controller?("api_keys")) %>">
+                <path d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              API Keys
+            <% end %>
+          </li>
+          <li>
+            <%= link_to settings_smtp_path, class: nav_link_classes(active: current_controller?("settings/smtp")) do %>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" class="<%= nav_icon_classes(active: current_controller?("settings/smtp")) %>">
+                <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              Email Settings
+            <% end %>
+          </li>
+        </ul>
       </li>
     <% end %>
 
@@ -134,29 +127,54 @@
         </button>
       </div>
 
-      <div class="border-t border-gray-200 dark:border-zinc-700 -mx-2 pt-2">
-        <%# User info - clickable link to profile %>
-        <%= link_to settings_profile_path, class: "group flex items-center gap-3 px-2 py-3 rounded-md hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors" do %>
-          <% initials = Current.user.email_address.first(2).upcase %>
-          <span class="inline-flex size-9 items-center justify-center rounded-full bg-violet-600 group-hover:bg-violet-500 transition-colors">
-            <span class="text-sm font-medium text-white"><%= initials %></span>
-          </span>
-          <div class="min-w-0 flex-1">
-            <p class="text-xs font-medium text-gray-500 dark:text-zinc-500">Signed in as</p>
-            <p class="text-sm font-semibold text-gray-900 dark:text-white truncate group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors"><%= Current.user.email_address %></p>
-          </div>
-          <svg class="size-5 shrink-0 text-gray-400 dark:text-zinc-500 group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-          </svg>
-        <% end %>
+      <div class="border-t border-gray-200 dark:border-zinc-700 -mx-2 pt-2 pb-5">
+        <%# User dropdown menu %>
+        <div class="relative" x-data="{ open: false }">
+          <button
+            @click="open = !open"
+            @click.away="open = false"
+            class="group flex w-full items-center gap-3 px-2 py-3 rounded-md hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
+          >
+            <% initials = Current.user.email_address.first(2).upcase %>
+            <span class="inline-flex size-9 items-center justify-center rounded-full bg-violet-600 group-hover:bg-violet-500 transition-colors">
+              <span class="text-sm font-medium text-white"><%= initials %></span>
+            </span>
+            <div class="min-w-0 flex-1 text-left">
+              <p class="text-xs font-medium text-gray-500 dark:text-zinc-500">Signed in as</p>
+              <p class="text-sm font-semibold text-gray-900 dark:text-white truncate group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors"><%= Current.user.email_address %></p>
+            </div>
+            <svg class="size-5 shrink-0 text-gray-400 dark:text-zinc-500 group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-transform" :class="{ '-rotate-90': open }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+            </svg>
+          </button>
 
-        <%# Sign out %>
-        <%= button_to session_path, method: :delete, class: "group flex w-full gap-x-3 rounded-md p-2 text-sm/6 font-semibold text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-violet-600 dark:hover:text-violet-400 transition-colors" do %>
-          <svg class="size-6 shrink-0 text-gray-400 dark:text-zinc-500 group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
-          </svg>
-          Sign out
-        <% end %>
+          <%# Dropdown menu %>
+          <div
+            x-show="open"
+            x-transition:enter="transition ease-out duration-100"
+            x-transition:enter-start="opacity-0 scale-95"
+            x-transition:enter-end="opacity-100 scale-100"
+            x-transition:leave="transition ease-in duration-75"
+            x-transition:leave-start="opacity-100 scale-100"
+            x-transition:leave-end="opacity-0 scale-95"
+            class="absolute bottom-full left-0 right-0 mb-2 rounded-lg bg-white dark:bg-zinc-800 shadow-lg ring-1 ring-gray-200 dark:ring-zinc-700 overflow-hidden"
+            style="display: none;"
+          >
+            <%= link_to settings_profile_path, class: "flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-700 hover:text-violet-600 dark:hover:text-violet-400 transition-colors" do %>
+              <svg class="size-5 text-gray-400 dark:text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+              </svg>
+              Settings
+            <% end %>
+            <%= button_to session_path, method: :delete, class: "flex w-full items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-700 hover:text-violet-600 dark:hover:text-violet-400 transition-colors" do %>
+              <svg class="size-5 text-gray-400 dark:text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+              </svg>
+              Logout
+            <% end %>
+          </div>
+        </div>
       </div>
     </li>
   </ul>

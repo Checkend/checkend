@@ -9,6 +9,7 @@ class Settings::SmtpController < ApplicationController
   end
 
   def edit
+    redirect_to settings_smtp_path
   end
 
   def update
@@ -17,9 +18,9 @@ class Settings::SmtpController < ApplicationController
     params_hash.delete('password') if params_hash['password'].blank?
 
     if @smtp_configuration.update(params_hash)
-      redirect_to settings_smtp_path, notice: 'SMTP configuration updated successfully.'
+      redirect_to settings_smtp_path, notice: 'SMTP settings saved successfully.'
     else
-      render :edit, status: :unprocessable_entity
+      render :show, status: :unprocessable_entity
     end
   end
 
@@ -47,11 +48,12 @@ class Settings::SmtpController < ApplicationController
       :enabled,
       :address,
       :port,
-      :domain,
       :user_name,
       :password,
       :authentication,
-      :enable_starttls_auto
+      :enable_starttls_auto,
+      :from_email,
+      :reply_to_email
     )
   end
 
@@ -63,9 +65,11 @@ class Settings::SmtpController < ApplicationController
   def send_test_email
     require 'net/smtp'
 
+    reply_to = @smtp_configuration.reply_to_email.presence || @smtp_configuration.from_email
     message = <<~MESSAGE
-      From: #{@smtp_configuration.user_name}
+      From: #{@smtp_configuration.from_email}
       To: #{Current.user.email_address}
+      Reply-To: #{reply_to}
       Subject: Checkend SMTP Test Email
 
       This is a test email from Checkend to verify your SMTP configuration.
@@ -77,8 +81,8 @@ class Settings::SmtpController < ApplicationController
     smtp.enable_starttls_auto if @smtp_configuration.enable_starttls_auto?
 
     auth_method = @smtp_configuration.authentication.to_sym
-    smtp.start(@smtp_configuration.domain, @smtp_configuration.user_name, @smtp_configuration.password, auth_method) do |smtp_connection|
-      smtp_connection.send_message(message, @smtp_configuration.user_name, Current.user.email_address)
+    smtp.start(@smtp_configuration.address, @smtp_configuration.user_name, @smtp_configuration.password, auth_method) do |smtp_connection|
+      smtp_connection.send_message(message, @smtp_configuration.from_email, Current.user.email_address)
     end
   end
 end

@@ -8,6 +8,7 @@ class SmtpConfigurationTest < ActiveSupport::TestCase
     assert_includes config.errors[:port], "can't be blank"
     assert_includes config.errors[:user_name], "can't be blank"
     assert_includes config.errors[:password], "can't be blank"
+    assert_includes config.errors[:from_email], "can't be blank"
   end
 
   test 'does not validate required fields when disabled' do
@@ -21,7 +22,8 @@ class SmtpConfigurationTest < ActiveSupport::TestCase
       address: 'smtp.example.com',
       port: 'not-a-number',
       user_name: 'user',
-      password: 'pass'
+      password: 'pass',
+      from_email: 'noreply@example.com'
     )
     assert_not config.valid?
     assert_includes config.errors[:port], 'is not a number'
@@ -33,7 +35,8 @@ class SmtpConfigurationTest < ActiveSupport::TestCase
       address: 'smtp.example.com',
       port: 0,
       user_name: 'user',
-      password: 'pass'
+      password: 'pass',
+      from_email: 'noreply@example.com'
     )
     assert_not config.valid?
     assert_includes config.errors[:port], 'must be greater than 0'
@@ -50,7 +53,8 @@ class SmtpConfigurationTest < ActiveSupport::TestCase
       port: 587,
       user_name: 'user',
       password: 'pass',
-      authentication: 'invalid'
+      authentication: 'invalid',
+      from_email: 'noreply@example.com'
     )
     assert_not config.valid?
     assert_includes config.errors[:authentication], 'is not included in the list'
@@ -64,7 +68,8 @@ class SmtpConfigurationTest < ActiveSupport::TestCase
         port: 587,
         user_name: 'user',
         password: 'pass',
-        authentication: auth
+        authentication: auth,
+        from_email: 'noreply@example.com'
       )
       assert config.valid?, "#{auth} should be valid"
     end
@@ -78,7 +83,8 @@ class SmtpConfigurationTest < ActiveSupport::TestCase
       port: 587,
       user_name: 'user',
       password: 'secret_password',
-      authentication: 'plain'
+      authentication: 'plain',
+      from_email: 'noreply@example.com'
     )
 
     # Password should decrypt correctly when accessed
@@ -100,7 +106,8 @@ class SmtpConfigurationTest < ActiveSupport::TestCase
       port: 587,
       user_name: 'user',
       password: 'pass',
-      authentication: 'plain'
+      authentication: 'plain',
+      from_email: 'noreply@example.com'
     )
 
     # Try to create a second record - should fail
@@ -110,7 +117,8 @@ class SmtpConfigurationTest < ActiveSupport::TestCase
       port: 587,
       user_name: 'user2',
       password: 'pass2',
-      authentication: 'plain'
+      authentication: 'plain',
+      from_email: 'noreply2@example.com'
     )
 
     assert_not second.save
@@ -124,11 +132,12 @@ class SmtpConfigurationTest < ActiveSupport::TestCase
       enabled: true,
       address: 'smtp.example.com',
       port: 587,
-      domain: 'example.com',
       user_name: 'user@example.com',
       password: 'secret',
       authentication: 'plain',
-      enable_starttls_auto: true
+      enable_starttls_auto: true,
+      from_email: 'noreply@example.com',
+      reply_to_email: 'support@example.com'
     )
     assert config.valid?
     assert config.save

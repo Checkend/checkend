@@ -7,6 +7,8 @@ class SmtpConfiguration < ApplicationRecord
   validates :user_name, presence: true, if: :enabled?
   validates :password, presence: true, if: :enabled?
   validates :authentication, inclusion: { in: %w[plain login cram_md5] }, if: :enabled?
+  validates :from_email, presence: true, format: { with: URI::MailTo::EMAIL_REGEXP }, if: :enabled?
+  validates :reply_to_email, format: { with: URI::MailTo::EMAIL_REGEXP }, allow_blank: true
 
   # Singleton pattern - ensure only one record exists
   before_create :ensure_singleton
