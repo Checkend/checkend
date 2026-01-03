@@ -1,0 +1,81 @@
+<%= turbo_frame_tag "slide_over" do %>
+  <div x-data="{ slideOverOpen: false }">
+    <%= render "shared/slide_over", title: "Permissions", subtitle: @user.email_address do %>
+      <%= form_with url: user_permissions_path(@user), method: :patch, class: "flex-1 flex flex-col overflow-hidden" do |form| %>
+        <div class="flex-1 overflow-y-auto px-4 py-6 sm:px-6">
+          <%# Info Banner %>
+          <div class="mb-6 bg-violet-50 dark:bg-violet-500/10 rounded-lg p-4">
+            <div class="flex">
+              <svg class="w-5 h-5 text-violet-600 dark:text-violet-400 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              <p class="text-sm text-violet-700 dark:text-violet-300">
+                Site-wide permissions apply across all teams and apps.
+              </p>
+            </div>
+          </div>
+
+          <%# Permissions by Resource %>
+          <div class="space-y-4">
+            <% resource_icons = {
+              'apps' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>',
+              'problems' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>',
+              'notices' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>',
+              'teams' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>',
+              'tags' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>',
+              'users' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>',
+              'api_keys' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>',
+              'settings' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>'
+            } %>
+
+            <% @permissions.group_by(&:resource).each do |resource, perms| %>
+              <div class="bg-gray-50 dark:bg-zinc-800/50 rounded-lg border border-gray-200 dark:border-zinc-700 overflow-hidden">
+                <%# Resource Header %>
+                <div class="px-4 py-3 bg-gray-100 dark:bg-zinc-800 border-b border-gray-200 dark:border-zinc-700">
+                  <div class="flex items-center">
+                    <svg class="w-5 h-5 text-gray-500 dark:text-zinc-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <%= raw resource_icons[resource] || resource_icons['settings'] %>
+                    </svg>
+                    <h4 class="text-sm font-semibold text-gray-900 dark:text-white"><%= resource.humanize.titleize %></h4>
+                  </div>
+                </div>
+
+                <%# Permissions Grid %>
+                <div class="p-4">
+                  <div class="grid grid-cols-2 gap-3">
+                    <% perms.each do |perm| %>
+                      <% has_permission = @user_permissions.any? { |up| up.permission_id == perm.id && up.grant? } %>
+                      <label class="flex items-start p-2 rounded-md hover:bg-gray-100 dark:hover:bg-zinc-700/50 cursor-pointer transition-colors">
+                        <input type="checkbox"
+                               name="permissions[<%= perm.id %>]"
+                               value="1"
+                               <%= 'checked' if has_permission %>
+                               class="mt-0.5 rounded border-gray-300 dark:border-zinc-600 text-violet-600 focus:ring-violet-500 dark:bg-zinc-700">
+                        <div class="ml-2">
+                          <span class="block text-sm font-medium text-gray-700 dark:text-zinc-200"><%= perm.action.humanize %></span>
+                          <% if perm.description.present? %>
+                            <span class="block text-xs text-gray-500 dark:text-zinc-400 mt-0.5"><%= perm.description %></span>
+                          <% end %>
+                        </div>
+                      </label>
+                    <% end %>
+                  </div>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        </div>
+
+        <%# Footer %>
+        <div class="flex-shrink-0 border-t border-gray-200 dark:border-zinc-700 px-4 py-4 sm:px-6">
+          <div class="flex justify-end space-x-3">
+            <%= link_to "Cancel", @user,
+                class: "rounded-md bg-white dark:bg-zinc-800 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-white shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-zinc-600 hover:bg-gray-50 dark:hover:bg-zinc-700" %>
+            <%= form.submit "Save Changes",
+                class: "rounded-md bg-violet-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-violet-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-600 cursor-pointer" %>
+          </div>
+        </div>
+      <% end %>
+    <% end %>
+  </div>
+<% end %>

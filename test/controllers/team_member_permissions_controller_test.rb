@@ -29,13 +29,18 @@ class TeamMemberPermissionsControllerTest < ActionDispatch::IntegrationTest
     assert_response :not_found
   end
 
-  test 'update grants additional permissions' do
+  test 'update grants permission when checked and role does not provide' do
+    # apps:delete is not granted by member role
     permission = permissions(:apps_delete)
+    role_permission_ids = RolePermission.where(role: 'member').pluck(:permission_id)
+
+    # Include role defaults + the extra permission we want to grant
+    permissions_to_check = role_permission_ids.index_with { '1' }
+    permissions_to_check[permission.id.to_s] = '1'
 
     assert_difference 'UserPermission.count', 1 do
       patch team_team_member_permissions_path(@team, @member_membership), params: {
-        grants: { permission.id.to_s => '1' },
-        expirations: { "grant_#{permission.id}" => 'never' }
+        permissions: permissions_to_check
       }
     end
 
@@ -43,34 +48,38 @@ class TeamMemberPermissionsControllerTest < ActionDispatch::IntegrationTest
     user_permission = @member_user.user_permissions.last
     assert_equal permission, user_permission.permission
     assert_equal 'grant', user_permission.grant_type
-    assert_nil user_permission.expires_at
   end
 
-  test 'update revokes permissions' do
-    permission = permissions(:apps_read)
+  test 'update revokes permission when unchecked and role provides' do
+    # apps:read is granted by member role
+    read_permission = permissions(:apps_read)
 
+    # Submit with apps:read unchecked (not in params)
     patch team_team_member_permissions_path(@team, @member_membership), params: {
-      revokes: { permission.id.to_s => '1' }
+      permissions: {}
     }
 
     assert_redirected_to team_team_members_path(@team)
-    user_permission = @member_user.user_permissions.last
-    assert_equal permission, user_permission.permission
-    assert_equal 'revoke', user_permission.grant_type
+
+    # Should have revoke records for all role-granted permissions
+    revoke = @member_user.user_permissions.find_by(permission: read_permission, team: @team)
+    assert_not_nil revoke
+    assert_equal 'revoke', revoke.grant_type
   end
 
-  test 'update with expiration sets expires_at' do
-    permission = permissions(:apps_delete)
+  test 'update creates no permission when checkbox matches role default' do
+    # apps:read is granted by member role, so checking it should create no record
+    read_permission = permissions(:apps_read)
+    role_permission_ids = RolePermission.where(role: 'member').pluck(:permission_id)
 
+    # Submit with exactly what role grants
     patch team_team_member_permissions_path(@team, @member_membership), params: {
-      grants: { permission.id.to_s => '1' },
-      expirations: { "grant_#{permission.id}" => '1_week' }
+      permissions: role_permission_ids.index_with { '1' }
     }
 
-    user_permission = @member_user.user_permissions.last
-    assert_not_nil user_permission.expires_at
-    assert user_permission.expires_at > Time.current
-    assert user_permission.expires_at < 8.days.from_now
+    assert_redirected_to team_team_members_path(@team)
+    # No user permissions should be created when matching role defaults
+    assert_equal 0, @member_user.user_permissions.where(team: @team).count
   end
 
   test 'update clears previous permissions for team' do
@@ -82,18 +91,21 @@ class TeamMemberPermissionsControllerTest < ActionDispatch::IntegrationTest
       granted_by: @admin
     )
 
-    assert_difference 'UserPermission.count', -1 do
-      patch team_team_member_permissions_path(@team, @member_membership), params: {
-        grants: {},
-        revokes: {}
-      }
-    end
+    role_permission_ids = RolePermission.where(role: 'member').pluck(:permission_id)
+
+    # Submit with role defaults (which includes apps:read)
+    patch team_team_member_permissions_path(@team, @member_membership), params: {
+      permissions: role_permission_ids.index_with { '1' }
+    }
+
+    # Previous grant should be cleared, no new permissions needed
+    assert_equal 0, @member_user.user_permissions.where(team: @team).count
   end
 
   test 'update requires team admin' do
     sign_in_as(@member_user)
     patch team_team_member_permissions_path(@team, @admin_membership), params: {
-      grants: {}
+      permissions: {}
     }
     assert_response :not_found
   end

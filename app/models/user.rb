@@ -1,4 +1,7 @@
 class User < ApplicationRecord
+  extend FriendlyId
+  friendly_id :email_local_part, use: :slugged
+
   PASSWORD_HISTORY_LIMIT = 5
 
   has_secure_password
@@ -24,6 +27,7 @@ class User < ApplicationRecord
   normalizes :email_address, with: ->(e) { e.strip.downcase }
 
   validates :email_address, presence: true, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }
+  validates :slug, uniqueness: true, allow_nil: true
   validate :password_not_recently_used, if: :password_digest_changed?
 
   before_update :save_password_to_history, if: :password_digest_changed?
@@ -32,6 +36,14 @@ class User < ApplicationRecord
 
   def site_admin?
     site_admin
+  end
+
+  def email_local_part
+    email_address.to_s.split('@').first
+  end
+
+  def should_generate_new_friendly_id?
+    email_address_changed? || slug.blank?
   end
 
   def accessible_apps
@@ -56,6 +68,7 @@ class User < ApplicationRecord
   def as_json(options = {})
     super(options).merge(
       'id' => id,
+      'slug' => slug,
       'email_address' => email_address,
       'site_admin' => site_admin,
       'last_logged_in_at' => last_logged_in_at&.iso8601,

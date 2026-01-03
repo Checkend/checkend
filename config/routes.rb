@@ -106,7 +106,9 @@ Rails.application.routes.draw do
   end
 
   # Users management (admin only)
-  resources :users, only: [ :index, :show, :edit, :update, :destroy ]
+  resources :users, only: [ :index, :show, :new, :create, :edit, :update, :destroy ] do
+    resource :permissions, controller: 'user_permissions', only: [ :edit, :update ]
+  end
 
   # API Key management
   resources :api_keys, only: [ :index, :show, :new, :create, :destroy ] do

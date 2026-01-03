@@ -41,6 +41,80 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
     assert_select 'h1', text: 'User Details'
   end
 
+  test 'new requires site admin' do
+    sign_in_as(@regular_user)
+
+    get new_user_url
+    assert_response :not_found
+  end
+
+  test 'new allows site admin' do
+    sign_in_as(@admin_user)
+
+    get new_user_url
+
+    assert_response :success
+    assert_select 'h1', text: 'New User'
+  end
+
+  test 'create requires site admin' do
+    sign_in_as(@regular_user)
+
+    post users_url, params: {
+      user: {
+        email_address: 'newuser@example.com',
+        password: 'password123'
+      }
+    }
+    assert_response :not_found
+  end
+
+  test 'create allows site admin' do
+    sign_in_as(@admin_user)
+
+    assert_difference('User.count', 1) do
+      post users_url, params: {
+        user: {
+          email_address: 'newuser@example.com',
+          password: 'password123'
+        }
+      }
+    end
+
+    assert_redirected_to user_url(User.last)
+    assert_equal 'newuser@example.com', User.last.email_address
+  end
+
+  test 'create allows site admin to set site_admin flag' do
+    sign_in_as(@admin_user)
+
+    post users_url, params: {
+      user: {
+        email_address: 'newadmin@example.com',
+        password: 'password123',
+        site_admin: true
+      }
+    }
+
+    assert_redirected_to user_url(User.last)
+    assert User.last.site_admin?
+  end
+
+  test 'create with invalid data renders new' do
+    sign_in_as(@admin_user)
+
+    assert_no_difference('User.count') do
+      post users_url, params: {
+        user: {
+          email_address: '',
+          password: 'short'
+        }
+      }
+    end
+
+    assert_response :unprocessable_entity
+  end
+
   test 'edit requires site admin' do
     sign_in_as(@regular_user)
 
@@ -77,8 +151,10 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
       }
     }
 
+    @other_user.reload
     assert_redirected_to user_url(@other_user)
-    assert_equal 'updated@example.com', @other_user.reload.email_address
+    assert_equal 'updated@example.com', @other_user.email_address
+    assert_equal 'updated', @other_user.slug
   end
 
   test 'update allows site admin to toggle site_admin flag' do
@@ -116,6 +192,9 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
     sign_out
 
     get users_url
+    assert_redirected_to new_session_path
+
+    get new_user_url
     assert_redirected_to new_session_path
 
     get user_url(@other_user)

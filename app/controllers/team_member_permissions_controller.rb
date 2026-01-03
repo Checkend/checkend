@@ -12,50 +12,25 @@ class TeamMemberPermissionsController < ApplicationController
   end
 
   def update
+    role_permission_ids = RolePermission.where(role: @team_member.role).pluck(:permission_id)
+    checked_ids = (params[:permissions] || {}).keys.map(&:to_i)
+
     ActiveRecord::Base.transaction do
-      # Process permission overrides
-      grants = params[:grants] || {}
-      revokes = params[:revokes] || {}
-      expirations = params[:expirations] || {}
-
-      # Get all permissions for processing
-      all_permissions = Permission.all.index_by(&:id)
-
       # Clear existing user permissions for this team
       @team_member.user.user_permissions.where(team: @team).destroy_all
 
-      # Create grants
-      grants.each do |permission_id, value|
-        next unless value == '1'
+      Permission.find_each do |perm|
+        is_checked = checked_ids.include?(perm.id)
+        role_grants = role_permission_ids.include?(perm.id)
 
-        permission = all_permissions[permission_id.to_i]
-        next unless permission
-
-        expires_at = parse_expiration(expirations["grant_#{permission_id}"])
-
-        @team_member.user.user_permissions.create!(
-          permission: permission,
-          team: @team,
-          grant_type: 'grant',
-          granted_by: Current.user,
-          expires_at: expires_at
-        )
-      end
-
-      # Create revokes
-      revokes.each do |permission_id, value|
-        next unless value == '1'
-
-        permission = all_permissions[permission_id.to_i]
-        next unless permission
-
-        @team_member.user.user_permissions.create!(
-          permission: permission,
-          team: @team,
-          grant_type: 'revoke',
-          granted_by: Current.user,
-          expires_at: nil
-        )
+        if is_checked && !role_grants
+          # Grant: checked but role doesn't provide
+          create_user_permission(perm, 'grant')
+        elsif !is_checked && role_grants
+          # Revoke: unchecked but role would provide
+          create_user_permission(perm, 'revoke')
+        end
+        # Otherwise: matches role default, no override needed
       end
     end
 
@@ -74,23 +49,23 @@ class TeamMemberPermissionsController < ApplicationController
     @team_member = @team.team_members.find(params[:team_member_id])
   end
 
-  def parse_expiration(value)
-    return nil if value.blank? || value == 'never'
-
-    case value
-    when '1_day'
-      1.day.from_now
-    when '1_week'
-      1.week.from_now
-    when '1_month'
-      1.month.from_now
-    when '3_months'
-      3.months.from_now
-    else
-      # Try to parse as date
-      Date.parse(value).end_of_day
-    end
-  rescue ArgumentError
-    nil
+  def create_user_permission(permission, grant_type)
+    @team_member.user.user_permissions.create!(
+      permission: permission,
+      team: @team,
+      grant_type: grant_type,
+      granted_by: Current.user
+    )
   end
+
+  def effective_permission?(perm)
+    role_grants = @role_permissions.include?(perm.id)
+    grant = @user_permissions.find { |up| up.permission_id == perm.id && up.grant? }
+    revoke = @user_permissions.find { |up| up.permission_id == perm.id && up.revoke? }
+
+    return false if revoke
+    return true if grant
+    role_grants
+  end
+  helper_method :effective_permission?
 end

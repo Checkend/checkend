@@ -1,0 +1,67 @@
+<div>
+  <div class="flex justify-between items-center mb-6">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">New User</h1>
+      <p class="text-gray-600 dark:text-zinc-400 mt-1">Create a new user account.</p>
+    </div>
+    <%= link_to users_path, class: "inline-flex items-center text-sm text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-300" do %>
+      Cancel
+    <% end %>
+  </div>
+
+  <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-6">
+    <%= form_with model: @user, class: "space-y-6" do |form| %>
+      <div>
+        <%= form.label :email_address, class: "block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1.5" %>
+        <%= form.email_field :email_address,
+            required: true,
+            autofocus: true,
+            class: "block w-full px-3 py-2 bg-white dark:bg-zinc-900 border rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-1 transition-colors #{form.has_error_on(:email_address) ? 'border-pink-500 focus:border-pink-500 focus:ring-pink-500' : 'border-gray-300 dark:border-zinc-700 focus:border-violet-500 focus:ring-violet-500'}" %>
+        <%= form.errors_on(:email_address) %>
+      </div>
+
+      <div data-controller="password-generator">
+        <%= form.label :password, class: "block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1.5" %>
+        <div class="flex gap-2">
+          <%= form.password_field :password,
+              required: true,
+              autocomplete: "new-password",
+              data: { password_generator_target: "input" },
+              class: "block w-full px-3 py-2 bg-white dark:bg-zinc-900 border rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-1 transition-colors #{form.has_error_on(:password) ? 'border-pink-500 focus:border-pink-500 focus:ring-pink-500' : 'border-gray-300 dark:border-zinc-700 focus:border-violet-500 focus:ring-violet-500'}" %>
+          <button type="button"
+                  data-action="password-generator#generate"
+                  class="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 dark:text-zinc-300 bg-gray-100 dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-lg hover:bg-gray-200 dark:hover:bg-zinc-600 focus:outline-none focus:ring-2 focus:ring-violet-500 transition-colors whitespace-nowrap">
+            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+            </svg>
+            Generate
+          </button>
+        </div>
+        <%= form.errors_on(:password) %>
+        <p class="mt-1 text-xs text-gray-500 dark:text-zinc-400">Minimum 8 characters.</p>
+      </div>
+
+      <div class="flex gap-3">
+        <div class="flex h-6 shrink-0 items-center">
+          <div class="group grid size-4 grid-cols-1">
+            <%= form.check_box :site_admin, class: "col-start-1 row-start-1 appearance-none rounded border border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 checked:border-violet-500 checked:bg-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-zinc-900" %>
+            <svg class="pointer-events-none col-start-1 row-start-1 size-3.5 self-center justify-self-center stroke-white group-has-[:disabled]:stroke-zinc-500" viewBox="0 0 14 14" fill="none">
+              <path class="opacity-0 group-has-[:checked]:opacity-100" d="M3 8L6 11L11 3.5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+          </div>
+        </div>
+        <div class="text-sm/6">
+          <%= form.label :site_admin, "Site Administrator", class: "font-medium text-gray-700 dark:text-zinc-100" %>
+          <p class="text-gray-500 dark:text-zinc-400">Grant this user site administrator privileges.</p>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-zinc-700">
+        <%= link_to users_path, class: "px-4 py-2 text-gray-700 dark:text-zinc-300 hover:text-gray-900 dark:hover:text-white font-medium transition-colors" do %>
+          Cancel
+        <% end %>
+        <%= form.submit "Create User", class: "px-4 py-2 bg-violet-600 text-white rounded-lg font-medium hover:bg-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-900 transition-colors cursor-pointer" %>
+      </div>
+    <% end %>
+  </div>
+</div>
