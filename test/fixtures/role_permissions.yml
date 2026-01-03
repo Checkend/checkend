@@ -1,0 +1,92 @@
+# Role permissions fixtures
+owner_apps_read:
+  role: owner
+  permission: apps_read
+
+owner_apps_write:
+  role: owner
+  permission: apps_write
+
+owner_apps_delete:
+  role: owner
+  permission: apps_delete
+
+owner_problems_read:
+  role: owner
+  permission: problems_read
+
+owner_problems_write:
+  role: owner
+  permission: problems_write
+
+owner_teams_manage_members:
+  role: owner
+  permission: teams_manage_members
+
+owner_apps_manage:
+  role: owner
+  permission: apps_manage
+
+admin_apps_read:
+  role: admin
+  permission: apps_read
+
+admin_apps_write:
+  role: admin
+  permission: apps_write
+
+admin_apps_delete:
+  role: admin
+  permission: apps_delete
+
+admin_problems_read:
+  role: admin
+  permission: problems_read
+
+admin_problems_write:
+  role: admin
+  permission: problems_write
+
+admin_teams_manage_members:
+  role: admin
+  permission: teams_manage_members
+
+admin_apps_manage:
+  role: admin
+  permission: apps_manage
+
+developer_apps_read:
+  role: developer
+  permission: apps_read
+
+developer_apps_write:
+  role: developer
+  permission: apps_write
+
+developer_problems_read:
+  role: developer
+  permission: problems_read
+
+developer_problems_write:
+  role: developer
+  permission: problems_write
+
+member_apps_read:
+  role: member
+  permission: apps_read
+
+member_problems_read:
+  role: member
+  permission: problems_read
+
+member_problems_write:
+  role: member
+  permission: problems_write
+
+viewer_apps_read:
+  role: viewer
+  permission: apps_read
+
+viewer_problems_read:
+  role: viewer
+  permission: problems_read

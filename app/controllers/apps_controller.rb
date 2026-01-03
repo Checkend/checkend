@@ -1,6 +1,9 @@
 class AppsController < ApplicationController
   before_action :set_app, only: [ :show, :edit, :update, :destroy, :regenerate_ingestion_key, :assign_team, :remove_team_assignment, :setup_wizard ]
-  before_action :require_app_access!, only: [ :show, :edit, :update, :destroy, :regenerate_ingestion_key ]
+  before_action :require_app_access!, only: [ :show ]
+  before_action :require_app_write_permission!, only: [ :edit, :update ]
+  before_action :require_app_delete_permission!, only: [ :destroy ]
+  before_action :require_app_manage_permission!, only: [ :regenerate_ingestion_key ]
   before_action :set_breadcrumbs, only: [ :index, :show, :setup_wizard ]
 
   def index
@@ -59,7 +62,20 @@ class AppsController < ApplicationController
   end
 
   def assign_team
-    if params[:team_id].present?
+    if params[:team_id] == 'new' && params[:new_team_name].present?
+      # Create new team and assign
+      team = Team.new(name: params[:new_team_name])
+      team.owner = Current.user
+
+      if team.save
+        team.team_members.create!(user: Current.user, role: 'admin')
+        @app.team_assignments.find_or_create_by!(team: team)
+        redirect_to @app, notice: 'Team created and assigned successfully.'
+      else
+        redirect_to setup_wizard_app_path(@app), alert: team.errors.full_messages.to_sentence
+      end
+    elsif params[:team_id].present? && params[:team_id] != 'new'
+      # Assign existing team
       team = Team.friendly.find(params[:team_id])
       require_team_admin!(team)
 
@@ -95,33 +111,40 @@ class AppsController < ApplicationController
   private
 
   def set_app
-    # For setup_wizard, allow access without team membership
-    if action_name == 'setup_wizard'
-      @app = App.find_by!(slug: params[:id])
-      raise ActiveRecord::RecordNotFound unless @app
-      return
-    end
-
-    # Try to find app through accessible_apps first
+    # Try to find app through accessible_apps (includes site admin access and unassigned apps)
     @app = accessible_apps.find_by(slug: params[:id])
 
-    # If not found, check if it's a newly created app with no teams
-    # (created within last 5 minutes - covers setup wizard flow)
     if @app.nil?
-      @app = App.find_by(slug: params[:id])
-      # Only allow if app has no team assignments AND was created recently
-      if @app
-        if @app.teams.any? || @app.created_at <= 5.minutes.ago
-          @app = nil
-        end
+      if App.exists?(slug: params[:id])
+        # App exists but user doesn't have permission
+        redirect_to apps_path, alert: 'You do not have permission to that project.'
+      else
+        # App truly doesn't exist
+        raise ActiveRecord::RecordNotFound
       end
     end
-
-    raise ActiveRecord::RecordNotFound unless @app
   end
 
   def app_params
     params.require(:app).permit(:name, :environment, :notify_on_new_problem, :notify_on_reoccurrence, :slack_webhook_url, :discord_webhook_url, :webhook_url, :github_repository, :github_token, :github_enabled)
+  end
+
+  def require_app_write_permission!
+    return if can?('apps:write', record: @app)
+
+    handle_authorization_error('apps:write')
+  end
+
+  def require_app_delete_permission!
+    return if can?('apps:delete', record: @app)
+
+    handle_authorization_error('apps:delete')
+  end
+
+  def require_app_manage_permission!
+    return if can?('apps:manage', record: @app)
+
+    handle_authorization_error('apps:manage')
   end
 
   def set_breadcrumbs

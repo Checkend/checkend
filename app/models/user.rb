@@ -11,6 +11,16 @@ class User < ApplicationRecord
   has_many :user_notification_preferences, dependent: :destroy
   has_many :team_invitations, foreign_key: 'invited_by_id', dependent: :destroy
 
+  # Permission associations
+  has_many :user_permissions, dependent: :destroy
+  has_many :record_permissions, dependent: :destroy
+  has_many :granted_user_permissions, class_name: 'UserPermission',
+                                      foreign_key: 'granted_by_id',
+                                      dependent: :nullify
+  has_many :granted_record_permissions, class_name: 'RecordPermission',
+                                        foreign_key: 'granted_by_id',
+                                        dependent: :nullify
+
   normalizes :email_address, with: ->(e) { e.strip.downcase }
 
   validates :email_address, presence: true, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }

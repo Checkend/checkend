@@ -51,7 +51,8 @@ class AppsControllerTest < ActionDispatch::IntegrationTest
   test 'show cannot view inaccessible app' do
     other_app = apps(:two)
     get app_path(other_app)
-    assert_response :not_found
+    assert_redirected_to apps_path
+    assert_equal 'You do not have permission to that project.', flash[:alert]
   end
 
   # New tests
@@ -91,7 +92,8 @@ class AppsControllerTest < ActionDispatch::IntegrationTest
   test 'edit cannot edit inaccessible app' do
     other_app = apps(:two)
     get edit_app_path(other_app)
-    assert_response :not_found
+    assert_redirected_to apps_path
+    assert_equal 'You do not have permission to that project.', flash[:alert]
   end
 
   # Update tests
@@ -116,7 +118,8 @@ class AppsControllerTest < ActionDispatch::IntegrationTest
   test 'update cannot update inaccessible app' do
     other_app = apps(:two)
     patch app_path(other_app), params: { app: { name: 'Hacked' } }
-    assert_response :not_found
+    assert_redirected_to apps_path
+    assert_equal 'You do not have permission to that project.', flash[:alert]
   end
 
   # Destroy tests
@@ -131,7 +134,8 @@ class AppsControllerTest < ActionDispatch::IntegrationTest
   test 'destroy cannot delete inaccessible app' do
     other_app = apps(:two)
     delete app_path(other_app)
-    assert_response :not_found
+    assert_redirected_to apps_path
+    assert_equal 'You do not have permission to that project.', flash[:alert]
   end
 
   # Regenerate ingestion key tests
@@ -148,7 +152,8 @@ class AppsControllerTest < ActionDispatch::IntegrationTest
   test 'regenerate_ingestion_key cannot regenerate inaccessible app key' do
     other_app = apps(:two)
     post regenerate_ingestion_key_app_path(other_app)
-    assert_response :not_found
+    assert_redirected_to apps_path
+    assert_equal 'You do not have permission to that project.', flash[:alert]
   end
 
   # Team assignment tests

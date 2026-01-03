@@ -3,9 +3,12 @@
 #
 # Run with: bin/rails db:seed
 
-# Prevent seeding in production - use the onboarding wizard instead
+# Always seed permissions (needed for the permission system to work)
+load Rails.root.join('db/seeds/permissions.rb')
+
+# Prevent seeding demo data in production - use the onboarding wizard instead
 if Rails.env.production?
-  puts 'Seeding is disabled in production. Use the onboarding wizard at /setup instead.'
+  puts 'Demo data seeding is disabled in production. Use the onboarding wizard at /setup instead.'
   exit 0
 end
 

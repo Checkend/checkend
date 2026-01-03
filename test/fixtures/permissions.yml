@@ -1,0 +1,49 @@
+# Permissions fixtures
+apps_read:
+  key: apps:read
+  resource: apps
+  action: read
+  description: View app details
+  system: true
+
+apps_write:
+  key: apps:write
+  resource: apps
+  action: write
+  description: Create and update apps
+  system: true
+
+apps_delete:
+  key: apps:delete
+  resource: apps
+  action: delete
+  description: Delete apps
+  system: true
+
+apps_manage:
+  key: apps:manage
+  resource: apps
+  action: manage
+  description: Manage app settings like API keys
+  system: true
+
+problems_read:
+  key: problems:read
+  resource: problems
+  action: read
+  description: View problems
+  system: true
+
+problems_write:
+  key: problems:write
+  resource: problems
+  action: write
+  description: Update problem status
+  system: true
+
+teams_manage_members:
+  key: teams:manage_members
+  resource: teams
+  action: manage_members
+  description: Add/remove team members
+  system: true

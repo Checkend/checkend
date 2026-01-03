@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_12_30_205057) do
+ActiveRecord::Schema[8.1].define(version: 2026_01_03_191259) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -101,6 +101,18 @@ ActiveRecord::Schema[8.1].define(version: 2025_12_30_205057) do
     t.index ["user_id"], name: "index_password_histories_on_user_id"
   end
 
+  create_table "permissions", force: :cascade do |t|
+    t.string "action", null: false
+    t.datetime "created_at", null: false
+    t.string "description"
+    t.string "key", null: false
+    t.string "resource", null: false
+    t.boolean "system", default: false, null: false
+    t.datetime "updated_at", null: false
+    t.index ["key"], name: "index_permissions_on_key", unique: true
+    t.index ["resource", "action"], name: "index_permissions_on_resource_and_action"
+  end
+
   create_table "problem_tags", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.bigint "problem_id", null: false
@@ -129,6 +141,32 @@ ActiveRecord::Schema[8.1].define(version: 2025_12_30_205057) do
     t.index ["status"], name: "index_problems_on_status"
   end
 
+  create_table "record_permissions", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.datetime "expires_at"
+    t.string "grant_type", null: false
+    t.bigint "granted_by_id"
+    t.bigint "permission_id", null: false
+    t.bigint "record_id", null: false
+    t.string "record_type", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["granted_by_id"], name: "index_record_permissions_on_granted_by_id"
+    t.index ["permission_id"], name: "index_record_permissions_on_permission_id"
+    t.index ["record_type", "record_id"], name: "index_record_permissions_on_record_type_and_record_id"
+    t.index ["user_id", "record_type", "record_id", "permission_id"], name: "idx_record_permissions_unique", unique: true
+    t.index ["user_id"], name: "index_record_permissions_on_user_id"
+  end
+
+  create_table "role_permissions", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "permission_id", null: false
+    t.string "role", null: false
+    t.datetime "updated_at", null: false
+    t.index ["permission_id"], name: "index_role_permissions_on_permission_id"
+    t.index ["role", "permission_id"], name: "index_role_permissions_on_role_and_permission_id", unique: true
+  end
+
   create_table "sessions", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "ip_address"
@@ -145,8 +183,10 @@ ActiveRecord::Schema[8.1].define(version: 2025_12_30_205057) do
     t.string "domain"
     t.boolean "enable_starttls_auto", default: true
     t.boolean "enabled", default: false
+    t.string "from_email"
     t.text "password"
     t.integer "port"
+    t.string "reply_to_email"
     t.datetime "updated_at", null: false
     t.string "user_name"
   end
@@ -215,6 +255,22 @@ ActiveRecord::Schema[8.1].define(version: 2025_12_30_205057) do
     t.index ["user_id"], name: "index_user_notification_preferences_on_user_id"
   end
 
+  create_table "user_permissions", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.datetime "expires_at"
+    t.string "grant_type", null: false
+    t.bigint "granted_by_id"
+    t.bigint "permission_id", null: false
+    t.bigint "team_id"
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["granted_by_id"], name: "index_user_permissions_on_granted_by_id"
+    t.index ["permission_id"], name: "index_user_permissions_on_permission_id"
+    t.index ["team_id"], name: "index_user_permissions_on_team_id"
+    t.index ["user_id", "permission_id", "team_id"], name: "idx_user_permissions_unique", unique: true
+    t.index ["user_id"], name: "index_user_permissions_on_user_id"
+  end
+
   create_table "users", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "email_address", null: false
@@ -232,6 +288,10 @@ ActiveRecord::Schema[8.1].define(version: 2025_12_30_205057) do
   add_foreign_key "problem_tags", "problems"
   add_foreign_key "problem_tags", "tags"
   add_foreign_key "problems", "apps"
+  add_foreign_key "record_permissions", "permissions"
+  add_foreign_key "record_permissions", "users"
+  add_foreign_key "record_permissions", "users", column: "granted_by_id"
+  add_foreign_key "role_permissions", "permissions"
   add_foreign_key "sessions", "users"
   add_foreign_key "team_assignments", "apps"
   add_foreign_key "team_assignments", "teams"
@@ -242,4 +302,8 @@ ActiveRecord::Schema[8.1].define(version: 2025_12_30_205057) do
   add_foreign_key "teams", "users", column: "owner_id"
   add_foreign_key "user_notification_preferences", "apps"
   add_foreign_key "user_notification_preferences", "users"
+  add_foreign_key "user_permissions", "permissions"
+  add_foreign_key "user_permissions", "teams"
+  add_foreign_key "user_permissions", "users"
+  add_foreign_key "user_permissions", "users", column: "granted_by_id"
 end

@@ -5,28 +5,38 @@
   </div>
 
   <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-6">
-    <%= form_with url: assign_team_app_path(@app), method: :post, class: "space-y-6" do |form| %>
+    <%= form_with url: assign_team_app_path(@app), method: :post, class: "space-y-6", data: { controller: "team-select" } do |form| %>
       <div>
         <%= form.label :team_id, "Select a team", class: "block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1.5" %>
-        <%= form.select :team_id,
-            options_from_collection_for_select(@teams, :slug, :name),
-            { include_blank: "Skip for now" },
-            { name: 'team_id', class: "block w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:border-violet-500 focus:ring-violet-500" } %>
+        <div class="relative">
+          <select name="team_id" data-team-select-target="select" data-action="change->team-select#toggle" class="appearance-none w-full px-3 py-2 pr-9 bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 rounded-md text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-violet-500 focus:border-violet-500">
+            <option value="">Skip for now</option>
+            <% @teams.each do |team| %>
+              <option value="<%= team.slug %>"><%= team.name %></option>
+            <% end %>
+            <option value="new">+ Create new team</option>
+          </select>
+          <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+            <svg class="h-4 w-4 text-gray-400 dark:text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div data-team-select-target="newTeamField" class="hidden">
+        <%= form.label :new_team_name, "Team name", class: "block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1.5" %>
+        <input type="text" name="new_team_name" data-team-select-target="newTeamInput" placeholder="Enter team name" class="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 rounded-md text-gray-900 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-violet-500 focus:border-violet-500">
       </div>
 
       <div class="flex items-center justify-end space-x-3">
         <%= link_to app_path(@app), class: "px-4 py-2 text-gray-700 dark:text-zinc-300 hover:text-gray-900 dark:hover:text-white font-medium transition-colors" do %>
           Skip
         <% end %>
-        <%= form.submit "Assign Team", class: "px-4 py-2 bg-violet-600 text-white rounded-lg font-medium hover:bg-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-900 transition-colors cursor-pointer" %>
+        <button type="submit" data-team-select-target="submitButton" class="px-4 py-2 bg-violet-600 text-white rounded-lg font-medium hover:bg-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-900 transition-colors cursor-pointer">
+          Assign Team
+        </button>
       </div>
     <% end %>
-
-    <div class="mt-6 pt-6 border-t border-gray-200 dark:border-zinc-700">
-      <%= link_to new_team_path, class: "text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300" do %>
-        Create a new team
-      <% end %>
-    </div>
   </div>
 </div>
-

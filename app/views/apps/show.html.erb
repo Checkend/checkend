@@ -1,4 +1,29 @@
 <div>
+  <%# Access notices %>
+  <% if viewing_as_site_admin?(@app) %>
+    <div class="mb-6 p-4 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-lg">
+      <div class="flex items-center">
+        <svg class="w-5 h-5 text-amber-600 dark:text-amber-400 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <p class="text-sm text-amber-800 dark:text-amber-200">
+          You are viewing this app as a <strong>site admin</strong>. You are not a member of any team assigned to this app.
+        </p>
+      </div>
+    </div>
+  <% elsif viewing_unassigned_app?(@app) %>
+    <div class="mb-6 p-4 bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 rounded-lg">
+      <div class="flex items-center">
+        <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <p class="text-sm text-blue-800 dark:text-blue-200">
+          This app is not assigned to any team. All users can view it until a team is assigned.
+        </p>
+      </div>
+    </div>
+  <% end %>
+
   <%# Header %>
   <div class="flex justify-between items-start mb-8">
     <div class="flex items-center space-x-4">
