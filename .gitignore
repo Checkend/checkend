@@ -52,6 +52,7 @@
 
 # Ignore AI assistant config files
 CLAUDE.md
+AGENTS.md
 ROADMAP.md
 TODO.md
 API-KEYS.md
