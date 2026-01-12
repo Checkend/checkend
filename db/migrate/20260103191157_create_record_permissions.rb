@@ -12,8 +12,8 @@ class CreateRecordPermissions < ActiveRecord::Migration[8.1]
       t.timestamps
     end
     add_index :record_permissions,
-              [:user_id, :record_type, :record_id, :permission_id],
+              [ :user_id, :record_type, :record_id, :permission_id ],
               unique: true, name: 'idx_record_permissions_unique'
-    add_index :record_permissions, [:record_type, :record_id]
+    add_index :record_permissions, [ :record_type, :record_id ]
   end
 end
