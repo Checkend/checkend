@@ -10,14 +10,12 @@ class UserTeamMembershipsController < ApplicationController
   end
 
   def update
-    team_ids = (params[:team_ids] || []).map(&:to_i)
+    team_ids = (params[:team_ids] || []).reject(&:blank?).map(&:to_i)
     roles = params[:roles] || {}
 
     ActiveRecord::Base.transaction do
-      # Remove memberships from teams not in the list
       @user.team_members.where.not(team_id: team_ids).destroy_all
 
-      # Add or update memberships
       team_ids.each do |team_id|
         team = Team.find(team_id)
         role = roles[team_id.to_s] || 'member'
@@ -41,6 +39,8 @@ class UserTeamMembershipsController < ApplicationController
       format.html { redirect_to @user, notice: 'Team memberships updated successfully.' }
     end
   rescue ActiveRecord::RecordInvalid => e
+    redirect_to @user, alert: "Failed to update team memberships: #{e.message}"
+  rescue ActiveRecord::RecordNotFound => e
     redirect_to @user, alert: "Failed to update team memberships: #{e.message}"
   end
 
