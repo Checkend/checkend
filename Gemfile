@@ -30,7 +30,7 @@ gem 'chartkick'
 gem 'groupdate'
 
 # Notifications [https://github.com/excid3/noticed]
-gem 'noticed', '~> 2.0'
+gem 'noticed', '~> 3.0'
 
 # Friendly URLs [https://github.com/norman/friendly_id]
 gem 'friendly_id', '~> 5.5'
