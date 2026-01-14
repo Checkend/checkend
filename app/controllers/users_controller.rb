@@ -5,7 +5,7 @@ class UsersController < ApplicationController
 
   def index
     @users = User.all.order(created_at: :desc)
-    @pagy, @users = pagy(@users)
+    @pagy, @users = pagy(:offset, @users)
   end
 
   def show
