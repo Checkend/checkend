@@ -22,16 +22,16 @@ Official SDKs are available for popular languages and frameworks:
 
 | Language | Package | Repository |
 |----------|---------|------------|
-| **Ruby** | `checkend` | [checkend-ruby](https://github.com/furvur/checkend-ruby) |
-| **JavaScript (Browser)** | `@checkend/browser` | [checkend-browser](https://github.com/furvur/checkend-browser) |
-| **JavaScript (Node.js)** | `@checkend/node` | [checkend-node](https://github.com/furvur/checkend-node) |
-| **JavaScript (Next.js)** | `@checkend/nextjs` | [checkend-nextjs](https://github.com/furvur/checkend-nextjs) |
-| **Python** | `checkend` | [checkend-python](https://github.com/furvur/checkend-python) |
-| **Go** | `github.com/furvur/checkend-go` | [checkend-go](https://github.com/furvur/checkend-go) |
-| **PHP** | `checkend/checkend` | [checkend-php](https://github.com/furvur/checkend-php) |
-| **Elixir** | `checkend` | [checkend-elixir](https://github.com/furvur/checkend-elixir) |
-| **Java** | `com.checkend:checkend` | [checkend-java](https://github.com/furvur/checkend-java) |
-| **.NET** | `Checkend` | [checkend-dotnet](https://github.com/furvur/checkend-dotnet) |
+| **Ruby** | `checkend` | [checkend-ruby](https://github.com/Checkend/checkend-ruby) |
+| **JavaScript (Browser)** | `@checkend/browser` | [checkend-browser](https://github.com/Checkend/checkend-browser) |
+| **JavaScript (Node.js)** | `@checkend/node` | [checkend-node](https://github.com/Checkend/checkend-node) |
+| **JavaScript (Next.js)** | `@checkend/nextjs` | [checkend-nextjs](https://github.com/Checkend/checkend-nextjs) |
+| **Python** | `checkend` | [checkend-python](https://github.com/Checkend/checkend-python) |
+| **Go** | `github.com/Checkend/checkend-go` | [checkend-go](https://github.com/Checkend/checkend-go) |
+| **PHP** | `checkend/checkend` | [checkend-php](https://github.com/Checkend/checkend-php) |
+| **Elixir** | `checkend` | [checkend-elixir](https://github.com/Checkend/checkend-elixir) |
+| **Java** | `com.checkend:checkend` | [checkend-java](https://github.com/Checkend/checkend-java) |
+| **.NET** | `Checkend` | [checkend-dotnet](https://github.com/Checkend/checkend-dotnet) |
 
 ### Framework Integrations
 
@@ -66,7 +66,7 @@ npm install @checkend/nextjs
 pip install checkend
 
 # Go
-go get github.com/furvur/checkend-go
+go get github.com/Checkend/checkend-go
 
 # PHP
 composer require checkend/checkend
@@ -106,7 +106,7 @@ dotnet add package Checkend
 
 ```bash
 # Clone the repository
-git clone https://github.com/furvur/checkend.git
+git clone https://github.com/Checkend/checkend.git
 cd checkend
 
 # Install dependencies
