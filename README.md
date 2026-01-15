@@ -316,10 +316,8 @@ bin/rubocop
 
 Copyright (c) 2025 Simon Chiu
 
-This project is licensed under the [GNU Affero General Public License v3.0](https://www.gnu.org/licenses/agpl-3.0) (AGPL-3.0).
-
-This means you can freely use, modify, and distribute this software, but if you run a modified version as a network service (e.g., SaaS), you must make your source code available to users of that service.
+This project is licensed under the [O'Saasy License](https://osaasy.dev/).
 
 ### Commercial License
 
-For organizations that want to use Checkend without the obligations of the AGPL (for example, to keep proprietary modifications private), a commercial license is available. Contact checkend@furvur.com for details.
+For organizations that want to offer Checkend as a hosted service, a commercial license is available. Contact checkend@furvur.com for details.
