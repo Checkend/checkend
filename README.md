@@ -25,6 +25,7 @@ Official SDKs are available for popular languages and frameworks:
 | **Ruby** | `checkend` | [checkend-ruby](https://github.com/furvur/checkend-ruby) |
 | **JavaScript (Browser)** | `@checkend/browser` | [checkend-browser](https://github.com/furvur/checkend-browser) |
 | **JavaScript (Node.js)** | `@checkend/node` | [checkend-node](https://github.com/furvur/checkend-node) |
+| **JavaScript (Next.js)** | `@checkend/nextjs` | [checkend-nextjs](https://github.com/furvur/checkend-nextjs) |
 | **Python** | `checkend` | [checkend-python](https://github.com/furvur/checkend-python) |
 | **Go** | `github.com/furvur/checkend-go` | [checkend-go](https://github.com/furvur/checkend-go) |
 | **PHP** | `checkend/checkend` | [checkend-php](https://github.com/furvur/checkend-php) |
@@ -38,6 +39,7 @@ Each SDK includes integrations for popular frameworks:
 
 - **Ruby**: Rails (Railtie), Rack middleware, Sidekiq, Solid Queue
 - **Node.js**: Express, Koa, Fastify
+- **Next.js**: App Router, Pages Router, API Routes, Server Actions
 - **Python**: Django, Flask, FastAPI/ASGI
 - **Go**: net/http, Gin, Echo
 - **PHP**: Laravel, generic error handler
@@ -56,6 +58,9 @@ npm install @checkend/browser
 
 # JavaScript (Node.js)
 npm install @checkend/node
+
+# JavaScript (Next.js)
+npm install @checkend/nextjs
 
 # Python
 pip install checkend
