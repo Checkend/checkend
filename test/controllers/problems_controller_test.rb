@@ -355,9 +355,10 @@ class ProblemsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
-  test 'index handles invalid page numbers by redirecting to first page' do
+  test 'index handles invalid page numbers by normalizing to first page' do
+    # Pagy 43+ normalizes negative page numbers to page 1 instead of raising errors
     get app_problems_path(@app, page: -1)
-    assert_redirected_to app_problems_path(@app)
+    assert_response :success
   end
 
   test 'index handles overflow page numbers by redirecting to first page' do

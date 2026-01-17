@@ -23,7 +23,7 @@ gem 'jbuilder'
 gem 'bcrypt', '~> 3.1.7'
 
 # Pagination [https://ddnexus.github.io/pagy/]
-gem 'pagy', '~> 9.3'
+gem 'pagy', '~> 43.0'
 
 # Charts [https://chartkick.com/]
 gem 'chartkick'
