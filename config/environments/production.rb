@@ -82,9 +82,16 @@ Rails.application.configure do
   # Configure Active Record encryption keys.
   # These are required for encrypting sensitive fields (webhook URLs, tokens).
   # Generate with: openssl rand -hex 32
-  config.active_record.encryption.primary_key = ENV.fetch('ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY')
-  config.active_record.encryption.deterministic_key = ENV.fetch('ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY')
-  config.active_record.encryption.key_derivation_salt = ENV.fetch('ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT')
+  # During asset precompilation (SECRET_KEY_BASE_DUMMY=1), use dummy keys.
+  if ENV['SECRET_KEY_BASE_DUMMY']
+    config.active_record.encryption.primary_key = 'dummy_primary_key_for_precompile'
+    config.active_record.encryption.deterministic_key = 'dummy_deterministic_key_for_precompile'
+    config.active_record.encryption.key_derivation_salt = 'dummy_salt_for_precompile'
+  else
+    config.active_record.encryption.primary_key = ENV.fetch('ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY')
+    config.active_record.encryption.deterministic_key = ENV.fetch('ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY')
+    config.active_record.encryption.key_derivation_salt = ENV.fetch('ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT')
+  end
 
   # Enable DNS rebinding protection and other `Host` header attacks.
   # config.hosts = [
