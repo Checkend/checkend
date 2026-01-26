@@ -1,7 +1,7 @@
 class ProblemsController < ApplicationController
-  include Pagy::Backend
+  include Pagy::Method
 
-  rescue_from Pagy::OverflowError, Pagy::VariableError, with: :redirect_to_first_page
+  rescue_from Pagy::RangeError, Pagy::OptionError, with: :redirect_to_first_page
 
   before_action :set_app
   before_action :set_problem, only: [ :show, :resolve, :unresolve ]
@@ -57,7 +57,7 @@ class ProblemsController < ApplicationController
     end
 
     # Pagination with Pagy
-    @pagy, @problems = pagy(@problems)
+    @pagy, @problems = pagy(:offset, @problems)
   end
 
   def show
