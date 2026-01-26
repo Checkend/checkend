@@ -1,4 +1,6 @@
 ENV['RAILS_ENV'] ||= 'test'
+# Disable rate limiting by default in tests to avoid interference between parallel tests
+ENV['RATE_LIMIT_ENABLED'] ||= 'false'
 require_relative '../config/environment'
 require 'rails/test_help'
 require 'webmock/minitest'

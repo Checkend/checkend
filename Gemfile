@@ -35,6 +35,9 @@ gem 'noticed', '~> 3.0'
 # Friendly URLs [https://github.com/norman/friendly_id]
 gem 'friendly_id', '~> 5.5'
 
+# Rate limiting [https://github.com/rack/rack-attack]
+gem 'rack-attack'
+
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
 gem 'tzinfo-data', platforms: %i[ windows jruby ]
 
