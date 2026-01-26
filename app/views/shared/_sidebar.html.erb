@@ -1,7 +1,16 @@
 <%# Sidebar navigation - shared between mobile and desktop %>
-<div class="flex h-16 shrink-0 items-center">
-  <%= link_to root_path, class: "text-gray-900 dark:text-white hover:text-violet-600 dark:hover:text-violet-400 transition-colors" do %>
-    <%= render "shared/logo", size: :sm, show_text: true %>
+<div class="shrink-0 pt-4 pb-2">
+  <div class="flex h-10 items-center">
+    <%= link_to root_path, class: "text-gray-900 dark:text-white hover:text-violet-600 dark:hover:text-violet-400 transition-colors" do %>
+      <%= render "shared/logo", size: :sm, show_text: true %>
+    <% end %>
+  </div>
+  <% if ENV['CHECKEND_REVISION'].present? %>
+    <div class="mt-1 pl-1">
+      <span class="inline-flex items-center rounded bg-gray-100 dark:bg-zinc-800 px-1.5 py-0.5 text-[10px] font-mono text-gray-500 dark:text-zinc-500">
+        <%= ENV['CHECKEND_REVISION'] %>
+      </span>
+    </div>
   <% end %>
 </div>
 
