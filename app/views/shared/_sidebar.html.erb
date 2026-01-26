@@ -28,9 +28,10 @@
             Dashboard
           <% end %>
         </li>
+        <% apps_active = current_path_matches?(apps_path, :path_only) %>
         <li>
-          <%= link_to apps_path, class: nav_link_classes(active: current_controller?("apps")) do %>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" class="<%= nav_icon_classes(active: current_controller?("apps")) %>">
+          <%= link_to apps_path, class: nav_link_classes(active: apps_active) do %>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" class="<%= nav_icon_classes(active: apps_active) %>">
               <path d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
             Apps
@@ -53,9 +54,10 @@
         <div class="text-xs font-semibold text-gray-400 dark:text-zinc-500 uppercase tracking-wider mb-2 px-2">Your Apps</div>
         <ul role="list" class="-mx-2 mt-2 space-y-1">
           <% @sidebar_apps.each do |app| %>
+            <% app_active = current_path_matches?(app_path(app)) %>
             <li>
-              <%= link_to app_path(app), class: "group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-violet-600 dark:hover:text-violet-400 transition-colors" do %>
-                <span class="flex size-6 shrink-0 items-center justify-center rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-[0.625rem] font-medium text-gray-400 dark:text-zinc-500 group-hover:border-violet-600 dark:group-hover:border-violet-500 group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors">
+              <%= link_to app_path(app), class: nav_link_classes(active: app_active), "aria-current": (app_active ? "page" : nil) do %>
+                <span class="<%= nav_badge_classes(active: app_active) %>">
                   <%= app.name.first.upcase %>
                 </span>
                 <span class="truncate flex-1"><%= app.name %></span>
