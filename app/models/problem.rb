@@ -35,6 +35,10 @@ class Problem < ApplicationRecord
     update!(status: 'unresolved', resolved_at: nil)
   end
 
+  def total_occurrences
+    notices_count + deduplicated_count
+  end
+
   def self.generate_fingerprint(error_class, _error_message, location)
     # Group by error class + location, not message (messages can vary)
     Digest::SHA256.hexdigest("#{error_class}|#{location}")

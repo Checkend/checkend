@@ -13,6 +13,8 @@ class Ingest::V1::ErrorsControllerTest < ActionDispatch::IntegrationTest
         ]
       }
     }
+    # Clear cache to reset deduplication state between tests
+    Rails.cache.clear
   end
 
   # Authentication tests
@@ -97,6 +99,9 @@ class Ingest::V1::ErrorsControllerTest < ActionDispatch::IntegrationTest
       params: @valid_payload,
       headers: { 'Checkend-Ingestion-Key' => @app.ingestion_key },
       as: :json
+
+    # Clear cache to create a new notice instead of deduplicating
+    Rails.cache.clear
 
     # Second request reuses problem
     assert_no_difference 'Problem.count' do
@@ -185,6 +190,11 @@ class Ingest::V1::ErrorsControllerTest < ActionDispatch::IntegrationTest
       headers: { 'Checkend-Ingestion-Key' => @app.ingestion_key },
       as: :json
 
+    first_notice = Notice.last
+
+    # Clear cache to create a new notice instead of deduplicating
+    Rails.cache.clear
+
     # Second request with same backtrace reuses it
     assert_no_difference 'Backtrace.count' do
       post ingest_v1_errors_url,
@@ -194,8 +204,8 @@ class Ingest::V1::ErrorsControllerTest < ActionDispatch::IntegrationTest
     end
 
     # Both notices share the same backtrace
-    notices = Notice.last(2)
-    assert_equal notices.first.backtrace_id, notices.last.backtrace_id
+    second_notice = Notice.last
+    assert_equal first_notice.backtrace_id, second_notice.backtrace_id
   end
 
   test 'updates problem timestamps on new notice' do
@@ -209,6 +219,9 @@ class Ingest::V1::ErrorsControllerTest < ActionDispatch::IntegrationTest
     last_noticed = problem.last_noticed_at
 
     travel 1.hour do
+      # Clear cache to create a new notice instead of deduplicating
+      Rails.cache.clear
+
       post ingest_v1_errors_url,
         params: @valid_payload,
         headers: { 'Checkend-Ingestion-Key' => @app.ingestion_key },
@@ -228,6 +241,9 @@ class Ingest::V1::ErrorsControllerTest < ActionDispatch::IntegrationTest
 
     problem = Problem.last
     assert_equal 1, problem.notices_count
+
+    # Clear cache to create a new notice instead of deduplicating
+    Rails.cache.clear
 
     post ingest_v1_errors_url,
       params: @valid_payload,
@@ -283,5 +299,115 @@ class Ingest::V1::ErrorsControllerTest < ActionDispatch::IntegrationTest
     notice = Notice.last
     assert_equal 'checkend-js', notice.notifier['name']
     assert_nil notice.notifier['version']
+  end
+
+  # Deduplication response tests
+
+  test 'first request returns 201 with deduplicated false' do
+    Rails.cache.clear
+
+    post ingest_v1_errors_url,
+      params: @valid_payload,
+      headers: { 'Checkend-Ingestion-Key' => @app.ingestion_key },
+      as: :json
+
+    assert_response :created
+    body = response.parsed_body
+    assert body['id'].present?
+    assert body['problem_id'].present?
+    assert_equal false, body['deduplicated']
+    assert_equal 1, body['occurrence_count']
+  end
+
+  test 'duplicate request returns 200 with deduplicated true' do
+    Rails.cache.clear
+
+    # First request
+    post ingest_v1_errors_url,
+      params: @valid_payload,
+      headers: { 'Checkend-Ingestion-Key' => @app.ingestion_key },
+      as: :json
+
+    problem_id = response.parsed_body['problem_id']
+
+    # Second request (duplicate)
+    post ingest_v1_errors_url,
+      params: @valid_payload,
+      headers: { 'Checkend-Ingestion-Key' => @app.ingestion_key },
+      as: :json
+
+    assert_response :ok
+    body = response.parsed_body
+    assert_nil body['id']
+    assert_equal problem_id, body['problem_id']
+    assert_equal true, body['deduplicated']
+    assert_equal 2, body['occurrence_count']
+  end
+
+  test 'deduplicated request does not create notice' do
+    Rails.cache.clear
+
+    # First request
+    post ingest_v1_errors_url,
+      params: @valid_payload,
+      headers: { 'Checkend-Ingestion-Key' => @app.ingestion_key },
+      as: :json
+
+    # Second request should not create notice
+    assert_no_difference 'Notice.count' do
+      post ingest_v1_errors_url,
+        params: @valid_payload,
+        headers: { 'Checkend-Ingestion-Key' => @app.ingestion_key },
+        as: :json
+    end
+  end
+
+  test 'deduplicated request increments problem deduplicated_count' do
+    Rails.cache.clear
+
+    # First request
+    post ingest_v1_errors_url,
+      params: @valid_payload,
+      headers: { 'Checkend-Ingestion-Key' => @app.ingestion_key },
+      as: :json
+
+    problem = Problem.last
+    assert_equal 0, problem.deduplicated_count
+
+    # Second request (duplicate)
+    post ingest_v1_errors_url,
+      params: @valid_payload,
+      headers: { 'Checkend-Ingestion-Key' => @app.ingestion_key },
+      as: :json
+
+    assert_equal 1, problem.reload.deduplicated_count
+  end
+
+  test 'occurrence count increments correctly across requests' do
+    Rails.cache.clear
+
+    # First request
+    post ingest_v1_errors_url,
+      params: @valid_payload,
+      headers: { 'Checkend-Ingestion-Key' => @app.ingestion_key },
+      as: :json
+
+    assert_equal 1, response.parsed_body['occurrence_count']
+
+    # Second request
+    post ingest_v1_errors_url,
+      params: @valid_payload,
+      headers: { 'Checkend-Ingestion-Key' => @app.ingestion_key },
+      as: :json
+
+    assert_equal 2, response.parsed_body['occurrence_count']
+
+    # Third request
+    post ingest_v1_errors_url,
+      params: @valid_payload,
+      headers: { 'Checkend-Ingestion-Key' => @app.ingestion_key },
+      as: :json
+
+    assert_equal 3, response.parsed_body['occurrence_count']
   end
 end

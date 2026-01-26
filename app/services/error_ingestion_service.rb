@@ -1,5 +1,5 @@
 class ErrorIngestionService
-  Result = Struct.new(:success?, :notice, :problem, :error, keyword_init: true)
+  Result = Struct.new(:success?, :notice, :problem, :error, :deduplicated, :occurrence_count, keyword_init: true)
 
   def self.call(...)
     new(...).call
@@ -17,15 +17,22 @@ class ErrorIngestionService
   def call
     validate_params!
 
-    ActiveRecord::Base.transaction do
-      @backtrace = find_or_create_backtrace
-      @problem = find_or_create_problem
-      @notice = create_notice
+    # Calculate fingerprints before transaction for deduplication check
+    @problem_fingerprint = custom_fingerprint.presence || generate_fingerprint
+    @backtrace_fingerprint = calculate_backtrace_fingerprint
+
+    # Check for deduplication
+    dedup_result = NoticeDeduplicator.check_and_increment(
+      app: app,
+      problem_fingerprint: @problem_fingerprint,
+      backtrace_fingerprint: @backtrace_fingerprint
+    )
+
+    if dedup_result.deduplicated?
+      handle_deduplicated_notice(dedup_result)
+    else
+      handle_new_notice(dedup_result)
     end
-
-    notify_if_needed
-
-    Result.new(success?: true, notice: @notice, problem: @problem)
   rescue ValidationError => e
     Result.new(success?: false, error: e.message)
   end
@@ -64,9 +71,7 @@ class ErrorIngestionService
   end
 
   def find_or_create_problem
-    fingerprint = custom_fingerprint.presence || generate_fingerprint
-
-    problem = app.problems.find_or_initialize_by(fingerprint: fingerprint)
+    problem = app.problems.find_or_initialize_by(fingerprint: @problem_fingerprint)
     @problem_was_resolved = problem.persisted? && problem.resolved?
     @problem_is_new = problem.new_record?
 
@@ -80,6 +85,63 @@ class ErrorIngestionService
     problem.error_message = error_message
     problem.save!
     problem
+  end
+
+  def find_problem_for_update
+    # Find existing problem for deduplicated notices
+    app.problems.find_by!(fingerprint: @problem_fingerprint)
+  end
+
+  def calculate_backtrace_fingerprint
+    return 'no_backtrace' if raw_backtrace.empty?
+
+    parsed_lines = BacktraceParser.parse(raw_backtrace)
+    Backtrace.generate_fingerprint(parsed_lines)
+  end
+
+  def handle_new_notice(dedup_result)
+    ActiveRecord::Base.transaction do
+      @backtrace = find_or_create_backtrace
+      @problem = find_or_create_problem
+      @notice = create_notice
+    end
+
+    notify_if_needed
+
+    Result.new(
+      success?: true,
+      notice: @notice,
+      problem: @problem,
+      deduplicated: false,
+      occurrence_count: dedup_result.occurrence_count
+    )
+  end
+
+  def handle_deduplicated_notice(dedup_result)
+    @problem = find_problem_for_update
+    @problem_was_resolved = @problem.resolved?
+
+    ActiveRecord::Base.transaction do
+      # Auto-unresolve if a resolved problem gets a deduplicated notice
+      if @problem_was_resolved
+        @problem.status = 'unresolved'
+        @problem.resolved_at = nil
+      end
+
+      # Increment deduplicated count and update last_noticed_at
+      @problem.increment!(:deduplicated_count)
+      @problem.update!(last_noticed_at: Time.current)
+    end
+
+    # Skip notifications for deduplicated notices
+
+    Result.new(
+      success?: true,
+      notice: nil,
+      problem: @problem,
+      deduplicated: true,
+      occurrence_count: dedup_result.occurrence_count
+    )
   end
 
   def generate_fingerprint

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_01_03_210658) do
+ActiveRecord::Schema[8.1].define(version: 2026_01_26_205345) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -126,6 +126,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_03_210658) do
   create_table "problems", force: :cascade do |t|
     t.bigint "app_id", null: false
     t.datetime "created_at", null: false
+    t.integer "deduplicated_count", default: 0, null: false
     t.string "error_class", null: false
     t.text "error_message"
     t.string "fingerprint", null: false

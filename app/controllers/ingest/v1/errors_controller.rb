@@ -12,10 +12,20 @@ module Ingest
         )
 
         if result.success?
-          render json: {
-            id: result.notice.id,
-            problem_id: result.problem.id
-          }, status: :created
+          if result.deduplicated
+            render json: {
+              problem_id: result.problem.id,
+              deduplicated: true,
+              occurrence_count: result.occurrence_count
+            }, status: :ok
+          else
+            render json: {
+              id: result.notice.id,
+              problem_id: result.problem.id,
+              deduplicated: false,
+              occurrence_count: result.occurrence_count
+            }, status: :created
+          end
         else
           render json: { error: result.error }, status: :unprocessable_entity
         end

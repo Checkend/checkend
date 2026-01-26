@@ -16,6 +16,8 @@ class ErrorIngestionServiceTest < ActiveSupport::TestCase
         "app/controllers/users_controller.rb:15:in `create'"
       ]
     }
+    # Clear cache to reset deduplication state between tests
+    Rails.cache.clear
   end
 
   test 'returns success result with notice and problem' do
@@ -83,6 +85,8 @@ class ErrorIngestionServiceTest < ActiveSupport::TestCase
 
   test 'reuses existing problem for same fingerprint' do
     result1 = ErrorIngestionService.call(app: @app, error_params: @valid_params)
+    # Clear cache to create a new notice instead of deduplicating
+    Rails.cache.clear
     result2 = ErrorIngestionService.call(app: @app, error_params: @valid_params)
 
     assert_equal result1.problem.id, result2.problem.id
@@ -112,6 +116,8 @@ class ErrorIngestionServiceTest < ActiveSupport::TestCase
 
   test 'deduplicates identical backtraces' do
     result1 = ErrorIngestionService.call(app: @app, error_params: @valid_params)
+    # Clear cache to create a new notice instead of deduplicating
+    Rails.cache.clear
     result2 = ErrorIngestionService.call(app: @app, error_params: @valid_params)
 
     assert_equal result1.notice.backtrace_id, result2.notice.backtrace_id
@@ -139,6 +145,8 @@ class ErrorIngestionServiceTest < ActiveSupport::TestCase
     result1 = ErrorIngestionService.call(app: @app, error_params: @valid_params)
     assert_equal 1, result1.problem.reload.notices_count
 
+    # Clear cache to create a new notice instead of deduplicating
+    Rails.cache.clear
     ErrorIngestionService.call(app: @app, error_params: @valid_params)
     assert_equal 2, result1.problem.reload.notices_count
   end
@@ -169,6 +177,9 @@ class ErrorIngestionServiceTest < ActiveSupport::TestCase
     result = ErrorIngestionService.call(app: @app, error_params: @valid_params)
     result.problem.resolve!
 
+    # Clear cache to create a new notice instead of deduplicating
+    Rails.cache.clear
+
     # New notice on resolved problem should trigger reoccurrence notification
     # Should send to both team members
     assert_difference 'Noticed::Notification.count', 2 do
@@ -181,6 +192,9 @@ class ErrorIngestionServiceTest < ActiveSupport::TestCase
     result = ErrorIngestionService.call(app: @app, error_params: @valid_params)
     result.problem.resolve!
     assert result.problem.resolved?
+
+    # Clear cache to create a new notice instead of deduplicating
+    Rails.cache.clear
 
     # New notice should auto-unresolve
     ErrorIngestionService.call(app: @app, error_params: @valid_params)
@@ -274,5 +288,125 @@ class ErrorIngestionServiceTest < ActiveSupport::TestCase
       assert result.success?
       assert_equal Time.current, result.notice.occurred_at
     end
+  end
+
+  # Deduplication tests
+
+  test 'first notice is not deduplicated' do
+    Rails.cache.clear
+    result = ErrorIngestionService.call(app: @app, error_params: @valid_params)
+
+    assert result.success?
+    assert_not result.deduplicated
+    assert_equal 1, result.occurrence_count
+    assert_not_nil result.notice
+  end
+
+  test 'duplicate notice within window is deduplicated' do
+    Rails.cache.clear
+    result1 = ErrorIngestionService.call(app: @app, error_params: @valid_params)
+    result2 = ErrorIngestionService.call(app: @app, error_params: @valid_params)
+
+    assert result2.success?
+    assert result2.deduplicated
+    assert_equal 2, result2.occurrence_count
+    assert_nil result2.notice
+    assert_equal result1.problem.id, result2.problem.id
+  end
+
+  test 'deduplicated notice increments problem deduplicated_count' do
+    Rails.cache.clear
+    result1 = ErrorIngestionService.call(app: @app, error_params: @valid_params)
+    assert_equal 0, result1.problem.reload.deduplicated_count
+
+    ErrorIngestionService.call(app: @app, error_params: @valid_params)
+    assert_equal 1, result1.problem.reload.deduplicated_count
+
+    ErrorIngestionService.call(app: @app, error_params: @valid_params)
+    assert_equal 2, result1.problem.reload.deduplicated_count
+  end
+
+  test 'deduplicated notice does not create new notice record' do
+    Rails.cache.clear
+    ErrorIngestionService.call(app: @app, error_params: @valid_params)
+
+    assert_no_difference 'Notice.count' do
+      ErrorIngestionService.call(app: @app, error_params: @valid_params)
+    end
+  end
+
+  test 'deduplicated notice updates problem last_noticed_at' do
+    Rails.cache.clear
+    result1 = ErrorIngestionService.call(app: @app, error_params: @valid_params)
+    original_last_noticed = result1.problem.reload.last_noticed_at
+
+    travel 1.minute do
+      ErrorIngestionService.call(app: @app, error_params: @valid_params)
+      assert result1.problem.reload.last_noticed_at > original_last_noticed
+    end
+  end
+
+  test 'deduplicated notice does not send notifications' do
+    Rails.cache.clear
+    # First notice sends notifications
+    ErrorIngestionService.call(app: @app, error_params: @valid_params)
+
+    # Second notice (deduplicated) should not send notifications
+    assert_no_difference 'Noticed::Notification.count' do
+      ErrorIngestionService.call(app: @app, error_params: @valid_params)
+    end
+  end
+
+  test 'deduplicated notice auto-unresolves resolved problem' do
+    Rails.cache.clear
+    result1 = ErrorIngestionService.call(app: @app, error_params: @valid_params)
+    result1.problem.resolve!
+    assert result1.problem.resolved?
+
+    # Clear cache to reset dedup window (simulating new error after window)
+    Rails.cache.clear
+
+    # First call after resolve - not deduplicated
+    result2 = ErrorIngestionService.call(app: @app, error_params: @valid_params)
+    # Clear cache again to test auto-unresolve on deduplicated
+    Rails.cache.clear
+
+    result2.problem.resolve!
+    assert result2.problem.resolved?
+
+    # Second call - deduplicated, should still auto-unresolve
+    result3 = ErrorIngestionService.call(app: @app, error_params: @valid_params)
+    # Create another deduplicated call
+    result4 = ErrorIngestionService.call(app: @app, error_params: @valid_params)
+
+    assert result2.problem.reload.unresolved?
+  end
+
+  test 'different backtrace is not deduplicated' do
+    Rails.cache.clear
+    params1 = @valid_params.dup
+    params2 = @valid_params.merge(
+      backtrace: [ "app/services/different.rb:99:in `other_method'" ]
+    )
+
+    result1 = ErrorIngestionService.call(app: @app, error_params: params1)
+    result2 = ErrorIngestionService.call(app: @app, error_params: params2)
+
+    assert_not result1.deduplicated
+    assert_not result2.deduplicated
+    assert_not_nil result1.notice
+    assert_not_nil result2.notice
+  end
+
+  test 'problem total_occurrences includes deduplicated count' do
+    Rails.cache.clear
+    result1 = ErrorIngestionService.call(app: @app, error_params: @valid_params)
+    assert_equal 1, result1.problem.reload.total_occurrences
+
+    ErrorIngestionService.call(app: @app, error_params: @valid_params)
+    assert_equal 2, result1.problem.reload.total_occurrences
+
+    ErrorIngestionService.call(app: @app, error_params: @valid_params)
+    assert_equal 3, result1.problem.reload.total_occurrences
   end
 end
