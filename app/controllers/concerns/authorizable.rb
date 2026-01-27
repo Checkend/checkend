@@ -6,7 +6,7 @@ module Authorizable
 
   included do
     helper_method :can_access_app?, :can_manage_team_assignment?, :site_admin?,
-                  :viewing_as_site_admin?, :viewing_unassigned_app?, :can?
+                  :viewing_as_site_admin?, :viewing_unassigned_app?, :can?, :accessible_apps
   end
 
   private

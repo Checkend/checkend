@@ -99,6 +99,10 @@ Rails.application.routes.draw do
 
   # Teams management
   resources :teams do
+    member do
+      post :assign_app
+      delete :remove_app_assignment
+    end
     resources :team_members, only: [ :index, :create, :update, :destroy ] do
       resource :permissions, controller: 'team_member_permissions', only: [ :edit, :update ]
     end

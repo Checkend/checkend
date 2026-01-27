@@ -60,6 +60,86 @@ class TeamsControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  # assign_app tests
+  test 'should assign app when user is team owner' do
+    app = apps(:two)
+    # Remove all team assignments so the app becomes unassigned (accessible to everyone)
+    app.team_assignments.destroy_all
+    @team.team_assignments.where(app: app).destroy_all # Ensure clean state for our team
+
+    assert_difference('@team.team_assignments.count') do
+      post assign_app_team_url(@team), params: { app_id: app.slug }
+    end
+
+    assert_redirected_to team_url(@team)
+    assert_equal 'App assigned successfully.', flash[:notice]
+    assert @team.apps.include?(app)
+  end
+
+  test 'should not create duplicate assignment when app already assigned' do
+    app = apps(:one) # Already assigned to team one via fixtures
+    assert @team.apps.include?(app), 'Precondition: app should already be assigned'
+
+    assert_no_difference('@team.team_assignments.count') do
+      post assign_app_team_url(@team), params: { app_id: app.slug }
+    end
+
+    assert_redirected_to team_url(@team)
+  end
+
+  test 'should not allow non-admin member to assign app' do
+    other_user = users(:two) # Member of team one but not admin
+    sign_in_as(other_user)
+    app = apps(:two)
+
+    assert_no_difference('TeamAssignment.count') do
+      post assign_app_team_url(@team), params: { app_id: app.slug }
+    end
+  end
+
+  test 'should handle assign_app with non-existent app' do
+    assert_no_difference('TeamAssignment.count') do
+      post assign_app_team_url(@team), params: { app_id: 'non-existent-app' }
+    end
+
+    assert_redirected_to team_url(@team)
+    assert_equal 'App not found or you do not have access.', flash[:alert]
+  end
+
+  # remove_app_assignment tests
+  test 'should remove app assignment when user is team owner' do
+    app = apps(:one) # Assigned to team one via fixtures
+    assert @team.apps.include?(app), 'Precondition: app should be assigned'
+
+    assert_difference('@team.team_assignments.count', -1) do
+      delete remove_app_assignment_team_url(@team), params: { app_id: app.slug }
+    end
+
+    assert_redirected_to team_url(@team)
+    assert_equal 'App removed from team.', flash[:notice]
+    @team.reload
+    assert_not @team.apps.include?(app)
+  end
+
+  test 'should not allow non-admin member to remove app assignment' do
+    other_user = users(:two) # Member of team one but not admin
+    sign_in_as(other_user)
+    app = apps(:one)
+
+    assert_no_difference('TeamAssignment.count') do
+      delete remove_app_assignment_team_url(@team), params: { app_id: app.slug }
+    end
+  end
+
+  test 'should handle remove_app_assignment with non-existent app' do
+    assert_no_difference('TeamAssignment.count') do
+      delete remove_app_assignment_team_url(@team), params: { app_id: 'non-existent-app' }
+    end
+
+    assert_redirected_to team_url(@team)
+    assert_equal 'App not found.', flash[:alert]
+  end
+
   private
 
   def sign_in_as(user)

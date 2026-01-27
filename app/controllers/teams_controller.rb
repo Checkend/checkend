@@ -1,5 +1,5 @@
 class TeamsController < ApplicationController
-  before_action :set_team, only: [ :show, :edit, :update, :destroy ]
+  before_action :set_team, only: [ :show, :edit, :update, :destroy, :assign_app, :remove_app_assignment ]
   before_action :set_breadcrumbs, only: [ :index, :show ]
 
   def index
@@ -45,6 +45,26 @@ class TeamsController < ApplicationController
     else
       redirect_to @team, alert: 'Only the team owner can delete the team.'
     end
+  end
+
+  def assign_app
+    require_team_admin!(@team)
+
+    app = accessible_apps.find_by!(slug: params[:app_id])
+    @team.team_assignments.find_or_create_by!(app: app)
+    redirect_to @team, notice: 'App assigned successfully.'
+  rescue ActiveRecord::RecordNotFound
+    redirect_to @team, alert: 'App not found or you do not have access.'
+  end
+
+  def remove_app_assignment
+    require_team_admin!(@team)
+
+    app = App.find_by!(slug: params[:app_id])
+    @team.team_assignments.where(app: app).destroy_all
+    redirect_to @team, notice: 'App removed from team.'
+  rescue ActiveRecord::RecordNotFound
+    redirect_to @team, alert: 'App not found.'
   end
 
   private

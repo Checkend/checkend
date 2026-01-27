@@ -37,13 +37,53 @@
     </div>
 
     <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 p-6">
-      <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Assigned Apps</h2>
-      <% if @team.apps.any? %>
-        <div class="space-y-3">
-          <% @team.apps.each do |app| %>
-            <%= link_to app_path(app), class: "block p-3 rounded-lg border border-gray-200 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-700/50 transition-colors" do %>
-              <p class="text-sm font-medium text-gray-900 dark:text-white"><%= app.name %></p>
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Assigned Apps</h2>
+        <% if @team.owner == Current.user %>
+          <% available_apps = accessible_apps.where.not(id: @team.apps.select(:id)).order(:name) %>
+          <% if available_apps.any? %>
+            <%= form_with url: assign_app_team_path(@team), method: :post, class: "inline-flex items-center space-x-2" do |form| %>
+              <div class="relative">
+                <%= form.select :app_id,
+                    options_from_collection_for_select(available_apps, :slug, :name),
+                    { include_blank: "Assign app..." },
+                    { name: 'app_id', class: "appearance-none text-sm px-3 py-2 pr-9 bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 rounded-md text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-violet-500 focus:border-violet-500" } %>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                  <svg class="h-4 w-4 text-gray-500 dark:text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                  </svg>
+                </div>
+              </div>
+              <%= form.submit "Assign", class: "text-sm px-3 py-1.5 bg-violet-600 text-white rounded-lg font-medium hover:bg-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500 transition-colors cursor-pointer" %>
             <% end %>
+          <% end %>
+        <% end %>
+      </div>
+      <% if @team.apps.any? %>
+        <div class="space-y-2">
+          <% @team.apps.each do |app| %>
+            <div class="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-zinc-700">
+              <div class="flex items-center space-x-3">
+                <div class="flex-shrink-0 w-8 h-8 bg-violet-100 dark:bg-violet-500/20 rounded-lg flex items-center justify-center">
+                  <svg class="w-4 h-4 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path>
+                  </svg>
+                </div>
+                <div>
+                  <%= link_to app_path(app), class: "text-sm font-medium text-gray-900 dark:text-white hover:text-violet-600 dark:hover:text-violet-400 transition-colors" do %>
+                    <%= app.name %>
+                  <% end %>
+                  <% if app.environment.present? %>
+                    <p class="text-xs text-gray-500 dark:text-zinc-400"><%= app.environment %></p>
+                  <% end %>
+                </div>
+              </div>
+              <% if @team.owner == Current.user %>
+                <%= button_to remove_app_assignment_team_path(@team, app_id: app.slug), method: :delete, data: { turbo_confirm: "Remove this app from the team?" }, class: "text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium transition-colors" do %>
+                  Remove
+                <% end %>
+              <% end %>
+            </div>
           <% end %>
         </div>
       <% else %>
