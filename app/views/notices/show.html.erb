@@ -65,19 +65,38 @@
 
   <%# Backtrace Section %>
   <% if @notice.backtrace.present? %>
-    <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 overflow-hidden mb-6" x-data="{ expanded: true }">
-      <button @click="expanded = !expanded" class="w-full px-6 py-4 border-b border-gray-200 dark:border-zinc-700 flex items-center justify-between text-left hover:bg-gray-50 dark:hover:bg-zinc-700/50 transition-colors">
-        <div class="flex items-center space-x-3">
+    <% backtrace_text = @notice.backtrace.lines.map { |line| "#{line['file']}:#{line['line']}:in `#{line['method']}`" }.join("\n") %>
+    <div class="bg-white dark:bg-zinc-800 shadow dark:shadow-zinc-700/50 rounded-lg border border-transparent dark:border-zinc-700 overflow-hidden mb-6" x-data="{ expanded: true, copied: false }">
+      <div class="w-full px-6 py-4 border-b border-gray-200 dark:border-zinc-700 flex items-center justify-between">
+        <button @click="expanded = !expanded" class="flex items-center space-x-3 text-left hover:opacity-80 transition-opacity">
           <svg class="w-5 h-5 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
           </svg>
           <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Backtrace</h2>
           <span class="text-sm text-gray-500 dark:text-zinc-400">(<%= @notice.backtrace.lines.size %> lines)</span>
-        </div>
-        <svg class="w-5 h-5 text-gray-400 dark:text-zinc-500 transition-transform" :class="{ 'rotate-180': expanded }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-        </svg>
-      </button>
+          <svg class="w-5 h-5 text-gray-400 dark:text-zinc-500 transition-transform" :class="{ 'rotate-180': expanded }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+          </svg>
+        </button>
+        <button
+          @click.stop="navigator.clipboard.writeText($refs.backtraceText.textContent); copied = true; setTimeout(() => copied = false, 2000)"
+          class="flex items-center space-x-1 px-3 py-1.5 text-sm text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-md transition-colors"
+          title="Copy backtrace"
+        >
+          <template x-if="!copied">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+            </svg>
+          </template>
+          <template x-if="copied">
+            <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+          </template>
+          <span x-text="copied ? 'Copied!' : 'Copy'"></span>
+        </button>
+      </div>
+      <div x-ref="backtraceText" class="hidden"><%= backtrace_text %></div>
       <div x-show="expanded" x-collapse>
         <div class="bg-gray-900 dark:bg-zinc-900 p-4 overflow-x-auto">
           <pre class="text-sm font-mono"><code><% @notice.backtrace.lines.each_with_index do |line, index| %><span class="text-gray-500 dark:text-zinc-600 select-none"><%= (index + 1).to_s.rjust(3) %></span>  <% if line['file'].to_s.start_with?('app/') %><span class="text-pink-400"><%= line['file'] %></span><span class="text-gray-400">:</span><span class="text-violet-400"><%= line['line'] %></span><span class="text-gray-400">:in </span><span class="text-emerald-400">`<%= line['method'] %>`</span><% else %><span class="text-gray-400"><%= line['file'] %>:<%= line['line'] %>:in `<%= line['method'] %>`</span><% end %>
