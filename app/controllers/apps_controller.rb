@@ -19,8 +19,10 @@ class AppsController < ApplicationController
 
   def create
     @app = App.new(app_params)
+    @app.created_by = Current.user
 
     if @app.save
+      grant_creator_access(@app)
       redirect_to setup_wizard_app_path(@app), notice: 'App was successfully created.'
     else
       render :new, status: :unprocessable_entity
@@ -158,6 +160,18 @@ class AppsController < ApplicationController
       add_breadcrumb 'Apps', apps_path
       add_breadcrumb @app.name, app_path(@app)
       add_breadcrumb 'Setup'
+    end
+  end
+
+  def grant_creator_access(app)
+    Permission.where(resource: 'apps').find_each do |permission|
+      RecordPermission.create!(
+        user: Current.user,
+        permission: permission,
+        record: app,
+        grant_type: 'grant',
+        granted_by: Current.user
+      )
     end
   end
 end

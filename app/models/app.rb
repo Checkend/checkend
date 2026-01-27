@@ -1,8 +1,11 @@
 class App < ApplicationRecord
+  belongs_to :created_by, class_name: 'User', optional: true
+
   has_many :problems, dependent: :destroy
   has_many :team_assignments, dependent: :destroy
   has_many :teams, through: :team_assignments
   has_many :user_notification_preferences, dependent: :destroy
+  has_many :record_permissions, as: :record, dependent: :destroy
 
   has_secure_token :ingestion_key
   encrypts :slack_webhook_url
@@ -37,9 +40,17 @@ class App < ApplicationRecord
         .distinct
   end
 
+  def direct_access_users
+    User.joins(:record_permissions)
+        .where(record_permissions: { record_type: 'App', record_id: id, grant_type: 'grant' })
+        .merge(RecordPermission.active)
+        .distinct
+  end
+
   def notification_recipients(event_type)
-    users = team_members.to_a.uniq
-    users.select { |u| u.wants_notification?(self, event_type) }
+    users = team_members.to_a
+    users += direct_access_users.to_a
+    users.uniq.select { |u| u.wants_notification?(self, event_type) }
   end
 
   def as_json(options = {})

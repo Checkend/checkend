@@ -83,6 +83,35 @@ class AppsControllerTest < ActionDispatch::IntegrationTest
     assert_response :unprocessable_entity
   end
 
+  test 'create sets created_by to current user' do
+    post apps_path, params: { app: { name: 'Creator Test App' } }
+
+    app = App.last
+    assert_equal @user, app.created_by
+  end
+
+  test 'create grants direct access permissions to creator' do
+    app_permissions_count = Permission.where(resource: 'apps').count
+
+    assert_difference('RecordPermission.count', app_permissions_count) do
+      post apps_path, params: { app: { name: 'Permission Test App' } }
+    end
+
+    app = App.last
+    app_permissions = RecordPermission.where(user: @user, record: app)
+
+    assert_equal app_permissions_count, app_permissions.count
+    assert app_permissions.all? { |p| p.grant_type == 'grant' }
+    assert app_permissions.all? { |p| p.granted_by == @user }
+  end
+
+  test 'creator is included in notification recipients via direct access' do
+    post apps_path, params: { app: { name: 'Notification Test App', notify_on_new_problem: true } }
+
+    app = App.last
+    assert_includes app.notification_recipients(:new_problem), @user
+  end
+
   # Edit tests
   test 'edit shows form' do
     get edit_app_path(@app)

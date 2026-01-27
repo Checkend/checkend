@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_01_26_205345) do
+ActiveRecord::Schema[8.1].define(version: 2026_01_27_024716) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -27,6 +27,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_26_205345) do
 
   create_table "apps", force: :cascade do |t|
     t.datetime "created_at", null: false
+    t.bigint "created_by_id"
     t.text "discord_webhook_url"
     t.string "environment"
     t.boolean "github_enabled", default: false, null: false
@@ -40,6 +41,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_26_205345) do
     t.string "slug"
     t.datetime "updated_at", null: false
     t.text "webhook_url"
+    t.index ["created_by_id"], name: "index_apps_on_created_by_id"
     t.index ["ingestion_key"], name: "index_apps_on_ingestion_key", unique: true
     t.index ["slug"], name: "index_apps_on_slug", unique: true
   end
@@ -285,6 +287,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_26_205345) do
     t.index ["slug"], name: "index_users_on_slug", unique: true
   end
 
+  add_foreign_key "apps", "users", column: "created_by_id"
   add_foreign_key "notices", "backtraces"
   add_foreign_key "notices", "problems"
   add_foreign_key "password_histories", "users"

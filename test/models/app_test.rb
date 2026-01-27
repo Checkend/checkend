@@ -65,4 +65,123 @@ class AppTest < ActiveSupport::TestCase
 
     assert_not app.accessible_by?(other_user)
   end
+
+  test 'direct_access_users returns users with active record permissions' do
+    user = users(:one)
+    app = App.create!(name: 'Test App')
+    permission = permissions(:apps_read)
+
+    RecordPermission.create!(
+      user: user,
+      permission: permission,
+      record: app,
+      grant_type: 'grant'
+    )
+
+    assert_includes app.direct_access_users, user
+  end
+
+  test 'direct_access_users excludes users with revoked permissions' do
+    user = users(:one)
+    app = App.create!(name: 'Test App')
+    permission = permissions(:apps_read)
+
+    RecordPermission.create!(
+      user: user,
+      permission: permission,
+      record: app,
+      grant_type: 'revoke'
+    )
+
+    assert_not_includes app.direct_access_users, user
+  end
+
+  test 'direct_access_users excludes users with expired permissions' do
+    user = users(:one)
+    app = App.create!(name: 'Test App')
+    permission = permissions(:apps_read)
+
+    RecordPermission.create!(
+      user: user,
+      permission: permission,
+      record: app,
+      grant_type: 'grant',
+      expires_at: 1.day.ago
+    )
+
+    assert_not_includes app.direct_access_users, user
+  end
+
+  test 'notification_recipients includes team members' do
+    user = users(:one)
+    team = Team.create!(name: 'Test Team', owner: user)
+    team.team_members.create!(user: user, role: 'admin')
+    app = App.create!(name: 'Test App', notify_on_new_problem: true)
+    team.team_assignments.create!(app: app)
+
+    assert_includes app.notification_recipients(:new_problem), user
+  end
+
+  test 'notification_recipients includes direct access users' do
+    user = users(:one)
+    app = App.create!(name: 'Test App', notify_on_new_problem: true)
+    permission = permissions(:apps_read)
+
+    RecordPermission.create!(
+      user: user,
+      permission: permission,
+      record: app,
+      grant_type: 'grant'
+    )
+
+    assert_includes app.notification_recipients(:new_problem), user
+  end
+
+  test 'notification_recipients deduplicates users with both team and direct access' do
+    user = users(:one)
+    team = Team.create!(name: 'Test Team', owner: user)
+    team.team_members.create!(user: user, role: 'admin')
+    app = App.create!(name: 'Test App', notify_on_new_problem: true)
+    team.team_assignments.create!(app: app)
+    permission = permissions(:apps_read)
+
+    RecordPermission.create!(
+      user: user,
+      permission: permission,
+      record: app,
+      grant_type: 'grant'
+    )
+
+    recipients = app.notification_recipients(:new_problem)
+    assert_equal 1, recipients.count { |r| r.id == user.id }
+  end
+
+  test 'notification_recipients respects user notification preferences' do
+    user = users(:one)
+    app = App.create!(name: 'Test App', notify_on_new_problem: true)
+    permission = permissions(:apps_read)
+
+    RecordPermission.create!(
+      user: user,
+      permission: permission,
+      record: app,
+      grant_type: 'grant'
+    )
+
+    # User opts out of new problem notifications
+    UserNotificationPreference.create!(
+      user: user,
+      app: app,
+      notify_on_new_problem: false
+    )
+
+    assert_not_includes app.notification_recipients(:new_problem), user
+  end
+
+  test 'created_by association works' do
+    user = users(:one)
+    app = App.create!(name: 'Test App', created_by: user)
+
+    assert_equal user, app.created_by
+  end
 end
