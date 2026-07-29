@@ -105,7 +105,7 @@ class PagyTailwindTest < ActionView::TestCase
 
   def create_pagy(count:, page:, limit:)
     # Build options hash similar to how Pagy::Method does it
-    options = Pagy.options.merge(count:, page:, limit:)
+    options = Pagy::OPTIONS.merge(count:, page:, limit:)
     options[:request] = { base_url: 'http://test.host', path: '/test', params: {} }
     options[:request] = Pagy::Request.new(options)
     Pagy::Offset.new(**options)

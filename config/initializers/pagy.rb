@@ -4,8 +4,8 @@
 # See https://ddnexus.github.io/pagy/guides/upgrade-guide/
 
 # Instance variables
-Pagy.options[:limit] = 25
-Pagy.options[:raise_range_error] = true  # Raise errors for out-of-range pages (enables redirect behavior)
+Pagy::OPTIONS[:limit] = 25
+Pagy::OPTIONS[:raise_range_error] = true  # Raise errors for out-of-range pages (enables redirect behavior)
 
 # Custom Tailwind-styled pagination helper
 module PagyTailwind
