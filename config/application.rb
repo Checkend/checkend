@@ -26,5 +26,10 @@ module Checkend
 
     # Enable Rack::Attack for rate limiting
     config.middleware.use Rack::Attack
+
+    # Nothing in the app attaches or transforms images, so no image processing
+    # backend is bundled. Disabling the variant processor keeps Active Storage
+    # from warning about the missing image_processing gem on every boot.
+    config.active_storage.variant_processor = :disabled
   end
 end
