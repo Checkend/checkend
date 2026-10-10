@@ -2,6 +2,7 @@ import { type Db, sql } from "../ports/db.ts";
 import { formatEventId, formatIssueId } from "./ids.ts";
 import { normalizeFilename } from "./ingest/fingerprint.ts";
 import { cleanText, type NormalizedEvent, type NormalizedFrame } from "./ingest/normalize.ts";
+import { type Claim, withClaim } from "./issues.ts";
 
 /**
  * The issue brief: what an agent needs to fix an issue, in under 2,000 tokens.
@@ -47,6 +48,8 @@ export interface BriefJson {
 		last_release: string | null;
 		fingerprint_version: number;
 		latest_event_id: number | null;
+		/** The active claim: who works on this issue now. */
+		claim: Claim | null;
 	};
 	/** Data from the monitored application. */
 	untrusted: {
@@ -59,6 +62,8 @@ export interface BriefJson {
 		exceptions: { type: string | null; value: string; frames: BriefFrame[] }[];
 		request: { method: string | null; url: string | null; headers: [string, string][] } | null;
 		tags: [string, string][];
+		/** Recent actions and notes, the most recent first. Notes are written by agents. */
+		timeline: string[];
 	};
 	/** True when parts were removed to stay under the size limit. */
 	truncated: boolean;
@@ -115,6 +120,7 @@ interface Shape {
 	headers: number;
 	tags: number;
 	message: number;
+	timeline: number;
 }
 
 // From the full brief down to the smallest one. The first shape that fits is used.
@@ -127,13 +133,41 @@ const SHAPES: Shape[] = [
 		headers: 10,
 		tags: 10,
 		message: 1000,
+		timeline: 10,
 	},
-	{ frames: 8, framesWithSource: 2, contextLines: 3, causes: 2, headers: 5, tags: 5, message: 500 },
-	{ frames: 5, framesWithSource: 1, contextLines: 2, causes: 1, headers: 0, tags: 3, message: 300 },
-	{ frames: 3, framesWithSource: 1, contextLines: 1, causes: 0, headers: 0, tags: 0, message: 200 },
+	{
+		frames: 8,
+		framesWithSource: 2,
+		contextLines: 3,
+		causes: 2,
+		headers: 5,
+		tags: 5,
+		message: 500,
+		timeline: 5,
+	},
+	{
+		frames: 5,
+		framesWithSource: 1,
+		contextLines: 2,
+		causes: 1,
+		headers: 0,
+		tags: 3,
+		message: 300,
+		timeline: 3,
+	},
+	{
+		frames: 3,
+		framesWithSource: 1,
+		contextLines: 1,
+		causes: 0,
+		headers: 0,
+		tags: 0,
+		message: 200,
+		timeline: 0,
+	},
 ];
 
-export async function buildBrief(db: Db, issueId: number): Promise<Brief | null> {
+export async function buildBrief(db: Db, issueId: number, now: Date): Promise<Brief | null> {
 	const issue = await db.first<{
 		id: number;
 		project_id: number;
@@ -148,19 +182,29 @@ export async function buildBrief(db: Db, issueId: number): Promise<Brief | null>
 		first_release: string | null;
 		last_release: string | null;
 		fingerprint_version: number;
+		claimed_by: string | null;
+		claim_expires_at: string | null;
 	}>(
 		sql`SELECT i.id, p.public_id AS project_id, i.title, i.culprit, i.status, i.level, i.times_seen,
-				i.stored_events, i.first_seen, i.last_seen, i.first_release, i.last_release, i.fingerprint_version
+				i.stored_events, i.first_seen, i.last_seen, i.first_release, i.last_release, i.fingerprint_version,
+				i.claimed_by, i.claim_expires_at
 			FROM issues i JOIN projects p ON p.id = i.project_id WHERE i.id = ${issueId}`,
 	);
 	if (!issue) return null;
+	const { claim, ...facts } = withClaim(issue, now);
+	const timeline = (
+		await db.all<{ at: string; actor_name: string; action: string; data: string | null }>(
+			sql`SELECT at, actor_name, action, data FROM activity
+				WHERE target_type = 'issue' AND target_id = ${issueId} ORDER BY id DESC LIMIT 10`,
+		)
+	).map(timelineLine);
 	const latest = await db.first<{ id: number; data: string }>(
 		sql`SELECT id, data FROM events WHERE issue_id = ${issueId} ORDER BY id DESC LIMIT 1`,
 	);
 	const event = latest ? (JSON.parse(latest.data) as NormalizedEvent) : null;
 
 	for (const [i, shape] of SHAPES.entries()) {
-		const json = briefJson(issue, latest?.id ?? null, event, shape, i > 0);
+		const json = briefJson({ ...facts, claim }, latest?.id ?? null, event, shape, i > 0, timeline);
 		const markdown = briefMarkdown(json);
 		if (markdown.length <= BRIEF_MAX_CHARS || i === SHAPES.length - 1) {
 			return { json, markdown: markdown.slice(0, BRIEF_MAX_CHARS) };
@@ -169,12 +213,33 @@ export async function buildBrief(db: Db, issueId: number): Promise<Brief | null>
 	return null; // not reached
 }
 
+/** One timeline line: "<time> <action> by <actor>[: note text]". The text is untrusted. */
+function timelineLine(row: {
+	at: string;
+	actor_name: string;
+	action: string;
+	data: string | null;
+}): string {
+	const data = row.data ? (JSON.parse(row.data) as Record<string, unknown>) : {};
+	const action = row.action.replace(/^issue\./, "");
+	const detail =
+		action === "note"
+			? `: ${String(data.text ?? "")}`
+			: action === "claim"
+				? ` (until ${String(data.expires_at ?? "")})`
+				: action === "merge"
+					? ` (sources ${JSON.stringify(data.source_ids ?? [])})`
+					: "";
+	return cleanText(`${row.at} ${action} by ${row.actor_name}${detail}`, 600);
+}
+
 function briefJson(
 	issue: Omit<BriefJson["issue"], "latest_event_id"> & { title: string; culprit: string | null },
 	latestEventId: number | null,
 	event: NormalizedEvent | null,
 	shape: Shape,
 	truncated: boolean,
+	timeline: string[],
 ): BriefJson {
 	const { title, culprit, ...facts } = issue;
 	const exceptions = [...(event?.exceptions ?? [])]
@@ -215,6 +280,7 @@ function briefJson(
 			tags: (event?.tags ?? [])
 				.slice(0, shape.tags)
 				.map(([k, v]) => [cleanText(k, 32), cleanText(v, 100)]),
+			timeline: timeline.slice(0, shape.timeline),
 		},
 		truncated,
 	};
@@ -249,6 +315,9 @@ function briefMarkdown(brief: BriefJson): string {
 		`| First seen | ${issue.first_seen} |`,
 		`| Last seen | ${issue.last_seen} |`,
 		`| Project | ${issue.project_id} |`,
+		...(issue.claim
+			? [`| Claimed by | ${cleanText(issue.claim.holder, 100)} until ${issue.claim.expires_at} |`]
+			: []),
 		`| Latest event | ${issue.latest_event_id === null ? "none stored" : formatEventId(issue.latest_event_id)} |`,
 		"",
 		untrustedBlock("Error", [untrusted.title, untrusted.message].filter(Boolean).join("\n\n")),
@@ -287,6 +356,9 @@ function briefMarkdown(brief: BriefJson): string {
 			...untrusted.request.headers.map(([k, v]) => `${k}: ${v}`),
 		];
 		parts.push(untrustedBlock("Request (secrets removed)", request.join("\n")));
+	}
+	if (untrusted.timeline.length > 0) {
+		parts.push(untrustedBlock("Timeline", untrusted.timeline.join("\n")));
 	}
 	if (brief.truncated)
 		parts.push("_Parts were removed to keep this brief short. Use get_event for the full event._");

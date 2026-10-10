@@ -82,11 +82,14 @@ export function mcpContract(
 				const client = await connect(token);
 				const { tools } = await client.listTools();
 				expect(tools.map((t) => t.name).sort()).toEqual([
+					"add_note",
+					"claim_issue",
 					"get_event",
 					"get_issue_brief",
 					"ignore_issue",
 					"list_issues",
 					"merge_issues",
+					"release_claim",
 					"resolve_issue",
 				]);
 				for (const tool of tools) expect(tool.description, tool.name).toMatch(/untrusted/i);
@@ -207,6 +210,46 @@ export function mcpContract(
 			});
 			expect(missing.isError).toBe(true);
 			await client.close();
+		});
+
+		it("claim_issue blocks a second agent; release_claim frees it; add_note adds to the timeline", async () => {
+			const { writer, admin, issueId } = await tokens();
+			const a = await connect(writer);
+			const claimed = JSON.parse(
+				text(
+					await a.callTool({ name: "claim_issue", arguments: { issue_id: issueId, minutes: 30 } }),
+				),
+			);
+			expect(claimed.claim.holder).toBe("writer");
+			const b = await connect(admin);
+			const unclaimed = JSON.parse(
+				text(await b.callTool({ name: "list_issues", arguments: { claimed: false } })),
+			);
+			expect(unclaimed.issues.map((i: { id: number }) => i.id)).not.toContain(issueId);
+			const all = JSON.parse(text(await b.callTool({ name: "list_issues", arguments: {} })));
+			expect(all.issues.find((i: { id: number }) => i.id === issueId).claim.holder).toBe("writer");
+			const blocked = await b.callTool({ name: "claim_issue", arguments: { issue_id: issueId } });
+			expect(blocked.isError).toBe(true);
+			expect(text(blocked)).toMatch(/claimed by writer until/);
+			const released = JSON.parse(
+				text(await a.callTool({ name: "release_claim", arguments: { issue_id: issueId } })),
+			);
+			expect(released.claim).toBeNull();
+			const note = JSON.parse(
+				text(
+					await a.callTool({
+						name: "add_note",
+						arguments: { issue_id: issueId, text: "Cause: missing null check." },
+					}),
+				),
+			);
+			expect(note).toMatchObject({ note_id: expect.any(Number) });
+			const brief = text(
+				await a.callTool({ name: "get_issue_brief", arguments: { issue_id: issueId } }),
+			);
+			expect(brief).toContain("note by writer: Cause: missing null check.");
+			await a.close();
+			await b.close();
 		});
 	});
 }

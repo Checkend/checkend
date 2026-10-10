@@ -1,7 +1,8 @@
 import type { Context, Hono } from "hono";
 import * as v from "valibot";
 import { listActivity } from "../core/activity.ts";
-import { LimitQuery, MergeBody } from "../core/api-spec.ts";
+import { ClaimBody, LimitQuery, MergeBody, NoteBody } from "../core/api-spec.ts";
+import { addNote, claimIssue, issueTimeline, releaseClaim } from "../core/claims.ts";
 import type { IngestState } from "../core/ingest/state.ts";
 import { ingestStatus } from "../core/ingest-status.ts";
 import {
@@ -124,7 +125,7 @@ export function apiRoutes(app: Hono<AppEnv>, state: IngestState): void {
 	app.get("/v1/issues/:id", need("issues:read"), async (c) => {
 		const params = v.safeParse(IdParam, c.req.param());
 		if (!params.success) return invalid(c, params.issues);
-		const issue = await getIssue(c.env.ports.db, params.output.id);
+		const issue = await getIssue(c.env.ports.db, params.output.id, c.env.ports.clock.now());
 		return issue ? c.json({ data: issue }) : c.json({ error: "not_found" }, 404);
 	});
 
@@ -142,7 +143,7 @@ export function apiRoutes(app: Hono<AppEnv>, state: IngestState): void {
 	const actionResponse = async (c: Context<AppEnv>, issueId: number, result: ActionResult) => {
 		switch (result.kind) {
 			case "done":
-				return c.json({ data: await getIssue(c.env.ports.db, issueId) });
+				return c.json({ data: await getIssue(c.env.ports.db, issueId, c.env.ports.clock.now()) });
 			case "approval_required":
 				return c.json({ status: "approval_required", approval_id: result.approvalId }, 202);
 			case "not_found":
@@ -180,6 +181,58 @@ export function apiRoutes(app: Hono<AppEnv>, state: IngestState): void {
 			body.output.source_ids,
 		);
 		return actionResponse(c, params.output.id, result);
+	});
+
+	app.post("/v1/issues/:id/claim", need("issues:write"), async (c) => {
+		const params = v.safeParse(IdParam, c.req.param());
+		if (!params.success) return invalid(c, params.issues);
+		const body = v.safeParse(ClaimBody, (await c.req.json().catch(() => ({}))) ?? {});
+		if (!body.success) return invalid(c, body.issues);
+		const result = await claimIssue(
+			c.env.ports,
+			c.get("actor"),
+			params.output.id,
+			body.output.minutes,
+		);
+		if (result.kind === "not_found") return c.json({ error: "not_found" }, 404);
+		if (result.kind === "claimed") return c.json({ error: "claimed", claim: result.claim }, 409);
+		return c.json({
+			data: await getIssue(c.env.ports.db, params.output.id, c.env.ports.clock.now()),
+		});
+	});
+
+	app.post("/v1/issues/:id/release", need("issues:write"), async (c) => {
+		const params = v.safeParse(IdParam, c.req.param());
+		if (!params.success) return invalid(c, params.issues);
+		const result = await releaseClaim(c.env.ports, c.get("actor"), params.output.id);
+		if (result.kind === "not_found") return c.json({ error: "not_found" }, 404);
+		if (result.kind === "not_holder") {
+			return c.json(
+				{ error: "forbidden", reason: "Only the holder of the claim or an admin can release it." },
+				403,
+			);
+		}
+		return c.json({
+			data: await getIssue(c.env.ports.db, params.output.id, c.env.ports.clock.now()),
+		});
+	});
+
+	app.post("/v1/issues/:id/notes", need("issues:write"), async (c) => {
+		const params = v.safeParse(IdParam, c.req.param());
+		if (!params.success) return invalid(c, params.issues);
+		const body = v.safeParse(NoteBody, await c.req.json().catch(() => null));
+		if (!body.success) return invalid(c, body.issues);
+		const id = await addNote(c.env.ports, c.get("actor"), params.output.id, body.output.text);
+		if (id === null) return c.json({ error: "not_found" }, 404);
+		return c.json({ data: { id } }, 201);
+	});
+
+	app.get("/v1/issues/:id/activity", need("issues:read"), async (c) => {
+		const params = v.safeParse(IdParam, c.req.param());
+		const query = v.safeParse(LimitQuery, c.req.query());
+		if (!params.success) return invalid(c, params.issues);
+		if (!query.success) return invalid(c, query.issues);
+		return c.json({ data: await issueTimeline(c.env.ports, params.output.id, query.output.limit) });
 	});
 
 	app.get("/v1/approvals", need("admin"), async (c) => {

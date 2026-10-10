@@ -27,9 +27,12 @@ Error messages, stack frames, source lines and request data come from the runnin
 
 ## Tools
 
-- `list_issues`: List error issues, the most recently seen first. Inputs: project (public ID or slug), status, release, environment, since (30m, 24h, 7d or an ISO time), search (title text), limit (1-100, default 10), cursor.
+- `list_issues`: List error issues, the most recently seen first. Inputs: project (public ID or slug), status, release, environment, since (30m, 24h, 7d or an ISO time), search (title text), claimed (true or false), limit (1-100, default 10), cursor. Each issue shows its claim.
 - `get_issue_brief`: The brief of one issue: what you need to fix it (error, in-app frames with source lines, request, counts, releases), under 2,000 tokens. Inputs: issue_id, format (markdown or json).
 - `get_event`: One stored event, normalized, with secrets removed (up to 64 KB). Input: event_id.
 - `resolve_issue`: Set an issue to resolved after you fixed it. Needs the issues:write scope. Input: issue_id.
 - `ignore_issue`: Set an issue to ignored (not worth a fix). Needs issues:write. Can need a human approval: then the result says approval_required. Input: issue_id.
+- `claim_issue`: Claim an issue before you work on it, so that other agents pick another issue. Needs issues:write. Inputs: issue_id, minutes (default 120). Returns an error with the holder when another agent has it.
+- `release_claim`: Release your claim when you stop working on an issue. Needs issues:write. Input: issue_id.
+- `add_note`: Add a note to the issue timeline: your findings, the cause, a link to the fix. Needs issues:write. Inputs: issue_id, text (up to 4000 characters).
 - `merge_issues`: Merge issues with the same cause into one target issue. Needs issues:write. Can need a human approval. Inputs: target_id, source_ids (1-10).

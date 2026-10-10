@@ -30,6 +30,7 @@ export const IssueListQuery = v.object({
 	environment: v.optional(v.pipe(v.string(), v.minLength(1), v.maxLength(200))),
 	since: v.optional(v.pipe(v.string(), v.regex(SINCE_PATTERN))),
 	search: v.optional(v.pipe(v.string(), v.minLength(1), v.maxLength(200))),
+	claimed: v.optional(v.picklist(["true", "false"])),
 });
 export type IssueListQuery = v.InferOutput<typeof IssueListQuery>;
 
@@ -107,12 +108,16 @@ export async function listIssues(
 	const search = query.search ? likeContains(query.search) : null;
 	const release = query.release ?? null;
 	const environment = query.environment ?? null;
+	const claimed = query.claimed ?? null;
+	const nowIso = now.toISOString();
 	const rows = await db.all<IssueRow>({
 		sql: `SELECT i.id, p.public_id AS project_id, i.title, i.culprit, i.type, i.level, i.platform,
 				i.status, i.times_seen, i.stored_events, i.first_seen, i.last_seen, i.first_release,
-				i.last_release, i.fingerprint, i.fingerprint_version
+				i.last_release, i.fingerprint, i.fingerprint_version, i.claimed_by, i.claim_expires_at
 			FROM issues i JOIN projects p ON p.id = i.project_id
 			WHERE (? IS NULL OR i.project_id = ?)
+				AND (? IS NULL OR (? = 'true' AND i.claim_expires_at > ?)
+					OR (? = 'false' AND (i.claim_expires_at IS NULL OR i.claim_expires_at <= ?)))
 				AND (i.status = ? OR (? IS NULL AND i.status != 'merged'))
 				AND (? IS NULL OR i.last_seen >= ?)
 				AND (? IS NULL OR i.first_release = ? OR i.last_release = ?
@@ -124,6 +129,11 @@ export async function listIssues(
 		params: [
 			projectRowId,
 			projectRowId,
+			claimed,
+			claimed,
+			nowIso,
+			claimed,
+			nowIso,
 			query.status ?? null,
 			query.status ?? null,
 			since,
@@ -143,7 +153,7 @@ export async function listIssues(
 			query.limit + 1,
 		],
 	});
-	const page = rows.slice(0, query.limit);
+	const page = rows.slice(0, query.limit).map((row) => withClaim(row, now) as IssueRow);
 	const last = page.at(-1);
 	const next_cursor =
 		rows.length > query.limit && last
@@ -152,11 +162,38 @@ export async function listIssues(
 	return { data: page, next_cursor };
 }
 
-export async function getIssue(db: Db, issueId: number): Promise<IssueRow | null> {
+/** An active claim, or null. A claim is active until claim_expires_at. */
+export interface Claim {
+	holder: string;
+	expires_at: string;
+}
+
+/** Replaces the claim columns of a row with `claim` (null when there is no active claim). */
+export function withClaim<T extends Record<string, unknown>>(
+	row: T,
+	now: Date,
+): Omit<T, "claimed_by" | "claim_expires_at"> & { claim: Claim | null } {
+	const { claimed_by, claim_expires_at, ...rest } = row;
+	const active =
+		typeof claim_expires_at === "string" &&
+		claim_expires_at > now.toISOString() &&
+		typeof claimed_by === "string";
+	return {
+		...rest,
+		claim: active ? { holder: claimed_by as string, expires_at: claim_expires_at as string } : null,
+	};
+}
+
+export async function getIssue(
+	db: Db,
+	issueId: number,
+	now: Date,
+): Promise<Record<string, unknown> | null> {
 	const issue = await db.first<IssueRow>({
 		sql: `SELECT i.id, p.public_id AS project_id, i.title, i.culprit, i.type, i.level, i.platform,
 				i.status, i.times_seen, i.stored_events, i.first_seen, i.last_seen, i.first_release,
-				i.last_release, i.fingerprint, i.fingerprint_version, i.merged_into
+				i.last_release, i.fingerprint, i.fingerprint_version, i.merged_into, i.claimed_by,
+				i.claim_expires_at
 			FROM issues i JOIN projects p ON p.id = i.project_id WHERE i.id = ?`,
 		params: [issueId],
 	});
@@ -164,7 +201,7 @@ export async function getIssue(db: Db, issueId: number): Promise<IssueRow | null
 	const latest = await db.first<{ id: number }>(
 		sql`SELECT id FROM events WHERE issue_id = ${issueId} ORDER BY id DESC LIMIT 1`,
 	);
-	return { ...issue, latest_event_id: latest?.id ?? null };
+	return { ...withClaim(issue, now), latest_event_id: latest?.id ?? null };
 }
 
 export async function listIssueEvents(db: Db, issueId: number, limit: number): Promise<IssueRow[]> {

@@ -90,7 +90,7 @@ describe("issue brief v1", () => {
 	it("has the version, the issue facts, the in-app frames with source lines, and one request", async () => {
 		const { store, ports, project } = await setup();
 		const issueId = await store(injectionEvent);
-		const brief = await buildBrief(ports.db, issueId);
+		const brief = await buildBrief(ports.db, issueId, ports.clock.now());
 		if (!brief) throw new Error("no brief");
 		expect(brief.json).toMatchObject({
 			brief_version: BRIEF_VERSION,
@@ -136,7 +136,7 @@ describe("issue brief v1", () => {
 
 	it("keeps event text only inside labelled untrusted blocks that the text cannot close", async () => {
 		const { store, ports, project } = await setup();
-		const brief = await buildBrief(ports.db, await store(injectionEvent));
+		const brief = await buildBrief(ports.db, await store(injectionEvent), ports.clock.now());
 		if (!brief) throw new Error("no brief");
 		const outside = outsideFences(brief.markdown);
 		expect(outside).not.toContain("Ignore previous instructions");
@@ -149,7 +149,7 @@ describe("issue brief v1", () => {
 
 	it("stays under 2,000 tokens (8,000 characters) for the worst event of a real SDK", async () => {
 		const { store, ports } = await setup();
-		const brief = await buildBrief(ports.db, await store(worstSdkEvent()));
+		const brief = await buildBrief(ports.db, await store(worstSdkEvent()), ports.clock.now());
 		if (!brief) throw new Error("no brief");
 		expect(brief.markdown.length).toBeLessThanOrEqual(BRIEF_MAX_CHARS);
 		expect(JSON.stringify(brief.json).length).toBeLessThanOrEqual(BRIEF_MAX_CHARS * 1.5);
@@ -175,6 +175,7 @@ describe("issue brief v1", () => {
 		const brief = await buildBrief(
 			ports.db,
 			await store({ message: "m".repeat(5000), exception: { values } }),
+			ports.clock.now(),
 		);
 		if (!brief) throw new Error("no brief");
 		expect(brief.markdown.length).toBeLessThanOrEqual(BRIEF_MAX_CHARS);
@@ -186,7 +187,11 @@ describe("issue brief v1", () => {
 	it("works for a message event and for golden fixtures", async () => {
 		const { store, ports } = await setup();
 		for (const name of ["node-message", "node-error-with-cause", "browser-unhandled-error"]) {
-			const brief = await buildBrief(ports.db, await store(rawEventFromFixture(name)));
+			const brief = await buildBrief(
+				ports.db,
+				await store(rawEventFromFixture(name)),
+				ports.clock.now(),
+			);
 			expect(brief?.markdown.length, name).toBeGreaterThan(100);
 			expect(brief?.markdown.length, name).toBeLessThanOrEqual(BRIEF_MAX_CHARS);
 		}
@@ -194,6 +199,6 @@ describe("issue brief v1", () => {
 
 	it("returns null for an unknown issue", async () => {
 		const { ports } = await setup();
-		expect(await buildBrief(ports.db, 999)).toBeNull();
+		expect(await buildBrief(ports.db, 999, ports.clock.now())).toBeNull();
 	});
 });

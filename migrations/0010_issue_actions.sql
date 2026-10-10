@@ -1,4 +1,4 @@
--- Migration 0010: issue actions (resolve, ignore, merge), claims, and approvals.
+-- Migration 0010: issue actions (resolve, ignore, merge) and approvals.
 -- Rules (AGENTS.md): valid on D1 and SQLite; forward-only and additive; no triggers.
 
 -- A merged issue keeps its row: status 'merged', and merged_into points to the target. Later

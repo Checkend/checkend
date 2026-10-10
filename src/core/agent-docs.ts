@@ -6,7 +6,7 @@ export const MCP_TOOLS = [
 	{
 		name: "list_issues",
 		summary:
-			"List error issues, the most recently seen first. Inputs: project (public ID or slug), status, release, environment, since (30m, 24h, 7d or an ISO time), search (title text), limit (1-100, default 10), cursor.",
+			"List error issues, the most recently seen first. Inputs: project (public ID or slug), status, release, environment, since (30m, 24h, 7d or an ISO time), search (title text), claimed (true or false), limit (1-100, default 10), cursor. Each issue shows its claim.",
 	},
 	{
 		name: "get_issue_brief",
@@ -26,6 +26,21 @@ export const MCP_TOOLS = [
 		name: "ignore_issue",
 		summary:
 			"Set an issue to ignored (not worth a fix). Needs issues:write. Can need a human approval: then the result says approval_required. Input: issue_id.",
+	},
+	{
+		name: "claim_issue",
+		summary:
+			"Claim an issue before you work on it, so that other agents pick another issue. Needs issues:write. Inputs: issue_id, minutes (default 120). Returns an error with the holder when another agent has it.",
+	},
+	{
+		name: "release_claim",
+		summary:
+			"Release your claim when you stop working on an issue. Needs issues:write. Input: issue_id.",
+	},
+	{
+		name: "add_note",
+		summary:
+			"Add a note to the issue timeline: your findings, the cause, a link to the fix. Needs issues:write. Inputs: issue_id, text (up to 4000 characters).",
 	},
 	{
 		name: "merge_issues",

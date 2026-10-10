@@ -1,7 +1,18 @@
 import * as v from "valibot";
+import { CLAIM_MAX_MINUTES, NOTE_MAX_CHARS } from "./claims.ts";
 import { MAX_MERGE_SOURCES } from "./issue-actions.ts";
 import { CreateProjectBody, EventListQuery, IssueListQuery } from "./issues.ts";
 import { CreateTokenBody, type Scope } from "./tokens.ts";
+
+export const ClaimBody = v.object({
+	minutes: v.optional(
+		v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(CLAIM_MAX_MINUTES)),
+	),
+});
+
+export const NoteBody = v.object({
+	text: v.pipe(v.string(), v.minLength(1), v.maxLength(NOTE_MAX_CHARS)),
+});
 
 export const MergeBody = v.object({
 	source_ids: v.pipe(
@@ -98,6 +109,34 @@ export const API_ROUTES: ApiRoute[] = [
 		scope: "issues:write",
 		summary: "Merge issues into this issue. Can need an approval (REQUIRE_APPROVAL): then 202.",
 		body: MergeBody,
+	},
+	{
+		method: "POST",
+		path: "/v1/issues/:id/claim",
+		scope: "issues:write",
+		summary:
+			"Claim an issue for minutes (default 120, at most 1440). 409 when another actor holds an active claim.",
+		body: ClaimBody,
+	},
+	{
+		method: "POST",
+		path: "/v1/issues/:id/release",
+		scope: "issues:write",
+		summary: "Release your claim (or any claim, with admin).",
+	},
+	{
+		method: "POST",
+		path: "/v1/issues/:id/notes",
+		scope: "issues:write",
+		summary: "Add a note to the issue timeline.",
+		body: NoteBody,
+	},
+	{
+		method: "GET",
+		path: "/v1/issues/:id/activity",
+		scope: "issues:read",
+		summary: "The timeline of an issue: actions and notes, the most recent first.",
+		query: LimitQuery,
 	},
 	{
 		method: "GET",
