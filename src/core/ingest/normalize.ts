@@ -214,7 +214,8 @@ function toTime(value: number | string | undefined): number | null {
 			: /^\d+(\.\d+)?$/.test(value)
 				? Number(value) * 1000
 				: Date.parse(value);
-	return Number.isFinite(ms) && ms > 0 ? ms : null;
+	// Date accepts at most ±8.64e15 ms; toISOString() throws above it.
+	return Number.isFinite(ms) && ms > 0 && ms <= 8.64e15 ? ms : null;
 }
 
 function clampTime(value: number | string | undefined, received: Date): string {

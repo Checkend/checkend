@@ -59,12 +59,13 @@ export function isSensitiveKey(key: string): boolean {
 	return false;
 }
 
-const PRIVATE_KEY = /-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----/g;
 const AUTH_SCHEME = /\b(Bearer|Basic|Token)\s+[A-Za-z0-9\-._~+/]+=*/g;
 const JWT = /\beyJ[A-Za-z0-9_-]{4,}\.[A-Za-z0-9_-]{4,}\.[A-Za-z0-9_-]+/g;
 const KNOWN_TOKENS =
 	/\b(?:(?:sk|rk|pk)_(?:live|test)_[A-Za-z0-9]{10,}|(?:AKIA|ASIA)[A-Z0-9]{16}|gh[pousr]_[A-Za-z0-9]{30,}|xox[abpr]-[A-Za-z0-9-]{10,})\b/g;
-const URL_PASSWORD = /(\b[a-z][a-z0-9+.-]*:\/\/[^:/\s@]+:)([^@\s/]+)(@)/gi;
+// Every pattern must run in linear time: scrubbing sees up to 256 KB of attacker text.
+// A match starts at "://", so each start scans only to the next ":" or "/".
+const URL_PASSWORD = /(:\/\/[^:/\s@]+:)([^@\s/]+)(@)/g;
 const QUERY_PARAM = /(^|[?&])([A-Za-z0-9_.\-[\]]+)=([^&#\s]*)/g;
 const CARD_CANDIDATE = /\b(?:\d[ -]?){12,18}\d\b/g;
 
@@ -75,7 +76,7 @@ const DIGIT_RUN = /\d{4}/;
 
 export function scrubString(value: string): string {
 	let out = value;
-	if (out.includes("PRIVATE KEY")) out = out.replace(PRIVATE_KEY, FILTERED);
+	if (out.includes("PRIVATE KEY")) out = scrubPrivateKeys(out);
 	if (out.includes("Bearer") || out.includes("Basic") || out.includes("Token")) {
 		out = out.replace(AUTH_SCHEME, (_m, scheme: string) => `${scheme} ${FILTERED}`);
 	}
@@ -127,6 +128,34 @@ export function scrub(
 		);
 	}
 	return value;
+}
+
+const HEADER_MAX = 64;
+const BEGIN_HEADER = /^-----BEGIN [A-Z ]*$/;
+
+/**
+ * Replaces PEM private key blocks, in linear time (a regex with a lazy span is quadratic on
+ * many BEGIN markers). A block without an END marker is replaced to the end of the string.
+ */
+function scrubPrivateKeys(text: string): string {
+	let out = "";
+	let pos = 0;
+	for (;;) {
+		const begin = text.indexOf("-----BEGIN ", pos);
+		if (begin === -1) break;
+		const header = text.slice(begin, begin + HEADER_MAX);
+		const label = header.indexOf("PRIVATE KEY-----");
+		if (label === -1 || !BEGIN_HEADER.test(header.slice(0, label))) {
+			out += text.slice(pos, begin + 1);
+			pos = begin + 1;
+			continue;
+		}
+		const end = text.indexOf("-----END ", begin + label);
+		const close = end === -1 ? -1 : text.indexOf("PRIVATE KEY-----", end);
+		out += text.slice(pos, begin) + FILTERED;
+		pos = close === -1 ? text.length : close + "PRIVATE KEY-----".length;
+	}
+	return out + text.slice(pos);
 }
 
 function luhn(digits: string): boolean {

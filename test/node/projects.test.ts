@@ -66,6 +66,19 @@ describe("KeyCache", () => {
 		expect(await cache.find(ports.db, p.id, p.publicKey, clock.now())).toBeNull();
 	});
 
+	it("does not let unknown keys push valid keys out of the cache", async () => {
+		const { ports } = await testPorts();
+		const p = await createProject(ports, { name: "A" });
+		const cache = new KeyCache(3);
+		const now = ports.clock.now();
+		await cache.find(ports.db, p.id, p.publicKey, now);
+		for (let i = 0; i < 50; i++)
+			await cache.find(ports.db, p.id, i.toString(16).padStart(32, "f"), now);
+		// Revoke in D1: a cached valid key is still found, so it was not evicted.
+		await ports.db.run(sql`UPDATE project_keys SET revoked_at = ${"2026-10-10T12:00:01Z"}`);
+		expect(await cache.find(ports.db, p.id, p.publicKey, now)).toEqual({ projectId: p.id });
+	});
+
 	it("keeps a bounded number of entries", async () => {
 		const { ports } = await testPorts();
 		const cache = new KeyCache(3);

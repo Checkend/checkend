@@ -87,10 +87,13 @@ interface CacheEntry {
 
 /**
  * DSN key lookups, cached in memory per isolate for 60 seconds, so that each ingest request
- * does not read D1. A revoked key keeps working until its cache entry expires.
+ * does not read D1. A revoked key keeps working until its cache entry expires. Known and
+ * unknown keys are in separate maps, so that requests with random keys cannot push valid
+ * keys out; when a map is full, its oldest entry goes.
  */
 export class KeyCache {
-	private entries = new Map<string, CacheEntry>();
+	private known = new Map<string, CacheEntry>();
+	private unknown = new Map<string, CacheEntry>();
 
 	constructor(
 		private readonly maxEntries = 1000,
@@ -98,7 +101,14 @@ export class KeyCache {
 	) {}
 
 	get size(): number {
-		return this.entries.size;
+		return this.known.size + this.unknown.size;
+	}
+
+	/** The cached result, or undefined when a D1 lookup is necessary. */
+	peek(projectId: number, publicKey: string, now: Date): { projectId: number } | null | undefined {
+		const cacheKey = `${projectId}:${publicKey}`;
+		const cached = this.known.get(cacheKey) ?? this.unknown.get(cacheKey);
+		return cached && cached.expires > now.getTime() ? cached.value : undefined;
 	}
 
 	async find(
@@ -107,17 +117,23 @@ export class KeyCache {
 		publicKey: string,
 		now: Date,
 	): Promise<{ projectId: number } | null> {
-		const cacheKey = `${projectId}:${publicKey}`;
-		const cached = this.entries.get(cacheKey);
-		if (cached && cached.expires > now.getTime()) return cached.value;
+		const cached = this.peek(projectId, publicKey, now);
+		if (cached !== undefined) return cached;
 
 		const row = await db.first<{ project_id: number }>(
 			sql`SELECT project_id FROM project_keys
 				WHERE public_key = ${publicKey} AND project_id = ${projectId} AND revoked_at IS NULL`,
 		);
 		const value = row ? { projectId: row.project_id } : null;
-		if (this.entries.size >= this.maxEntries) this.entries.clear();
-		this.entries.set(cacheKey, { value, expires: now.getTime() + this.ttlMs });
+		const cacheKey = `${projectId}:${publicKey}`;
+		const map = value ? this.known : this.unknown;
+		this.known.delete(cacheKey);
+		this.unknown.delete(cacheKey);
+		if (map.size >= this.maxEntries) {
+			const oldest = map.keys().next().value;
+			if (oldest !== undefined) map.delete(oldest);
+		}
+		map.set(cacheKey, { value, expires: now.getTime() + this.ttlMs });
 		return value;
 	}
 }

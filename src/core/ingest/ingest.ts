@@ -42,15 +42,25 @@ export async function handleIngest(
 		const projectId = Number(projectParam);
 		const now = ports.clock.now();
 
+		// A D1 key lookup (cache miss) and the tunnel path cost work before authentication,
+		// so they are rate-limited per client IP first.
+		const client = request.headers.get("cf-connecting-ip") ?? "unknown";
+		const lookupAllowed = () => ports.rateLimiter.allow(`key-lookup:${client}`);
+
 		let key = sentryKeyFromRequest(request);
 		let body: Uint8Array | null = null;
 		if (key === null && kind === "envelope") {
+			if (!(await lookupAllowed())) return tooManyRequests(RATE_LIMIT_SECONDS, "key");
 			// Tunnels send the DSN only in the envelope header. Read the body (with caps) first.
 			body = await readIngestBody(request);
 			const dsn = parseDsn(parseEnvelope(body).header.dsn);
 			if (dsn && dsn.projectId === projectParam) key = dsn.key;
 		}
-		if (!isValidKey(key) || !(await state.keys.find(ports.db, projectId, key, now))) {
+		if (!isValidKey(key)) throw new IngestError(401, "invalid_key", "Invalid or missing DSN key.");
+		if (state.keys.peek(projectId, key, now) === undefined && !(await lookupAllowed())) {
+			return tooManyRequests(RATE_LIMIT_SECONDS, "key");
+		}
+		if (!(await state.keys.find(ports.db, projectId, key, now))) {
 			throw new IngestError(401, "invalid_key", "Invalid or missing DSN key.");
 		}
 

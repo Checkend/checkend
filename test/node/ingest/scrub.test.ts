@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { FILTERED, scrub } from "../../../src/core/ingest/scrub.ts";
+import { FILTERED, scrub, scrubString } from "../../../src/core/ingest/scrub.ts";
 
 describe("scrub", () => {
 	it.each([
@@ -87,5 +87,29 @@ describe("scrub", () => {
 		const input = { password: "x" };
 		scrub(input);
 		expect(input).toEqual({ password: "x" });
+	});
+});
+
+describe("scrub: linear time on hostile strings (no ReDoS)", () => {
+	const size = 256 * 1024; // the largest raw payload that is scrubbed
+	it.each([
+		["URL-password look-alike", `://@ ${"a.".repeat(size / 2)}`],
+		["many BEGIN markers without END", "-----BEGIN PRIVATE KEY-----".repeat(size / 27)],
+		["repeated JWT starts", "eyJ".repeat(size / 3)],
+		["repeated Slack token starts", "xoxb-".repeat(size / 5)],
+		["repeated auth schemes", "Bearer ".repeat(size / 7)],
+		["a long query string", `?${"a=b&".repeat(size / 4)}`],
+		["spaced digits", "1 ".repeat(size / 2)],
+	])("%s: under 100 ms for 256 KB", (_label, text) => {
+		const start = performance.now();
+		scrubString(text);
+		expect(performance.now() - start).toBeLessThan(100);
+	});
+
+	it("still filters a private key block, and a BEGIN without END to the end of the string", () => {
+		expect(
+			scrubString("a -----BEGIN RSA PRIVATE KEY-----\nabc\n-----END RSA PRIVATE KEY----- b"),
+		).toBe(`a ${FILTERED} b`);
+		expect(scrubString("a -----BEGIN PRIVATE KEY-----\nabc truncated")).toBe(`a ${FILTERED}`);
 	});
 });

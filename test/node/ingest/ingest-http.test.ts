@@ -145,6 +145,42 @@ describe("ingest: back-pressure (H1) and rate limits", () => {
 		expect(await count("issues")).toBe(0);
 	});
 
+	it("rate-limits D1 key lookups per client IP before reading D1 (unknown keys)", async () => {
+		const seen: string[] = [];
+		const limiter = {
+			allow: async (key: string) => {
+				seen.push(key);
+				return !key.startsWith("key-lookup:");
+			},
+		};
+		const { send, project, state, clock, ports } = await setup({ rateLimiter: limiter });
+		await state.keys.find(ports.db, project.id, project.publicKey, clock.now()); // cached
+		const unknown = await send(`/api/${project.id}/envelope/?sentry_key=${"e".repeat(32)}`, {
+			method: "POST",
+			headers: { "cf-connecting-ip": "203.0.113.9" },
+			body: envelope({ message: "hi" }),
+		});
+		expect(unknown.status).toBe(429);
+		expect(seen).toContain("key-lookup:203.0.113.9");
+		// A cached valid key does not need a lookup, so the lookup limit does not block it.
+		const valid = await send(`/api/${project.id}/envelope/?sentry_key=${project.publicKey}`, {
+			method: "POST",
+			headers: { "cf-connecting-ip": "203.0.113.9" },
+			body: envelope({ message: "hi" }),
+		});
+		expect(valid.status).toBe(200);
+	});
+
+	it("rate-limits the tunnel path (key only in the body) before it reads the body", async () => {
+		const limiter = { allow: async (key: string) => !key.startsWith("key-lookup:") };
+		const { send, project } = await setup({ rateLimiter: limiter });
+		const response = await send(`/api/${project.id}/envelope/`, {
+			method: "POST",
+			body: envelope({ message: "hi" }, { dsn: `https://${project.publicKey}@x/${project.id}` }),
+		});
+		expect(response.status).toBe(429);
+	});
+
 	it("answers 429 while D1 is overloaded", async () => {
 		const { send, envelopePath, state, clock } = await setup();
 		for (let i = 0; i < 3; i++) state.health.recordFailure(clock.now());

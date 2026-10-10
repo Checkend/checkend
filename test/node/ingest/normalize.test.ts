@@ -206,6 +206,16 @@ describe("normalizeEvent: timestamps", () => {
 		const event = normalize({ breadcrumbs: [{ message: "a", timestamp: "nope" }] });
 		expect(event.breadcrumbs[0]?.timestamp).toBeNull();
 	});
+
+	it("drops breadcrumb timestamps outside the Date range instead of throwing", () => {
+		const event = normalize({
+			breadcrumbs: [
+				{ message: "a", timestamp: 1e20 },
+				{ message: "b", timestamp: "99999999999999999999" },
+			],
+		});
+		expect(event.breadcrumbs.map((b) => b.timestamp)).toEqual([null, null]);
+	});
 });
 
 describe("normalizeEvent: text", () => {

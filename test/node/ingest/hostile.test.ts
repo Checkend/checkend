@@ -168,6 +168,13 @@ describe("hostile input corpus", () => {
 		expect(stored.level).toBe("error");
 	});
 
+	it("timestamps outside the Date range: 200, not 500", async () => {
+		const { post } = await setup();
+		const event =
+			'{"timestamp":1e20,"breadcrumbs":[{"timestamp":1e20},{"timestamp":"99999999999999999999"}]}';
+		expect((await post(envelope(event))).status).toBe(200);
+	});
+
 	it("a JSON array or string as the event: 400", async () => {
 		const { post } = await setup();
 		expect((await post(envelope("[1,2,3]"))).status).toBe(400);
