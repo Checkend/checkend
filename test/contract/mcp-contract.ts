@@ -107,7 +107,11 @@ export function mcpContract(
 			expect(body.issues[0]).toMatchObject({
 				status: "unresolved",
 				times_seen: expect.any(Number),
+				priority: expect.any(Number),
+				events_24h: expect.any(Number),
+				users_affected: expect.any(Number),
 			});
+			expect(body.sort).toBe("priority");
 			await client.close();
 		});
 

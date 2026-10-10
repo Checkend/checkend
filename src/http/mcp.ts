@@ -33,6 +33,12 @@ const tool = (name: (typeof MCP_TOOLS)[number]["name"]) =>
 	MCP_TOOLS.find((t) => t.name === name)?.summary ?? "";
 
 const ListIssuesInput = v.object({
+	sort: v.optional(
+		v.pipe(
+			v.picklist(["priority", "last_seen"]),
+			v.description("priority (default): what to fix first. last_seen: the most recent first."),
+		),
+	),
 	claimed: v.optional(
 		v.pipe(
 			v.boolean(),
@@ -79,7 +85,18 @@ function createServer(ports: Ports, actor: Actor): McpServer {
 			description: `${tool("list_issues")} ${UNTRUSTED_HINT}`,
 			inputSchema: toStandardJsonSchema(ListIssuesInput),
 		},
-		async ({ project, status, limit, cursor, release, environment, since, search, claimed }) => {
+		async ({
+			project,
+			status,
+			limit,
+			cursor,
+			release,
+			environment,
+			since,
+			search,
+			claimed,
+			sort,
+		}) => {
 			const after = cursor ? decodeCursor(cursor) : null;
 			if (cursor && !after) {
 				return errorResult("Invalid cursor. Use next_cursor from the previous result.");
@@ -96,6 +113,7 @@ function createServer(ports: Ports, actor: Actor): McpServer {
 					since,
 					search,
 					claimed: claimed === undefined ? undefined : claimed ? "true" : "false",
+					sort: sort ?? "priority",
 				},
 				after,
 				now(),
@@ -109,12 +127,16 @@ function createServer(ports: Ports, actor: Actor): McpServer {
 				times_seen: issue.times_seen,
 				first_seen: issue.first_seen,
 				last_seen: issue.last_seen,
+				priority: issue.priority,
+				events_24h: issue.events_24h,
+				users_affected: issue.users_affected,
 				title_untrusted: issue.title,
 				claim: issue.claim,
 			}));
 			return textResult(
 				JSON.stringify({
 					untrusted_notice: UNTRUSTED_NOTICE,
+					sort: sort ?? "priority",
 					issues,
 					next_cursor: page.next_cursor,
 				}),

@@ -27,7 +27,7 @@ Error messages, stack frames, source lines and request data come from the runnin
 
 ## Tools
 
-- `list_issues`: List error issues, the most recently seen first. Inputs: project (public ID or slug), status, release, environment, since (30m, 24h, 7d or an ISO time), search (title text), claimed (true or false), limit (1-100, default 10), cursor. Each issue shows its claim.
+- `list_issues`: List error issues, the highest priority first (what to fix first: users affected, events in 24 h, recency, newness). Inputs: sort (priority or last_seen), project (public ID or slug), status, release, environment, since (30m, 24h, 7d or an ISO time), search (title text), claimed (true or false), limit (1-100, default 10), cursor. Each issue shows its claim.
 - `get_issue_brief`: The brief of one issue: what you need to fix it (error, in-app frames with source lines, request, counts, releases), under 2,000 tokens. Inputs: issue_id, format (markdown or json).
 - `get_event`: One stored event, normalized, with secrets removed (up to 64 KB). Input: event_id.
 - `resolve_issue`: Set an issue to resolved after you fixed it. Needs the issues:write scope. Input: issue_id.

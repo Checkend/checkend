@@ -65,6 +65,7 @@ describe("OpenAPI 3.1 document", () => {
 			"release",
 			"search",
 			"since",
+			"sort",
 			"status",
 		]);
 		const status = list.parameters.find((p: { name: string }) => p.name === "status");

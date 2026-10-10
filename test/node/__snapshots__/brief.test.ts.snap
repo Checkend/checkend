@@ -10,6 +10,9 @@ exports[`issue brief v1 > keeps event text only inside labelled untrusted blocks
 | Status | unresolved |
 | Level | error |
 | Seen | 1 time (1 stored) |
+| Events (24 h / 7 d) | 1 / 1 |
+| Users affected | 0 |
+| Priority | 4 |
 | First seen | 2026-10-10T12:00:00.000Z |
 | Last seen | 2026-10-10T12:00:00.000Z |
 | Project | <project-id> |

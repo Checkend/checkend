@@ -55,7 +55,7 @@ describe("Worker API", () => {
 		const project = await createProject(cloudflarePorts(env, createExecutionContext()), {
 			name: "Filters",
 		});
-		const query = `project=${project.id}&status=unresolved&release=shop%401.0.0&environment=production&since=24h&search=100%25&limit=5`;
+		const query = `project=${project.id}&status=unresolved&release=shop%401.0.0&environment=production&since=24h&search=100%25&claimed=false&sort=priority&limit=5`;
 		const response = await get(`/v1/issues?${query}`, env.ADMIN_TOKEN);
 		expect(response.status).toBe(200);
 		expect(await response.json()).toMatchObject({ data: [], next_cursor: null });

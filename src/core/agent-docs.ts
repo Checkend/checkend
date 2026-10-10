@@ -6,7 +6,7 @@ export const MCP_TOOLS = [
 	{
 		name: "list_issues",
 		summary:
-			"List error issues, the most recently seen first. Inputs: project (public ID or slug), status, release, environment, since (30m, 24h, 7d or an ISO time), search (title text), claimed (true or false), limit (1-100, default 10), cursor. Each issue shows its claim.",
+			"List error issues, the highest priority first (what to fix first: users affected, events in 24 h, recency, newness). Inputs: sort (priority or last_seen), project (public ID or slug), status, release, environment, since (30m, 24h, 7d or an ISO time), search (title text), claimed (true or false), limit (1-100, default 10), cursor. Each issue shows its claim.",
 	},
 	{
 		name: "get_issue_brief",

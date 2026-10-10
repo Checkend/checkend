@@ -2,7 +2,7 @@ import { type Db, sql } from "../ports/db.ts";
 import { formatEventId, formatIssueId } from "./ids.ts";
 import { normalizeFilename } from "./ingest/fingerprint.ts";
 import { cleanText, type NormalizedEvent, type NormalizedFrame } from "./ingest/normalize.ts";
-import { type Claim, withClaim } from "./issues.ts";
+import { type Claim, getIssue } from "./issues.ts";
 
 /**
  * The issue brief: what an agent needs to fix an issue, in under 2,000 tokens.
@@ -42,6 +42,11 @@ export interface BriefJson {
 		level: string;
 		times_seen: number;
 		stored_events: number;
+		events_24h: number;
+		events_7d: number;
+		users_affected: number;
+		/** Priority score v1 (see listIssues). */
+		priority: number;
 		first_seen: string;
 		last_seen: string;
 		first_release: string | null;
@@ -168,30 +173,30 @@ const SHAPES: Shape[] = [
 ];
 
 export async function buildBrief(db: Db, issueId: number, now: Date): Promise<Brief | null> {
-	const issue = await db.first<{
-		id: number;
-		project_id: number;
-		title: string;
-		culprit: string | null;
-		status: string;
-		level: string;
-		times_seen: number;
-		stored_events: number;
-		first_seen: string;
-		last_seen: string;
-		first_release: string | null;
-		last_release: string | null;
-		fingerprint_version: number;
-		claimed_by: string | null;
-		claim_expires_at: string | null;
-	}>(
-		sql`SELECT i.id, p.public_id AS project_id, i.title, i.culprit, i.status, i.level, i.times_seen,
-				i.stored_events, i.first_seen, i.last_seen, i.first_release, i.last_release, i.fingerprint_version,
-				i.claimed_by, i.claim_expires_at
-			FROM issues i JOIN projects p ON p.id = i.project_id WHERE i.id = ${issueId}`,
-	);
-	if (!issue) return null;
-	const { claim, ...facts } = withClaim(issue, now);
+	const row = await getIssue(db, issueId, now);
+	if (!row) return null;
+	// Only the facts that the brief shows. getIssue gives the same values as the API.
+	const pick = <K extends string>(key: K) => row[key] as never;
+	const claim = row.claim as Claim | null;
+	const facts = {
+		id: pick("id"),
+		project_id: pick("project_id"),
+		title: pick("title"),
+		culprit: pick("culprit"),
+		status: pick("status"),
+		level: pick("level"),
+		times_seen: pick("times_seen"),
+		stored_events: pick("stored_events"),
+		events_24h: pick("events_24h"),
+		events_7d: pick("events_7d"),
+		users_affected: pick("users_affected"),
+		priority: pick("priority"),
+		first_seen: pick("first_seen"),
+		last_seen: pick("last_seen"),
+		first_release: pick("first_release"),
+		last_release: pick("last_release"),
+		fingerprint_version: pick("fingerprint_version"),
+	};
 	const timeline = (
 		await db.all<{ at: string; actor_name: string; action: string; data: string | null }>(
 			sql`SELECT at, actor_name, action, data FROM activity
@@ -312,6 +317,9 @@ function briefMarkdown(brief: BriefJson): string {
 		`| Status | ${issue.status} |`,
 		`| Level | ${issue.level} |`,
 		`| Seen | ${issue.times_seen} ${issue.times_seen === 1 ? "time" : "times"} (${issue.stored_events} stored) |`,
+		`| Events (24 h / 7 d) | ${issue.events_24h} / ${issue.events_7d} |`,
+		`| Users affected | ${issue.users_affected} |`,
+		`| Priority | ${issue.priority} |`,
 		`| First seen | ${issue.first_seen} |`,
 		`| Last seen | ${issue.last_seen} |`,
 		`| Project | ${issue.project_id} |`,

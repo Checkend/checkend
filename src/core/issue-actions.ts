@@ -116,12 +116,22 @@ export async function mergeIssues(
 					last_seen = max(last_seen, (SELECT last_seen FROM issues WHERE id = ${id}))
 				WHERE id = ${targetId}`,
 			sql`UPDATE events SET issue_id = ${targetId} WHERE issue_id = ${id}`,
-			sql`UPDATE issues SET status = 'merged', merged_into = ${targetId}, stored_events = 0,
+			// Hourly counts and users move to the target; the source keeps no copy.
+			sql`INSERT INTO issue_counts (issue_id, hour, count)
+				SELECT ${targetId}, hour, count FROM issue_counts WHERE issue_id = ${id} AND true
+				ON CONFLICT (issue_id, hour) DO UPDATE SET count = count + excluded.count`,
+			sql`DELETE FROM issue_counts WHERE issue_id = ${id}`,
+			sql`INSERT INTO issue_users (issue_id, user_hash, first_seen)
+				SELECT ${targetId}, user_hash, first_seen FROM issue_users WHERE issue_id = ${id} AND true
+				ON CONFLICT (issue_id, user_hash) DO NOTHING`,
+			sql`DELETE FROM issue_users WHERE issue_id = ${id}`,
+			sql`UPDATE issues SET status = 'merged', merged_into = ${targetId}, stored_events = 0, users_affected = 0,
 					status_changed_at = ${now.toISOString()} WHERE id = ${id}`,
 		);
 	}
 	statements.push(
-		sql`UPDATE issues SET stored_events = (SELECT COUNT(*) FROM events WHERE events.issue_id = issues.id)
+		sql`UPDATE issues SET stored_events = (SELECT COUNT(*) FROM events WHERE events.issue_id = issues.id),
+				users_affected = (SELECT COUNT(*) FROM issue_users WHERE issue_users.issue_id = issues.id)
 			WHERE id = ${targetId}`,
 	);
 	await ports.db.batch(statements);

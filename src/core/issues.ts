@@ -31,6 +31,7 @@ export const IssueListQuery = v.object({
 	since: v.optional(v.pipe(v.string(), v.regex(SINCE_PATTERN))),
 	search: v.optional(v.pipe(v.string(), v.minLength(1), v.maxLength(200))),
 	claimed: v.optional(v.picklist(["true", "false"])),
+	sort: v.optional(v.picklist(["last_seen", "priority"])),
 });
 export type IssueListQuery = v.InferOutput<typeof IssueListQuery>;
 
@@ -95,13 +96,70 @@ export type IssueFilters = Omit<IssueListQuery, "since"> & { since?: string | un
  * One page of issues, the most recently seen first. Returns "project_not_found" when the
  * project filter matches no project, so that a typo does not look like "no issues".
  */
+/** Hour buckets after this one are inside the window ("2026-10-10T12" format). */
+const hourBefore = (now: Date, hours: number) =>
+	new Date(now.getTime() - hours * 3_600_000).toISOString().slice(0, 13);
+
+/**
+ * Issue columns for the API, with the counts and priority score v1:
+ * (1 + users affected) x (1 + events in 24 h) x recency x newness, where recency is
+ * 1 / (1 + days since last seen), and newness is 2 for an issue first seen in the last 24 h.
+ * Parameters: hour24, hour7d, now, now24 (ISO).
+ */
+const SCORED_ISSUES = `SELECT *,
+		round((1 + users_affected) * (1 + events_24h)
+			* (1.0 / (1 + max(0, julianday(?) - julianday(last_seen))))
+			* (CASE WHEN first_seen > ? THEN 2 ELSE 1 END), 3) AS priority
+	FROM (SELECT i.id, p.public_id AS project_id, i.title, i.culprit, i.type, i.level, i.platform,
+			i.status, i.times_seen, i.stored_events, i.users_affected, i.first_seen, i.last_seen,
+			i.first_release, i.last_release, i.fingerprint, i.fingerprint_version, i.merged_into,
+			i.claimed_by, i.claim_expires_at, i.project_id AS project_row_id,
+			(SELECT coalesce(sum(c.count), 0) FROM issue_counts c WHERE c.issue_id = i.id AND c.hour > ?) AS events_24h,
+			(SELECT coalesce(sum(c.count), 0) FROM issue_counts c WHERE c.issue_id = i.id AND c.hour > ?) AS events_7d
+		FROM issues i JOIN projects p ON p.id = i.project_id) scored`;
+
+// SQL text built once from constants (no values): the queries bind every value.
+const LIST_ISSUES_SQL = `${SCORED_ISSUES}
+			WHERE (? IS NULL OR project_row_id = ?)
+				AND (? IS NULL OR (? = 'true' AND claim_expires_at > ?)
+					OR (? = 'false' AND (claim_expires_at IS NULL OR claim_expires_at <= ?)))
+				AND (status = ? OR (? IS NULL AND status != 'merged'))
+				AND (? IS NULL OR last_seen >= ?)
+				AND (? IS NULL OR first_release = ? OR last_release = ?
+					OR EXISTS (SELECT 1 FROM events e WHERE e.issue_id = scored.id AND e.release = ?))
+				AND (? IS NULL OR EXISTS (SELECT 1 FROM events e WHERE e.issue_id = scored.id AND e.environment = ?))
+				AND (? IS NULL OR title LIKE ? ESCAPE '\\' OR culprit LIKE ? ESCAPE '\\')
+				AND (? = 1 OR last_seen < ? OR (last_seen = ? AND id < ?))
+			ORDER BY CASE WHEN ? = 1 THEN priority END DESC, last_seen DESC, id DESC
+			LIMIT ? OFFSET ?`;
+const GET_ISSUE_SQL = `${SCORED_ISSUES} WHERE id = ?`;
+
+const scoredParams = (now: Date) => [
+	now.toISOString(),
+	new Date(now.getTime() - 86_400_000).toISOString(),
+	hourBefore(now, 24),
+	hourBefore(now, 24 * 7),
+];
+
+const forApi = (row: IssueRow, now: Date) => {
+	const { project_row_id: _internal, ...rest } = withClaim(row, now);
+	return rest as unknown as IssueRow;
+};
+
+/**
+ * One page of issues: the most recently seen first, or by priority (sort=priority). Returns
+ * "project_not_found" when the project filter matches no project, so that a typo does not
+ * look like "no issues".
+ */
 export async function listIssues(
 	db: Db,
 	query: IssueFilters,
 	after: [string, number] | null,
 	now: Date,
 ): Promise<{ data: IssueRow[]; next_cursor: string | null } | "project_not_found"> {
-	const [lastSeen, lastId] = after ?? ["9999", Number.MAX_SAFE_INTEGER];
+	const byPriority = query.sort === "priority";
+	const offset = byPriority && after?.[0] === "p" ? after[1] : 0;
+	const [lastSeen, lastId] = !byPriority && after ? after : ["9999", Number.MAX_SAFE_INTEGER];
 	const projectRowId = query.project ? await findProjectRowId(db, query.project) : null;
 	if (query.project && projectRowId === null) return "project_not_found";
 	const since = query.since ? parseSince(query.since, now) : null;
@@ -111,22 +169,9 @@ export async function listIssues(
 	const claimed = query.claimed ?? null;
 	const nowIso = now.toISOString();
 	const rows = await db.all<IssueRow>({
-		sql: `SELECT i.id, p.public_id AS project_id, i.title, i.culprit, i.type, i.level, i.platform,
-				i.status, i.times_seen, i.stored_events, i.first_seen, i.last_seen, i.first_release,
-				i.last_release, i.fingerprint, i.fingerprint_version, i.claimed_by, i.claim_expires_at
-			FROM issues i JOIN projects p ON p.id = i.project_id
-			WHERE (? IS NULL OR i.project_id = ?)
-				AND (? IS NULL OR (? = 'true' AND i.claim_expires_at > ?)
-					OR (? = 'false' AND (i.claim_expires_at IS NULL OR i.claim_expires_at <= ?)))
-				AND (i.status = ? OR (? IS NULL AND i.status != 'merged'))
-				AND (? IS NULL OR i.last_seen >= ?)
-				AND (? IS NULL OR i.first_release = ? OR i.last_release = ?
-					OR EXISTS (SELECT 1 FROM events e WHERE e.issue_id = i.id AND e.release = ?))
-				AND (? IS NULL OR EXISTS (SELECT 1 FROM events e WHERE e.issue_id = i.id AND e.environment = ?))
-				AND (? IS NULL OR i.title LIKE ? ESCAPE '\\' OR i.culprit LIKE ? ESCAPE '\\')
-				AND (i.last_seen < ? OR (i.last_seen = ? AND i.id < ?))
-			ORDER BY i.last_seen DESC, i.id DESC LIMIT ?`,
+		sql: LIST_ISSUES_SQL,
 		params: [
+			...scoredParams(now),
 			projectRowId,
 			projectRowId,
 			claimed,
@@ -147,18 +192,23 @@ export async function listIssues(
 			search,
 			search,
 			search,
+			byPriority ? 1 : 0,
 			lastSeen,
 			lastSeen,
 			lastId,
+			byPriority ? 1 : 0,
 			query.limit + 1,
+			offset,
 		],
 	});
-	const page = rows.slice(0, query.limit).map((row) => withClaim(row, now) as IssueRow);
+	const page = rows.slice(0, query.limit).map((row) => forApi(row, now));
 	const last = page.at(-1);
-	const next_cursor =
-		rows.length > query.limit && last
-			? encodeCursor(String(last.last_seen), Number(last.id))
-			: null;
+	const more = rows.length > query.limit && last;
+	const next_cursor = !more
+		? null
+		: byPriority
+			? encodeCursor("p", offset + query.limit)
+			: encodeCursor(String(last.last_seen), Number(last.id));
 	return { data: page, next_cursor };
 }
 
@@ -190,18 +240,14 @@ export async function getIssue(
 	now: Date,
 ): Promise<Record<string, unknown> | null> {
 	const issue = await db.first<IssueRow>({
-		sql: `SELECT i.id, p.public_id AS project_id, i.title, i.culprit, i.type, i.level, i.platform,
-				i.status, i.times_seen, i.stored_events, i.first_seen, i.last_seen, i.first_release,
-				i.last_release, i.fingerprint, i.fingerprint_version, i.merged_into, i.claimed_by,
-				i.claim_expires_at
-			FROM issues i JOIN projects p ON p.id = i.project_id WHERE i.id = ?`,
-		params: [issueId],
+		sql: GET_ISSUE_SQL,
+		params: [...scoredParams(now), issueId],
 	});
 	if (!issue) return null;
 	const latest = await db.first<{ id: number }>(
 		sql`SELECT id FROM events WHERE issue_id = ${issueId} ORDER BY id DESC LIMIT 1`,
 	);
-	return { ...withClaim(issue, now), latest_event_id: latest?.id ?? null };
+	return { ...forApi(issue, now), latest_event_id: latest?.id ?? null };
 }
 
 export async function listIssueEvents(db: Db, issueId: number, limit: number): Promise<IssueRow[]> {

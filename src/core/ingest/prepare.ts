@@ -16,7 +16,25 @@ export interface PreparedEvent {
 	rawJson: string | null;
 	/** The size of the payload as received (after decompression). */
 	payloadBytes: number;
+	/** A hash of the user (ID, email, username or IP address), or null when there is no user. */
+	userHash: string | null;
 	receivedAt: Date;
+}
+
+/** The first 16 bytes of SHA-256 of the user identity, as hex. The identity is not stored. */
+async function userHash(user: Record<string, unknown> | null): Promise<string | null> {
+	const identity = [user?.id, user?.email, user?.username, user?.ip_address].find(
+		(value) => (typeof value === "string" && value.length > 0) || typeof value === "number",
+	);
+	if (identity === undefined) return null;
+	const digest = await crypto.subtle.digest(
+		"SHA-256",
+		new TextEncoder().encode(`user:${String(identity)}`),
+	);
+	return [...new Uint8Array(digest)]
+		.slice(0, 16)
+		.map((b) => b.toString(16).padStart(2, "0"))
+		.join("");
 }
 
 /**
@@ -36,6 +54,7 @@ export async function prepareEvent(payload: Uint8Array, receivedAt: Date): Promi
 				? JSON.stringify(scrub(raw) as JsonObject)
 				: null,
 		payloadBytes: payload.byteLength,
+		userHash: await userHash(event.user),
 		receivedAt,
 	};
 }

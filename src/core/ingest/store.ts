@@ -18,8 +18,12 @@ const FLOOD_TITLE: IssueTitle = {
 };
 
 // Estimated D1 rows written (D1 counts index updates as rows). Used for budget mode.
-const ROWS_STORED = 8;
-const ROWS_COUNTED = 4;
+const ROWS_STORED = 10;
+const ROWS_COUNTED = 6;
+const ROWS_PER_USER = 2;
+
+/** Users stored per issue; users_affected stops at this number. */
+export const MAX_USERS_PER_ISSUE = 1000;
 
 const MAX_ATTEMPTS = 3;
 // Errors that fail again on retry. Others (network, reset, overload) are retried.
@@ -184,6 +188,27 @@ async function planWrite(
 				level = excluded.level`,
 	];
 
+	// Hourly count and users affected. Before the event insert: the duplicate check looks for
+	// the event_id in events, and the insert below adds it.
+	statements.push(
+		sql`INSERT INTO issue_counts (issue_id, hour, count)
+			SELECT id, ${nowIso.slice(0, 13)}, 1 FROM issues
+			WHERE project_id = ${projectId} AND fingerprint = ${fingerprint}
+				AND NOT EXISTS (SELECT 1 FROM events WHERE project_id = ${projectId} AND event_id = ${event.event_id})
+			ON CONFLICT (issue_id, hour) DO UPDATE SET count = count + 1`,
+	);
+	if (prepared.userHash) {
+		statements.push(
+			sql`INSERT INTO issue_users (issue_id, user_hash, first_seen)
+				SELECT id, ${prepared.userHash}, ${nowIso} FROM issues
+				WHERE project_id = ${projectId} AND fingerprint = ${fingerprint} AND users_affected < ${MAX_USERS_PER_ISSUE}
+					AND NOT EXISTS (SELECT 1 FROM events WHERE project_id = ${projectId} AND event_id = ${event.event_id})
+				ON CONFLICT (issue_id, user_hash) DO NOTHING`,
+			sql`UPDATE issues SET users_affected = (SELECT COUNT(*) FROM issue_users WHERE issue_users.issue_id = issues.id)
+				WHERE project_id = ${projectId} AND fingerprint = ${fingerprint}`,
+		);
+	}
+
 	if (mode === "full") {
 		const data = JSON.stringify({ ...event, tags });
 		statements.push(
@@ -207,7 +232,10 @@ async function planWrite(
 		);
 	}
 
-	const rows = (mode === "full" ? ROWS_STORED : ROWS_COUNTED) + newTagKeys.length;
+	const rows =
+		(mode === "full" ? ROWS_STORED : ROWS_COUNTED) +
+		newTagKeys.length +
+		(prepared.userHash ? ROWS_PER_USER : 0);
 	const day = nowIso.slice(0, 10);
 	statements.push(
 		sql`INSERT INTO daily_usage (day, events_received, events_stored, rows_written)
