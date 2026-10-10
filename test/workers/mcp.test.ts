@@ -37,6 +37,12 @@ const makeTokens = async (): Promise<McpTestTokens> => {
 				scopes: ["issues:read", "issues:write"],
 			})
 		).token,
+		writerB: (
+			await createToken(ports, BOOTSTRAP_ADMIN, {
+				name: "writer-b",
+				scopes: ["issues:read", "issues:write"],
+			})
+		).token,
 		noRead: (
 			await createToken(ports, BOOTSTRAP_ADMIN, { name: "no-read", scopes: ["releases:write"] })
 		).token,

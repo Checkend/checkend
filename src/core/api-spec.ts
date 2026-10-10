@@ -153,6 +153,12 @@ export const API_ROUTES: ApiRoute[] = [
 		summary: "Release your claim (or any claim, with admin).",
 	},
 	{
+		method: "DELETE",
+		path: "/v1/issues/:id/claim",
+		scope: "issues:write",
+		summary: "Release your claim (the same as POST /release).",
+	},
+	{
 		method: "POST",
 		path: "/v1/issues/:id/notes",
 		scope: "issues:write",

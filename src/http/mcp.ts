@@ -29,6 +29,12 @@ import type { Ports } from "../ports/index.ts";
 import type { AppEnv } from "./app.ts";
 import { need, requireActor } from "./auth.ts";
 
+/** An ID as a number or as a string of digits ("42"): agents often send strings. */
+const Id = v.union([
+	v.pipe(v.number(), v.integer(), v.minValue(1)),
+	v.pipe(v.string(), v.regex(/^\d{1,15}$/), v.transform(Number)),
+]);
+
 const NEEDS_WRITE = "This tool needs a token with the issues:write scope.";
 
 const UNTRUSTED_HINT =
@@ -70,10 +76,10 @@ const ListIssuesInput = v.object({
 	),
 });
 const IssueInput = v.object({
-	issue_id: v.pipe(v.number(), v.integer(), v.minValue(1)),
+	issue_id: Id,
 	format: v.optional(v.picklist(["markdown", "json"])),
 });
-const EventInput = v.object({ event_id: v.pipe(v.number(), v.integer(), v.minValue(1)) });
+const EventInput = v.object({ event_id: Id });
 
 const textResult = (text: string) => ({ content: [{ type: "text" as const, text }] });
 const errorResult = (text: string) => ({ ...textResult(text), isError: true });
@@ -203,7 +209,7 @@ function createServer(ports: Ports, actor: Actor): McpServer {
 		return textResult(JSON.stringify({ ...issue, id: formatIssueId(issueId) }));
 	};
 
-	const IssueIdInput = v.object({ issue_id: v.pipe(v.number(), v.integer(), v.minValue(1)) });
+	const IssueIdInput = v.object({ issue_id: Id });
 	for (const [name, status] of [
 		["resolve_issue", "resolved"],
 		["ignore_issue", "ignored"],
@@ -257,8 +263,11 @@ function createServer(ports: Ports, actor: Actor): McpServer {
 			const result =
 				id === null ? { kind: "not_found" as const } : await releaseClaim(ports, actor, id);
 			if (result.kind === "not_found") return errorResult(`Issue ${issue_id} not found.`);
-			if (result.kind === "not_holder")
-				return errorResult("Only the holder of the claim or an admin can release it.");
+			if (result.kind === "not_holder") {
+				return errorResult(
+					`Issue ${issue_id} is claimed by ${result.claim.holder} until ${result.claim.expires_at}. Only the holder or an admin can release it.`,
+				);
+			}
 			return textResult(JSON.stringify(await getIssue(db, id as number, now())));
 		},
 	);
@@ -310,7 +319,7 @@ function createServer(ports: Ports, actor: Actor): McpServer {
 			description: `${tool("merge_issues")} ${UNTRUSTED_HINT}`,
 			inputSchema: toStandardJsonSchema(
 				v.object({
-					target_id: v.pipe(v.number(), v.integer(), v.minValue(1)),
+					target_id: Id,
 					source_ids: MergeBody.entries.source_ids,
 				}),
 			),

@@ -104,6 +104,24 @@ describe("claims", () => {
 		expect((await call("POST", `/v1/issues/${id}/release`, ADMIN)).body.data.claim).toBeNull();
 	});
 
+	it("DELETE /v1/issues/:id/claim releases too; a non-holder gets 403 not_claim_holder with the claim", async () => {
+		const { store, call, agentA, agentB } = await setup();
+		const id = await store("AlphaError");
+		await call("POST", `/v1/issues/${id}/claim`, agentA);
+		const claim = { holder: "agent-a", expires_at: "2026-10-10T14:00:00.000Z" };
+		for (const [method, path] of [
+			["DELETE", `/v1/issues/${id}/claim`],
+			["POST", `/v1/issues/${id}/release`],
+		] as const) {
+			const denied = await call(method, path, agentB);
+			expect(denied.status).toBe(403);
+			expect(denied.body).toEqual({ error: "not_claim_holder", claim });
+		}
+		const released = await call("DELETE", `/v1/issues/${id}/claim`, agentA);
+		expect(released.status).toBe(200);
+		expect(released.body.data.claim).toBeNull();
+	});
+
 	it("filters the list by claimed, and shows the claim in the list", async () => {
 		const { store, call, agentA } = await setup();
 		const a = await store("AlphaError");

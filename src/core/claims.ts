@@ -20,7 +20,7 @@ export type ClaimResult =
 	| { kind: "done" }
 	| { kind: "not_found" }
 	| { kind: "claimed"; claim: Claim }
-	| { kind: "not_holder" };
+	| { kind: "not_holder"; claim: Claim };
 
 export async function claimIssue(
 	ports: P,
@@ -68,15 +68,21 @@ export async function releaseClaim(ports: P, actor: Actor, issueId: number): Pro
 		claim_expires_at: string | null;
 		claimed_by_type: string | null;
 		claimed_by_id: number | null;
+		claimed_by: string | null;
 	}>(
-		sql`SELECT claim_expires_at, claimed_by_type, claimed_by_id FROM issues WHERE id = ${issueId} AND status != 'merged'`,
+		sql`SELECT claim_expires_at, claimed_by_type, claimed_by_id, claimed_by FROM issues WHERE id = ${issueId} AND status != 'merged'`,
 	);
 	if (!issue) return { kind: "not_found" };
 	const active = issue.claim_expires_at !== null && issue.claim_expires_at > nowIso;
 	if (!active) return { kind: "done" };
 	const isHolder =
 		issue.claimed_by_type === actor.type && (issue.claimed_by_id ?? -1) === (actor.id ?? -1);
-	if (!isHolder && !hasScope(actor, "admin")) return { kind: "not_holder" };
+	if (!isHolder && !hasScope(actor, "admin")) {
+		return {
+			kind: "not_holder",
+			claim: { holder: issue.claimed_by ?? "", expires_at: issue.claim_expires_at ?? "" },
+		};
+	}
 	await ports.db.batch([
 		activityStatement(actor, "issue.release", { type: "issue", id: issueId }, undefined, now),
 		sql`UPDATE issues SET claimed_by_type = NULL, claimed_by_id = NULL, claimed_by = NULL, claim_expires_at = NULL

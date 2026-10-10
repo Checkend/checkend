@@ -34,11 +34,17 @@ const writer = (
 		scopes: ["issues:read", "issues:write"],
 	})
 ).token;
+const writerB = (
+	await createToken(t.ports, BOOTSTRAP_ADMIN, {
+		name: "writer-b",
+		scopes: ["issues:read", "issues:write"],
+	})
+).token;
 const issueId = (await t.ports.db.first<{ id: number }>(sql`SELECT id FROM issues`))?.id ?? 0;
 const eventId = (await t.ports.db.first<{ id: number }>(sql`SELECT id FROM events`))?.id ?? 0;
 
 mcpContract(
 	"Node",
 	async (request) => app.request(request, undefined, { ports: t.ports }),
-	async () => ({ reader, writer, noRead, admin: ADMIN, issueId, eventId }),
+	async () => ({ reader, writer, writerB, noRead, admin: ADMIN, issueId, eventId }),
 );

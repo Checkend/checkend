@@ -9,6 +9,8 @@ export interface McpTestTokens {
 	reader: string;
 	/** A token with issues:read and issues:write. */
 	writer: string;
+	/** A second writer token (another agent). */
+	writerB: string;
 	/** A token without issues:read (releases:write only). */
 	noRead: string;
 	/** The bootstrap ADMIN_TOKEN. */
@@ -236,6 +238,14 @@ export function mcpContract(
 			const blocked = await b.callTool({ name: "claim_issue", arguments: { issue_id: issueId } });
 			expect(blocked.isError).toBe(true);
 			expect(text(blocked)).toMatch(/claimed by writer until/);
+			const otherAgent = await connect((await tokens()).writerB);
+			const notHolder = await otherAgent.callTool({
+				name: "release_claim",
+				arguments: { issue_id: issueId },
+			});
+			expect(notHolder.isError).toBe(true);
+			expect(text(notHolder)).toMatch(/claimed by writer until/);
+			await otherAgent.close();
 			const released = JSON.parse(
 				text(await a.callTool({ name: "release_claim", arguments: { issue_id: issueId } })),
 			);
@@ -255,6 +265,27 @@ export function mcpContract(
 			expect(brief).toContain("note by writer: Cause: missing null check.");
 			await a.close();
 			await b.close();
+		});
+
+		it("accepts issue and event IDs as numeric strings", async () => {
+			const { reader, issueId, eventId } = await tokens();
+			const client = await connect(reader);
+			const brief = text(
+				await client.callTool({
+					name: "get_issue_brief",
+					arguments: { issue_id: String(issueId) },
+				}),
+			);
+			expect(brief).toContain(`# Checkend issue ${issueId} (brief v1)`);
+			const event = await client.callTool({
+				name: "get_event",
+				arguments: { event_id: String(eventId) },
+			});
+			expect(event.isError).toBeFalsy();
+			expect(
+				(await client.callTool({ name: "get_issue_brief", arguments: { issue_id: "4x" } })).isError,
+			).toBe(true);
+			await client.close();
 		});
 	});
 }

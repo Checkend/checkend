@@ -203,21 +203,20 @@ export function apiRoutes(app: Hono<AppEnv>, state: IngestState): void {
 		});
 	});
 
-	app.post("/v1/issues/:id/release", need("issues:write"), async (c) => {
+	// Release a claim: POST /release, or DELETE /claim (the same action).
+	const release = async (c: Context<AppEnv>) => {
 		const params = v.safeParse(IdParam, c.req.param());
 		if (!params.success) return invalid(c, params.issues);
 		const result = await releaseClaim(c.env.ports, c.get("actor"), params.output.id);
 		if (result.kind === "not_found") return c.json({ error: "not_found" }, 404);
-		if (result.kind === "not_holder") {
-			return c.json(
-				{ error: "forbidden", reason: "Only the holder of the claim or an admin can release it." },
-				403,
-			);
-		}
+		if (result.kind === "not_holder")
+			return c.json({ error: "not_claim_holder", claim: result.claim }, 403);
 		return c.json({
 			data: await getIssue(c.env.ports.db, params.output.id, c.env.ports.clock.now()),
 		});
-	});
+	};
+	app.post("/v1/issues/:id/release", need("issues:write"), release);
+	app.delete("/v1/issues/:id/claim", need("issues:write"), release);
 
 	app.post("/v1/issues/:id/notes", need("issues:write"), async (c) => {
 		const params = v.safeParse(IdParam, c.req.param());
