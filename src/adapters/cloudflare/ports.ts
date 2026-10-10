@@ -22,6 +22,8 @@ export interface ConfigEnv {
 	GITHUB_WEBHOOK_SECRET?: string;
 	/** A secret: "k2:<base64 of 32 bytes>,k1:<...>", the current key first. */
 	ENCRYPTION_KEYS?: string;
+	/** A secret: a GitHub token with read access to the repositories (commits per release). */
+	GITHUB_TOKEN?: string;
 }
 
 type WorkerEnv = Omit<Env, "INGEST_RATE_LIMITER"> &
@@ -65,6 +67,7 @@ export function readConfig(env: ConfigEnv): Config {
 		verifyQuietHours: positiveInt(env.VERIFY_QUIET_HOURS) ?? DEFAULT_CONFIG.verifyQuietHours,
 		githubWebhookSecret: env.GITHUB_WEBHOOK_SECRET?.trim() || null,
 		encryptionKeys: encryptionKeys(env.ENCRYPTION_KEYS),
+		githubToken: env.GITHUB_TOKEN?.trim() || null,
 	};
 }
 

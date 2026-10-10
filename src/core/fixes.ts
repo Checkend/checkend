@@ -262,6 +262,37 @@ const DEPLOYED_ACTIVITY_SQL = `INSERT INTO activity (at, actor_type, actor_id, a
 			WHERE x.deploy_id = (SELECT id FROM deploys WHERE uid = ?) AND ${REF_MATCHES})`;
 
 /**
+ * Marks the fixes that a deploy contains as deployed, after more refs were added to it (the
+ * commits that the cron fetched from GitHub). The quiet period starts now.
+ */
+export async function markFixesDeployed(
+	ports: Pick<Ports, "db" | "clock">,
+	actor: Actor,
+	deployUid: string,
+	projectId: number,
+	release: string,
+	environment: string,
+): Promise<void> {
+	const nowIso = ports.clock.now().toISOString();
+	await ports.db.batch([
+		{
+			sql: DEPLOYED_ACTIVITY_SQL,
+			params: [
+				nowIso,
+				actor.type,
+				actor.id,
+				actor.name,
+				release,
+				environment,
+				projectId,
+				deployUid,
+			],
+		},
+		{ sql: MARK_DEPLOYED_SQL, params: [deployUid, nowIso, nowIso, projectId, deployUid] },
+	]);
+}
+
+/**
  * Records a deploy: the release (created on first use), the deploy, what it contains, and the
  * fixes it deploys. One atomic batch.
  */

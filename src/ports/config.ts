@@ -23,6 +23,8 @@ export interface Config {
 	githubWebhookSecret: string | null;
 	/** Keys for encrypted values, the current key first (ENCRYPTION_KEYS). Empty: none. */
 	encryptionKeys: EncryptionKey[];
+	/** A GitHub token that can read the repositories (GITHUB_TOKEN): commits per release. */
+	githubToken: string | null;
 }
 
 export const DEFAULT_CONFIG: Config = {
@@ -35,4 +37,5 @@ export const DEFAULT_CONFIG: Config = {
 	verifyQuietHours: 24,
 	githubWebhookSecret: null,
 	encryptionKeys: [],
+	githubToken: null,
 };

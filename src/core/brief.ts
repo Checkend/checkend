@@ -5,6 +5,7 @@ import { normalizeFilename } from "./ingest/fingerprint.ts";
 import { cleanText, type NormalizedEvent, type NormalizedFrame } from "./ingest/normalize.ts";
 import { type Claim, type Fix, getIssue } from "./issues.ts";
 import { symbolicateEvent } from "./sourcemaps.ts";
+import { type SuspectCommit, suspectCommit } from "./suspects.ts";
 
 /**
  * The issue brief: what an agent needs to fix an issue, in under 2,000 tokens.
@@ -63,6 +64,13 @@ export interface BriefJson {
 		trust: "low" | "high";
 		/** Frames that a source map can map (with a line and a column), and frames it mapped. */
 		source_maps: { frames: number; mapped: number };
+		/**
+		 * The release where the issue was first seen, when CI reported a deploy of it (then the
+		 * name is a fact; the release of an event alone is untrusted text).
+		 */
+		first_release_deploy: { version: string; deployed_at: string } | null;
+		/** A commit of the first release that changed a file of an in-app frame, or null. */
+		suspect_commit: SuspectCommit | null;
 		/** The linked fix and where it is in the fix loop, or null. */
 		fix: Fix | null;
 	};
@@ -77,6 +85,8 @@ export interface BriefJson {
 		exceptions: { type: string | null; value: string; frames: BriefFrame[] }[];
 		request: { method: string | null; url: string | null; headers: [string, string][] } | null;
 		tags: [string, string][];
+		/** The message of the suspect commit (text from the repository). */
+		suspect_commit_message: string | null;
 		/** Recent actions and notes, the most recent first. Notes are written by agents. */
 		timeline: string[];
 	};
@@ -229,15 +239,36 @@ export async function buildBrief(
 	const symbolicated = stored ? await symbolicateEvent(db, blobs, issueId, stored) : null;
 	const event = symbolicated?.event ?? null;
 	const source_maps = { frames: symbolicated?.frames ?? 0, mapped: symbolicated?.mapped ?? 0 };
+	const suspect = event
+		? await suspectCommit(
+				db,
+				issueId,
+				event.exceptions.flatMap((e) => e.frames),
+			)
+		: null;
+	const first_release_deploy = await db.first<{ version: string; deployed_at: string }>(
+		sql`SELECT r.version, min(d.deployed_at) AS deployed_at FROM issues i
+			JOIN releases r ON r.project_id = i.project_id AND r.version = i.first_release
+			JOIN deploys d ON d.release_id = r.id
+			WHERE i.id = ${issueId} GROUP BY r.id`,
+	);
 
 	for (const [i, shape] of SHAPES.entries()) {
 		const json = briefJson(
-			{ ...facts, claim, fix, source_maps },
+			{
+				...facts,
+				claim,
+				fix,
+				source_maps,
+				first_release_deploy,
+				suspect_commit: suspect?.commit ?? null,
+			},
 			latest?.id ?? null,
 			event,
 			shape,
 			i > 0,
 			timeline,
+			suspect?.message ?? null,
 		);
 		const markdown = briefMarkdown(json);
 		if (markdown.length <= BRIEF_MAX_CHARS || i === SHAPES.length - 1) {
@@ -280,6 +311,7 @@ function briefJson(
 	shape: Shape,
 	truncated: boolean,
 	timeline: string[],
+	suspectMessage: string | null,
 ): BriefJson {
 	const { title, culprit, ...facts } = issue;
 	const exceptions = [...(event?.exceptions ?? [])]
@@ -320,6 +352,7 @@ function briefJson(
 			tags: (event?.tags ?? [])
 				.slice(0, shape.tags)
 				.map(([k, v]) => [cleanText(k, 32), cleanText(v, 100)]),
+			suspect_commit_message: text(suspectMessage, shape.message),
 			timeline: timeline.slice(0, shape.timeline),
 		},
 		truncated,
@@ -358,6 +391,16 @@ function fixLine(fix: Fix): string {
 	return cleanText([`${what} by ${fix.linked_by}`, where, outcome].filter(Boolean).join(", "), 300);
 }
 
+/** A table cell: one line, no "|". */
+const cell = (value: string) => cleanText(value, 200).replace(/[|\n]/g, "/");
+
+/** "a1b2c3d4e5f6 by grace: changed src/cart.ts (frame cartTotal)" */
+function suspectLine(commit: SuspectCommit): string {
+	const by = commit.author ? ` by ${cell(commit.author)}` : "";
+	const frame = commit.frame ? ` (frame ${cell(commit.frame)})` : "";
+	return `${commit.sha.slice(0, 12)}${by}: changed ${cell(commit.files.join(", "))}${frame}`;
+}
+
 function briefMarkdown(brief: BriefJson): string {
 	const { issue, untrusted } = brief;
 	const parts: string[] = [
@@ -374,6 +417,11 @@ function briefMarkdown(brief: BriefJson): string {
 		`| Users affected | ${issue.users_affected} |`,
 		`| Priority | ${issue.priority} |`,
 		`| First seen | ${issue.first_seen} |`,
+		...(issue.first_release_deploy
+			? [
+					`| First release | ${cell(issue.first_release_deploy.version)} (first deployed ${issue.first_release_deploy.deployed_at}) |`,
+				]
+			: []),
 		`| Last seen | ${issue.last_seen} |`,
 		`| Project | ${issue.project_id} |`,
 		`| Trust | ${issue.trust === "low" ? "low: the DSN can be public (browser), so anyone can send events" : "high"} |`,
@@ -381,10 +429,14 @@ function briefMarkdown(brief: BriefJson): string {
 			? [`| Claimed by | ${cleanText(issue.claim.holder, 100)} until ${issue.claim.expires_at} |`]
 			: []),
 		...(issue.fix ? [`| Fix | ${fixLine(issue.fix)} |`] : []),
+		...(issue.suspect_commit ? [`| Suspect commit | ${suspectLine(issue.suspect_commit)} |`] : []),
 		`| Latest event | ${issue.latest_event_id === null ? "none stored" : formatEventId(issue.latest_event_id)} |`,
 		"",
 		untrustedBlock("Error", [untrusted.title, untrusted.message].filter(Boolean).join("\n\n")),
 	];
+	if (untrusted.suspect_commit_message) {
+		parts.push(untrustedBlock("Suspect commit message", untrusted.suspect_commit_message));
+	}
 
 	untrusted.exceptions.forEach((exception, i) => {
 		const lines = [`${exception.type ?? "Error"}: ${exception.value}`];

@@ -1,6 +1,7 @@
 import type { Ports } from "../ports/index.ts";
 import { verifyFixes } from "./fixes.ts";
 import { pruneDeliveries } from "./github.ts";
+import { fetchDeployCommits } from "./github-commits.ts";
 import { deliverDue, reencryptSecrets } from "./webhooks.ts";
 
 /**
@@ -35,6 +36,8 @@ export async function runScheduled(ports: Ports, now: Date): Promise<ScheduledRu
 				run.deliveries = await deliverDue(p);
 			},
 		],
+		// Commits of new deploys from the GitHub API (with GITHUB_TOKEN).
+		["fetch_deploy_commits", async (p) => void (await fetchDeployCommits(p))],
 		// Rotation: secrets of an older key, encrypted again with the current key.
 		["reencrypt_secrets", async (p) => void (await reencryptSecrets(p))],
 		// Once a day (the run between 03:00 and 03:05 UTC).

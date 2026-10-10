@@ -28,6 +28,7 @@ describe("readConfig", () => {
 			verifyQuietHours: 6,
 			githubWebhookSecret: null,
 			encryptionKeys: [],
+			githubToken: null,
 		});
 	});
 

@@ -20,6 +20,10 @@ export const MAX_WEBHOOK_BYTES = 2 * 1024 * 1024;
 /** Commits per push that Checkend stores. */
 const MAX_PUSH_COMMITS = 1000;
 
+/** Stored per commit: the message and the changed files are capped. */
+export const MAX_MESSAGE_CHARS = 2000;
+export const MAX_FILES = 300;
+
 /** Days that Checkend keeps delivery IDs, to ignore redeliveries. */
 export const DELIVERY_DAYS = 7;
 
@@ -59,7 +63,17 @@ const PushPayload = v.object({
 	ref: v.pipe(v.string(), v.maxLength(300)),
 	deleted: v.optional(v.boolean()),
 	repository: Repository,
-	commits: v.array(v.object({ id: Sha })),
+	commits: v.array(
+		v.object({
+			id: Sha,
+			message: v.optional(v.string(), ""),
+			timestamp: v.optional(v.nullable(v.string())),
+			author: v.optional(v.nullable(v.object({ username: v.optional(v.nullable(v.string())) }))),
+			added: v.optional(v.array(v.string()), []),
+			removed: v.optional(v.array(v.string()), []),
+			modified: v.optional(v.array(v.string()), []),
+		}),
+	),
 });
 const PullRequestPayload = v.object({
 	action: v.string(),
@@ -137,13 +151,30 @@ async function handleEvent(ports: P, event: string, payload: unknown): Promise<W
 		if (!push.success) return invalid(push.issues);
 		const branch = /^refs\/heads\/(.+)$/.exec(push.output.ref)?.[1];
 		if (!branch || push.output.deleted) return { ok: true, ignored: "not a branch push" };
-		const commits = JSON.stringify(push.output.commits.slice(-MAX_PUSH_COMMITS).map((c) => c.id));
+		const pushed = push.output.commits.slice(-MAX_PUSH_COMMITS);
+		const commits = JSON.stringify(pushed.map((c) => c.id));
+		// The commit data for suspect commits: message, GitHub login, changed files.
+		const details = JSON.stringify(
+			pushed.map((c) => ({
+				sha: c.id,
+				message: c.message.slice(0, MAX_MESSAGE_CHARS),
+				author: c.author?.username?.slice(0, 100) ?? null,
+				committed_at: c.timestamp?.slice(0, 40) ?? null,
+				files: JSON.stringify(
+					[...new Set([...c.added, ...c.modified, ...c.removed])].slice(0, MAX_FILES),
+				),
+			})),
+		);
 		await ports.db.batch(
-			projects.map(
-				(project) =>
-					sql`INSERT INTO pushed_commits (project_id, branch, sha, pushed_at)
-						SELECT ${project.id}, ${branch}, value, ${nowIso} FROM json_each(${commits})`,
-			),
+			projects.flatMap((project) => [
+				sql`INSERT INTO pushed_commits (project_id, branch, sha, pushed_at)
+					SELECT ${project.id}, ${branch}, value, ${nowIso} FROM json_each(${commits})`,
+				sql`INSERT OR REPLACE INTO commits (project_id, sha, message, author, committed_at, files)
+					SELECT ${project.id}, json_extract(value, '$.sha'), json_extract(value, '$.message'),
+						json_extract(value, '$.author'), json_extract(value, '$.committed_at'),
+						json_extract(value, '$.files')
+					FROM json_each(${details})`,
+			]),
 		);
 		return {
 			ok: true,
