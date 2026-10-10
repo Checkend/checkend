@@ -87,6 +87,11 @@ export async function handleIngest(
 		// The URL has the public project ID; the write needs the internal row ID.
 		const project = await state.keys.find(ports.db, projectId, key, now);
 		if (!project) throw invalidKey();
+		// A browser sends an Origin header. A project can list the origins that it accepts.
+		const origin = request.headers.get("origin");
+		if (origin !== null && project.allowedOrigins?.includes(origin.toLowerCase()) === false) {
+			throw new IngestError(403, "origin_not_allowed", "This origin cannot send events here.");
+		}
 
 		if (!(await ports.rateLimiter.allow(`${projectId}:${key}`))) {
 			return tooManyRequests(RATE_LIMIT_SECONDS, "key");
@@ -107,7 +112,9 @@ export async function handleIngest(
 		}
 
 		const prepared = await prepareEvent(payload, now);
-		ports.defer(storeEvent(ports, state, project.projectId, prepared));
+		ports.defer(
+			storeEvent(ports, state, project.projectId, prepared, { browser: origin !== null }),
+		);
 		return json(200, { id: prepared.event.event_id });
 	} catch (error) {
 		if (error instanceof IngestError) return json(error.status, { detail: error.message });

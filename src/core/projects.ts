@@ -12,9 +12,24 @@ export const RepositoryName = v.pipe(
 	v.transform((name) => name.toLowerCase()),
 );
 
+/** A browser origin: scheme, host and optional port, no path. */
+export const Origin = v.pipe(
+	v.string(),
+	v.regex(/^https?:\/\/[A-Za-z0-9.-]{1,253}(:\d{1,5})?$/),
+	v.transform((origin) => origin.toLowerCase()),
+);
+
+export const MAX_ALLOWED_ORIGINS = 20;
+
 export const UpdateProjectBody = v.strictObject({
 	/** The GitHub repository of the project, or null to remove it. */
 	repository: v.optional(v.nullable(RepositoryName)),
+	/** low or high; null: automatic (low after the first browser event). */
+	trust: v.optional(v.nullable(v.picklist(["low", "high"]))),
+	/** Origins that browser events can come from; null: any origin. */
+	allowed_origins: v.optional(
+		v.nullable(v.pipe(v.array(Origin), v.minLength(1), v.maxLength(MAX_ALLOWED_ORIGINS))),
+	),
 });
 export type UpdateProjectBody = v.InferOutput<typeof UpdateProjectBody>;
 
@@ -36,6 +51,10 @@ export interface ProjectSummary {
 	slug: string;
 	platform: string | null;
 	repository: string | null;
+	/** The trust level now: the setting, or automatic (low after a browser event). */
+	trust: "low" | "high";
+	trust_setting: "low" | "high" | null;
+	allowed_origins: string[] | null;
 	created_at: string;
 	keys: string[];
 }
@@ -121,15 +140,23 @@ export async function createProject(
 }
 
 export async function listProjects(db: Db): Promise<ProjectSummary[]> {
-	const projects = await db.all<Omit<ProjectSummary, "keys"> & { internal_id: number }>(
-		sql`SELECT id AS internal_id, public_id AS id, name, slug, platform, repository, created_at
+	const projects = await db.all<
+		Omit<ProjectSummary, "keys" | "allowed_origins"> & {
+			internal_id: number;
+			allowed_origins: string | null;
+		}
+	>(
+		sql`SELECT id AS internal_id, public_id AS id, name, slug, platform, repository,
+				coalesce(trust, CASE WHEN browser_seen_at IS NULL THEN 'high' ELSE 'low' END) AS trust,
+				trust AS trust_setting, allowed_origins, created_at
 			FROM projects ORDER BY internal_id`,
 	);
 	const keys = await db.all<{ project_id: number; public_key: string }>(
 		sql`SELECT project_id, public_key FROM project_keys WHERE revoked_at IS NULL ORDER BY id`,
 	);
-	return projects.map(({ internal_id, ...p }) => ({
+	return projects.map(({ internal_id, allowed_origins, ...p }) => ({
 		...p,
+		allowed_origins: allowed_origins ? (JSON.parse(allowed_origins) as string[]) : null,
 		keys: keys.filter((k) => k.project_id === internal_id).map((k) => k.public_key),
 	}));
 }
@@ -143,14 +170,29 @@ export async function updateProject(
 ): Promise<boolean> {
 	const projectId = await findProjectRowId(ports.db, ref);
 	if (projectId === null) return false;
-	if (body.repository === undefined) return true;
+	const statements = [];
+	if (body.repository !== undefined) {
+		statements.push(
+			sql`UPDATE projects SET repository = ${body.repository} WHERE id = ${projectId}`,
+		);
+	}
+	if (body.trust !== undefined) {
+		statements.push(sql`UPDATE projects SET trust = ${body.trust} WHERE id = ${projectId}`);
+	}
+	if (body.allowed_origins !== undefined) {
+		const origins = body.allowed_origins
+			? JSON.stringify([...new Set(body.allowed_origins)])
+			: null;
+		statements.push(sql`UPDATE projects SET allowed_origins = ${origins} WHERE id = ${projectId}`);
+	}
+	if (statements.length === 0) return true;
 	await ports.db.batch([
-		sql`UPDATE projects SET repository = ${body.repository} WHERE id = ${projectId}`,
+		...statements,
 		activityStatement(
 			actor,
 			"project.update",
 			{ type: "project", id: projectId },
-			{ repository: body.repository },
+			body,
 			ports.clock.now(),
 		),
 	]);
@@ -165,9 +207,16 @@ export async function projectRepository(db: Db, projectId: number): Promise<stri
 	return row?.repository ?? null;
 }
 
+/** A known DSN key: the internal project row ID and the allowed browser origins. */
+export interface KeyLookup {
+	projectId: number;
+	/** Origins that browser events can come from; null: any origin. */
+	allowedOrigins: string[] | null;
+}
+
 interface CacheEntry {
 	/** projectId is the internal row ID, for the write. */
-	value: { projectId: number } | null;
+	value: KeyLookup | null;
 	expires: number;
 }
 
@@ -195,27 +244,29 @@ export class KeyCache {
 	}
 
 	/** The cached result, or undefined when a D1 lookup is necessary. */
-	peek(projectId: number, publicKey: string, now: Date): { projectId: number } | null | undefined {
+	peek(projectId: number, publicKey: string, now: Date): KeyLookup | null | undefined {
 		const cacheKey = `${projectId}:${publicKey}`;
 		const cached = this.known.get(cacheKey) ?? this.unknown.get(cacheKey);
 		return cached && cached.expires > now.getTime() ? cached.value : undefined;
 	}
 
-	async find(
-		db: Db,
-		projectId: number,
-		publicKey: string,
-		now: Date,
-	): Promise<{ projectId: number } | null> {
+	async find(db: Db, projectId: number, publicKey: string, now: Date): Promise<KeyLookup | null> {
 		const cached = this.peek(projectId, publicKey, now);
 		if (cached !== undefined) return cached;
 
 		// projectId here is the public ID from the URL; the result has the internal row ID.
-		const row = await db.first<{ project_id: number }>(
-			sql`SELECT k.project_id FROM project_keys k JOIN projects p ON p.id = k.project_id
+		const row = await db.first<{ project_id: number; allowed_origins: string | null }>(
+			sql`SELECT k.project_id, p.allowed_origins FROM project_keys k JOIN projects p ON p.id = k.project_id
 				WHERE k.public_key = ${publicKey} AND p.public_id = ${projectId} AND k.revoked_at IS NULL`,
 		);
-		const value = row ? { projectId: row.project_id } : null;
+		const value = row
+			? {
+					projectId: row.project_id,
+					allowedOrigins: row.allowed_origins
+						? (JSON.parse(row.allowed_origins) as string[])
+						: null,
+				}
+			: null;
 		const cacheKey = `${projectId}:${publicKey}`;
 		const map = value ? this.known : this.unknown;
 		this.known.delete(cacheKey);

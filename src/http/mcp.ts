@@ -142,6 +142,7 @@ function createServer(ports: Ports, actor: Actor): McpServer {
 				priority: issue.priority,
 				events_24h: issue.events_24h,
 				users_affected: issue.users_affected,
+				trust: issue.trust,
 				title_untrusted: issue.title,
 				claim: issue.claim,
 			}));

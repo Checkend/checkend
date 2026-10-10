@@ -124,6 +124,7 @@ const SCORED_ISSUES = `SELECT *,
 			i.status, i.times_seen, i.stored_events, i.users_affected, i.first_seen, i.last_seen,
 			i.first_release, i.last_release, i.fingerprint, i.fingerprint_version, i.merged_into,
 			i.claimed_by, i.claim_expires_at, i.project_id AS project_row_id,
+			coalesce(p.trust, CASE WHEN p.browser_seen_at IS NULL THEN 'high' ELSE 'low' END) AS trust,
 			(SELECT coalesce(sum(c.count), 0) FROM issue_counts c WHERE c.issue_id = i.id AND c.hour > ?) AS events_24h,
 			(SELECT coalesce(sum(c.count), 0) FROM issue_counts c WHERE c.issue_id = i.id AND c.hour > ?) AS events_7d
 		FROM issues i JOIN projects p ON p.id = i.project_id) scored`;

@@ -16,6 +16,7 @@ exports[`issue brief v1 > keeps event text only inside labelled untrusted blocks
 | First seen | 2026-10-10T12:00:00.000Z |
 | Last seen | 2026-10-10T12:00:00.000Z |
 | Project | <project-id> |
+| Trust | high |
 | Latest event | 1 |
 
 ### Error (UNTRUSTED)

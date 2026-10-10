@@ -39,6 +39,8 @@ export interface StoreResult {
 export interface StoreOptions {
 	/** Waits between attempts. Tests pass a function that does not wait. */
 	sleep?: (ms: number) => Promise<void>;
+	/** The event came from a browser (Origin header): the DSN of the project is public. */
+	browser?: boolean;
 }
 
 const defaultSleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
@@ -73,6 +75,13 @@ export async function storeEvent(
 		const started = Date.now();
 		try {
 			const write = await planWrite(ports, state, projectId, prepared, raw, rawBytes);
+			if (options.browser) {
+				// The first browser event makes the project low trust (see migration 0016).
+				write.statements.push(
+					sql`UPDATE projects SET browser_seen_at = ${ports.clock.now().toISOString()}
+						WHERE id = ${projectId} AND browser_seen_at IS NULL`,
+				);
+			}
 			await ports.db.batch(write.statements);
 			const now = ports.clock.now();
 			state.health.recordSuccess(Date.now() - started, now);

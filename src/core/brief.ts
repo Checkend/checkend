@@ -55,6 +55,8 @@ export interface BriefJson {
 		latest_event_id: number | null;
 		/** The active claim: who works on this issue now. */
 		claim: Claim | null;
+		/** low: anyone can send events to this project (a public browser DSN); high: servers. */
+		trust: "low" | "high";
 		/** The linked fix and where it is in the fix loop, or null. */
 		fix: Fix | null;
 	};
@@ -199,6 +201,7 @@ export async function buildBrief(db: Db, issueId: number, now: Date): Promise<Br
 		first_release: pick("first_release"),
 		last_release: pick("last_release"),
 		fingerprint_version: pick("fingerprint_version"),
+		trust: pick("trust"),
 	};
 	const timeline = (
 		await db.all<{ at: string; actor_name: string; action: string; data: string | null }>(
@@ -357,6 +360,7 @@ function briefMarkdown(brief: BriefJson): string {
 		`| First seen | ${issue.first_seen} |`,
 		`| Last seen | ${issue.last_seen} |`,
 		`| Project | ${issue.project_id} |`,
+		`| Trust | ${issue.trust === "low" ? "low: the DSN can be public (browser), so anyone can send events" : "high"} |`,
 		...(issue.claim
 			? [`| Claimed by | ${cleanText(issue.claim.holder, 100)} until ${issue.claim.expires_at} |`]
 			: []),

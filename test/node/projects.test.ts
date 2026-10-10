@@ -50,7 +50,10 @@ describe("KeyCache", () => {
 		const p = await createProject(ports, { name: "A" });
 		const cache = new KeyCache();
 		const now = ports.clock.now();
-		expect(await cache.find(ports.db, p.id, p.publicKey, now)).toEqual({ projectId: p.internalId });
+		expect(await cache.find(ports.db, p.id, p.publicKey, now)).toEqual({
+			projectId: p.internalId,
+			allowedOrigins: null,
+		});
 		expect(await cache.find(ports.db, p.id + 1, p.publicKey, now)).toBeNull();
 		expect(await cache.find(ports.db, p.id, "0".repeat(32), now)).toBeNull();
 	});
@@ -76,7 +79,10 @@ describe("KeyCache", () => {
 			await cache.find(ports.db, p.id, i.toString(16).padStart(32, "f"), now);
 		// Revoke in D1: a cached valid key is still found, so it was not evicted.
 		await ports.db.run(sql`UPDATE project_keys SET revoked_at = ${"2026-10-10T12:00:01Z"}`);
-		expect(await cache.find(ports.db, p.id, p.publicKey, now)).toEqual({ projectId: p.internalId });
+		expect(await cache.find(ports.db, p.id, p.publicKey, now)).toEqual({
+			projectId: p.internalId,
+			allowedOrigins: null,
+		});
 	});
 
 	it("keeps a bounded number of entries", async () => {
