@@ -2,7 +2,8 @@
 
 Open-source error tracking for coding agents. It runs on your own Cloudflare account.
 
-> **Status: in development.** Nothing is ready to install yet. Watch this repo to follow the build.
+> **Status: in development.** Error ingest from Sentry SDKs and a JSON API work. The rest is not
+> built yet. See the [guides](guides/README.md) for what works today. Watch this repo to follow the build.
 >
 > Looking for the previous Rails version of Checkend? It is on the
 > [`rails-legacy`](https://github.com/Checkend/checkend/tree/rails-legacy) branch and the
@@ -24,6 +25,11 @@ worked.
 - **A verified fix loop.** An agent claims an issue and links its fix. Checkend watches the next deploy. The issue is verified when the error stops, and it reopens if the error comes back.
 - **Your own infrastructure.** One-click deploy to your Cloudflare account (Workers, D1, Queues, R2). No servers. Your error data stays in your account.
 - **An open spec.** The issue brief format and the fix-verification protocol will be published for any tool to use.
+
+## Guides
+
+- [Quick start](guides/quick-start.md): run Checkend, connect an app, and read its errors.
+- [All guides](guides/README.md): sending errors, what Checkend stores, the API, settings, architecture.
 
 ## Contributing
 
