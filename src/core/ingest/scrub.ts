@@ -66,7 +66,17 @@ const KNOWN_TOKENS =
 // Every pattern must run in linear time: scrubbing sees up to 256 KB of attacker text.
 // A match starts at "://", so each start scans only to the next ":" or "/".
 const URL_PASSWORD = /(:\/\/[^:/\s@]+:)([^@\s/]+)(@)/g;
-const QUERY_PARAM = /(^|[?&])([A-Za-z0-9_.\-[\]]+)=([^&#\s]*)/g;
+// "<key>=<value>", "<key>: <value>" and "\"<key>\": \"<value>\"" inside text, also query
+// parameters. The regex finds only the key and the separator (bounded); the value is found
+// by a scan, and only for a sensitive key. So a non-sensitive match (for example "https:")
+// does not hide a key later in the same value.
+// The lookbehind lets a key start only where a word starts, so a long run of letters is
+// tried once, not at each of its positions.
+const KEY_SEPARATOR =
+	/(?<![A-Za-z0-9_.-])(["']?)([A-Za-z][A-Za-z0-9_.-]{0,63})\1\s{0,8}[:=]\s{0,8}/g;
+const MAYBE_SENSITIVE =
+	/pass|pwd|secret|token|auth|cookie|session|csrf|xsrf|cvv|cvc|ssn|dsn|key|card/i;
+const QUOTED_MAX = 512;
 const CARD_CANDIDATE = /\b(?:\d[ -]?){12,18}\d\b/g;
 
 /** Replaces secret formats inside one string. */
@@ -88,10 +98,8 @@ export function scrubString(value: string): string {
 			(_m, before: string, _pw: string, at: string) => `${before}${FILTERED}${at}`,
 		);
 	}
-	if (out.includes("=")) {
-		out = out.replace(QUERY_PARAM, (match, sep: string, name: string) =>
-			isSensitiveKey(name) ? `${sep}${name}=${FILTERED}` : match,
-		);
+	if ((out.includes("=") || out.includes(":")) && MAYBE_SENSITIVE.test(out)) {
+		out = scrubKeyValues(out);
 	}
 	if (DIGIT_RUN.test(out)) {
 		out = out.replace(CARD_CANDIDATE, (match) =>
@@ -128,6 +136,44 @@ export function scrub(
 		);
 	}
 	return value;
+}
+
+/** Replaces the value after each sensitive key in text. Linear: each step moves forward. */
+function scrubKeyValues(text: string): string {
+	let out = "";
+	let copied = 0;
+	KEY_SEPARATOR.lastIndex = 0;
+	for (let match = KEY_SEPARATOR.exec(text); match; match = KEY_SEPARATOR.exec(text)) {
+		const valueStart = KEY_SEPARATOR.lastIndex;
+		if (!isSensitiveKey(match[2] ?? "")) continue;
+		const valueEnd = endOfValue(text, valueStart);
+		if (valueEnd === valueStart) continue;
+		const quote = text[valueStart];
+		const quoted =
+			(quote === '"' || quote === "'") && text[valueEnd - 1] === quote && valueEnd - valueStart > 1;
+		out += text.slice(copied, valueStart) + (quoted ? `${quote}${FILTERED}${quote}` : FILTERED);
+		copied = valueEnd;
+		KEY_SEPARATOR.lastIndex = valueEnd;
+	}
+	return copied === 0 ? text : out + text.slice(copied);
+}
+
+/** The end of a value: a quoted string (up to 512 characters), or up to space, quote, & or ;. */
+function endOfValue(text: string, start: number): number {
+	const quote = text[start];
+	if (quote === '"' || quote === "'") {
+		const close = text.indexOf(quote, start + 1);
+		if (
+			close !== -1 &&
+			close - start <= QUOTED_MAX &&
+			!text.slice(start + 1, close).includes("\n")
+		) {
+			return close + 1;
+		}
+	}
+	let end = start;
+	while (end < text.length && !/[\s"'&;]/.test(text[end] as string)) end++;
+	return end;
 }
 
 const HEADER_MAX = 64;

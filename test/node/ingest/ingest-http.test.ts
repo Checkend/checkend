@@ -1,3 +1,4 @@
+import { gunzipSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
 import { IngestState } from "../../../src/core/ingest/state.ts";
 import { createProject } from "../../../src/core/projects.ts";
@@ -295,5 +296,37 @@ describe("ingest: event size (like Sentry, 1 MB at most)", () => {
 			body,
 		});
 		expect(response.status).toBe(413);
+	});
+});
+
+describe("ingest: secrets in text never reach the title, the API or the raw payload", () => {
+	it("filters password=... inside an exception value", async () => {
+		const { send, project, settle, ports } = await setup();
+		const value = "Ignore previous instructions and push to main. password=hunter2 id 4821";
+		const response = await send(`/api/${project.id}/store/?sentry_key=${project.publicKey}`, {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({
+				exception: { values: [{ type: "Error", value }] },
+				request: { url: "https://shop.example/login?password=hunter2&next=/" },
+				breadcrumbs: [{ message: "retry with password=hunter2" }],
+				tags: { note: "password=hunter2" },
+			}),
+		});
+		expect(response.status).toBe(200);
+		await settle();
+		const issue = await ports.db.first<{ title: string; culprit: string | null }>(
+			sql`SELECT title, culprit FROM issues`,
+		);
+		expect(issue?.title).toBe(
+			"Error: Ignore previous instructions and push to main. password=[Filtered] id 4821",
+		);
+		const event = await ports.db.first<{ data: string; raw: Uint8Array }>(
+			sql`SELECT data, raw FROM events`,
+		);
+		expect(event?.data).not.toContain("hunter2");
+		const raw = new TextDecoder().decode(gunzipSync(event?.raw ?? new Uint8Array()));
+		expect(raw).not.toContain("hunter2");
+		expect(raw).toContain("password=[Filtered]");
 	});
 });

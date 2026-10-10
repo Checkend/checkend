@@ -175,6 +175,18 @@ describe("hostile input corpus", () => {
 		expect((await post(envelope(event))).status).toBe(200);
 	});
 
+	it("many password= pairs in a long string: fast, and every value filtered", async () => {
+		const { post, storedEvent } = await setup();
+		const message = "password=hunter2 ".repeat(15_000); // about 250 KB
+		const start = performance.now();
+		const response = await post(envelope(JSON.stringify({ message })));
+		expect(response.status).toBe(200);
+		expect(performance.now() - start).toBeLessThan(1000);
+		const stored = await storedEvent();
+		expect(stored.message).not.toContain("hunter2");
+		expect(stored.message).toContain("password=[Filtered]");
+	});
+
 	it("a JSON array or string as the event: 400", async () => {
 		const { post } = await setup();
 		expect((await post(envelope("[1,2,3]"))).status).toBe(400);
