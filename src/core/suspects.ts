@@ -9,7 +9,7 @@ import { filePath } from "./sourcemaps.ts";
  */
 export interface SuspectCommit {
 	sha: string;
-	/** The GitHub login, or the git author name. */
+	/** The GitHub login, or null. Never the git author name: that is free text. */
 	author: string | null;
 	committed_at: string | null;
 	/** The changed files that are in the stack trace. */

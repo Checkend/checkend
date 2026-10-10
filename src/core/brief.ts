@@ -6,6 +6,7 @@ import { cleanText, type NormalizedEvent, type NormalizedFrame } from "./ingest/
 import { type Claim, type Fix, getIssue } from "./issues.ts";
 import { symbolicateEvent } from "./sourcemaps.ts";
 import { type SuspectCommit, suspectCommit } from "./suspects.ts";
+import { type UnusualTag, unusualTags } from "./unusual-tags.ts";
 
 /**
  * The issue brief: what an agent needs to fix an issue, in under 2,000 tokens.
@@ -85,6 +86,8 @@ export interface BriefJson {
 		exceptions: { type: string | null; value: string; frames: BriefFrame[] }[];
 		request: { method: string | null; url: string | null; headers: [string, string][] } | null;
 		tags: [string, string][];
+		/** Tag values much more common in this issue than in the project. */
+		unusual_tags: UnusualTag[];
 		/** The message of the suspect commit (text from the repository). */
 		suspect_commit_message: string | null;
 		/** Recent actions and notes, the most recent first. Notes are written by agents. */
@@ -246,6 +249,7 @@ export async function buildBrief(
 				event.exceptions.flatMap((e) => e.frames),
 			)
 		: null;
+	const unusual = await unusualTags(db, issueId);
 	const first_release_deploy = await db.first<{ version: string; deployed_at: string }>(
 		sql`SELECT r.version, min(d.deployed_at) AS deployed_at FROM issues i
 			JOIN releases r ON r.project_id = i.project_id AND r.version = i.first_release
@@ -269,6 +273,7 @@ export async function buildBrief(
 			i > 0,
 			timeline,
 			suspect?.message ?? null,
+			unusual,
 		);
 		const markdown = briefMarkdown(json);
 		if (markdown.length <= BRIEF_MAX_CHARS || i === SHAPES.length - 1) {
@@ -312,6 +317,7 @@ function briefJson(
 	truncated: boolean,
 	timeline: string[],
 	suspectMessage: string | null,
+	unusual: UnusualTag[],
 ): BriefJson {
 	const { title, culprit, ...facts } = issue;
 	const exceptions = [...(event?.exceptions ?? [])]
@@ -352,6 +358,9 @@ function briefJson(
 			tags: (event?.tags ?? [])
 				.slice(0, shape.tags)
 				.map(([k, v]) => [cleanText(k, 32), cleanText(v, 100)]),
+			unusual_tags: unusual
+				.slice(0, shape.tags)
+				.map((t) => ({ ...t, key: cleanText(t.key, 32), value: cleanText(t.value, 100) })),
 			suspect_commit_message: text(suspectMessage, shape.message),
 			timeline: timeline.slice(0, shape.timeline),
 		},
@@ -462,6 +471,10 @@ function briefMarkdown(brief: BriefJson): string {
 		`platform: ${untrusted.platform ?? "-"}`,
 		`culprit: ${untrusted.culprit ?? "-"}`,
 		...untrusted.tags.map(([k, v]) => `tag ${k}: ${v}`),
+		...untrusted.unusual_tags.map(
+			(t) =>
+				`unusual tag ${t.key}: ${t.value} (${Math.round(t.issue_share * 100)}% of this issue, ${Math.round(t.project_share * 100)}% of the project)`,
+		),
 	];
 	parts.push(untrustedBlock("Context", context.join("\n")));
 
