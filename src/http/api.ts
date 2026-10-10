@@ -1,4 +1,4 @@
-import type { Context, Hono, MiddlewareHandler } from "hono";
+import type { Context, Hono } from "hono";
 import * as v from "valibot";
 import { listActivity } from "../core/activity.ts";
 import type { IngestState } from "../core/ingest/state.ts";
@@ -15,16 +15,9 @@ import {
 	listIssues,
 } from "../core/issues.ts";
 import { createProject, listProjects } from "../core/projects.ts";
-import {
-	authenticate,
-	CreateTokenBody,
-	createToken,
-	hasScope,
-	listTokens,
-	revokeToken,
-	type Scope,
-} from "../core/tokens.ts";
+import { CreateTokenBody, createToken, listTokens, revokeToken } from "../core/tokens.ts";
 import type { AppEnv } from "./app.ts";
+import { need, requireActor } from "./auth.ts";
 
 const invalid = (c: Context, issues: v.BaseIssue<unknown>[]) =>
 	c.json(
@@ -40,16 +33,6 @@ const dsn = (origin: string, key: string, projectId: number) => {
 	return `${url.protocol}//${key}@${url.host}/${projectId}`;
 };
 
-/** A route needs this scope; `admin` includes all scopes. */
-const need =
-	(scope: Scope): MiddlewareHandler<AppEnv> =>
-	async (c, next) => {
-		if (!hasScope(c.get("actor"), scope)) {
-			return c.json({ error: "forbidden", required_scope: scope }, 403);
-		}
-		await next();
-	};
-
 const LimitQuery = v.object({
 	limit: v.optional(
 		v.pipe(v.string(), v.regex(/^\d{1,3}$/), v.transform(Number), v.minValue(1), v.maxValue(100)),
@@ -62,16 +45,7 @@ const LimitQuery = v.object({
  * or the bootstrap ADMIN_TOKEN secret. Each route needs a scope.
  */
 export function apiRoutes(app: Hono<AppEnv>, state: IngestState): void {
-	app.use("/v1/*", async (c, next) => {
-		const actor = await authenticate(c.env.ports, c.req.header("authorization") ?? null);
-		if (!actor) {
-			c.header("WWW-Authenticate", "Bearer");
-			return c.json({ error: "unauthorized" }, 401);
-		}
-		c.set("actor", actor);
-		c.header("Cache-Control", "no-store");
-		await next();
-	});
+	app.use("/v1/*", requireActor);
 
 	app.get("/v1/tokens", need("admin"), async (c) =>
 		c.json({ data: await listTokens(c.env.ports.db) }),
