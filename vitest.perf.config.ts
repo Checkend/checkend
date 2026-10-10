@@ -7,5 +7,7 @@ export default defineConfig({
 		environment: "node",
 		include: ["test/perf/**/*.test.ts"],
 		fileParallelism: false,
+		// Slow CI runners need more time; the assertions use ratios, not absolute times.
+		testTimeout: 120_000,
 	},
 });
