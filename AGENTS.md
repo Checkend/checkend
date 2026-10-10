@@ -17,6 +17,7 @@ The core is portable, so the same code can also run on Node with SQLite.
 | `npm run types` | Generate `worker-configuration.d.ts` again after you change `wrangler.jsonc`. |
 | `npm run dev` | Run the Worker locally. First run `npx wrangler d1 migrations apply DB --local`. |
 | `npm run check` | Lint, typecheck and test. Run it before each commit. |
+| `npm run deploy:production` | People only (see rule 9). Deploys with `wrangler.production.jsonc`: a copy of `wrangler.jsonc` with your Worker name and `database_id`. Files named `wrangler.*.jsonc` are git-ignored and blocked by the pre-commit hook. |
 
 Requirements: Node 22.13 or later.
 

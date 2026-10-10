@@ -6,6 +6,10 @@
 /INTERNAL.md
 /REVIEW.md
 
+# Per-instance Wrangler configs (your Worker name and resource IDs). Copy
+# wrangler.jsonc to wrangler.<instance>.jsonc and deploy with --config.
+/wrangler.*.jsonc
+
 # Dependencies and local state
 node_modules/
 .wrangler/

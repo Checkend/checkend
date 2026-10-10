@@ -11,6 +11,7 @@
 	"scripts": {
 		"dev": "wrangler dev",
 		"deploy": "wrangler d1 migrations apply DB --remote && wrangler deploy",
+		"deploy:production": "wrangler d1 migrations apply DB --remote --config wrangler.production.jsonc && wrangler deploy --config wrangler.production.jsonc",
 		"test": "vitest run",
 		"test:watch": "vitest",
 		"lint": "biome check .",
