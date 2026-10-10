@@ -3,6 +3,7 @@ import { isValidKey, parseDsn, sentryKeyFromRequest } from "./auth.ts";
 import { readIngestBody } from "./body.ts";
 import { parseEnvelope } from "./envelope.ts";
 import { IngestError } from "./errors.ts";
+import { INGEST_LIMITS } from "./limits.ts";
 import { prepareEvent } from "./prepare.ts";
 import type { IngestState } from "./state.ts";
 import { storeEvent } from "./store.ts";
@@ -62,6 +63,9 @@ export async function handleIngest(
 		body ??= await readIngestBody(request);
 		const payload = kind === "store" ? body : parseEnvelope(body).event;
 		if (!payload) return json(200, {}); // sessions, client reports, ...: dropped
+		if (payload.byteLength > INGEST_LIMITS.eventBytes) {
+			throw new IngestError(413, "event_too_large", "The event is larger than 1 MB.");
+		}
 
 		const prepared = await prepareEvent(payload, now);
 		ports.defer(storeEvent(ports, state, projectId, prepared));

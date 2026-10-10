@@ -69,41 +69,60 @@ const QUERY_PARAM = /(^|[?&])([A-Za-z0-9_.\-[\]]+)=([^&#\s]*)/g;
 const CARD_CANDIDATE = /\b(?:\d[ -]?){12,18}\d\b/g;
 
 /** Replaces secret formats inside one string. */
+// Cheap checks first: most strings contain none of the markers, and skip every regex.
+const MAYBE_TOKEN = /_live_|_test_|AKIA|ASIA|gh[pousr]_|xox[abpr]-/;
+const DIGIT_RUN = /\d{4}/;
+
 export function scrubString(value: string): string {
-	return value
-		.replace(PRIVATE_KEY, FILTERED)
-		.replace(AUTH_SCHEME, (_m, scheme: string) => `${scheme} ${FILTERED}`)
-		.replace(JWT, FILTERED)
-		.replace(KNOWN_TOKENS, FILTERED)
-		.replace(
+	let out = value;
+	if (out.includes("PRIVATE KEY")) out = out.replace(PRIVATE_KEY, FILTERED);
+	if (out.includes("Bearer") || out.includes("Basic") || out.includes("Token")) {
+		out = out.replace(AUTH_SCHEME, (_m, scheme: string) => `${scheme} ${FILTERED}`);
+	}
+	if (out.includes("eyJ")) out = out.replace(JWT, FILTERED);
+	if (MAYBE_TOKEN.test(out)) out = out.replace(KNOWN_TOKENS, FILTERED);
+	if (out.includes("://") && out.includes("@")) {
+		out = out.replace(
 			URL_PASSWORD,
 			(_m, before: string, _pw: string, at: string) => `${before}${FILTERED}${at}`,
-		)
-		.replace(QUERY_PARAM, (match, sep: string, name: string) =>
+		);
+	}
+	if (out.includes("=")) {
+		out = out.replace(QUERY_PARAM, (match, sep: string, name: string) =>
 			isSensitiveKey(name) ? `${sep}${name}=${FILTERED}` : match,
-		)
-		.replace(CARD_CANDIDATE, (match) => (luhn(match.replace(/\D/g, "")) ? FILTERED : match));
+		);
+	}
+	if (DIGIT_RUN.test(out)) {
+		out = out.replace(CARD_CANDIDATE, (match) =>
+			luhn(match.replace(/\D/g, "")) ? FILTERED : match,
+		);
+	}
+	return out;
 }
 
 /**
  * Returns a scrubbed copy of a JSON value. The input must have a bounded depth
- * (parseJson() checks it), because the walk is recursive.
+ * (parseJson() checks it), because the walk is recursive. With `patterns: false` only the
+ * values of sensitive keys are replaced (for data whose strings are already scrubbed).
  */
-export function scrub(value: unknown): unknown {
-	if (typeof value === "string") return scrubString(value);
+export function scrub(
+	value: unknown,
+	options: { patterns: boolean } = { patterns: true },
+): unknown {
+	if (typeof value === "string") return options.patterns ? scrubString(value) : value;
 	if (Array.isArray(value)) {
-		// Header lists in Sentry events are [name, value] pairs.
+		// Header lists and tags are [name, value] pairs.
 		if (value.length === 2 && typeof value[0] === "string" && isSensitiveKey(value[0])) {
 			return [value[0], FILTERED];
 		}
-		return value.map(scrub);
+		return value.map((item) => scrub(item, options));
 	}
 	if (value !== null && typeof value === "object") {
 		// fromEntries defines own properties, so a "__proto__" key stays a plain key.
 		return Object.fromEntries(
 			Object.entries(value).map(([key, item]) => [
 				key,
-				isSensitiveKey(key) ? FILTERED : scrub(item),
+				isSensitiveKey(key) ? FILTERED : scrub(item, options),
 			]),
 		);
 	}

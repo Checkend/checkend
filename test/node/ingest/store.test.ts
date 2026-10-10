@@ -244,3 +244,15 @@ describe("storeEvent", () => {
 		expect(calls).toBe(1);
 	});
 });
+
+describe("storeEvent: raw payload size", () => {
+	it("does not keep the raw payload of an event above 256 KB", async () => {
+		const { store, one } = await setup();
+		await store(errorEvent({ extra: { pad: "p".repeat(300 * 1024) } }));
+		const event = await one<{ raw: unknown; raw_size: number }>(
+			sql`SELECT raw, raw_size FROM events`,
+		);
+		expect(event.raw).toBeNull();
+		expect(event.raw_size).toBeGreaterThan(300 * 1024);
+	});
+});

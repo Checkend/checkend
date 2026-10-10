@@ -57,9 +57,9 @@ export async function storeEvent(
 	options: StoreOptions = {},
 ): Promise<StoreResult> {
 	const sleep = options.sleep ?? defaultSleep;
-	const rawBytes = new TextEncoder().encode(prepared.rawJson).byteLength;
-	const compressed = await gzip(prepared.rawJson);
-	const raw = compressed.byteLength <= MAX_RAW_BYTES ? compressed : null;
+	const rawBytes = prepared.payloadBytes;
+	const compressed = prepared.rawJson === null ? null : await gzip(prepared.rawJson);
+	const raw = compressed && compressed.byteLength <= MAX_RAW_BYTES ? compressed : null;
 
 	let lastError: unknown;
 	let attempt = 0;

@@ -29,21 +29,31 @@ export function parseJson(
 	return value as JsonObject;
 }
 
-/** The maximum nesting depth of brackets outside strings. */
+/**
+ * The maximum nesting depth of brackets outside strings. Inside a string it jumps to the
+ * next quote with indexOf (native and fast); an odd number of backslashes escapes a quote.
+ */
 function jsonDepth(text: string): number {
 	let depth = 0;
 	let max = 0;
-	let inString = false;
 	for (let i = 0; i < text.length; i++) {
 		const c = text.charCodeAt(i);
-		if (inString) {
-			if (c === 92 /* \ */) i++;
-			else if (c === 34 /* " */) inString = false;
-		} else if (c === 34) inString = true;
-		else if (c === 123 /* { */ || c === 91 /* [ */) {
-			depth++;
-			if (depth > max) max = depth;
-		} else if (c === 125 /* } */ || c === 93 /* ] */) depth--;
+		if (c === 34 /* " */) {
+			let end = i + 1;
+			for (;;) {
+				end = text.indexOf('"', end);
+				if (end === -1) return max; // unterminated string: JSON.parse rejects it
+				let backslashes = 0;
+				while (text.charCodeAt(end - 1 - backslashes) === 92 /* \ */) backslashes++;
+				if (backslashes % 2 === 0) break;
+				end++;
+			}
+			i = end;
+		} else if (c === 123 /* { */ || c === 91 /* [ */) {
+			if (++depth > max) max = depth;
+		} else if (c === 125 /* } */ || c === 93 /* ] */) {
+			depth--;
+		}
 	}
 	return max;
 }

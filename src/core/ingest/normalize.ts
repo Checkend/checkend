@@ -1,5 +1,6 @@
 import * as v from "valibot";
 import type { JsonObject } from "./json.ts";
+import { scrubString } from "./scrub.ts";
 
 /**
  * Untrusted input, layer 2: the event shape (Valibot schemas) and the normalization limits.
@@ -98,23 +99,9 @@ export interface NormalizedEvent {
 
 const opt = <T extends v.GenericSchema>(schema: T) => v.fallback(v.optional(schema), undefined);
 const str = opt(v.string());
-const num = opt(v.pipe(v.number(), v.finite()));
 const bool = opt(v.boolean());
 const list = opt(v.array(v.unknown()));
 const record = opt(v.record(v.string(), v.unknown()));
-
-const FrameSchema = v.looseObject({
-	filename: str,
-	abs_path: str,
-	module: str,
-	function: str,
-	lineno: num,
-	colno: num,
-	in_app: bool,
-	context_line: str,
-	pre_context: opt(v.array(v.string())),
-	post_context: opt(v.array(v.string())),
-});
 
 const ExceptionSchema = v.looseObject({
 	type: str,
@@ -179,9 +166,10 @@ const INVISIBLE =
 	/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F​-‏‪-‮⁠-⁤⁦-⁩﻿]/g;
 
 /** Cleans untrusted text and truncates it to `max` characters (the last one is "…"). */
+// Secrets are replaced before the cut, so that a cut cannot leave part of a secret.
 export function cleanText(value: string, max: number): string {
 	const head = value.length > max * 2 ? value.slice(0, max * 2) : value;
-	const clean = head.toWellFormed().replace(INVISIBLE, "");
+	const clean = scrubString(head.toWellFormed().replace(INVISIBLE, ""));
 	return clean.length > max ? `${clean.slice(0, max - 1)}…` : clean;
 }
 
@@ -238,23 +226,35 @@ function clampTime(value: number | string | undefined, received: Date): string {
 	return new Date(ms).toISOString();
 }
 
+// Frames are the hot path (up to 500 per event), so they are read with plain type checks
+// instead of a Valibot schema. The rules are the same: a field with a wrong type is dropped.
+const asString = (value: unknown) => (typeof value === "string" ? value : undefined);
+const asNumber = (value: unknown) =>
+	typeof value === "number" && Number.isFinite(value) ? value : null;
+
 function frame(value: unknown): NormalizedFrame | null {
-	const f = parse(FrameSchema, value);
-	if (!f) return null;
-	const lines = (lines: string[] | undefined, fromEnd: boolean) =>
-		(fromEnd
-			? (lines ?? []).slice(-EVENT_LIMITS.contextLines)
-			: (lines ?? []).slice(0, EVENT_LIMITS.contextLines)
-		).map((line) => cleanText(line, EVENT_LIMITS.shortString));
+	if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
+	const f = value as Record<string, unknown>;
+	const inApp = typeof f.in_app === "boolean" ? f.in_app : null;
+	// Source lines are kept for in-app frames only: that is the code an agent can change.
+	const lines = (lines: unknown, fromEnd: boolean) =>
+		inApp !== true || !Array.isArray(lines)
+			? []
+			: (fromEnd
+					? lines.slice(-EVENT_LIMITS.contextLines)
+					: lines.slice(0, EVENT_LIMITS.contextLines)
+				)
+					.filter((line): line is string => typeof line === "string")
+					.map((line) => cleanText(line, EVENT_LIMITS.shortString));
 	return {
-		filename: text(f.filename, EVENT_LIMITS.shortString * 2),
-		abs_path: text(f.abs_path, EVENT_LIMITS.url),
-		module: text(f.module, EVENT_LIMITS.shortString),
-		function: text(f.function, EVENT_LIMITS.shortString),
-		lineno: f.lineno ?? null,
-		colno: f.colno ?? null,
-		in_app: f.in_app ?? null,
-		context_line: text(f.context_line, EVENT_LIMITS.shortString),
+		filename: text(asString(f.filename), EVENT_LIMITS.shortString * 2),
+		abs_path: text(asString(f.abs_path), EVENT_LIMITS.url),
+		module: text(asString(f.module), EVENT_LIMITS.shortString),
+		function: text(asString(f.function), EVENT_LIMITS.shortString),
+		lineno: asNumber(f.lineno),
+		colno: asNumber(f.colno),
+		in_app: inApp,
+		context_line: inApp === true ? text(asString(f.context_line), EVENT_LIMITS.shortString) : null,
 		pre_context: lines(f.pre_context, true),
 		post_context: lines(f.post_context, false),
 	};
@@ -264,10 +264,9 @@ function exception(value: unknown): NormalizedException | null {
 	const e = parse(ExceptionSchema, value);
 	if (!e) return null;
 	const frames = (e.stacktrace?.frames ?? [])
-		.slice(-EVENT_LIMITS.frames * 4)
+		.slice(-EVENT_LIMITS.frames)
 		.map(frame)
-		.filter((f): f is NormalizedFrame => f !== null)
-		.slice(-EVENT_LIMITS.frames);
+		.filter((f): f is NormalizedFrame => f !== null);
 	return {
 		type: text(e.type, EVENT_LIMITS.shortString),
 		value: cleanText(e.value ?? "", EVENT_LIMITS.message),
@@ -391,7 +390,13 @@ export function normalizeEvent(raw: JsonObject, received: Date): NormalizedEvent
 }
 
 const encoder = new TextEncoder();
-const size = (event: NormalizedEvent) => encoder.encode(JSON.stringify(event)).byteLength;
+// A UTF-16 unit is at most 3 bytes in UTF-8, so a short JSON skips the exact count.
+const fits = (event: NormalizedEvent) => {
+	const json = JSON.stringify(event);
+	if (json.length * 3 <= EVENT_LIMITS.jsonBytes) return true;
+	if (json.length > EVENT_LIMITS.jsonBytes) return false;
+	return encoder.encode(json).byteLength <= EVENT_LIMITS.jsonBytes;
+};
 
 // Removes the least useful parts first until the JSON fits the size limit.
 const SHRINK: ((event: NormalizedEvent) => void)[] = [
@@ -434,7 +439,7 @@ const SHRINK: ((event: NormalizedEvent) => void)[] = [
 
 function fitSize(event: NormalizedEvent): NormalizedEvent {
 	for (const step of SHRINK) {
-		if (size(event) <= EVENT_LIMITS.jsonBytes) return event;
+		if (fits(event)) return event;
 		step(event);
 		event.truncated = true;
 	}

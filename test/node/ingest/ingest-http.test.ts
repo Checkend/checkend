@@ -245,3 +245,19 @@ describe("ingest: CORS for browser SDKs", () => {
 		expect(response.headers.get("access-control-expose-headers")).toMatch(/x-sentry-rate-limits/i);
 	});
 });
+
+describe("ingest: event size (like Sentry, 1 MB at most)", () => {
+	it("rejects an event item above 1 MB with 413", async () => {
+		const { send, envelopePath } = await setup();
+		const event = JSON.stringify({ message: "x", extra: { pad: "p".repeat(1024 * 1024) } });
+		const body = await new Response(
+			new Blob([envelope(JSON.parse(event))]).stream().pipeThrough(new CompressionStream("gzip")),
+		).arrayBuffer();
+		const response = await send(envelopePath(), {
+			method: "POST",
+			headers: { "content-encoding": "gzip" },
+			body,
+		});
+		expect(response.status).toBe(413);
+	});
+});

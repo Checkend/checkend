@@ -32,6 +32,8 @@ jobs:
       - run: npm run typecheck
       - name: Tests (Node + workerd)
         run: npm test
+      - name: CPU budget (alone)
+        run: npm run test:perf
       - name: Worker bundle builds
         run: npx wrangler deploy --dry-run --outdir dist
 

@@ -32,6 +32,13 @@ describe("parseJson", () => {
 		expect(parseJson(bytes(JSON.stringify(value)))).toEqual(value);
 	});
 
+	it("handles escaped quotes and backslashes before a quote", () => {
+		const value = { a: 'x\\"[[[', b: ["\\\\", { c: ']]]\\\\\\"' }] };
+		expect(parseJson(bytes(JSON.stringify(value)))).toEqual(value);
+		const tooDeep = `{"s":"\\\\","d":${"[".repeat(70)}${"]".repeat(70)}}`;
+		expect(status(() => parseJson(bytes(tooDeep)))).toBe(400);
+	});
+
 	it("replaces invalid UTF-8 with U+FFFD instead of failing", () => {
 		const invalid = new Uint8Array([...bytes('{"s":"a'), 0xff, 0xfe, ...bytes('b"}')]);
 		expect(parseJson(invalid)).toEqual({ s: "a��b" });

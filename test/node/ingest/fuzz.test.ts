@@ -81,6 +81,20 @@ describe("fuzz: parsers", () => {
 		);
 	});
 
+	it("parseJson accepts every JSON object within the depth limit (the depth scan is exact)", () => {
+		const depth = (v: unknown): number =>
+			typeof v === "object" && v !== null ? 1 + Math.max(0, ...Object.values(v).map(depth)) : 0;
+		fc.assert(
+			fc.property(fc.dictionary(fc.string(), fc.jsonValue({ maxDepth: 8 })), (value) => {
+				expect(depth(value)).toBeLessThanOrEqual(64);
+				expect(parseJson(new TextEncoder().encode(JSON.stringify(value)))).toEqual(
+					JSON.parse(JSON.stringify(value)),
+				);
+			}),
+			runs,
+		);
+	});
+
 	it("parseEnvelope only throws IngestError, for any bytes", () => {
 		fc.assert(
 			fc.property(fc.uint8Array({ maxLength: 2048 }), (bytes) =>
