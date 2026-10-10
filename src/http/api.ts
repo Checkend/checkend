@@ -109,7 +109,8 @@ export function apiRoutes(app: Hono<AppEnv>, state: IngestState): void {
 				400,
 			);
 		}
-		const page = await listIssues(c.env.ports.db, query.output, after);
+		const page = await listIssues(c.env.ports.db, query.output, after, c.env.ports.clock.now());
+		if (page === "project_not_found") return c.json({ error: "project_not_found" }, 404);
 		return c.json({ ...page, ingest: await ingestStatus(c.env.ports, state) });
 	});
 

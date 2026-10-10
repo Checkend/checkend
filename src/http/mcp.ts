@@ -5,7 +5,15 @@ import * as v from "valibot";
 import { MCP_TOOLS } from "../core/agent-docs.ts";
 import { buildBrief, UNTRUSTED_NOTICE } from "../core/brief.ts";
 import { formatEventId, formatIssueId, parseEventId, parseIssueId } from "../core/ids.ts";
-import { decodeCursor, getEvent, ISSUE_STATUSES, listIssues, ProjectRef } from "../core/issues.ts";
+import {
+	decodeCursor,
+	getEvent,
+	ISSUE_STATUSES,
+	IssueListQuery,
+	listIssues,
+	ProjectRef,
+	SINCE_PATTERN,
+} from "../core/issues.ts";
 import { VERSION } from "../core/version.ts";
 import type { Db } from "../ports/db.ts";
 import type { AppEnv } from "./app.ts";
@@ -24,6 +32,18 @@ const ListIssuesInput = v.object({
 	status: v.optional(v.picklist(ISSUE_STATUSES)),
 	limit: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(100))),
 	cursor: v.optional(v.pipe(v.string(), v.regex(/^[A-Za-z0-9_-]{1,200}$/))),
+	release: IssueListQuery.entries.release,
+	environment: IssueListQuery.entries.environment,
+	since: v.optional(
+		v.pipe(
+			v.string(),
+			v.regex(SINCE_PATTERN),
+			v.description("A duration (30m, 24h, 7d) or an ISO time."),
+		),
+	),
+	search: v.optional(
+		v.pipe(v.string(), v.minLength(1), v.maxLength(200), v.description("Text in the issue title.")),
+	),
 });
 const IssueInput = v.object({
 	issue_id: v.pipe(v.number(), v.integer(), v.minValue(1)),
@@ -35,7 +55,7 @@ const textResult = (text: string) => ({ content: [{ type: "text" as const, text 
 const errorResult = (text: string) => ({ ...textResult(text), isError: true });
 
 /** The MCP server with the read tools. A new server per request (stateless). */
-function createServer(db: Db): McpServer {
+function createServer(db: Db, now: () => Date): McpServer {
 	const server = new McpServer({ name: "checkend", version: VERSION });
 
 	server.registerTool(
@@ -44,12 +64,18 @@ function createServer(db: Db): McpServer {
 			description: `${tool("list_issues")} ${UNTRUSTED_HINT}`,
 			inputSchema: toStandardJsonSchema(ListIssuesInput),
 		},
-		async ({ project, status, limit, cursor }) => {
+		async ({ project, status, limit, cursor, release, environment, since, search }) => {
 			const after = cursor ? decodeCursor(cursor) : null;
 			if (cursor && !after) {
 				return errorResult("Invalid cursor. Use next_cursor from the previous result.");
 			}
-			const page = await listIssues(db, { project, status, limit: limit ?? 10, cursor }, after);
+			const page = await listIssues(
+				db,
+				{ project, status, limit: limit ?? 10, cursor, release, environment, since, search },
+				after,
+				now(),
+			);
+			if (page === "project_not_found") return errorResult(`Project ${project} not found.`);
 			const issues = page.data.map((issue) => ({
 				id: formatIssueId(Number(issue.id)),
 				project_id: issue.project_id,
@@ -115,7 +141,7 @@ export function mcpRoutes(app: Hono<AppEnv>): void {
 	// Auth runs before the MCP transport: no token, a wrong token, or a missing scope never
 	// reaches the server.
 	app.all("/mcp", requireActor, need("issues:read"), async (c) => {
-		const server = createServer(c.env.ports.db);
+		const server = createServer(c.env.ports.db, () => c.env.ports.clock.now());
 		const transport = new WebStandardStreamableHTTPServerTransport({
 			sessionIdGenerator: undefined,
 			enableJsonResponse: true,

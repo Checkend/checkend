@@ -122,8 +122,8 @@ describe("public project IDs", () => {
 		await settle();
 		expect((await call("GET", `/v1/issues?project=${project.id}`)).body.data).toHaveLength(1);
 		expect((await call("GET", "/v1/issues?project=shop")).body.data).toHaveLength(1);
-		expect((await call("GET", "/v1/issues?project=1")).body.data).toHaveLength(0);
-		expect((await call("GET", "/v1/issues?project=unknown-slug")).body.data).toHaveLength(0);
+		expect((await call("GET", "/v1/issues?project=1")).status).toBe(404);
+		expect((await call("GET", "/v1/issues?project=unknown-slug")).status).toBe(404);
 	});
 
 	it("gives the same 401 for an unknown project ID and a wrong key (no enumeration)", async () => {

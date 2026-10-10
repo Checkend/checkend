@@ -3,6 +3,7 @@ import { exports } from "cloudflare:workers";
 import { beforeAll, describe, expect, it } from "vitest";
 import pkg from "../../package.json" with { type: "json" };
 import { cloudflarePorts } from "../../src/adapters/cloudflare/ports.ts";
+import { createProject } from "../../src/core/projects.ts";
 import { sql } from "../../src/ports/db.ts";
 
 beforeAll(() => applyD1Migrations(env.DB, env.TEST_D1_MIGRATIONS));
@@ -50,8 +51,16 @@ describe("Worker API", () => {
 		expect(await response.json()).toMatchObject({ data: expect.any(Array), next_cursor: null });
 	});
 
-	it("runs the issue filters on D1", async () => {
-		const response = await get("/v1/issues?project=1&status=unresolved&limit=5", env.ADMIN_TOKEN);
+	it("runs every issue filter on D1, and gives 404 for an unknown project", async () => {
+		const project = await createProject(cloudflarePorts(env, createExecutionContext()), {
+			name: "Filters",
+		});
+		const query = `project=${project.id}&status=unresolved&release=shop%401.0.0&environment=production&since=24h&search=100%25&limit=5`;
+		const response = await get(`/v1/issues?${query}`, env.ADMIN_TOKEN);
 		expect(response.status).toBe(200);
+		expect(await response.json()).toMatchObject({ data: [], next_cursor: null });
+		const unknown = await get("/v1/issues?project=no-such-project", env.ADMIN_TOKEN);
+		expect(unknown.status).toBe(404);
+		expect(await unknown.json()).toEqual({ error: "project_not_found" });
 	});
 });

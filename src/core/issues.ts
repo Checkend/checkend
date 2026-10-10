@@ -11,6 +11,10 @@ const id = v.pipe(v.string(), v.regex(/^\d{1,15}$/), v.transform(Number));
 
 export const IdParam = v.object({ id });
 
+/** `since`: a duration (30m, 24h, 7d) or an ISO date/time. */
+export const SINCE_PATTERN =
+	/^(\d{1,4}[smhd]|\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2}(\.\d{1,3})?)?(Z|[+-]\d{2}:\d{2})?)?)$/;
+
 /** A project: its public ID (10 digits) or its slug. Never the internal row ID. */
 export const ProjectRef = v.pipe(v.string(), v.regex(/^[a-z0-9][a-z0-9-]{0,47}$/));
 
@@ -22,6 +26,10 @@ export const IssueListQuery = v.object({
 		"25",
 	),
 	cursor: v.optional(v.pipe(v.string(), v.regex(/^[A-Za-z0-9_-]{1,200}$/))),
+	release: v.optional(v.pipe(v.string(), v.minLength(1), v.maxLength(200))),
+	environment: v.optional(v.pipe(v.string(), v.minLength(1), v.maxLength(200))),
+	since: v.optional(v.pipe(v.string(), v.regex(SINCE_PATTERN))),
+	search: v.optional(v.pipe(v.string(), v.minLength(1), v.maxLength(200))),
 });
 export type IssueListQuery = v.InferOutput<typeof IssueListQuery>;
 
@@ -57,26 +65,77 @@ export function decodeCursor(cursor: string): [string, number] | null {
 	return null;
 }
 
+const UNIT_MS = { s: 1000, m: 60_000, h: 3_600_000, d: 86_400_000 } as const;
+
+/** The ISO time for a `since` value, or null when it is not valid. */
+export function parseSince(value: string, now: Date): string | null {
+	if (!SINCE_PATTERN.test(value)) return null;
+	const duration = /^(\d+)([smhd])$/.exec(value);
+	const ms = duration
+		? now.getTime() - Number(duration[1]) * UNIT_MS[duration[2] as keyof typeof UNIT_MS]
+		: Date.parse(value);
+	return Number.isFinite(ms) ? new Date(ms).toISOString() : null;
+}
+
+/** LIKE pattern for a plain substring: user input cannot add wildcards. Use with ESCAPE '\'. */
+export const likeContains = (text: string) => `%${text.replace(/[\\%_]/g, "\\$&")}%`;
+
+/** The internal row ID of a project, from its public ID or slug; null when there is none. */
+export async function findProjectRowId(db: Db, ref: string): Promise<number | null> {
+	const row = await db.first<{ id: number }>(
+		sql`SELECT id FROM projects WHERE public_id = ${/^\d{10}$/.test(ref) ? Number(ref) : null} OR slug = ${ref}`,
+	);
+	return row?.id ?? null;
+}
+
+export type IssueFilters = Omit<IssueListQuery, "since"> & { since?: string | undefined };
+
+/**
+ * One page of issues, the most recently seen first. Returns "project_not_found" when the
+ * project filter matches no project, so that a typo does not look like "no issues".
+ */
 export async function listIssues(
 	db: Db,
-	query: IssueListQuery,
+	query: IssueFilters,
 	after: [string, number] | null,
-): Promise<{ data: IssueRow[]; next_cursor: string | null }> {
+	now: Date,
+): Promise<{ data: IssueRow[]; next_cursor: string | null } | "project_not_found"> {
 	const [lastSeen, lastId] = after ?? ["9999", Number.MAX_SAFE_INTEGER];
+	const projectRowId = query.project ? await findProjectRowId(db, query.project) : null;
+	if (query.project && projectRowId === null) return "project_not_found";
+	const since = query.since ? parseSince(query.since, now) : null;
+	const search = query.search ? likeContains(query.search) : null;
+	const release = query.release ?? null;
+	const environment = query.environment ?? null;
 	const rows = await db.all<IssueRow>({
 		sql: `SELECT i.id, p.public_id AS project_id, i.title, i.culprit, i.type, i.level, i.platform,
 				i.status, i.times_seen, i.stored_events, i.first_seen, i.last_seen, i.first_release,
 				i.last_release, i.fingerprint, i.fingerprint_version
 			FROM issues i JOIN projects p ON p.id = i.project_id
-			WHERE (? IS NULL OR p.public_id = ? OR p.slug = ?) AND (? IS NULL OR i.status = ?)
+			WHERE (? IS NULL OR i.project_id = ?) AND (? IS NULL OR i.status = ?)
+				AND (? IS NULL OR i.last_seen >= ?)
+				AND (? IS NULL OR i.first_release = ? OR i.last_release = ?
+					OR EXISTS (SELECT 1 FROM events e WHERE e.issue_id = i.id AND e.release = ?))
+				AND (? IS NULL OR EXISTS (SELECT 1 FROM events e WHERE e.issue_id = i.id AND e.environment = ?))
+				AND (? IS NULL OR i.title LIKE ? ESCAPE '\\' OR i.culprit LIKE ? ESCAPE '\\')
 				AND (i.last_seen < ? OR (i.last_seen = ? AND i.id < ?))
 			ORDER BY i.last_seen DESC, i.id DESC LIMIT ?`,
 		params: [
-			query.project ?? null,
-			query.project && /^\d{10}$/.test(query.project) ? Number(query.project) : null,
-			query.project ?? null,
+			projectRowId,
+			projectRowId,
 			query.status ?? null,
 			query.status ?? null,
+			since,
+			since,
+			release,
+			release,
+			release,
+			release,
+			environment,
+			environment,
+			search,
+			search,
+			search,
 			lastSeen,
 			lastSeen,
 			lastId,

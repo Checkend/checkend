@@ -149,7 +149,7 @@ describe("issues API", () => {
 
 	it("filters by project and status, and rejects invalid filters", async () => {
 		const { call, project } = await withIssues();
-		expect((await call("GET", "/v1/issues?project=1234567890")).body.data).toEqual([]);
+		expect((await call("GET", "/v1/issues?project=1234567890")).status).toBe(404);
 		expect(
 			(await call("GET", `/v1/issues?project=${project.id}&status=unresolved`)).body.data,
 		).toHaveLength(3);

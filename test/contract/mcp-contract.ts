@@ -153,6 +153,21 @@ export function mcpContract(
 			expect(
 				(await client.callTool({ name: "list_issues", arguments: { limit: 1000 } })).isError,
 			).toBe(true);
+			const noProject = await client.callTool({
+				name: "list_issues",
+				arguments: { project: "no-such-project" },
+			});
+			expect(noProject.isError).toBe(true);
+			expect(text(noProject)).toMatch(/not found/i);
+			const filtered = JSON.parse(
+				text(
+					await client.callTool({
+						name: "list_issues",
+						arguments: { since: "1d", search: "undefined" },
+					}),
+				),
+			);
+			expect(filtered.issues.length).toBeGreaterThan(0);
 			const badCursor = await client.callTool({
 				name: "list_issues",
 				arguments: { cursor: "bm90LWEtY3Vyc29y" },

@@ -58,8 +58,12 @@ describe("OpenAPI 3.1 document", () => {
 		const list = document.paths["/v1/issues"].get;
 		expect(list.parameters.map((p: { name: string }) => p.name).sort()).toEqual([
 			"cursor",
+			"environment",
 			"limit",
 			"project",
+			"release",
+			"search",
+			"since",
 			"status",
 		]);
 		const status = list.parameters.find((p: { name: string }) => p.name === "status");
