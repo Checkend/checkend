@@ -31,6 +31,7 @@ const portsWith = (db: Db): Ports => ({
 	http: { send: async () => new Response(null, { status: 599 }) },
 	notifyQueue: null,
 	blobs: null,
+	ingestQueue: null,
 	config: DEFAULT_CONFIG,
 });
 

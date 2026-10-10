@@ -8,6 +8,7 @@ import { IngestError } from "./errors.ts";
 import { parseJson } from "./json.ts";
 import { INGEST_LIMITS } from "./limits.ts";
 import { nativeToSentry } from "./native.ts";
+import { enqueueEvent } from "./overflow.ts";
 import { prepareEvent } from "./prepare.ts";
 import type { IngestState } from "./state.ts";
 import { storeEvent } from "./store.ts";
@@ -97,8 +98,9 @@ export async function handleIngest(
 		if (!(await ports.rateLimiter.allow(`${projectId}:${key}`))) {
 			return tooManyRequests(RATE_LIMIT_SECONDS, "key");
 		}
+		// D1 is overloaded: 429, unless the overflow queue can take the event (below).
 		const overload = state.health.snapshot(now).retryAfterSeconds;
-		if (overload > 0) return tooManyRequests(overload, "organization");
+		if (overload > 0 && !ports.ingestQueue) return tooManyRequests(overload, "organization");
 
 		body ??= await readIngestBody(request);
 		const envelope = kind === "envelope" ? parseEnvelope(body) : null;
@@ -120,10 +122,20 @@ export async function handleIngest(
 			now,
 			typeof headerId === "string" ? headerId : null,
 		);
+		const browser = origin !== null;
+		if (overload > 0) {
+			if (!(await enqueueEvent(ports, project.projectId, prepared, browser))) {
+				return tooManyRequests(overload, "organization");
+			}
+			return json(200, { id: prepared.event.event_id });
+		}
 		ports.defer(
-			storeEvent(ports, state, project.projectId, prepared, { browser: origin !== null }).then(
-				(result) => (result.deliveries > 0 ? startDeliveries(ports) : undefined),
-			),
+			storeEvent(ports, state, project.projectId, prepared, { browser }).then(async (result) => {
+				// A write that failed after its retries goes to the overflow queue, when there is one.
+				if (result.outcome === "failed")
+					await enqueueEvent(ports, project.projectId, prepared, browser);
+				if (result.deliveries > 0) await startDeliveries(ports);
+			}),
 		);
 		return json(200, { id: prepared.event.event_id });
 	} catch (error) {

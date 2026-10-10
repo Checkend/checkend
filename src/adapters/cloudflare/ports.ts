@@ -5,6 +5,7 @@ import { fetchClient } from "../../ports/http.ts";
 import type { Ports } from "../../ports/index.ts";
 import { noRateLimit, type RateLimiter } from "../../ports/rate-limiter.ts";
 import { d1Db } from "./d1-db.ts";
+import { cloudflareIngestQueue } from "./ingest-queue.ts";
 import { r2BlobStore } from "./r2-blob-store.ts";
 import { dohResolver } from "./resolver.ts";
 
@@ -35,6 +36,8 @@ type WorkerEnv = Omit<Env, "INGEST_RATE_LIMITER"> &
 		NOTIFY?: Pick<Queue<{ kind: "deliver" }>, "send">;
 		// Optional binding: an R2 bucket for source maps. Without it, source maps are off.
 		BLOBS?: Pick<R2Bucket, "put" | "get" | "delete">;
+		// Optional binding: the ingest overflow queue. Without it, an overloaded D1 gives 429.
+		INGEST_QUEUE?: Pick<Queue<object>, "send">;
 	};
 
 const positiveInt = (value: string | undefined): number | undefined => {
@@ -86,6 +89,7 @@ export function cloudflarePorts(env: WorkerEnv, ctx: Pick<ExecutionContext, "wai
 		config: readConfig(env),
 		resolver: dohResolver,
 		blobs: env.BLOBS ? r2BlobStore(env.BLOBS) : null,
+		ingestQueue: env.INGEST_QUEUE ? cloudflareIngestQueue(env.INGEST_QUEUE) : null,
 		http: fetchClient,
 		notifyQueue: env.NOTIFY
 			? { send: async (message) => void (await env.NOTIFY?.send(message)) }

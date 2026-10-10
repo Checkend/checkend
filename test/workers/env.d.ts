@@ -6,6 +6,7 @@ declare global {
 		interface Env {
 			ADMIN_TOKEN: string;
 			BLOBS: R2Bucket;
+			INGEST_QUEUE: Queue<object>;
 			TEST_MIGRATIONS: Migration[];
 			TEST_SOURCEMAP: string;
 			TEST_D1_MIGRATIONS: D1Migration[];

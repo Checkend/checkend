@@ -37,6 +37,7 @@ export async function testPorts(
 		http: noNetwork,
 		notifyQueue: null,
 		blobs: memoryBlobStore(),
+		ingestQueue: null,
 		...overrides,
 		config: { ...DEFAULT_CONFIG, ...overrides.config },
 	};

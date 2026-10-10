@@ -4,6 +4,7 @@ import type { Config } from "./config.ts";
 import type { Db } from "./db.ts";
 import type { Defer } from "./defer.ts";
 import type { HttpClient, NotifyQueue } from "./http.ts";
+import type { IngestQueue } from "./ingest-queue.ts";
 import type { RateLimiter } from "./rate-limiter.ts";
 import type { Resolver } from "./resolver.ts";
 
@@ -13,6 +14,7 @@ export type { Config } from "./config.ts";
 export type { Db } from "./db.ts";
 export type { Defer } from "./defer.ts";
 export type { HttpClient, NotifyQueue } from "./http.ts";
+export type { IngestQueue } from "./ingest-queue.ts";
 export type { RateLimiter } from "./rate-limiter.ts";
 export type { Resolver } from "./resolver.ts";
 
@@ -34,4 +36,6 @@ export interface Ports {
 	notifyQueue: NotifyQueue | null;
 	/** Large values (source maps); null: no storage, so the features that need it are off. */
 	blobs: BlobStore | null;
+	/** The ingest overflow queue; null: no queue (direct mode only, 429 when D1 is overloaded). */
+	ingestQueue: IngestQueue | null;
 }

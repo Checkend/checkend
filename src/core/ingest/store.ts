@@ -66,10 +66,34 @@ export async function storeEvent(
 	prepared: PreparedEvent,
 	options: StoreOptions = {},
 ): Promise<StoreResult> {
+	return storeEvents(
+		ports,
+		state,
+		projectId,
+		[{ prepared, browser: options.browser ?? false }],
+		options,
+	);
+}
+
+/**
+ * Writes several events of one project in one atomic `batch()` (the queue consumer groups
+ * events by fingerprint). The statements of each event are the same as in storeEvent, in order,
+ * so the sampling and the duplicate checks work across the group.
+ */
+export async function storeEvents(
+	ports: Pick<Ports, "db" | "clock" | "config">,
+	state: IngestState,
+	projectId: number,
+	items: { prepared: PreparedEvent; browser: boolean }[],
+	options: StoreOptions = {},
+): Promise<StoreResult> {
 	const sleep = options.sleep ?? defaultSleep;
-	const rawBytes = prepared.payloadBytes;
-	const compressed = prepared.rawJson === null ? null : await gzip(prepared.rawJson);
-	const raw = compressed && compressed.byteLength <= MAX_RAW_BYTES ? compressed : null;
+	const raws = await Promise.all(
+		items.map(async ({ prepared }) => {
+			const compressed = prepared.rawJson === null ? null : await gzip(prepared.rawJson);
+			return compressed && compressed.byteLength <= MAX_RAW_BYTES ? compressed : null;
+		}),
+	);
 
 	let lastError: unknown;
 	let attempt = 0;
@@ -77,21 +101,37 @@ export async function storeEvent(
 		attempt++;
 		const started = Date.now();
 		try {
-			const write = await planWrite(ports, state, projectId, prepared, raw, rawBytes, options);
-			const results = await ports.db.batch(write.statements);
-			const deliveries = write.deliveryStatements.reduce(
-				(sum, i) => sum + (results[i]?.rows.length ?? 0),
+			const statements: Statement[] = [];
+			const deliveryStatements: number[] = [];
+			let rows = 0;
+			let stored = false;
+			const newTagKeys: string[] = [];
+			for (const [i, item] of items.entries()) {
+				const write = await planWrite(
+					ports,
+					state,
+					projectId,
+					item.prepared,
+					raws[i] ?? null,
+					item.prepared.payloadBytes,
+					{ ...options, browser: item.browser },
+				);
+				deliveryStatements.push(...write.deliveryStatements.map((at) => at + statements.length));
+				statements.push(...write.statements);
+				rows += write.rows;
+				stored ||= write.mode === "full";
+				newTagKeys.push(...write.newTagKeys);
+			}
+			const results = await ports.db.batch(statements);
+			const deliveries = deliveryStatements.reduce(
+				(sum, at) => sum + (results[at]?.rows.length ?? 0),
 				0,
 			);
 			const now = ports.clock.now();
 			state.health.recordSuccess(Date.now() - started, now);
-			state.budget.add(now, write.rows);
-			state.tagKeys.add(projectId, write.newTagKeys);
-			return {
-				outcome: write.mode === "full" ? "stored" : "counted",
-				attempts: attempt,
-				deliveries,
-			};
+			state.budget.add(now, rows);
+			state.tagKeys.add(projectId, newTagKeys);
+			return { outcome: stored ? "stored" : "counted", attempts: attempt, deliveries };
 		} catch (error) {
 			lastError = error;
 			if (PERMANENT.test(String(error)) || attempt === MAX_ATTEMPTS) break;
@@ -105,7 +145,7 @@ export async function storeEvent(
 	console.error(
 		JSON.stringify({
 			message: "checkend: ingest write failed",
-			event_id: prepared.event.event_id,
+			event_ids: items.map((item) => item.prepared.event.event_id).slice(0, 10),
 			attempts: attempt,
 			error: String(lastError).slice(0, 300),
 		}),

@@ -11,6 +11,9 @@ export default defineConfig(async () => ({
 			miniflare: {
 				// The optional R2 bucket (BlobStore). Not in wrangler.jsonc: an install without it works.
 				r2Buckets: ["BLOBS"],
+				// The optional ingest overflow queue (producer and consumer on the test Worker).
+				queueProducers: { INGEST_QUEUE: "checkend-ingest-test" },
+				queueConsumers: ["checkend-ingest-test"],
 				// Test-only bindings: the migration files, read here because workerd has no file system.
 				bindings: {
 					ADMIN_TOKEN: "workers-test-admin-token",
