@@ -20,14 +20,16 @@ export function d1Db(d1: D1Database): Db {
 		rows: (result.results ?? []).map(toRow),
 	});
 
+	const all = async <T extends Row = Row>(statement: Statement): Promise<T[]> => {
+		const result = await prepare(statement).all<Record<string, unknown>>();
+		return result.results.map(toRow) as T[];
+	};
+
 	return {
-		async all<T extends Row = Row>(statement: Statement): Promise<T[]> {
-			const result = await prepare(statement).all<Record<string, unknown>>();
-			return result.results.map(toRow) as T[];
-		},
+		all,
 
 		async first<T extends Row = Row>(statement: Statement): Promise<T | null> {
-			const rows = await this.all<T>(statement);
+			const rows = await all<T>(statement);
 			return rows[0] ?? null;
 		},
 

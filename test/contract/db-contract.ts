@@ -71,6 +71,17 @@ export function dbContract(adapterName: string, makeDb: () => Promise<Db> | Db):
 				expect(await db.first(sql`SELECT name FROM contract_items WHERE id = ${9}`)).toBeNull();
 			});
 
+			it("works when the methods are called without the object", async () => {
+				const { run, all, first, batch } = db;
+				await run(insert(1, "a"));
+				await batch([insert(2, "b")]);
+				expect(await all(sql`SELECT id FROM contract_items ORDER BY id`)).toEqual([
+					{ id: 1 },
+					{ id: 2 },
+				]);
+				expect(await first(sql`SELECT id FROM contract_items ORDER BY id`)).toEqual({ id: 1 });
+			});
+
 			it("returns rows from INSERT … RETURNING", async () => {
 				const rows = await db.all(
 					sql`INSERT INTO contract_items (id, name) VALUES (${7}, ${"r"}) RETURNING id, name`,
