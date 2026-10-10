@@ -59,7 +59,7 @@ export const CreateProjectBody = v.object({
 
 export type IssueRow = Record<string, string | number | null>;
 
-const encodeCursor = (lastSeen: string, issueId: number) =>
+export const encodeCursor = (lastSeen: string, issueId: number) =>
 	btoa(JSON.stringify([lastSeen, issueId]))
 		.replace(/\+/g, "-")
 		.replace(/\//g, "_")
