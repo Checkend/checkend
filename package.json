@@ -21,12 +21,16 @@
 		"check": "npm run lint && npm run typecheck && npm test"
 	},
 	"dependencies": {
-		"hono": "^4.13.13"
+		"hono": "^4.13.13",
+		"valibot": "^1.5.0"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.5.15",
 		"@cloudflare/vitest-plugin": "^1.4.0",
+		"@sentry/browser": "^11.6.0",
+		"@sentry/node": "^11.6.0",
 		"@types/node": "^26.6.5",
+		"fast-check": "^4.10.2",
 		"typescript": "^7.0.2",
 		"vitest": "^5.0.3",
 		"wrangler": "^4.149.0"

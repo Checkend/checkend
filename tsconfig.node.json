@@ -4,6 +4,7 @@
 	"compilerOptions": {
 		"types": ["node"]
 	},
+	"exclude": ["test/fixtures/sentry/browser-app.ts"],
 	"include": [
 		"src/core/**/*.ts",
 		"src/ports/**/*.ts",
@@ -11,6 +12,7 @@
 		"src/adapters/node/**/*.ts",
 		"test/contract/**/*.ts",
 		"test/node/**/*.ts",
+		"test/fixtures/**/*.ts",
 		"*.config.ts"
 	]
 }
