@@ -256,3 +256,28 @@ describe("storeEvent: raw payload size", () => {
 		expect(event.raw_size).toBeGreaterThan(300 * 1024);
 	});
 });
+
+describe("storeEvent: D1 limits (M2)", () => {
+	it("never sends a statement with more than 100 bound parameters, also for a worst-case event", async () => {
+		const t = await testPorts();
+		const counts: number[] = [];
+		const spy: Db = {
+			...t.ports.db,
+			batch: (statements) => {
+				for (const s of statements) counts.push(s.params.length);
+				return t.ports.db.batch(statements);
+			},
+		};
+		const { store, one } = await setup({ tagKeysPerProject: 500 }, spy);
+		counts.length = 0;
+		const tags = Object.fromEntries(
+			Array.from({ length: 50 }, (_, i) => [`key${i}`, "v".repeat(200)]),
+		);
+		expect(await store(errorEvent({ tags, extra: { pad: "x".repeat(50_000) } }))).toMatchObject({
+			outcome: "stored",
+		});
+		expect(counts.length).toBeGreaterThan(50);
+		expect(Math.max(...counts)).toBeLessThanOrEqual(100);
+		expect(await one(sql`SELECT COUNT(*) AS n FROM tag_keys`)).toEqual({ n: 50 });
+	});
+});

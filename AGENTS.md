@@ -56,6 +56,9 @@ Checkend runs on Cloudflare first, and it must also run off Cloudflare. These ru
 6. **Consumers are idempotent.** Queue and background work can run more than once (at-least-once).
 7. **Single-tenant.** One install serves one organization. Tables have no `org_id` or `tenant_id`.
 8. **A new port needs contract tests** in `test/contract/`, run against each adapter.
+9. **Checkend never reports its own errors to itself** (a failure could loop). Its errors go to
+   Workers Logs (`console.error` with JSON). The product code has no Sentry SDK; the SDKs in
+   `devDependencies` only record test fixtures. A test checks both.
 
 ## How we build
 
