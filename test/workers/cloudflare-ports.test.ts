@@ -29,6 +29,7 @@ describe("readConfig", () => {
 			githubWebhookSecret: null,
 			encryptionKeys: [],
 			githubToken: null,
+			retentionDays: 90,
 		});
 	});
 

@@ -25,6 +25,8 @@ export interface Config {
 	encryptionKeys: EncryptionKey[];
 	/** A GitHub token that can read the repositories (GITHUB_TOKEN): commits per release. */
 	githubToken: string | null;
+	/** Days that Checkend keeps stored events and hourly counts (RETENTION_DAYS). */
+	retentionDays: number;
 }
 
 export const DEFAULT_CONFIG: Config = {
@@ -38,4 +40,5 @@ export const DEFAULT_CONFIG: Config = {
 	githubWebhookSecret: null,
 	encryptionKeys: [],
 	githubToken: null,
+	retentionDays: 90,
 };

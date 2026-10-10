@@ -25,6 +25,7 @@ export interface ConfigEnv {
 	ENCRYPTION_KEYS?: string;
 	/** A secret: a GitHub token with read access to the repositories (commits per release). */
 	GITHUB_TOKEN?: string;
+	RETENTION_DAYS?: string;
 }
 
 type WorkerEnv = Omit<Env, "INGEST_RATE_LIMITER"> &
@@ -71,6 +72,7 @@ export function readConfig(env: ConfigEnv): Config {
 		githubWebhookSecret: env.GITHUB_WEBHOOK_SECRET?.trim() || null,
 		encryptionKeys: encryptionKeys(env.ENCRYPTION_KEYS),
 		githubToken: env.GITHUB_TOKEN?.trim() || null,
+		retentionDays: positiveInt(env.RETENTION_DAYS) ?? DEFAULT_CONFIG.retentionDays,
 	};
 }
 
