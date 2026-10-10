@@ -20,6 +20,7 @@ describe("Worker entry", () => {
 				latest,
 				applied: env.TEST_MIGRATIONS.length,
 			},
+			ingest: { mode: "full", write_failures_today: 0, retry_after_seconds: 0 },
 			time: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/),
 		});
 	});

@@ -37,7 +37,7 @@ export function newPublicKey(): string {
 /** Creates a project and its first DSN key in one atomic batch. */
 export async function createProject(
 	{ db, clock }: Pick<Ports, "db" | "clock">,
-	input: { name: string; platform?: string | null },
+	input: { name: string; platform?: string | null | undefined },
 ): Promise<CreatedProject> {
 	const name = input.name.trim();
 	if (name.length === 0 || name.length > 100) {

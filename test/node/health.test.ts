@@ -6,7 +6,7 @@ import { fixedClock } from "../../src/core/clock.ts";
 import { applyMigrations } from "../../src/core/migrations.ts";
 import { createApp } from "../../src/http/app.ts";
 import { DEFAULT_CONFIG } from "../../src/ports/config.ts";
-import type { Db } from "../../src/ports/db.ts";
+import { type Db, sql } from "../../src/ports/db.ts";
 import type { Ports } from "../../src/ports/index.ts";
 import { noRateLimit } from "../../src/ports/rate-limiter.ts";
 
@@ -49,6 +49,7 @@ describe("GET /health", () => {
 			status: "ok",
 			version: pkg.version,
 			migrations: { level: Number(latest?.slice(0, 4)), latest, applied: migrations.length },
+			ingest: { mode: "full", write_failures_today: 0, retry_after_seconds: 0 },
 			time: "2026-10-10T12:00:00.000Z",
 		});
 	});
@@ -57,6 +58,22 @@ describe("GET /health", () => {
 		const { status, body } = await getHealth(portsWith(openSqliteDb(":memory:")));
 		expect(status).toBe(200);
 		expect(body.migrations).toEqual({ level: 0, latest: null, applied: 0 });
+		expect(body.ingest).toBeNull();
+	});
+
+	it("shows budget mode and write failures (H1, H3)", async () => {
+		const db = openSqliteDb(":memory:");
+		await applyMigrations(db, migrations);
+		await db.run(
+			sql`INSERT INTO daily_usage (day, rows_written, write_failures) VALUES (${"2026-10-10"}, ${900}, ${2})`,
+		);
+		const ports = { ...portsWith(db), config: { ...DEFAULT_CONFIG, dailyRowLimit: 1000 } };
+		const { body } = await getHealth(ports);
+		expect(body.ingest).toEqual({
+			mode: "counters_only",
+			write_failures_today: 2,
+			retry_after_seconds: 0,
+		});
 	});
 
 	it("returns 503 without internal details when the database fails", async () => {
@@ -66,6 +83,7 @@ describe("GET /health", () => {
 			status: "error",
 			version: pkg.version,
 			migrations: null,
+			ingest: null,
 			time: "2026-10-10T12:00:00.000Z",
 		});
 		expect(JSON.stringify(body)).not.toContain("secret");
