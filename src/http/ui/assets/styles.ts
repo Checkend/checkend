@@ -104,6 +104,7 @@ th, td { text-align: left; vertical-align: top; padding: 10px 12px 10px 0; borde
 thead th { font-size: 12px; font-weight: 500; color: var(--muted); border-top: 0; padding-bottom: 6px; white-space: nowrap; }
 td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; padding-right: 0; padding-left: 12px; white-space: nowrap; }
 td.when { white-space: nowrap; color: var(--muted); }
+table.issues td.when, table.issues th:nth-child(n+3) { padding-left: 24px; }
 tbody tr:last-child td { border-bottom: 1px solid var(--line); }
 
 .issue-title { font-weight: 600; text-decoration: none; overflow-wrap: anywhere; }
@@ -125,7 +126,7 @@ tbody tr:last-child td { border-bottom: 1px solid var(--line); }
 .pager { display: flex; justify-content: flex-end; margin-top: 16px; }
 
 /* Facts */
-.facts { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; margin: 0 0 24px; }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; margin: 0 0 24px; }
 .facts div { background: var(--bg); padding: 10px 14px; }
 .facts dt { font-size: 12px; color: var(--muted); }
 .facts dd { margin: 2px 0 0; font-size: 15px; font-weight: 500; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
@@ -171,7 +172,10 @@ pre.json { margin: 0; font-size: 12.5px; line-height: 1.6; white-space: pre-wrap
 .tag-key { font-family: var(--mono); font-size: 12.5px; color: var(--muted); overflow-wrap: anywhere; }
 .tag-row { display: grid; grid-template-columns: minmax(0, 1fr) 64px 3ch; gap: 8px; align-items: center; font-size: 13px; }
 .tag-row .v { font-family: var(--mono); font-size: 12.5px; overflow-wrap: anywhere; }
-.tag-row meter { width: 64px; height: 8px; }
+.tag-row meter { width: 64px; height: 6px; appearance: none; border: 0; border-radius: 3px; background: var(--line); }
+.tag-row meter::-webkit-meter-bar { background: var(--line); border: 0; border-radius: 3px; height: 6px; }
+.tag-row meter::-webkit-meter-optimum-value { background: var(--violet); border-radius: 3px; }
+.tag-row meter::-moz-meter-bar { background: var(--violet); border-radius: 3px; }
 .tag-row .n { text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
 
 /* Lists of events and projects */
