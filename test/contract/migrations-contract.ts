@@ -35,6 +35,7 @@ export function migrationsContract(
 			db = await makeDb();
 			await db.batch(
 				["d1_migrations", "m_one", "m_two", "m_three"].map((table) => ({
+					// biome-ignore lint/plugin: test tables are dropped by fixed names.
 					sql: `DROP TABLE IF EXISTS ${table}`,
 					params: [],
 				})),

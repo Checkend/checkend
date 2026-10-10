@@ -163,6 +163,7 @@ export function dbContract(adapterName: string, makeDb: () => Promise<Db> | Db):
 
 		describe("limits", () => {
 			const manyParams = (count: number): Statement => ({
+				// biome-ignore lint/plugin: the text is only "?" placeholders.
 				sql: `SELECT ${Array.from({ length: count }, () => "?").join(" + ")} AS total`,
 				params: Array.from({ length: count }, () => 1),
 			});

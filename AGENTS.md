@@ -49,7 +49,8 @@ Checkend runs on Cloudflare first, and it must also run off Cloudflare. These ru
 3. **No interactive transactions.** For atomic writes, use one `Db.batch()`. All statements of a
    batch apply, or none do.
 4. **Bound parameters only.** Build SQL with the `sql` tag: `` sql`SELECT * FROM t WHERE id = ${id}` ``.
-   Never put a value into SQL text. A statement has at most 100 parameters and at most 100 KB of SQL
+   Never put a value into SQL text. Biome plugins in `lint/` reject a template with values or a
+   concatenation in `{ sql: ... }`, `.prepare()` and `.exec()`. A statement has at most 100 parameters and at most 100 KB of SQL
    (D1 limits). The adapters reject statements above these limits.
 5. **SQL must be valid on D1 and on SQLite.** The `Db` contract tests run on both.
 6. **Consumers are idempotent.** Queue and background work can run more than once (at-least-once).

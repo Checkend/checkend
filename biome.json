@@ -4,6 +4,13 @@
 	"files": {
 		"includes": ["**", "!worker-configuration.d.ts", "!node_modules", "!.wrangler"]
 	},
+	"plugins": [
+		"./lint/sql-property.grit",
+		"./lint/sql-prepare-template.grit",
+		"./lint/sql-prepare-concat.grit",
+		"./lint/sql-exec-template.grit",
+		"./lint/sql-exec-concat.grit"
+	],
 	"formatter": { "lineWidth": 100 },
 	"linter": {
 		"rules": {

@@ -1,0 +1,13 @@
+// Untrusted input, layer 3: { sql: `... ${value}` } or { sql: "..." + value } puts a value
+// into SQL text. Use the sql tag, or "?" with params.
+engine biome(1.0)
+language js(typescript)
+
+JsPropertyObjectMember(name=$name, value=$text) where {
+	$name <: `sql`,
+	$text <: or {
+		JsTemplateExpression(elements=contains JsTemplateElement()),
+		JsBinaryExpression()
+	},
+	register_diagnostic(span=$text, message="Values must not go into SQL text. Use the sql tag or bound parameters (AGENTS.md).")
+}

@@ -19,6 +19,7 @@ async function setup(overrides: Partial<Ports> = {}) {
 	const count = async (table: "issues" | "events") =>
 		(
 			await t.ports.db.first<{ n: number }>({
+				// biome-ignore lint/plugin: the table name is one of two fixed names.
 				sql: `SELECT COUNT(*) AS n FROM ${table}`,
 				params: [],
 			})

@@ -1,0 +1,9 @@
+// Untrusted input, layer 3: no values in SQL text passed to .prepare() (concat).
+// (One file per case: "or" inside a call pattern does not match in Biome 2.5.)
+engine biome(1.0)
+language js(typescript)
+
+`$db.prepare($text)` where {
+	$text <: JsBinaryExpression(),
+	register_diagnostic(span=$text, message="Values must not go into SQL text. Use the sql tag or bound parameters (AGENTS.md).")
+}

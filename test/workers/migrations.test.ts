@@ -10,7 +10,10 @@ const reset = async () => {
 	const tables = await db().all<{ name: string }>(
 		sql`SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%'`,
 	);
-	await db().batch(tables.map(({ name }) => ({ sql: `DROP TABLE "${name}"`, params: [] })));
+	await db().batch(
+		// biome-ignore lint/plugin: test reset drops the tables that sqlite_master lists.
+		tables.map(({ name }) => ({ sql: `DROP TABLE "${name}"`, params: [] })),
+	);
 };
 
 migrationsContract(
