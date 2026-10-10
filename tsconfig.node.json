@@ -15,6 +15,7 @@
 		"test/fixtures/**/*.ts",
 		"test/support/**/*.ts",
 		"test/perf/**/*.ts",
+		"scripts/**/*.ts",
 		"*.config.ts"
 	]
 }
