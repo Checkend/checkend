@@ -42,4 +42,9 @@ export interface Ports {
 	ingestQueue: IngestQueue | null;
 	/** Email for alerts; null: email alerts are off. */
 	mailer: Mailer | null;
+	/**
+	 * The address of the client, for per-client rate limits. Workers: cf-connecting-ip. Node: the
+	 * socket address, or X-Forwarded-For from trusted proxies only (TRUSTED_PROXIES).
+	 */
+	clientIp(request: Request): string;
 }

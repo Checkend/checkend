@@ -39,6 +39,7 @@ export async function testPorts(
 		blobs: memoryBlobStore(),
 		ingestQueue: null,
 		mailer: null,
+		clientIp: (request: Request) => request.headers.get("cf-connecting-ip") ?? "unknown",
 		...overrides,
 		config: { ...DEFAULT_CONFIG, ...overrides.config },
 	};

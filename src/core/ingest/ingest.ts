@@ -54,7 +54,7 @@ export async function handleIngest(
 	try {
 		// A D1 key lookup (cache miss), a slug lookup and the tunnel path cost work before
 		// authentication, so they are rate-limited per client IP first.
-		const client = request.headers.get("cf-connecting-ip") ?? "unknown";
+		const client = ports.clientIp(request);
 		const lookupAllowed = () => ports.rateLimiter.allow(`key-lookup:${client}`);
 		const invalidKey = () => new IngestError(401, "invalid_key", "Invalid or missing DSN key.");
 
