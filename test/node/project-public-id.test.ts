@@ -32,12 +32,12 @@ async function setup() {
 }
 
 describe("public project IDs", () => {
-	it("migration 0004 gives existing projects a random 10-digit public ID", async () => {
+	it("migration 0003 gives existing projects a random 10-digit public ID", async () => {
 		const db = openSqliteDb(":memory:");
 		const all = readMigrations("migrations");
 		await applyMigrations(
 			db,
-			all.filter((m) => m.name < "0004"),
+			all.filter((m) => m.name < "0003"),
 		);
 		await db.run(
 			sql`INSERT INTO projects (name, slug, created_at) VALUES (${"Old"}, ${"old"}, ${"2026-10-10T00:00:00Z"})`,
