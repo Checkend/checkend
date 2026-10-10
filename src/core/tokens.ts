@@ -11,13 +11,14 @@ export const CreateTokenBody = v.object({
 	scopes: v.pipe(v.array(v.picklist(SCOPES)), v.minLength(1), v.maxLength(SCOPES.length)),
 });
 
-/** Who makes a request: a scoped token, or the bootstrap ADMIN_TOKEN secret. */
+/** Who makes a request: a scoped token, the bootstrap ADMIN_TOKEN secret, or a member (web UI). */
 export interface Actor {
 	/**
 	 * "system": Checkend itself (for example ingest, when it reopens a resolved issue).
 	 * "setup_key": an agent with a setup key (only the /v1/setup routes; no scopes).
+	 * "member": a person signed in to the web UI.
 	 */
-	type: "token" | "admin_token" | "system" | "setup_key";
+	type: "token" | "admin_token" | "system" | "setup_key" | "member";
 	id: number | null;
 	name: string;
 	scopes: Scope[];

@@ -31,6 +31,7 @@ describe("readConfig", () => {
 			githubToken: null,
 			retentionDays: 90,
 			ai: { gatewayId: "default", gatewayLogs: false, triage: false, similar: false },
+			devMode: false,
 		});
 	});
 
@@ -70,6 +71,19 @@ describe("readConfig", () => {
 		expect(
 			readConfig({ ADMIN_TOKEN: "", D1_DAILY_ROW_LIMIT: "lots", EVENTS_PER_ISSUE: "-1" }),
 		).toEqual(DEFAULT_CONFIG);
+	});
+});
+
+describe("development mode", () => {
+	it("is off unless CHECKEND_DEV is 1 or true", () => {
+		expect(readConfig({}).devMode).toBe(false);
+		expect(readConfig({ CHECKEND_DEV: "1" }).devMode).toBe(true);
+		expect(readConfig({ CHECKEND_DEV: "true" }).devMode).toBe(true);
+		expect(readConfig({ CHECKEND_DEV: "yes please" }).devMode).toBe(false);
+	});
+
+	it("is off in the Worker built from wrangler.jsonc", () => {
+		expect(readConfig(env).devMode).toBe(false);
 	});
 });
 

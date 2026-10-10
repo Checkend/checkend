@@ -43,6 +43,11 @@ export interface AiConfig {
 	triage: boolean;
 	/** AI_SIMILAR=on: embeddings and similar issues. */
 	similar: boolean;
+	/**
+	 * Development mode (`CHECKEND_DEV=1`, set only by `npm run dev`): the auto-login route and
+	 * the demo clock, both only for requests to localhost. Never on in production.
+	 */
+	devMode: boolean;
 }
 
 export const DEFAULT_CONFIG: Config = {
@@ -58,4 +63,5 @@ export const DEFAULT_CONFIG: Config = {
 	githubToken: null,
 	retentionDays: 90,
 	ai: { gatewayId: "default", gatewayLogs: false, triage: false, similar: false },
+	devMode: false,
 };

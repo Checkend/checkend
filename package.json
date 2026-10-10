@@ -9,7 +9,8 @@
 		"node": ">=22.18"
 	},
 	"scripts": {
-		"dev": "wrangler dev",
+		"dev": "wrangler dev --var CHECKEND_DEV:1",
+		"demo": "node scripts/demo.ts",
 		"deploy": "wrangler d1 migrations apply DB --remote && wrangler deploy",
 		"deploy:production": "wrangler d1 migrations apply DB --remote --config wrangler.production.jsonc && wrangler deploy --config wrangler.production.jsonc",
 		"test": "vitest run",

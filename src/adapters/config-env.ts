@@ -21,6 +21,8 @@ export interface ConfigEnv {
 	/** A secret: a GitHub token with read access to the repositories (commits per release). */
 	GITHUB_TOKEN?: string;
 	RETENTION_DAYS?: string;
+	/** "1" or "true": development mode. `npm run dev` passes it; never set it in production. */
+	CHECKEND_DEV?: string;
 	/** The sender of email alerts; a domain onboarded to Email Service. */
 	EMAIL_FROM?: string;
 	AI_GATEWAY_ID?: string;
@@ -89,5 +91,6 @@ export function readConfig(env: ConfigEnv): Config {
 			triage: on(env.AI_TRIAGE),
 			similar: on(env.AI_SIMILAR),
 		},
+		devMode: env.CHECKEND_DEV === "1" || env.CHECKEND_DEV === "true",
 	};
 }
