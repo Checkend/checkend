@@ -90,12 +90,14 @@ async function measure(
 	};
 }
 
+/** Prints the result also on success, so that a log shows the margin to the limit. */
 const report = (
 	label: string,
 	m: { ms: number; calibrationMs: number; ratio: number; bytes: number },
+	limit: number,
 ) =>
 	console.log(
-		`${label}: ${m.bytes} bytes; ${m.ms.toFixed(2)} ms; calibration ${m.calibrationMs.toFixed(2)} ms; ratio ${m.ratio.toFixed(3)}`,
+		`${label}: ${m.bytes} bytes; ${m.ms.toFixed(2)} ms; calibration ${m.calibrationMs.toFixed(2)} ms; ratio ${m.ratio.toFixed(3)} of limit ${limit} (${Math.round((m.ratio / limit) * 100)}%)`,
 	);
 
 /*
@@ -110,13 +112,13 @@ const LIMITS = { typical: 0.15, worstSdk: 0.65, largest: 0.8 };
 describe("CPU budget (ratios to a calibration task on the same machine)", () => {
 	it(`a typical real event (golden fixture): ratio under ${LIMITS.typical}`, async () => {
 		const m = await measure(rawEventFromFixture("node-type-error"));
-		report("typical event", m);
+		report("typical event", m, LIMITS.typical);
 		expect(m.ratio).toBeLessThan(LIMITS.typical);
 	});
 
 	it(`the worst event of a real SDK (default SDK limits): ratio under ${LIMITS.worstSdk}`, async () => {
 		const m = await measure(worstSdkEvent());
-		report("worst SDK event", m);
+		report("worst SDK event", m, LIMITS.worstSdk);
 		expect(m.ratio).toBeLessThan(LIMITS.worstSdk);
 	});
 
@@ -124,7 +126,7 @@ describe("CPU budget (ratios to a calibration task on the same machine)", () => 
 	it(`the largest event that ingest accepts (any shape): ratio under ${LIMITS.largest}`, async () => {
 		const event = maxSizeEvent(INGEST_LIMITS.eventBytes);
 		const m = await measure(event);
-		report("largest accepted event", m);
+		report("largest accepted event", m, LIMITS.largest);
 		expect(m.bytes).toBeGreaterThan(INGEST_LIMITS.eventBytes * 0.9);
 		expect(m.ratio).toBeLessThan(LIMITS.largest);
 	});
