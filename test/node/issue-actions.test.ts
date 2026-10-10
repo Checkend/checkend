@@ -224,6 +224,20 @@ describe("approvals (REQUIRE_APPROVAL)", () => {
 		).toBe(200);
 	});
 
+	it("marks an approval failed when the action cannot run any more (the issue was merged)", async () => {
+		const { store, call, writer, issue } = await setup({ requireApproval: ["ignore"] });
+		const id = await store("AlphaError");
+		const target = await store("BetaError");
+		const request = await call("POST", `/v1/issues/${id}/ignore`, writer);
+		await call("POST", `/v1/issues/${target}/merge`, writer, { source_ids: [id] });
+		const approved = await call("POST", `/v1/approvals/${request.body.approval_id}/approve`, ADMIN);
+		expect(approved.status).toBe(409);
+		expect(approved.body).toMatchObject({ error: "approval_failed" });
+		expect((await issue(id)).status).toBe("merged");
+		const list = (await call("GET", "/v1/approvals", ADMIN)).body.data;
+		expect(list[0]).toMatchObject({ id: request.body.approval_id, status: "failed" });
+	});
+
 	it("rejects a request, and expires a request after 7 days", async () => {
 		const { store, call, writer, clock, issue } = await setup({ requireApproval: ["ignore"] });
 		const id = await store("AlphaError");

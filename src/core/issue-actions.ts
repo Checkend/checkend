@@ -176,7 +176,12 @@ async function expireApprovals(ports: P): Promise<void> {
 	);
 }
 
-export type DecisionResult = "done" | "not_found" | "not_pending" | "own_request";
+export type DecisionResult =
+	| "done"
+	| "not_found"
+	| "not_pending"
+	| "own_request"
+	| { failed: string };
 
 /** Approves (runs the action) or rejects a pending approval. */
 export async function decideApproval(
@@ -220,12 +225,22 @@ export async function decideApproval(
 	if (decision === "reject") return "done";
 
 	const payload = JSON.parse(approval.payload) as { status?: IssueStatus; source_ids?: number[] };
-	if (approval.action === "merge") {
-		await mergeIssues(ports, actor, approval.issue_id, payload.source_ids ?? [], {
-			skipApproval: true,
-		});
-	} else if (payload.status) {
-		await setIssueStatus(ports, actor, approval.issue_id, payload.status, { skipApproval: true });
+	const result =
+		approval.action === "merge"
+			? await mergeIssues(ports, actor, approval.issue_id, payload.source_ids ?? [], {
+					skipApproval: true,
+				})
+			: payload.status
+				? await setIssueStatus(ports, actor, approval.issue_id, payload.status, {
+						skipApproval: true,
+					})
+				: ({ kind: "invalid", message: "The request has no action." } as const);
+	if (result.kind !== "done") {
+		// The issue changed after the request (for example, it was merged): the action cannot run.
+		const reason =
+			result.kind === "invalid" ? result.message : "The issue does not exist or is merged.";
+		await ports.db.run(sql`UPDATE approvals SET status = 'failed' WHERE id = ${approvalId}`);
+		return { failed: reason };
 	}
 	return "done";
 }

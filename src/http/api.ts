@@ -248,6 +248,9 @@ export function apiRoutes(app: Hono<AppEnv>, state: IngestState): void {
 			const result = await decideApproval(c.env.ports, c.get("actor"), params.output.id, decision);
 			if (result === "not_found") return c.json({ error: "not_found" }, 404);
 			if (result === "not_pending") return c.json({ error: "approval_not_pending" }, 409);
+			if (typeof result === "object") {
+				return c.json({ error: "approval_failed", reason: result.failed }, 409);
+			}
 			if (result === "own_request") {
 				return c.json(
 					{ error: "forbidden", reason: "A requester cannot approve its own request." },
