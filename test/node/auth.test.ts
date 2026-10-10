@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { AUTH_ATTEMPT_LIMIT, allowAuthAttempt } from "../../src/core/auth/attempts.ts";
+import {
+	AUTH_ATTEMPT_LIMIT,
+	AUTH_GLOBAL_LIMIT,
+	allowAuthAttempt,
+} from "../../src/core/auth/attempts.ts";
 import {
 	CHALLENGE_TTL_MS,
 	finishSetup,
@@ -228,5 +232,21 @@ describe("sign-in attempts", () => {
 		expect(await allowAuthAttempt(ports, "198.51.100.1")).toBe(true);
 		clock.advance(15 * 60_000);
 		expect(await allowAuthAttempt(ports, "203.0.113.7")).toBe(true);
+	});
+
+	it("writes nothing for a client that is over the limit (D1 write budget)", async () => {
+		const { ports } = await testPorts();
+		for (let i = 0; i < AUTH_ATTEMPT_LIMIT + 50; i++) await allowAuthAttempt(ports, "203.0.113.7");
+		expect(
+			await ports.db.all(sql`SELECT key, count FROM auth_attempts WHERE key = ${"203.0.113.7"}`),
+		).toEqual([{ key: "203.0.113.7", count: AUTH_ATTEMPT_LIMIT }]);
+	});
+
+	it("has a ceiling for all clients together, so many IPs cannot burn the write budget", async () => {
+		const { ports } = await testPorts();
+		for (let i = 0; i < AUTH_GLOBAL_LIMIT; i++) {
+			expect(await allowAuthAttempt(ports, `198.51.100.${i % 250}-${i}`)).toBe(true);
+		}
+		expect(await allowAuthAttempt(ports, "192.0.2.1")).toBe(false);
 	});
 });

@@ -28,6 +28,8 @@ export const SECURITY_HEADERS: Record<string, string> = {
 	"referrer-policy": "same-origin",
 	"cross-origin-opener-policy": "same-origin",
 	"permissions-policy": "camera=(), microphone=(), geolocation=(), payment=()",
+	// Browsers ignore it on http://localhost; on a custom domain it keeps the UI on HTTPS.
+	"strict-transport-security": "max-age=31536000",
 };
 
 export const securityHeaders: MiddlewareHandler<AppEnv> = async (c, next) => {
@@ -134,12 +136,42 @@ export const checkJsonCsrf: MiddlewareHandler<AppEnv> = async (c, next) => {
 
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
 
-/** Development features: only with the development flag AND for a request to localhost. */
+const LOOPBACK_IPS = new Set(["127.0.0.1", "::1"]);
+const PROXY_HEADERS = ["x-forwarded-for", "x-forwarded-host", "forwarded"];
+
+/**
+ * Development features: only with the development flag AND a request to localhost that did
+ * not come through a proxy or tunnel (a tunnel can rewrite the Host header to localhost).
+ */
 export function isDevRequest(c: Context<AppEnv>): boolean {
-	return c.env.ports.config.devMode && LOCAL_HOSTS.has(new URL(c.req.url).hostname);
+	if (!c.env.ports.config.devMode) return false;
+	if (!LOCAL_HOSTS.has(new URL(c.req.url).hostname)) return false;
+	if (PROXY_HEADERS.some((name) => c.req.header(name) !== undefined)) return false;
+	const ip = c.req.header("cf-connecting-ip");
+	return ip === undefined || LOOPBACK_IPS.has(ip);
 }
 
-/** The client IP for the sign-in rate limit. */
-export const clientIp = (c: Context): string => c.req.header("cf-connecting-ip") ?? "unknown";
+/**
+ * The rate-limit key of a client IP: the address for IPv4, the /64 network for IPv6 (one
+ * network can use many addresses).
+ */
+export function clientKey(ip: string | undefined): string {
+	if (!ip) return "unknown";
+	if (!ip.includes(":")) return ip;
+	if (ip.includes(".")) return ip.slice(ip.lastIndexOf(":") + 1); // IPv4-mapped
+	const [head = "", tail] = ip.toLowerCase().split("::");
+	const left = head ? head.split(":") : [];
+	const right = tail ? tail.split(":") : [];
+	const groups = [
+		...left,
+		...Array(Math.max(0, 8 - left.length - right.length)).fill("0"),
+		...right,
+	];
+	const network = groups.slice(0, 4).map((g) => Number.parseInt(g || "0", 16).toString(16));
+	return `${network.join(":")}::/64`;
+}
+
+/** The client for the sign-in rate limit. */
+export const clientIp = (c: Context): string => clientKey(c.req.header("cf-connecting-ip"));
 
 export type { Session };

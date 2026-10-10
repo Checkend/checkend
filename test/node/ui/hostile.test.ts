@@ -136,6 +136,8 @@ describe("hostile event data in the UI", () => {
 			sql`UPDATE issues SET title = ${"invoice\u202Etxt.exe\u200B\u001b[2J"} WHERE id = ${d.issueId}`,
 		);
 		const html = await d.page("/issues");
+		const title = await d.page(`/issues/${d.issueId}`);
+		expect(/<title>([^<]*)<\/title>/.exec(title)?.[1]).toContain("invoice⟨U+202E⟩txt.exe");
 		for (const hidden of ["\u202E", "\u200B", "\u001b"]) expect(html).not.toContain(hidden);
 		expect(html).toContain("invoice⟨U+202E⟩txt.exe⟨U+200B⟩⟨U+001B⟩[2J");
 	});
@@ -146,6 +148,11 @@ describe("displayText", () => {
 		expect(displayText("a\u0000b\u202Ec\u2066d\uFEFFe\u{E0041}")).toBe(
 			"a⟨U+0000⟩b⟨U+202E⟩c⟨U+2066⟩d⟨U+FEFF⟩e⟨U+E0041⟩",
 		);
+		expect(displayText("a\u3164b\u2800c\u034Fd\u{E0100}e")).toBe(
+			"a⟨U+3164⟩b⟨U+2800⟩c⟨U+034F⟩d⟨U+E0100⟩e",
+		);
+		// Emoji keep their variation selector.
+		expect(displayText("ok \u2764\uFE0F")).toBe("ok \u2764\uFE0F");
 		expect(displayText("line 1\nline\t2 — café 日本 🙂")).toBe("line 1\nline\t2 — café 日本 🙂");
 	});
 

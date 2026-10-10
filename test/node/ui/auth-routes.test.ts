@@ -124,6 +124,17 @@ describe("sign-in over HTTP", () => {
 	});
 });
 
+describe("client key for the rate limit", () => {
+	it("uses the /64 network for IPv6, so one network cannot rotate addresses", async () => {
+		const { clientKey } = await import("../../../src/http/ui/security.ts");
+		expect(clientKey("2001:db8:1:2:aaaa:bbbb:cccc:dddd")).toBe("2001:db8:1:2::/64");
+		expect(clientKey("2001:db8:1:2::9")).toBe("2001:db8:1:2::/64");
+		expect(clientKey("2001:db8::1")).toBe("2001:db8:0:0::/64");
+		expect(clientKey("203.0.113.7")).toBe("203.0.113.7");
+		expect(clientKey(undefined)).toBe("unknown");
+	});
+});
+
 describe("CSRF", () => {
 	it("rejects a form post without, or with a wrong, CSRF token", async () => {
 		const ui = await uiApp();
@@ -170,6 +181,22 @@ describe("development login", () => {
 		expect(response.status).toBe(303);
 		expect(response.headers.get("location")).toBe("/issues");
 		expect(sessionFrom(response)).not.toBeNull();
+	});
+
+	it("refuses a request that came through a proxy or tunnel, even with a local Host", async () => {
+		const ui = await uiApp({ devMode: true }, "http://localhost:8787");
+		for (const headers of [
+			{ "cf-connecting-ip": "203.0.113.5" },
+			{ "x-forwarded-for": "203.0.113.5" },
+			{ "x-forwarded-host": "dev.example.com" },
+			{ forwarded: "for=203.0.113.5" },
+		]) {
+			expect((await ui.request("/dev/login", { headers })).status, JSON.stringify(headers)).toBe(
+				404,
+			);
+		}
+		const local = await ui.request("/dev/login", { headers: { "cf-connecting-ip": "127.0.0.1" } });
+		expect(local.status).toBe(303);
 	});
 
 	it("refuses a host that is not local, even with the flag", async () => {

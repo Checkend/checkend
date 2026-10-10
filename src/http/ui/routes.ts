@@ -47,6 +47,7 @@ import {
 	sessionCookie,
 	sessionToken,
 } from "./security.ts";
+import { displayText } from "./text.ts";
 import { loginView, notFoundView, setupClosedView, setupView } from "./views/auth.ts";
 import { type EventDetail, eventView } from "./views/event.ts";
 import { inboxView, issueView, SINCE_CHOICES } from "./views/issues.ts";
@@ -225,7 +226,7 @@ export function uiRoutes(app: Hono<AppEnv>, state: IngestState): void {
 		]);
 		return render(
 			c,
-			String(issue.title).slice(0, 80),
+			displayText(issue.title, 80),
 			"issues",
 			issueView(
 				{ issue, project, event: latest as Parameters<typeof issueView>[0]["event"], events, tags },
