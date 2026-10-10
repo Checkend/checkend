@@ -1,0 +1,6 @@
+# Private planning files. They are symlinks into the private checkend-internal repo.
+# Never commit them here. .githooks/pre-commit also blocks them.
+/docs
+/TODO.md
+/handover.md
+/INTERNAL.md

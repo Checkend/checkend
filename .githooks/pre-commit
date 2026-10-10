@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# Block private planning files from the public repo.
+# Enable once per clone: git config core.hooksPath .githooks
+
+status=0
+
+# 1. Paths that belong to checkend-internal.
+blocked=$(git diff --cached --name-only --diff-filter=ACMR -z |
+  tr '\0' '\n' |
+  /usr/bin/grep -E '^(docs(/|$)|TODO\.md$|handover\.md$|INTERNAL\.md$)')
+if [ -n "$blocked" ]; then
+  echo "pre-commit: these private files must not be committed:" >&2
+  echo "$blocked" | sed 's/^/  /' >&2
+  status=1
+fi
+
+# 2. Any staged symlink that points into checkend-internal.
+git diff --cached --name-only --diff-filter=ACMR -z |
+  while IFS= read -r -d '' path; do
+    mode=$(git ls-files -s -- "$path" | cut -d' ' -f1)
+    [ "$mode" = "120000" ] || continue
+    target=$(git cat-file -p ":$path")
+    case "$target" in
+      *checkend-internal*) echo "pre-commit: $path is a symlink into checkend-internal ($target)" >&2; exit 1 ;;
+    esac
+  done || status=1
+
+if [ "$status" -ne 0 ]; then
+  echo "Unstage them with: git restore --staged <path>" >&2
+fi
+exit $status
