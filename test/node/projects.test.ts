@@ -54,6 +54,7 @@ describe("KeyCache", () => {
 			projectId: p.internalId,
 			allowedOrigins: null,
 			dailyQuota: null,
+			scrub: null,
 		});
 		expect(await cache.find(ports.db, p.id + 1, p.publicKey, now)).toBeNull();
 		expect(await cache.find(ports.db, p.id, "0".repeat(32), now)).toBeNull();
@@ -84,6 +85,7 @@ describe("KeyCache", () => {
 			projectId: p.internalId,
 			allowedOrigins: null,
 			dailyQuota: null,
+			scrub: null,
 		});
 	});
 

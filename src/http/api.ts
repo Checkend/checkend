@@ -147,6 +147,9 @@ export function apiRoutes(app: Hono<AppEnv>, state: IngestState): void {
 		const body = v.safeParse(UpdateProjectBody, await c.req.json().catch(() => null));
 		if (!body.success) return invalid(c, body.issues);
 		const found = await updateProject(c.env.ports, c.get("actor"), ref.output, body.output);
+		if (typeof found === "object") {
+			return c.json({ error: "invalid_request", details: [found.invalid] }, 400);
+		}
 		if (!found) return c.json({ error: "not_found" }, 404);
 		const origin = new URL(c.req.url).origin;
 		const project = (await listProjects(c.env.ports.db, c.env.ports.clock.now())).find(

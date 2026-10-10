@@ -1,3 +1,4 @@
+import { applyProjectScrub, type ProjectScrub } from "../scrub-settings.ts";
 import { type Fingerprint, fingerprintEvent, type IssueTitle, issueTitle } from "./fingerprint.ts";
 import { type JsonObject, parseJson } from "./json.ts";
 import { INGEST_LIMITS } from "./limits.ts";
@@ -50,6 +51,7 @@ export async function prepareEvent(
 	payload: Uint8Array,
 	receivedAt: Date,
 	fallbackEventId: string | null = null,
+	projectScrub: ProjectScrub | null = null,
 ): Promise<PreparedEvent> {
 	const raw = parseJson(payload);
 	if (
@@ -59,14 +61,20 @@ export async function prepareEvent(
 	) {
 		raw.event_id = fallbackEventId;
 	}
-	const event = scrub(normalizeEvent(raw, receivedAt), { patterns: false }) as NormalizedEvent;
+	// The project's own keys and patterns: after the default scrubbing, before the fingerprint
+	// and the title, so that a filtered value is in neither.
+	const projectPass = <T>(value: T): T =>
+		projectScrub ? (applyProjectScrub(value, projectScrub) as T) : value;
+	const event = projectPass(
+		scrub(normalizeEvent(raw, receivedAt), { patterns: false }) as NormalizedEvent,
+	);
 	return {
 		event,
 		fingerprint: await fingerprintEvent(event),
 		title: issueTitle(event),
 		rawJson:
 			payload.byteLength <= INGEST_LIMITS.rawBytes
-				? JSON.stringify(scrub(raw) as JsonObject)
+				? JSON.stringify(projectPass(scrub(raw) as JsonObject))
 				: null,
 		payloadBytes: payload.byteLength,
 		userHash: await userHash(event.user),

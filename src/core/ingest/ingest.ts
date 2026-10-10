@@ -140,6 +140,7 @@ export async function handleIngest(
 			payload,
 			now,
 			typeof headerId === "string" ? headerId : null,
+			project.scrub,
 		);
 		const browser = origin !== null;
 		if (overload > 0) {

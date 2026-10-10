@@ -3,6 +3,14 @@ import { type Db, sql } from "../ports/db.ts";
 import type { Ports } from "../ports/index.ts";
 import { activityStatement } from "./activity.ts";
 import { findProjectRowId } from "./issues.ts";
+import {
+	checkScrubPattern,
+	compileScrub,
+	MAX_SCRUB_KEYS,
+	MAX_SCRUB_PATTERNS,
+	type ProjectScrub,
+	ScrubKey,
+} from "./scrub-settings.ts";
 import type { Actor } from "./tokens.ts";
 
 /** A GitHub repository: owner/name. Stored lowercase (GitHub names are case-insensitive). */
@@ -29,6 +37,15 @@ export const UpdateProjectBody = v.strictObject({
 	/** Origins that browser events can come from; null: any origin. */
 	allowed_origins: v.optional(
 		v.nullable(v.pipe(v.array(Origin), v.minLength(1), v.maxLength(MAX_ALLOWED_ORIGINS))),
+	),
+	/** Literal keys whose values are filtered (any case). */
+	scrub_keys: v.optional(v.pipe(v.array(ScrubKey), v.maxLength(MAX_SCRUB_KEYS))),
+	/** Regular expressions; matches are filtered. Checked for speed on save (updateProject). */
+	scrub_patterns: v.optional(
+		v.pipe(
+			v.array(v.string()),
+			v.maxLength(MAX_SCRUB_PATTERNS, `At most ${MAX_SCRUB_PATTERNS} patterns.`),
+		),
 	),
 	/** Events per day (UTC) that ingest accepts; null: no quota. */
 	daily_quota: v.optional(
@@ -59,6 +76,8 @@ export interface ProjectSummary {
 	trust: "low" | "high";
 	trust_setting: "low" | "high" | null;
 	allowed_origins: string[] | null;
+	scrub_keys: string[];
+	scrub_patterns: string[];
 	/** Events per day that ingest accepts (null: no quota), and the events of today (UTC). */
 	daily_quota: number | null;
 	events_today: number;
@@ -149,14 +168,16 @@ export async function createProject(
 export async function listProjects(db: Db, now: Date = new Date()): Promise<ProjectSummary[]> {
 	const today = `${now.toISOString().slice(0, 10)}T00`;
 	const projects = await db.all<
-		Omit<ProjectSummary, "keys" | "allowed_origins"> & {
+		Omit<ProjectSummary, "keys" | "allowed_origins" | "scrub_keys" | "scrub_patterns"> & {
 			internal_id: number;
 			allowed_origins: string | null;
+			scrub_keys: string | null;
+			scrub_patterns: string | null;
 		}
 	>(
 		sql`SELECT id AS internal_id, public_id AS id, name, slug, platform, repository,
 				coalesce(trust, CASE WHEN browser_seen_at IS NULL THEN 'high' ELSE 'low' END) AS trust,
-				trust AS trust_setting, allowed_origins, daily_quota,
+				trust AS trust_setting, allowed_origins, daily_quota, scrub_keys, scrub_patterns,
 				(SELECT coalesce(sum(c.count), 0) FROM issue_counts c JOIN issues i ON i.id = c.issue_id
 					WHERE i.project_id = projects.id AND c.hour >= ${today}) AS events_today,
 				created_at
@@ -165,9 +186,11 @@ export async function listProjects(db: Db, now: Date = new Date()): Promise<Proj
 	const keys = await db.all<{ project_id: number; public_key: string }>(
 		sql`SELECT project_id, public_key FROM project_keys WHERE revoked_at IS NULL ORDER BY id`,
 	);
-	return projects.map(({ internal_id, allowed_origins, ...p }) => ({
+	return projects.map(({ internal_id, allowed_origins, scrub_keys, scrub_patterns, ...p }) => ({
 		...p,
 		allowed_origins: allowed_origins ? (JSON.parse(allowed_origins) as string[]) : null,
+		scrub_keys: scrub_keys ? (JSON.parse(scrub_keys) as string[]) : [],
+		scrub_patterns: scrub_patterns ? (JSON.parse(scrub_patterns) as string[]) : [],
 		keys: keys.filter((k) => k.project_id === internal_id).map((k) => k.public_key),
 	}));
 }
@@ -178,7 +201,13 @@ export async function updateProject(
 	actor: Actor,
 	ref: string,
 	body: UpdateProjectBody,
-): Promise<boolean> {
+): Promise<boolean | { invalid: { path: string; message: string } }> {
+	// Each scrub pattern must be fast on any input (checked before the project lookup: no write).
+	for (const [i, pattern] of (body.scrub_patterns ?? []).entries()) {
+		// A database query is real I/O: on Workers it moves the clock that times the check.
+		const check = await checkScrubPattern(pattern, () => ports.db.first(sql`SELECT 1 AS one`));
+		if (!check.ok) return { invalid: { path: `scrub_patterns.${i}`, message: check.reason } };
+	}
 	const projectId = await findProjectRowId(ports.db, ref);
 	if (projectId === null) return false;
 	const statements = [];
@@ -195,6 +224,14 @@ export async function updateProject(
 			? JSON.stringify([...new Set(body.allowed_origins)])
 			: null;
 		statements.push(sql`UPDATE projects SET allowed_origins = ${origins} WHERE id = ${projectId}`);
+	}
+	if (body.scrub_keys !== undefined) {
+		const keys = JSON.stringify([...new Set(body.scrub_keys)]);
+		statements.push(sql`UPDATE projects SET scrub_keys = ${keys} WHERE id = ${projectId}`);
+	}
+	if (body.scrub_patterns !== undefined) {
+		const patterns = JSON.stringify([...new Set(body.scrub_patterns)]);
+		statements.push(sql`UPDATE projects SET scrub_patterns = ${patterns} WHERE id = ${projectId}`);
 	}
 	if (body.daily_quota !== undefined) {
 		statements.push(
@@ -230,6 +267,8 @@ export interface KeyLookup {
 	allowedOrigins: string[] | null;
 	/** Events per day that ingest accepts; null: no quota. */
 	dailyQuota: number | null;
+	/** The project's scrub keys and patterns (compiled), or null. */
+	scrub: ProjectScrub | null;
 }
 
 interface CacheEntry {
@@ -277,8 +316,11 @@ export class KeyCache {
 			project_id: number;
 			allowed_origins: string | null;
 			daily_quota: number | null;
+			scrub_keys: string | null;
+			scrub_patterns: string | null;
 		}>(
-			sql`SELECT k.project_id, p.allowed_origins, p.daily_quota FROM project_keys k JOIN projects p ON p.id = k.project_id
+			sql`SELECT k.project_id, p.allowed_origins, p.daily_quota, p.scrub_keys, p.scrub_patterns
+				FROM project_keys k JOIN projects p ON p.id = k.project_id
 				WHERE k.public_key = ${publicKey} AND p.public_id = ${projectId} AND k.revoked_at IS NULL`,
 		);
 		const value = row
@@ -288,6 +330,10 @@ export class KeyCache {
 						? (JSON.parse(row.allowed_origins) as string[])
 						: null,
 					dailyQuota: row.daily_quota,
+					scrub: compileScrub(
+						row.scrub_keys ? (JSON.parse(row.scrub_keys) as string[]) : null,
+						row.scrub_patterns ? (JSON.parse(row.scrub_patterns) as string[]) : null,
+					),
 				}
 			: null;
 		const cacheKey = `${projectId}:${publicKey}`;
