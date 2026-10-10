@@ -1,0 +1,15 @@
+{
+	// Workers runtime: everything except the Node adapter and Node tests.
+	// core/, ports/ and http/ compile here without Node types (Web Standard APIs only).
+	"extends": "./tsconfig.base.json",
+	"compilerOptions": {
+		"types": ["@cloudflare/vitest-plugin/types"]
+	},
+	"include": [
+		"worker-configuration.d.ts",
+		"src/**/*.ts",
+		"test/contract/**/*.ts",
+		"test/workers/**/*.ts"
+	],
+	"exclude": ["src/adapters/node/**", "src/entry/server.ts"]
+}

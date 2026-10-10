@@ -4,3 +4,12 @@
 /TODO.md
 /handover.md
 /INTERNAL.md
+
+# Dependencies and local state
+node_modules/
+.wrangler/
+.dev.vars*
+!.dev.vars.example
+*.sqlite
+*.sqlite-*
+coverage/

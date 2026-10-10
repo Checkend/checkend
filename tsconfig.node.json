@@ -1,0 +1,16 @@
+{
+	// Node runtime: the portable layers, the Node adapter, Node tests and tool configs.
+	"extends": "./tsconfig.base.json",
+	"compilerOptions": {
+		"types": ["node"]
+	},
+	"include": [
+		"src/core/**/*.ts",
+		"src/ports/**/*.ts",
+		"src/http/**/*.ts",
+		"src/adapters/node/**/*.ts",
+		"test/contract/**/*.ts",
+		"test/node/**/*.ts",
+		"*.config.ts"
+	]
+}

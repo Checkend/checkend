@@ -1,0 +1,38 @@
+{
+	"name": "checkend",
+	"version": "0.0.0",
+	"private": true,
+	"description": "Open-source error tracking for coding agents.",
+	"license": "Apache-2.0",
+	"type": "module",
+	"engines": {
+		"node": ">=22.13"
+	},
+	"scripts": {
+		"dev": "wrangler dev",
+		"deploy": "wrangler d1 migrations apply DB --remote && wrangler deploy",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"lint": "biome check .",
+		"lint:fix": "biome check --write .",
+		"typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.node.json",
+		"types": "wrangler types",
+		"check": "npm run lint && npm run typecheck && npm test"
+	},
+	"dependencies": {
+		"hono": "^4.13.13"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.5.15",
+		"@cloudflare/vitest-plugin": "^1.4.0",
+		"@types/node": "^26.6.5",
+		"typescript": "^7.0.2",
+		"vitest": "^5.0.3",
+		"wrangler": "^4.149.0"
+	},
+	"allowScripts": {
+		"esbuild": true,
+		"workerd": true,
+		"fsevents": false
+	}
+}

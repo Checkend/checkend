@@ -1,0 +1,56 @@
+{
+	"$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+	"vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
+	"files": {
+		"includes": ["**", "!worker-configuration.d.ts", "!node_modules", "!.wrangler"]
+	},
+	"formatter": { "lineWidth": 100 },
+	"linter": {
+		"rules": {
+			"preset": "recommended",
+			"style": {
+				"noRestrictedImports": {
+					"level": "error",
+					"options": {
+						"patterns": [
+							{
+								"group": ["cloudflare:*", "cloudflare:*/**"],
+								"message": "D16: cloudflare:* imports are allowed only in src/adapters/cloudflare/ and src/entry/worker.ts. Use a port."
+							}
+						]
+					}
+				}
+			}
+		}
+	},
+	"overrides": [
+		{
+			"includes": ["src/core/**", "src/ports/**", "src/http/**"],
+			"linter": {
+				"rules": {
+					"style": {
+						"noRestrictedImports": {
+							"level": "error",
+							"options": {
+								"patterns": [
+									{
+										"group": ["cloudflare:*", "cloudflare:*/**"],
+										"message": "D16: cloudflare:* imports are allowed only in src/adapters/cloudflare/ and src/entry/worker.ts. Use a port."
+									},
+									{
+										"group": ["node:*", "node:*/**"],
+										"message": "D16: core/, ports/ and http/ use Web Standard APIs only. Put runtime code in an adapter."
+									}
+								]
+							}
+						}
+					}
+				}
+			}
+		},
+		{
+			"includes": ["src/adapters/cloudflare/**", "src/entry/worker.ts", "test/workers/**"],
+			"linter": { "rules": { "style": { "noRestrictedImports": "off" } } }
+		}
+	]
+}
