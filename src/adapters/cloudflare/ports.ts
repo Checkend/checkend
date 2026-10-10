@@ -1,8 +1,10 @@
 import { systemClock } from "../../core/clock.ts";
+import { parseEncryptionKeys } from "../../core/crypto.ts";
 import { type Config, DEFAULT_CONFIG } from "../../ports/config.ts";
 import type { Ports } from "../../ports/index.ts";
 import { noRateLimit, type RateLimiter } from "../../ports/rate-limiter.ts";
 import { d1Db } from "./d1-db.ts";
+import { dohResolver } from "./resolver.ts";
 
 /** Optional settings: Workers secrets (ADMIN_TOKEN) and vars. */
 export interface ConfigEnv {
@@ -16,6 +18,8 @@ export interface ConfigEnv {
 	VERIFY_QUIET_HOURS?: string;
 	/** A secret: the GitHub webhook secret. */
 	GITHUB_WEBHOOK_SECRET?: string;
+	/** A secret: "k2:<base64 of 32 bytes>,k1:<...>", the current key first. */
+	ENCRYPTION_KEYS?: string;
 }
 
 type WorkerEnv = Omit<Env, "INGEST_RATE_LIMITER"> &
@@ -28,6 +32,17 @@ const positiveInt = (value: string | undefined): number | undefined => {
 	const n = Number(value);
 	return value && Number.isInteger(n) && n > 0 ? n : undefined;
 };
+
+function encryptionKeys(value: string | undefined) {
+	const { keys, invalid } = parseEncryptionKeys(value);
+	if (invalid.length > 0) {
+		// Workers Logs. The key values are never logged, only their IDs.
+		console.error(
+			JSON.stringify({ message: "checkend: invalid ENCRYPTION_KEYS entries", ids: invalid }),
+		);
+	}
+	return keys;
+}
 
 export function readConfig(env: ConfigEnv): Config {
 	return {
@@ -42,6 +57,7 @@ export function readConfig(env: ConfigEnv): Config {
 			.filter((a) => a === "ignore" || a === "merge"),
 		verifyQuietHours: positiveInt(env.VERIFY_QUIET_HOURS) ?? DEFAULT_CONFIG.verifyQuietHours,
 		githubWebhookSecret: env.GITHUB_WEBHOOK_SECRET?.trim() || null,
+		encryptionKeys: encryptionKeys(env.ENCRYPTION_KEYS),
 	};
 }
 
@@ -58,5 +74,6 @@ export function cloudflarePorts(env: WorkerEnv, ctx: Pick<ExecutionContext, "wai
 		defer: (task) => ctx.waitUntil(task),
 		rateLimiter: rateLimiter(env.INGEST_RATE_LIMITER),
 		config: readConfig(env),
+		resolver: dohResolver,
 	};
 }

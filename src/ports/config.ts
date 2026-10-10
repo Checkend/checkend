@@ -1,3 +1,5 @@
+import type { EncryptionKey } from "../core/crypto.ts";
+
 /** Settings of this install, from the environment. */
 export interface Config {
 	/** The admin bearer token for /v1. Null: the API rejects every request. */
@@ -19,6 +21,8 @@ export interface Config {
 	verifyQuietHours: number;
 	/** The secret of the GitHub webhook (HMAC-SHA256). Null: the webhook is off (404). */
 	githubWebhookSecret: string | null;
+	/** Keys for encrypted values, the current key first (ENCRYPTION_KEYS). Empty: none. */
+	encryptionKeys: EncryptionKey[];
 }
 
 export const DEFAULT_CONFIG: Config = {
@@ -30,4 +34,5 @@ export const DEFAULT_CONFIG: Config = {
 	requireApproval: [],
 	verifyQuietHours: 24,
 	githubWebhookSecret: null,
+	encryptionKeys: [],
 };

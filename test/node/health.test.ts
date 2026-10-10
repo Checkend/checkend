@@ -9,6 +9,7 @@ import { DEFAULT_CONFIG } from "../../src/ports/config.ts";
 import { type Db, sql } from "../../src/ports/db.ts";
 import type { Ports } from "../../src/ports/index.ts";
 import { noRateLimit } from "../../src/ports/rate-limiter.ts";
+import { noResolver } from "../../src/ports/resolver.ts";
 
 const migrations = readMigrations("migrations");
 const latest = migrations.at(-1)?.name;
@@ -26,6 +27,7 @@ const portsWith = (db: Db): Ports => ({
 	clock,
 	defer: () => {},
 	rateLimiter: noRateLimit,
+	resolver: noResolver,
 	config: DEFAULT_CONFIG,
 });
 

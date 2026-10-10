@@ -5,6 +5,7 @@ import { applyMigrations } from "../../src/core/migrations.ts";
 import { type Config, DEFAULT_CONFIG } from "../../src/ports/config.ts";
 import type { Ports } from "../../src/ports/index.ts";
 import { noRateLimit } from "../../src/ports/rate-limiter.ts";
+import { noResolver } from "../../src/ports/resolver.ts";
 
 export interface TestPorts {
 	ports: Ports;
@@ -28,6 +29,7 @@ export async function testPorts(
 			pending.push(task);
 		},
 		rateLimiter: noRateLimit,
+		resolver: noResolver,
 		...overrides,
 		config: { ...DEFAULT_CONFIG, ...overrides.config },
 	};

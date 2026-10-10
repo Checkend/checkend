@@ -27,6 +27,7 @@ describe("readConfig", () => {
 			requireApproval: [],
 			verifyQuietHours: 6,
 			githubWebhookSecret: null,
+			encryptionKeys: [],
 		});
 	});
 
