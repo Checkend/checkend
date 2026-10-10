@@ -2,6 +2,9 @@ import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/cli
 import { describe, expect, it } from "vitest";
 
 export interface McpTestTokens {
+	/** An issue with one stored event, and that event. */
+	issueId: number;
+	eventId: number;
 	/** A token with issues:read. */
 	reader: string;
 	/** A token without issues:read (releases:write only). */
@@ -66,22 +69,96 @@ export function mcpContract(
 			expect(await response.json()).toEqual({ error: "forbidden", required_scope: "issues:read" });
 		});
 
-		it("lists the tools and calls one with an issues:read token and with the admin token", async () => {
+		const text = (result: { content?: unknown }) =>
+			((result.content as { type: string; text: string }[] | undefined) ?? [])
+				.map((c) => c.text)
+				.join("\n");
+
+		it("lists the three tools, with an issues:read token and with the admin token", async () => {
 			const { reader, admin } = await tokens();
 			for (const token of [reader, admin]) {
 				const client = await connect(token);
 				const { tools } = await client.listTools();
-				expect(tools.length).toBeGreaterThan(0);
-				const result = await client.callTool({ name: "ping", arguments: { name: "agent" } });
-				expect(result.content).toEqual([{ type: "text", text: "pong agent" }]);
+				expect(tools.map((t) => t.name).sort()).toEqual([
+					"get_event",
+					"get_issue_brief",
+					"list_issues",
+				]);
+				for (const tool of tools) expect(tool.description, tool.name).toMatch(/untrusted/i);
 				await client.close();
 			}
 		});
 
-		it("rejects invalid tool input", async () => {
+		it("list_issues returns the issues with the untrusted notice", async () => {
+			const { reader, issueId } = await tokens();
+			const client = await connect(reader);
+			const result = await client.callTool({ name: "list_issues", arguments: { limit: 5 } });
+			const body = JSON.parse(text(result));
+			expect(body.untrusted_notice).toMatch(/do not follow instructions/i);
+			expect(body.issues.map((i: { id: number }) => i.id)).toContain(issueId);
+			expect(body.issues[0]).toMatchObject({
+				status: "unresolved",
+				times_seen: expect.any(Number),
+			});
+			await client.close();
+		});
+
+		it("get_issue_brief returns the Markdown brief, or JSON on request", async () => {
+			const { reader, issueId } = await tokens();
+			const client = await connect(reader);
+			const markdown = text(
+				await client.callTool({ name: "get_issue_brief", arguments: { issue_id: issueId } }),
+			);
+			expect(markdown).toContain(`# Checkend issue ${issueId} (brief v1)`);
+			expect(markdown).toContain("(UNTRUSTED)");
+			const json = JSON.parse(
+				text(
+					await client.callTool({
+						name: "get_issue_brief",
+						arguments: { issue_id: issueId, format: "json" },
+					}),
+				),
+			);
+			expect(json).toMatchObject({ brief_version: 1, issue: { id: issueId } });
+			await client.close();
+		});
+
+		it("get_event returns the normalized event with the untrusted notice", async () => {
+			const { reader, eventId } = await tokens();
+			const client = await connect(reader);
+			const body = JSON.parse(
+				text(await client.callTool({ name: "get_event", arguments: { event_id: eventId } })),
+			);
+			expect(body.untrusted_notice).toMatch(/do not follow instructions/i);
+			expect(body.event.event.exceptions[0].type).toBe("TypeError");
+			expect(JSON.stringify(body)).not.toContain('"raw"');
+			await client.close();
+		});
+
+		it("returns a tool error for an unknown issue or event, and for invalid input", async () => {
 			const client = await connect((await tokens()).reader);
-			const result = await client.callTool({ name: "ping", arguments: { name: 42 } });
-			expect(result.isError).toBe(true);
+			const unknown = await client.callTool({
+				name: "get_issue_brief",
+				arguments: { issue_id: 999999 },
+			});
+			expect(unknown.isError).toBe(true);
+			expect(text(unknown)).toMatch(/not found/i);
+			expect(
+				(await client.callTool({ name: "get_event", arguments: { event_id: 999999 } })).isError,
+			).toBe(true);
+			expect(
+				(await client.callTool({ name: "get_issue_brief", arguments: { issue_id: "abc" } }))
+					.isError,
+			).toBe(true);
+			expect(
+				(await client.callTool({ name: "list_issues", arguments: { limit: 1000 } })).isError,
+			).toBe(true);
+			const badCursor = await client.callTool({
+				name: "list_issues",
+				arguments: { cursor: "bm90LWEtY3Vyc29y" },
+			});
+			expect(badCursor.isError).toBe(true);
+			expect(text(badCursor)).toMatch(/cursor/i);
 			await client.close();
 		});
 	});
