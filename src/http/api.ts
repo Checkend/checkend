@@ -1,9 +1,16 @@
 import type { Context, Hono } from "hono";
 import * as v from "valibot";
 import { listActivity } from "../core/activity.ts";
-import { LimitQuery } from "../core/api-spec.ts";
+import { LimitQuery, MergeBody } from "../core/api-spec.ts";
 import type { IngestState } from "../core/ingest/state.ts";
 import { ingestStatus } from "../core/ingest-status.ts";
+import {
+	type ActionResult,
+	decideApproval,
+	listApprovals,
+	mergeIssues,
+	setIssueStatus,
+} from "../core/issue-actions.ts";
 import {
 	CreateProjectBody,
 	decodeCursor,
@@ -130,6 +137,73 @@ export function apiRoutes(app: Hono<AppEnv>, state: IngestState): void {
 			data: await listIssueEvents(c.env.ports.db, params.output.id, query.output.limit),
 		});
 	});
+
+	/** The HTTP response for an issue action. */
+	const actionResponse = async (c: Context<AppEnv>, issueId: number, result: ActionResult) => {
+		switch (result.kind) {
+			case "done":
+				return c.json({ data: await getIssue(c.env.ports.db, issueId) });
+			case "approval_required":
+				return c.json({ status: "approval_required", approval_id: result.approvalId }, 202);
+			case "not_found":
+				return c.json({ error: "not_found" }, 404);
+			case "invalid":
+				return c.json(
+					{ error: "invalid_request", details: [{ path: "source_ids", message: result.message }] },
+					400,
+				);
+		}
+	};
+
+	for (const [path, status] of [
+		["resolve", "resolved"],
+		["ignore", "ignored"],
+		["unresolve", "unresolved"],
+	] as const) {
+		app.post(`/v1/issues/:id/${path}`, need("issues:write"), async (c) => {
+			const params = v.safeParse(IdParam, c.req.param());
+			if (!params.success) return invalid(c, params.issues);
+			const result = await setIssueStatus(c.env.ports, c.get("actor"), params.output.id, status);
+			return actionResponse(c, params.output.id, result);
+		});
+	}
+
+	app.post("/v1/issues/:id/merge", need("issues:write"), async (c) => {
+		const params = v.safeParse(IdParam, c.req.param());
+		if (!params.success) return invalid(c, params.issues);
+		const body = v.safeParse(MergeBody, await c.req.json().catch(() => null));
+		if (!body.success) return invalid(c, body.issues);
+		const result = await mergeIssues(
+			c.env.ports,
+			c.get("actor"),
+			params.output.id,
+			body.output.source_ids,
+		);
+		return actionResponse(c, params.output.id, result);
+	});
+
+	app.get("/v1/approvals", need("admin"), async (c) => {
+		const query = v.safeParse(LimitQuery, c.req.query());
+		if (!query.success) return invalid(c, query.issues);
+		return c.json({ data: await listApprovals(c.env.ports, query.output.limit) });
+	});
+
+	for (const decision of ["approve", "reject"] as const) {
+		app.post(`/v1/approvals/:id/${decision}`, need("admin"), async (c) => {
+			const params = v.safeParse(IdParam, c.req.param());
+			if (!params.success) return invalid(c, params.issues);
+			const result = await decideApproval(c.env.ports, c.get("actor"), params.output.id, decision);
+			if (result === "not_found") return c.json({ error: "not_found" }, 404);
+			if (result === "not_pending") return c.json({ error: "approval_not_pending" }, 409);
+			if (result === "own_request") {
+				return c.json(
+					{ error: "forbidden", reason: "A requester cannot approve its own request." },
+					403,
+				);
+			}
+			return c.json({ data: { id: params.output.id, decision } });
+		});
+	}
 
 	app.get("/v1/events/:id", need("issues:read"), async (c) => {
 		const params = v.safeParse(IdParam, c.req.param());

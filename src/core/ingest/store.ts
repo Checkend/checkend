@@ -127,9 +127,18 @@ async function planWrite(
 	// New-issue cap per project per hour.
 	let fingerprint = prepared.fingerprint.hash;
 	let title = prepared.title;
-	const existing = await db.first(
-		sql`SELECT id FROM issues WHERE project_id = ${projectId} AND fingerprint = ${fingerprint}`,
+	let existing = await db.first<{ id: number; merged_into: number | null }>(
+		sql`SELECT id, merged_into FROM issues WHERE project_id = ${projectId} AND fingerprint = ${fingerprint}`,
 	);
+	// A merged issue sends its events to the issue it was merged into (a few hops at most).
+	for (let hop = 0; existing?.merged_into && hop < 5; hop++) {
+		const target = await db.first<{ id: number; merged_into: number | null; fingerprint: string }>(
+			sql`SELECT id, merged_into, fingerprint FROM issues WHERE id = ${existing.merged_into}`,
+		);
+		if (!target) break;
+		existing = target;
+		fingerprint = target.fingerprint;
+	}
 	if (!existing) {
 		const since = new Date(now.getTime() - 3600_000).toISOString();
 		const recent = await db.first<{ n: number }>(
@@ -153,6 +162,13 @@ async function planWrite(
 	});
 
 	const statements: Statement[] = [
+		// A new event reopens a resolved issue (a regression). Not for an event_id that is stored.
+		sql`INSERT INTO activity (at, actor_type, actor_id, actor_name, action, target_type, target_id, data)
+			SELECT ${nowIso}, 'system', NULL, 'ingest', 'issue.regress', 'issue', id,
+				${JSON.stringify({ from: "resolved", to: "unresolved", event_id: event.event_id })}
+			FROM issues
+			WHERE project_id = ${projectId} AND fingerprint = ${fingerprint} AND status = 'resolved'
+				AND NOT EXISTS (SELECT 1 FROM events WHERE project_id = ${projectId} AND event_id = ${event.event_id})`,
 		sql`INSERT INTO issues (project_id, fingerprint, fingerprint_version, title, culprit, type,
 				level, platform, first_seen, last_seen, first_release, last_release, times_seen)
 			SELECT ${projectId}, ${fingerprint}, ${FINGERPRINT_VERSION}, ${title.title}, ${title.culprit},
@@ -163,6 +179,8 @@ async function planWrite(
 				times_seen = times_seen + 1,
 				last_seen = max(last_seen, excluded.last_seen),
 				last_release = coalesce(excluded.last_release, last_release),
+				status_changed_at = CASE WHEN status = 'resolved' THEN excluded.last_seen ELSE status_changed_at END,
+				status = CASE WHEN status = 'resolved' THEN 'unresolved' ELSE status END,
 				level = excluded.level`,
 	];
 

@@ -35,7 +35,7 @@ describe("OpenAPI 3.1 document", () => {
 			const operation = document.paths[path]?.[route.method.toLowerCase()];
 			expect(operation, `${route.method} ${route.path}`).toBeDefined();
 			expect(operation["x-required-scope"], `${route.method} ${route.path}`).toMatch(
-				/^(issues:read|admin)$/,
+				/^(issues:read|issues:write|admin)$/,
 			);
 			expect(operation.security).toEqual([{ bearer: [] }]);
 		}
@@ -70,7 +70,7 @@ describe("OpenAPI 3.1 document", () => {
 		expect(status).toMatchObject({
 			in: "query",
 			required: false,
-			schema: { enum: ["unresolved", "resolved", "ignored"] },
+			schema: { enum: ["unresolved", "resolved", "ignored", "merged"] },
 		});
 		const createToken = document.paths["/v1/tokens"].post;
 		expect(createToken.requestBody.content["application/json"].schema).toMatchObject({

@@ -7,6 +7,8 @@ export interface McpTestTokens {
 	eventId: number;
 	/** A token with issues:read. */
 	reader: string;
+	/** A token with issues:read and issues:write. */
+	writer: string;
 	/** A token without issues:read (releases:write only). */
 	noRead: string;
 	/** The bootstrap ADMIN_TOKEN. */
@@ -74,7 +76,7 @@ export function mcpContract(
 				.map((c) => c.text)
 				.join("\n");
 
-		it("lists the three tools, with an issues:read token and with the admin token", async () => {
+		it("lists the tools, with an issues:read token and with the admin token", async () => {
 			const { reader, admin } = await tokens();
 			for (const token of [reader, admin]) {
 				const client = await connect(token);
@@ -82,7 +84,10 @@ export function mcpContract(
 				expect(tools.map((t) => t.name).sort()).toEqual([
 					"get_event",
 					"get_issue_brief",
+					"ignore_issue",
 					"list_issues",
+					"merge_issues",
+					"resolve_issue",
 				]);
 				for (const tool of tools) expect(tool.description, tool.name).toMatch(/untrusted/i);
 				await client.close();
@@ -174,6 +179,33 @@ export function mcpContract(
 			});
 			expect(badCursor.isError).toBe(true);
 			expect(text(badCursor)).toMatch(/cursor/i);
+			await client.close();
+		});
+
+		it("resolve_issue and ignore_issue need issues:write, and change the status", async () => {
+			const { reader, writer, issueId } = await tokens();
+			const readOnly = await connect(reader);
+			const denied = await readOnly.callTool({
+				name: "resolve_issue",
+				arguments: { issue_id: issueId },
+			});
+			expect(denied.isError).toBe(true);
+			expect(text(denied)).toMatch(/issues:write/);
+			await readOnly.close();
+			const client = await connect(writer);
+			const resolved = JSON.parse(
+				text(await client.callTool({ name: "resolve_issue", arguments: { issue_id: issueId } })),
+			);
+			expect(resolved).toMatchObject({ id: issueId, status: "resolved" });
+			const ignored = JSON.parse(
+				text(await client.callTool({ name: "ignore_issue", arguments: { issue_id: issueId } })),
+			);
+			expect(ignored.status).toBe("ignored");
+			const missing = await client.callTool({
+				name: "merge_issues",
+				arguments: { target_id: issueId, source_ids: [999999] },
+			});
+			expect(missing.isError).toBe(true);
 			await client.close();
 		});
 	});

@@ -11,6 +11,8 @@ export interface ConfigEnv {
 	EVENTS_PER_ISSUE?: string;
 	NEW_ISSUES_PER_HOUR?: string;
 	TAG_KEYS_PER_PROJECT?: string;
+	/** Comma-separated: ignore, merge. */
+	REQUIRE_APPROVAL?: string;
 }
 
 type WorkerEnv = Omit<Env, "INGEST_RATE_LIMITER"> &
@@ -31,6 +33,10 @@ export function readConfig(env: ConfigEnv): Config {
 		eventsPerIssue: positiveInt(env.EVENTS_PER_ISSUE) ?? DEFAULT_CONFIG.eventsPerIssue,
 		newIssuesPerHour: positiveInt(env.NEW_ISSUES_PER_HOUR) ?? DEFAULT_CONFIG.newIssuesPerHour,
 		tagKeysPerProject: positiveInt(env.TAG_KEYS_PER_PROJECT) ?? DEFAULT_CONFIG.tagKeysPerProject,
+		requireApproval: (env.REQUIRE_APPROVAL ?? "")
+			.split(",")
+			.map((a) => a.trim())
+			.filter((a) => a === "ignore" || a === "merge"),
 	};
 }
 

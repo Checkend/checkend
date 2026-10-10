@@ -3,19 +3,23 @@ import { toStandardJsonSchema } from "@valibot/to-json-schema";
 import type { Hono } from "hono";
 import * as v from "valibot";
 import { MCP_TOOLS } from "../core/agent-docs.ts";
+import { MergeBody } from "../core/api-spec.ts";
 import { buildBrief, UNTRUSTED_NOTICE } from "../core/brief.ts";
 import { formatEventId, formatIssueId, parseEventId, parseIssueId } from "../core/ids.ts";
+import { type ActionResult, mergeIssues, setIssueStatus } from "../core/issue-actions.ts";
 import {
 	decodeCursor,
 	getEvent,
+	getIssue,
 	ISSUE_STATUSES,
 	IssueListQuery,
 	listIssues,
 	ProjectRef,
 	SINCE_PATTERN,
 } from "../core/issues.ts";
+import { type Actor, hasScope } from "../core/tokens.ts";
 import { VERSION } from "../core/version.ts";
-import type { Db } from "../ports/db.ts";
+import type { Ports } from "../ports/index.ts";
 import type { AppEnv } from "./app.ts";
 import { need, requireActor } from "./auth.ts";
 
@@ -55,7 +59,9 @@ const textResult = (text: string) => ({ content: [{ type: "text" as const, text 
 const errorResult = (text: string) => ({ ...textResult(text), isError: true });
 
 /** The MCP server with the read tools. A new server per request (stateless). */
-function createServer(db: Db, now: () => Date): McpServer {
+function createServer(ports: Ports, actor: Actor): McpServer {
+	const db = ports.db;
+	const now = () => ports.clock.now();
 	const server = new McpServer({ name: "checkend", version: VERSION });
 
 	server.registerTool(
@@ -129,6 +135,64 @@ function createServer(db: Db, now: () => Date): McpServer {
 		},
 	);
 
+	/** Write tools: they need issues:write (the endpoint itself needs only issues:read). */
+	const write = async (run: () => Promise<ActionResult>, issueId: number) => {
+		if (!hasScope(actor, "issues:write")) {
+			return errorResult("This tool needs a token with the issues:write scope.");
+		}
+		const result = await run();
+		if (result.kind === "not_found") return errorResult(`Issue ${issueId} not found.`);
+		if (result.kind === "invalid") return errorResult(result.message);
+		if (result.kind === "approval_required") {
+			return textResult(
+				JSON.stringify({
+					status: "approval_required",
+					approval_id: result.approvalId,
+					message: "A person must approve this action. It is not done yet.",
+				}),
+			);
+		}
+		const issue = await getIssue(db, issueId);
+		return textResult(JSON.stringify({ ...issue, id: formatIssueId(issueId) }));
+	};
+
+	const IssueIdInput = v.object({ issue_id: v.pipe(v.number(), v.integer(), v.minValue(1)) });
+	for (const [name, status] of [
+		["resolve_issue", "resolved"],
+		["ignore_issue", "ignored"],
+	] as const) {
+		server.registerTool(
+			name,
+			{
+				description: `${tool(name)} ${UNTRUSTED_HINT}`,
+				inputSchema: toStandardJsonSchema(IssueIdInput),
+			},
+			async ({ issue_id }) => {
+				const id = parseIssueId(issue_id);
+				if (id === null) return errorResult(`Issue ${issue_id} not found.`);
+				return write(() => setIssueStatus(ports, actor, id, status), id);
+			},
+		);
+	}
+
+	server.registerTool(
+		"merge_issues",
+		{
+			description: `${tool("merge_issues")} ${UNTRUSTED_HINT}`,
+			inputSchema: toStandardJsonSchema(
+				v.object({
+					target_id: v.pipe(v.number(), v.integer(), v.minValue(1)),
+					source_ids: MergeBody.entries.source_ids,
+				}),
+			),
+		},
+		async ({ target_id, source_ids }) => {
+			const id = parseIssueId(target_id);
+			if (id === null) return errorResult(`Issue ${target_id} not found.`);
+			return write(() => mergeIssues(ports, actor, id, source_ids), id);
+		},
+	);
+
 	return server;
 }
 
@@ -141,7 +205,7 @@ export function mcpRoutes(app: Hono<AppEnv>): void {
 	// Auth runs before the MCP transport: no token, a wrong token, or a missing scope never
 	// reaches the server.
 	app.all("/mcp", requireActor, need("issues:read"), async (c) => {
-		const server = createServer(c.env.ports.db, () => c.env.ports.clock.now());
+		const server = createServer(c.env.ports, c.get("actor"));
 		const transport = new WebStandardStreamableHTTPServerTransport({
 			sessionIdGenerator: undefined,
 			enableJsonResponse: true,

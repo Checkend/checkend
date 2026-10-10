@@ -13,7 +13,8 @@ export const CreateTokenBody = v.object({
 
 /** Who makes a request: a scoped token, or the bootstrap ADMIN_TOKEN secret. */
 export interface Actor {
-	type: "token" | "admin_token";
+	/** "system": Checkend itself (for example ingest, when it reopens a resolved issue). */
+	type: "token" | "admin_token" | "system";
 	id: number | null;
 	name: string;
 	scopes: Scope[];

@@ -13,6 +13,8 @@ export interface Config {
 	newIssuesPerHour: number;
 	/** Distinct tag keys per project. */
 	tagKeysPerProject: number;
+	/** Issue actions that need a human approval: "ignore", "merge". Empty: none (default). */
+	requireApproval: string[];
 }
 
 export const DEFAULT_CONFIG: Config = {
@@ -21,4 +23,5 @@ export const DEFAULT_CONFIG: Config = {
 	eventsPerIssue: 100,
 	newIssuesPerHour: 100,
 	tagKeysPerProject: 200,
+	requireApproval: [],
 };

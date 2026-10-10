@@ -17,6 +17,21 @@ export const MCP_TOOLS = [
 		name: "get_event",
 		summary: "One stored event, normalized, with secrets removed (up to 64 KB). Input: event_id.",
 	},
+	{
+		name: "resolve_issue",
+		summary:
+			"Set an issue to resolved after you fixed it. Needs the issues:write scope. Input: issue_id.",
+	},
+	{
+		name: "ignore_issue",
+		summary:
+			"Set an issue to ignored (not worth a fix). Needs issues:write. Can need a human approval: then the result says approval_required. Input: issue_id.",
+	},
+	{
+		name: "merge_issues",
+		summary:
+			"Merge issues with the same cause into one target issue. Needs issues:write. Can need a human approval. Inputs: target_id, source_ids (1-10).",
+	},
 ] as const;
 
 /** llms.txt: how an agent uses this Checkend instance. */

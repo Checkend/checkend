@@ -23,7 +23,15 @@ describe("readConfig", () => {
 			eventsPerIssue: 20,
 			newIssuesPerHour: 5,
 			tagKeysPerProject: 10,
+			requireApproval: [],
 		});
+	});
+
+	it("reads REQUIRE_APPROVAL: only ignore and merge", () => {
+		expect(readConfig({ REQUIRE_APPROVAL: " ignore, merge ,delete" }).requireApproval).toEqual([
+			"ignore",
+			"merge",
+		]);
 	});
 
 	it("ignores empty and invalid values", () => {

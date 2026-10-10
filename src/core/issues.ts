@@ -5,7 +5,7 @@ import { type Db, sql } from "../ports/db.ts";
  * Read API (v1). Route schemas are Valibot, so that the OpenAPI document can be generated
  * from them later. Responses never include the raw payload.
  */
-export const ISSUE_STATUSES = ["unresolved", "resolved", "ignored"] as const;
+export const ISSUE_STATUSES = ["unresolved", "resolved", "ignored", "merged"] as const;
 
 const id = v.pipe(v.string(), v.regex(/^\d{1,15}$/), v.transform(Number));
 
@@ -112,7 +112,8 @@ export async function listIssues(
 				i.status, i.times_seen, i.stored_events, i.first_seen, i.last_seen, i.first_release,
 				i.last_release, i.fingerprint, i.fingerprint_version
 			FROM issues i JOIN projects p ON p.id = i.project_id
-			WHERE (? IS NULL OR i.project_id = ?) AND (? IS NULL OR i.status = ?)
+			WHERE (? IS NULL OR i.project_id = ?)
+				AND (i.status = ? OR (? IS NULL AND i.status != 'merged'))
 				AND (? IS NULL OR i.last_seen >= ?)
 				AND (? IS NULL OR i.first_release = ? OR i.last_release = ?
 					OR EXISTS (SELECT 1 FROM events e WHERE e.issue_id = i.id AND e.release = ?))
@@ -155,7 +156,7 @@ export async function getIssue(db: Db, issueId: number): Promise<IssueRow | null
 	const issue = await db.first<IssueRow>({
 		sql: `SELECT i.id, p.public_id AS project_id, i.title, i.culprit, i.type, i.level, i.platform,
 				i.status, i.times_seen, i.stored_events, i.first_seen, i.last_seen, i.first_release,
-				i.last_release, i.fingerprint, i.fingerprint_version
+				i.last_release, i.fingerprint, i.fingerprint_version, i.merged_into
 			FROM issues i JOIN projects p ON p.id = i.project_id WHERE i.id = ?`,
 		params: [issueId],
 	});
