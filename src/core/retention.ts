@@ -3,13 +3,15 @@ import type { Ports } from "../ports/index.ts";
 
 /**
  * Retention: the cron deletes data that is older than RETENTION_DAYS (default 90): stored events
- * and hourly counts, and pushed-commit records. Finished webhook deliveries go after 30 days.
+ * and hourly counts (at least 8 days), and pushed-commit records. Finished webhook deliveries go after 30 days.
  * Issues, the activity timeline (the audit record) and user hashes stay. Deletes run in chunks,
  * so that one run stays small in D1 row writes; the next run goes on.
  */
 export const RETENTION_CHUNK = 500;
 const DEFAULT_MAX_CHUNKS = 4;
 const DELIVERY_DAYS = 30;
+/** Hourly counts stay at least this long: events_7d sums the last 7 days of full hours. */
+const MIN_COUNT_DAYS = 8;
 
 export interface RetentionRun {
 	events: number;
@@ -27,6 +29,9 @@ export async function runRetention(
 	const days = ports.config.retentionDays;
 	const cutoff = new Date(now.getTime() - days * 86_400_000).toISOString();
 	const deliveryCutoff = new Date(now.getTime() - DELIVERY_DAYS * 86_400_000).toISOString();
+	const countsCutoff = new Date(
+		now.getTime() - Math.max(days, MIN_COUNT_DAYS) * 86_400_000,
+	).toISOString();
 	let chunks = options.maxChunks ?? DEFAULT_MAX_CHUNKS;
 	const run: RetentionRun = { events: 0, counts: 0, deliveries: 0, commits: 0 };
 
@@ -57,7 +62,7 @@ export async function runRetention(
 			() =>
 				db.run(
 					sql`DELETE FROM issue_counts WHERE rowid IN (
-						SELECT rowid FROM issue_counts WHERE hour < ${cutoff.slice(0, 13)} LIMIT ${RETENTION_CHUNK})`,
+						SELECT rowid FROM issue_counts WHERE hour < ${countsCutoff.slice(0, 13)} LIMIT ${RETENTION_CHUNK})`,
 				),
 		],
 		[

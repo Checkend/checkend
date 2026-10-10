@@ -47,6 +47,17 @@ describe("retention", () => {
 		expect(hours.map((h) => h.hour)).toEqual(["2026-11-10T12"]);
 	});
 
+	it("keeps hourly counts for at least 8 days, also with a shorter RETENTION_DAYS (events_7d needs them)", async () => {
+		const { store, clock, ports } = await setup(1);
+		await store("error");
+		clock.advance(3 * 86_400_000);
+		await runRetention(ports, clock.now());
+		expect(await ports.db.first(sql`SELECT count(*) AS n FROM issue_counts`)).toEqual({ n: 1 });
+		clock.advance(6 * 86_400_000);
+		await runRetention(ports, clock.now());
+		expect(await ports.db.first(sql`SELECT count(*) AS n FROM issue_counts`)).toEqual({ n: 0 });
+	});
+
 	it("deletes in chunks: a run stops after a few chunks, the next run goes on", async () => {
 		const { store, clock, ports, count } = await setup(1);
 		const total = RETENTION_CHUNK * 3 + 7;
