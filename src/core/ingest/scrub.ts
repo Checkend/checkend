@@ -144,36 +144,34 @@ function scrubKeyValues(text: string): string {
 	let copied = 0;
 	KEY_SEPARATOR.lastIndex = 0;
 	for (let match = KEY_SEPARATOR.exec(text); match; match = KEY_SEPARATOR.exec(text)) {
-		const valueStart = KEY_SEPARATOR.lastIndex;
 		if (!isSensitiveKey(match[2] ?? "")) continue;
-		const valueEnd = endOfValue(text, valueStart);
-		if (valueEnd === valueStart) continue;
-		const quote = text[valueStart];
-		const quoted =
-			(quote === '"' || quote === "'") && text[valueEnd - 1] === quote && valueEnd - valueStart > 1;
-		out += text.slice(copied, valueStart) + (quoted ? `${quote}${FILTERED}${quote}` : FILTERED);
-		copied = valueEnd;
-		KEY_SEPARATOR.lastIndex = valueEnd;
+		const value = findValue(text, KEY_SEPARATOR.lastIndex);
+		if (value.end === value.start) continue;
+		out += text.slice(copied, value.start) + FILTERED;
+		copied = value.end;
+		KEY_SEPARATOR.lastIndex = value.end;
 	}
 	return copied === 0 ? text : out + text.slice(copied);
 }
 
-/** The end of a value: a quoted string (up to 512 characters), or up to space, quote, & or ;. */
-function endOfValue(text: string, start: number): number {
-	const quote = text[start];
+/**
+ * The part of the text to replace, after a separator. Quotes stay. A quoted value ends at
+ * its closing quote (up to 512 characters, on one line). Otherwise the value ends at a space,
+ * a quote, & or ; (also inside a quote that is too long or has no end).
+ */
+function findValue(text: string, at: number): { start: number; end: number } {
+	const quote = text[at];
+	let start = at;
 	if (quote === '"' || quote === "'") {
-		const close = text.indexOf(quote, start + 1);
-		if (
-			close !== -1 &&
-			close - start <= QUOTED_MAX &&
-			!text.slice(start + 1, close).includes("\n")
-		) {
-			return close + 1;
+		start = at + 1;
+		const close = text.indexOf(quote, start);
+		if (close !== -1 && close - at <= QUOTED_MAX && !text.slice(start, close).includes("\n")) {
+			return { start, end: close };
 		}
 	}
 	let end = start;
 	while (end < text.length && !/[\s"'&;]/.test(text[end] as string)) end++;
-	return end;
+	return { start, end };
 }
 
 const HEADER_MAX = 64;

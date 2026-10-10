@@ -136,6 +136,12 @@ describe("scrub: key=value pairs inside text", () => {
 		expect(scrubString(input)).toBe(output);
 	});
 
+	it("filters a quoted value above 512 characters, or one with a line break, up to a space or quote", () => {
+		const long = "x".repeat(600);
+		expect(scrubString(`{"password": "${long}"}`)).toBe(`{"password": "${FILTERED}"}`);
+		expect(scrubString(`password: "abc\ndef"`)).toBe(`password: "${FILTERED}\ndef"`);
+	});
+
 	it.each([
 		"user=ada status: 500 at 12:30 on https://example.com/a?page=2",
 		"tokenizer=bpe sessions_count: 4 author: Ada keyboard=us",
