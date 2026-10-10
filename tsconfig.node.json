@@ -11,6 +11,7 @@
 		"src/http/**/*.ts",
 		"src/adapters/node/**/*.ts",
 		"src/adapters/config-env.ts",
+		"src/entry/server.ts",
 		"test/contract/**/*.ts",
 		"test/node/**/*.ts",
 		"test/fixtures/**/*.ts",

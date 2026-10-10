@@ -26,6 +26,7 @@
 		"spec:build": "node scripts/build-spec.ts"
 	},
 	"dependencies": {
+		"@hono/node-server": "2.1.1",
 		"@modelcontextprotocol/server": "^2.3.1",
 		"@valibot/to-json-schema": "^1.8.0",
 		"hono": "^4.13.13",
