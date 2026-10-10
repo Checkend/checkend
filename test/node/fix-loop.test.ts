@@ -7,6 +7,7 @@ import { runScheduled } from "../../src/core/scheduler.ts";
 import { BOOTSTRAP_ADMIN, createToken } from "../../src/core/tokens.ts";
 import { createApp } from "../../src/http/app.ts";
 import { sql } from "../../src/ports/db.ts";
+import { expectSpecBrief } from "../support/brief-check.ts";
 import { testPorts } from "../support/node-ports.ts";
 
 const ADMIN = "fix-loop-admin-token-0123456789";
@@ -210,6 +211,7 @@ describe("the fix loop: link_fix, deploy, verify, regress", () => {
 		await call("POST", `/v1/issues/${id}/fix`, agent, { commit: FIX });
 		await deploy({ release: "shop@1.0.1", commit: FIX });
 		const brief = await buildBrief(ports.db, id, ports.clock.now());
+		expectSpecBrief(brief);
 		expect((brief?.json.issue as Record<string, unknown> | undefined)?.fix).toMatchObject({
 			commit: FIX,
 			release: "shop@1.0.1",

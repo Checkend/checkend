@@ -9,6 +9,7 @@ import { runScheduled } from "../../src/core/scheduler.ts";
 import { BOOTSTRAP_ADMIN } from "../../src/core/tokens.ts";
 import { sql } from "../../src/ports/db.ts";
 import type { HttpClient } from "../../src/ports/http.ts";
+import { expectSpecBrief } from "../support/brief-check.ts";
 import { testPorts } from "../support/node-ports.ts";
 
 const sha = (digit: string) => digit.repeat(40);
@@ -105,6 +106,7 @@ describe("suspect commit from GitHub pushes", () => {
 		});
 		await deploy("shop@2", sha("3"));
 		const result = await brief(await storeError("shop@2"));
+		expectSpecBrief(result);
 		expect(result?.json.issue.suspect_commit).toEqual({
 			sha: sha("2"),
 			author: "grace",
@@ -145,6 +147,7 @@ describe("suspect commit from GitHub pushes", () => {
 		await deploy("shop@3", sha("5"));
 		// The issue starts in shop@3: only commit 5 is in it.
 		const result = await brief(await storeError("shop@3"));
+		expectSpecBrief(result);
 		expect(result?.json.issue.suspect_commit?.sha).toBe(sha("5"));
 	});
 
@@ -158,6 +161,7 @@ describe("suspect commit from GitHub pushes", () => {
 		});
 		await deploy("shop@10", sha("6"));
 		const result = await brief(await storeError("shop@10"));
+		expectSpecBrief(result);
 		expect(result?.json.issue.suspect_commit).toBeNull();
 		expect(result?.markdown).not.toContain("Suspect commit");
 	});
@@ -213,6 +217,7 @@ describe("commits of a release from the GitHub API (GITHUB_TOKEN)", () => {
 		);
 		expect(fix?.deployed_at).not.toBeNull();
 		const result = await brief(await storeError("shop@2"));
+		expectSpecBrief(result);
 		expect(result?.json.issue.suspect_commit).toMatchObject({ sha: sha("b"), author: "ada" });
 		const runs = requests.length;
 		await runScheduled(ports, clock.now());

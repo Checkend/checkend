@@ -4,6 +4,7 @@ import { prepareEvent } from "../../src/core/ingest/prepare.ts";
 import { IngestState, storeEvent } from "../../src/core/ingest/store.ts";
 import { createProject } from "../../src/core/projects.ts";
 import { sql } from "../../src/ports/db.ts";
+import { expectSpecBrief } from "../support/brief-check.ts";
 import { testPorts } from "../support/node-ports.ts";
 
 async function setup() {
@@ -41,6 +42,7 @@ describe("tags that differ from normal", () => {
 			issue = await store("checkout failed", { browser: "Safari", env: "production" });
 		}
 		const brief = await buildBrief(ports.db, issue, clock.now());
+		expectSpecBrief(brief);
 		expect(brief?.json.untrusted.unusual_tags).toEqual([
 			{ key: "browser", value: "Safari", issue_share: 1, project_share: 0 },
 		]);
@@ -54,6 +56,7 @@ describe("tags that differ from normal", () => {
 		for (let i = 0; i < 5; i++) await store(`other ${i}`, { browser: "Chrome" });
 		const issue = await store("checkout failed", { browser: "Safari" });
 		const brief = await buildBrief(ports.db, issue, clock.now());
+		expectSpecBrief(brief);
 		expect(brief?.json.untrusted.unusual_tags).toEqual([]);
 	});
 });

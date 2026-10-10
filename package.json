@@ -22,7 +22,8 @@
 		"test:perf": "vitest run --config vitest.perf.config.ts",
 		"project": "node scripts/project.ts",
 		"types:check": "wrangler types --check --env-file /dev/null",
-		"skill:build": "node scripts/build-skill.ts"
+		"skill:build": "node scripts/build-skill.ts",
+		"spec:build": "node scripts/build-spec.ts"
 	},
 	"dependencies": {
 		"@modelcontextprotocol/server": "^2.3.1",

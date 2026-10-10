@@ -7,6 +7,7 @@ import { IngestState, storeEvent } from "../../src/core/ingest/store.ts";
 import { createProject } from "../../src/core/projects.ts";
 import { sql } from "../../src/ports/db.ts";
 import { loadSentryFixture } from "../fixtures/sentry/load.ts";
+import { expectSpecBrief } from "../support/brief-check.ts";
 import { testPorts } from "../support/node-ports.ts";
 
 /** The brief of one golden fixture: real requests of each SDK. */
@@ -28,7 +29,9 @@ async function briefOf(name: string) {
 		sleep: async () => {},
 	});
 	const issue = (await t.ports.db.first<{ id: number }>(sql`SELECT id FROM issues`))?.id ?? 0;
-	return buildBrief(t.ports.db, issue, t.clock.now());
+	const brief = await buildBrief(t.ports.db, issue, t.clock.now());
+	expectSpecBrief(brief);
+	return brief;
 }
 
 describe("briefs of real SDK errors", () => {

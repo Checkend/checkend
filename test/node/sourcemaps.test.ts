@@ -9,6 +9,7 @@ import { BOOTSTRAP_ADMIN, createToken } from "../../src/core/tokens.ts";
 import { createApp } from "../../src/http/app.ts";
 import { sql } from "../../src/ports/db.ts";
 import type { Ports } from "../../src/ports/index.ts";
+import { expectSpecBrief } from "../support/brief-check.ts";
 import { testPorts } from "../support/node-ports.ts";
 
 const ADMIN = "sourcemaps-admin-token-0123456789";
@@ -177,6 +178,7 @@ describe("source maps: readable frames in the brief", () => {
 		const { upload, storeError, brief } = await setup();
 		await upload({ name: "~/static/app.min.js" });
 		const result = await brief(await storeError());
+		expectSpecBrief(result);
 		const [top] = result?.json.untrusted.exceptions[0]?.frames ?? [];
 		expect(top).toMatchObject({
 			function: "c",
@@ -193,6 +195,7 @@ describe("source maps: readable frames in the brief", () => {
 		const { upload, storeError, brief } = await setup();
 		await upload({ name: "app.min.js" });
 		const result = await brief(await storeError());
+		expectSpecBrief(result);
 		expect(result?.json.untrusted.exceptions[0]?.frames[0]).toMatchObject({ file: "src/cart.ts" });
 	});
 
@@ -200,6 +203,7 @@ describe("source maps: readable frames in the brief", () => {
 		const { upload, storeError, brief } = await setup();
 		await upload({ name: "~/static/app.min.js", release: "shop@2" });
 		const result = await brief(await storeError("shop@1"));
+		expectSpecBrief(result);
 		expect(result?.json.untrusted.exceptions[0]?.frames[0]).toMatchObject({
 			file: "https://shop.example/static/app.min.js?v=3",
 			line: 1,

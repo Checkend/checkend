@@ -4,6 +4,7 @@ import { prepareEvent } from "../../src/core/ingest/prepare.ts";
 import { IngestState, storeEvent } from "../../src/core/ingest/store.ts";
 import { createProject } from "../../src/core/projects.ts";
 import { sql } from "../../src/ports/db.ts";
+import { expectSpecBrief } from "../support/brief-check.ts";
 import { testPorts } from "../support/node-ports.ts";
 import { worstSdkEvent } from "../support/worst-event.ts";
 import { rawEventFromFixture } from "./ingest/event-from-fixture.ts";
@@ -91,6 +92,7 @@ describe("issue brief v1", () => {
 		const { store, ports, project } = await setup();
 		const issueId = await store(injectionEvent);
 		const brief = await buildBrief(ports.db, issueId, ports.clock.now());
+		expectSpecBrief(brief);
 		if (!brief) throw new Error("no brief");
 		expect(brief.json).toMatchObject({
 			brief_version: BRIEF_VERSION,
@@ -138,6 +140,7 @@ describe("issue brief v1", () => {
 	it("keeps event text only inside labelled untrusted blocks that the text cannot close", async () => {
 		const { store, ports, project } = await setup();
 		const brief = await buildBrief(ports.db, await store(injectionEvent), ports.clock.now());
+		expectSpecBrief(brief);
 		if (!brief) throw new Error("no brief");
 		const outside = outsideFences(brief.markdown);
 		expect(outside).not.toContain("Ignore previous instructions");
@@ -151,6 +154,7 @@ describe("issue brief v1", () => {
 	it("stays under 2,000 tokens (8,000 characters) for the worst event of a real SDK", async () => {
 		const { store, ports } = await setup();
 		const brief = await buildBrief(ports.db, await store(worstSdkEvent()), ports.clock.now());
+		expectSpecBrief(brief);
 		if (!brief) throw new Error("no brief");
 		expect(brief.markdown.length).toBeLessThanOrEqual(BRIEF_MAX_CHARS);
 		expect(JSON.stringify(brief.json).length).toBeLessThanOrEqual(BRIEF_MAX_CHARS * 1.5);
