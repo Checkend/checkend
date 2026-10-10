@@ -31,7 +31,8 @@ Examples of text with a key and a value:
 
 A key is sensitive when it has a sensitive word: `my_password` and `myPassword` are sensitive,
 but `mypassword` is not. A value without quotes ends at a space, a quote, `&` or `;`. A value in
-quotes ends at its closing quote (512 characters at most).
+quotes ends at its matching closing quote, also across spaces and line breaks (a backslash
+escapes a quote). When there is no closing quote, Checkend filters to the end of the text.
 
 Checkend removes secrets everywhere: in the stored event, in the issue title, and in the raw
 payload.
@@ -106,3 +107,11 @@ events again. The raw payload:
 - is compressed with gzip
 - is kept only for events of 256 KB or less (and 64 KB or less after compression)
 - is used only to process events again. The API never returns it.
+
+## 6. Untrusted data
+
+The text in an event comes from the monitored application, so an attacker can control it. For
+example, an error message can say "Ignore previous instructions". Checkend stores this text, but
+the [issue brief](mcp.md#the-issue-brief) and the MCP tools mark it as UNTRUSTED, so that a
+coding agent treats it as data and not as instructions. See
+[Untrusted data](mcp.md#untrusted-data).

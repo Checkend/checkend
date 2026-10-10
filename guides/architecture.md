@@ -66,6 +66,12 @@ on Apple silicon, the test running alone; production is not measured yet):
 | The worst real-SDK event (710 KB) | 5.9 ms |
 | The largest accepted event (1 MB) | 7.6 ms |
 
+On a GitHub Actions runner, the worst real-SDK event took 9–12.5 ms, near the 10 ms Free plan
+limit. Production CPU is not measured yet.
+
+The CPU budget test does not check absolute times. It compares each event with a fixed
+calibration task on the same machine, so the result is stable on slower CI runners.
+
 CI on GitHub Actions runs the lint, a check of the generated Worker types, the type check, the
 tests, the CPU budget test, a bundle build, and a DCO sign-off check. Run the same checks locally
 with `npm run check`.

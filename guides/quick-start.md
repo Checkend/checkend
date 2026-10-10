@@ -116,3 +116,33 @@ curl -H "Authorization: Bearer $CHECKEND_ADMIN_TOKEN" "$CHECKEND_URL/v1/issues/1
 ```
 
 See [API](api.md) for all endpoints.
+
+## 6. Give your coding agent a read-only token
+
+Do not give the admin token to an agent. Create a token that can only read issues:
+
+```sh
+curl -X POST "$CHECKEND_URL/v1/tokens" \
+  -H "Authorization: Bearer $CHECKEND_ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "claude-code", "scopes": ["issues:read"]}'
+```
+
+The response has the token (`ck_...`). Copy it now: Checkend shows it only once. Give it to the
+agent as its bearer token. To revoke it later, use `DELETE /v1/tokens/:id`.
+
+If the agent must also resolve, ignore or merge issues, create its token with
+`"scopes": ["issues:read", "issues:write"]`.
+
+## 7. Connect your coding agent with MCP
+
+Add the Checkend MCP server to your agent with the read-only token. For Claude Code:
+
+```sh
+claude mcp add --transport http checkend "$CHECKEND_URL/mcp" \
+  --header "Authorization: Bearer <token>"
+```
+
+Then ask the agent, for example: "Fix the top unresolved error in Checkend." The agent calls
+`list_issues`, then `get_issue_brief`. See [MCP server](mcp.md) for the tools and the issue
+brief.

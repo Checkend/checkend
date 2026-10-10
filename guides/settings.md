@@ -7,11 +7,12 @@ All settings are optional. Set them as Workers secrets or variables (in your
 
 | Name | Default | What it does |
 |---|---|---|
-| `ADMIN_TOKEN` (secret) | none | The bearer token for the `/v1` API. Without it, the API rejects all requests. |
+| `ADMIN_TOKEN` (secret) | none | The bootstrap admin token for `/v1`. It has all scopes. Use it to create [scoped tokens](api.md#tokens). |
 | `D1_DAILY_ROW_LIMIT` | none | Turns on budget mode (see below). |
 | `EVENTS_PER_ISSUE` | 100 | Stored events per issue. |
 | `NEW_ISSUES_PER_HOUR` | 100 | New issues per project per hour. More go into one "flood" issue. |
 | `TAG_KEYS_PER_PROJECT` | 200 | Different tag keys per project. |
+| `REQUIRE_APPROVAL` | none | Actions that need a person's approval: a comma-separated list of `ignore` and `merge`. See [Approvals](api.md#approvals). |
 | `INGEST_RATE_LIMITER` (binding) | 1000 requests a minute per DSN key | A Rate Limiting binding. `wrangler.jsonc` includes it. Without it, ingest has no rate limit. |
 
 Set the secret with Wrangler:
@@ -33,8 +34,8 @@ To prevent this, set:
 D1_DAILY_ROW_LIMIT=100000
 ```
 
-Checkend estimates the rows that it writes: 8 rows for a stored event, 4 rows for a counted
-event, and 1 row for each new tag key. This is an estimate, not the real count from D1. Each
+Checkend estimates the rows that it writes: 10 rows for a stored event, 6 rows for a counted
+event, 2 more rows for an event with a user, and 1 row for each new tag key. This is an estimate, not the real count from D1. Each
 Worker instance reads the count again at most every 30 seconds.
 
 When the estimate reaches 80% of this limit, it goes into **budget mode** until 00:00 UTC. In
@@ -49,7 +50,7 @@ show the mode as `counters_only`.
 {
   "status": "ok",
   "version": "0.0.0",
-  "migrations": { "level": 2, "latest": "0002_ingest.sql", "applied": 2 },
+  "migrations": { "level": 3, "latest": "0003_tokens_activity_public_ids.sql", "applied": 3 },
   "ingest": { "mode": "full", "write_failures_today": 0, "retry_after_seconds": 0 },
   "time": "2026-10-10T12:00:00.000Z"
 }
