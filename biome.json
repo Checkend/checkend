@@ -2,7 +2,13 @@
 	"$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
 	"vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
 	"files": {
-		"includes": ["**", "!worker-configuration.d.ts", "!node_modules", "!.wrangler"]
+		"includes": [
+			"**",
+			"!worker-configuration.d.ts",
+			"!node_modules",
+			"!.wrangler",
+			"!test/fixtures/sourcemaps/*.min.js*"
+		]
 	},
 	"plugins": [
 		"./lint/sql-property.grit",
