@@ -260,6 +260,13 @@ export const API_ROUTES: ApiRoute[] = [
 	},
 	{
 		method: "GET",
+		path: "/v1/alerts",
+		scope: "issues:read",
+		summary:
+			"Alert rules (webhooks and channels): format, events, min_trust, project, spike_threshold. No secrets, no email addresses, URLs without their query string. Admins change them with /v1/webhooks.",
+	},
+	{
+		method: "GET",
 		path: "/v1/webhooks",
 		scope: "admin",
 		summary: "Outgoing webhooks (without their secrets).",
@@ -269,7 +276,7 @@ export const API_ROUTES: ApiRoute[] = [
 		path: "/v1/webhooks",
 		scope: "admin",
 		summary:
-			"Create an outgoing webhook: signed deliveries with the brief for issue.new, issue.regressed and issue.verified. The URL must be https with a public address. Returns the signing secret once. Needs ENCRYPTION_KEYS.",
+			"Create an alert rule: a webhook (checkend, github_dispatch) or a channel (slack, discord, github_issue, email) for issue.new, issue.regressed, issue.verified and issue.spike (with spike_threshold). URLs must be https with a public address; Slack and Discord URLs are stored encrypted. Returns the signing secret once. Needs ENCRYPTION_KEYS.",
 		body: CreateWebhookBody,
 	},
 	{

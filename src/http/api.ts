@@ -53,6 +53,7 @@ import {
 	CreateWebhookBody,
 	createWebhook,
 	deleteWebhook,
+	listAlerts,
 	listDeliveries,
 	listWebhooks,
 	pingWebhook,
@@ -420,6 +421,10 @@ export function apiRoutes(app: Hono<AppEnv>, state: IngestState): void {
 			: c.json({ error: "not_found" }, 404);
 	});
 
+	app.get("/v1/alerts", need("issues:read"), async (c) =>
+		c.json({ data: await listAlerts(c.env.ports.db) }),
+	);
+
 	app.get("/v1/webhooks", need("admin"), async (c) =>
 		c.json({ data: await listWebhooks(c.env.ports.db) }),
 	);
@@ -433,6 +438,15 @@ export function apiRoutes(app: Hono<AppEnv>, state: IngestState): void {
 				{
 					error: "encryption_not_configured",
 					reason: "Set ENCRYPTION_KEYS: Checkend stores the signing secret encrypted.",
+				},
+				400,
+			);
+		}
+		if (result.kind === "email_not_configured") {
+			return c.json(
+				{
+					error: "email_not_configured",
+					reason: "Set the EMAIL binding and EMAIL_FROM (or SMTP on Node) for email alerts.",
 				},
 				400,
 			);

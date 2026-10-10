@@ -17,6 +17,8 @@ export interface Mailer {
 export const MAX_RECIPIENTS = 50;
 const ADDRESS = /^[^\s@<>,;"]{1,64}@[A-Za-z0-9.-]{1,253}\.[A-Za-z]{2,63}$/;
 
+export const isEmailAddress = (address: string) => ADDRESS.test(address);
+
 /** Throws a TypeError for a message that no adapter may send. Every adapter calls it. */
 export function checkMail(message: MailMessage): void {
 	if (message.to.length === 0 || message.to.length > MAX_RECIPIENTS) {

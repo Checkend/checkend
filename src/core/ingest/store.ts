@@ -1,7 +1,7 @@
 import { type Statement, sql } from "../../ports/db.ts";
 import type { Ports } from "../../ports/index.ts";
 import { fixStatementsForEvent } from "../fixes.ts";
-import { ingestDeliveryStatements } from "../webhooks.ts";
+import { ingestDeliveryStatements, spikeDeliveryStatement } from "../webhooks.ts";
 import { FINGERPRINT_VERSION, type IssueTitle } from "./fingerprint.ts";
 import type { PreparedEvent } from "./prepare.ts";
 import { type IngestMode, IngestState } from "./state.ts";
@@ -301,6 +301,9 @@ async function planWrite(
 				AND NOT EXISTS (SELECT 1 FROM events WHERE project_id = ${projectId} AND event_id = ${event.event_id})
 			ON CONFLICT (issue_id, hour) DO UPDATE SET count = count + 1`,
 	);
+	// Spike alerts: after the count, before the event insert (the duplicate check).
+	deliveryStatements.push(statements.length);
+	statements.push(spikeDeliveryStatement(projectId, fingerprint, event.event_id, nowIso));
 	if (prepared.userHash) {
 		statements.push(
 			sql`INSERT INTO issue_users (issue_id, user_hash, first_seen)

@@ -58,6 +58,11 @@ export const MCP_TOOLS = [
 			"Releases, the most recently deployed first, with their deploys (environment, commit, time). Inputs: project (optional: public ID or slug), limit (1-100, default 25).",
 	},
 	{
+		name: "list_alerts",
+		summary:
+			"The alert rules: where Checkend sends alerts (format: slack, discord, github_issue, email, checkend, github_dispatch), for which events (issue.new, issue.regressed, issue.verified, issue.spike), the spike threshold and the minimum trust. Read only; no secrets. No inputs.",
+	},
+	{
 		name: "merge_issues",
 		summary:
 			"Merge issues with the same cause into one target issue. Needs issues:write. Can need a human approval. Inputs: target_id, source_ids (1-10).",

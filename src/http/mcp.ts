@@ -26,6 +26,7 @@ import {
 } from "../core/issues.ts";
 import { type Actor, hasScope } from "../core/tokens.ts";
 import { VERSION } from "../core/version.ts";
+import { listAlerts } from "../core/webhooks.ts";
 import type { Ports } from "../ports/index.ts";
 import type { AppEnv } from "./app.ts";
 import { need, requireActor } from "./auth.ts";
@@ -316,6 +317,15 @@ function createServer(ports: Ports, actor: Actor): McpServer {
 			if (releases === "project_not_found") return errorResult(`Project ${project} not found.`);
 			return textResult(JSON.stringify({ releases }));
 		},
+	);
+
+	server.registerTool(
+		"list_alerts",
+		{
+			description: `${tool("list_alerts")} ${UNTRUSTED_HINT}`,
+			inputSchema: toStandardJsonSchema(v.object({})),
+		},
+		async () => textResult(JSON.stringify({ alerts: await listAlerts(db) })),
 	);
 
 	server.registerTool(

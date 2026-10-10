@@ -1,7 +1,15 @@
 import * as v from "valibot";
 import { type Db, type Statement, sql } from "../ports/db.ts";
 import type { Ports } from "../ports/index.ts";
+import { isEmailAddress } from "../ports/mailer.ts";
 import { activityStatement } from "./activity.ts";
+import {
+	type AlertContent,
+	discordMessage,
+	emailMessage,
+	githubIssue,
+	slackMessage,
+} from "./alert-format.ts";
 import { buildBrief } from "./brief.ts";
 import { decryptValue, encryptValue, keyIdOf } from "./crypto.ts";
 import { formatIssueId } from "./ids.ts";
@@ -19,7 +27,12 @@ import { VERSION } from "./version.ts";
  * A webhook gets only issues of projects at or above its min_trust (default high): text from a
  * public browser DSN does not start agent runs unless an admin allows it.
  */
-export const WEBHOOK_EVENTS = ["issue.new", "issue.regressed", "issue.verified"] as const;
+export const WEBHOOK_EVENTS = [
+	"issue.new",
+	"issue.regressed",
+	"issue.verified",
+	"issue.spike",
+] as const;
 export type WebhookEvent = (typeof WEBHOOK_EVENTS)[number] | "ping";
 
 /**
@@ -27,14 +40,67 @@ export type WebhookEvent = (typeof WEBHOOK_EVENTS)[number] | "ping";
  * GitHub repository_dispatch, so that a GitHub Actions workflow starts an agent; needs
  * github_token, a token that can only create dispatches for that repository).
  */
-export const WEBHOOK_FORMATS = ["checkend", "github_dispatch"] as const;
-const DISPATCH_URL =
-	/^https:\/\/api\.github\.com\/repos\/[A-Za-z0-9][A-Za-z0-9-]{0,38}\/[A-Za-z0-9._-]{1,100}\/dispatches$/;
+export const WEBHOOK_FORMATS = [
+	"checkend",
+	"github_dispatch",
+	"slack",
+	"discord",
+	"github_issue",
+	"email",
+] as const;
+type Format = (typeof WEBHOOK_FORMATS)[number];
+
+/** URLs per format. Slack and Discord URLs are secrets: stored encrypted, shown masked. */
+const FORMAT_URLS: Partial<Record<Format, { pattern: RegExp; example: string; secret: boolean }>> =
+	{
+		github_dispatch: {
+			pattern:
+				/^https:\/\/api\.github\.com\/repos\/[A-Za-z0-9][A-Za-z0-9-]{0,38}\/[A-Za-z0-9._-]{1,100}\/dispatches$/,
+			example: "https://api.github.com/repos/<owner>/<repo>/dispatches",
+			secret: false,
+		},
+		github_issue: {
+			pattern:
+				/^https:\/\/api\.github\.com\/repos\/[A-Za-z0-9][A-Za-z0-9-]{0,38}\/[A-Za-z0-9._-]{1,100}\/issues$/,
+			example: "https://api.github.com/repos/<owner>/<repo>/issues",
+			secret: false,
+		},
+		slack: {
+			pattern:
+				/^https:\/\/hooks\.slack\.com\/services\/[A-Za-z0-9]{1,40}\/[A-Za-z0-9]{1,40}\/[A-Za-z0-9]{1,80}$/,
+			example: "https://hooks.slack.com/services/<...>",
+			secret: true,
+		},
+		discord: {
+			pattern:
+				/^https:\/\/(discord\.com|discordapp\.com)\/api\/webhooks\/\d{1,30}\/[A-Za-z0-9_-]{1,100}$/,
+			example: "https://discord.com/api/webhooks/<id>/<token>",
+			secret: true,
+		},
+	};
+const TOKEN_FORMATS: Format[] = ["github_dispatch", "github_issue"];
+
+/** A secret URL as the API shows it: the path up to the first secret part. */
+const maskUrl = (url: string, format: Format) => {
+	const parts = url.split("/");
+	return format === "slack"
+		? `${parts.slice(0, 5).join("/")}/…`
+		: `${parts.slice(0, 6).join("/")}/…`;
+};
 
 export const CreateWebhookBody = v.strictObject({
 	name: v.pipe(v.string(), v.trim(), v.minLength(1), v.maxLength(100)),
-	url: v.pipe(v.string(), v.maxLength(2000)),
+	/** Every format except email. */
+	url: v.optional(v.pipe(v.string(), v.maxLength(2000))),
 	format: v.optional(v.picklist(WEBHOOK_FORMATS), "checkend"),
+	/** email only: the recipients. */
+	to: v.optional(
+		v.pipe(v.array(v.pipe(v.string(), v.maxLength(320))), v.minLength(1), v.maxLength(20)),
+	),
+	/** With the event issue.spike: alert when the events of an issue in this hour go above it. */
+	spike_threshold: v.optional(
+		v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(1_000_000)),
+	),
 	/** github_dispatch only: the token for the GitHub API (stored encrypted). */
 	github_token: v.optional(v.pipe(v.string(), v.minLength(1), v.maxLength(500))),
 	events: v.pipe(v.array(v.picklist(WEBHOOK_EVENTS)), v.minLength(1), v.maxLength(10)),
@@ -66,7 +132,8 @@ const toBase64Url = (bytes: Uint8Array) =>
 export type CreateResult =
 	| { kind: "done"; webhook: Record<string, unknown> }
 	| { kind: "invalid"; path: string; message: string }
-	| { kind: "encryption_not_configured" };
+	| { kind: "encryption_not_configured" }
+	| { kind: "email_not_configured" };
 
 export async function createWebhook(
 	ports: P,
@@ -74,23 +141,43 @@ export async function createWebhook(
 	body: CreateWebhookBody,
 ): Promise<CreateResult> {
 	if (ports.config.encryptionKeys.length === 0) return { kind: "encryption_not_configured" };
-	const dispatch = body.format === "github_dispatch";
-	if (dispatch && !DISPATCH_URL.test(body.url)) {
-		return {
-			kind: "invalid",
-			path: "url",
-			message: "A github_dispatch URL is https://api.github.com/repos/<owner>/<repo>/dispatches.",
-		};
+	const invalid = (path: string, message: string): CreateResult => ({
+		kind: "invalid",
+		path,
+		message,
+	});
+	const format = body.format;
+	const email = format === "email";
+	if (email) {
+		if (!ports.mailer) return { kind: "email_not_configured" };
+		if (body.url !== undefined) return invalid("url", "The email format has no url; use to.");
+		if (!body.to) return invalid("to", "The email format needs to (the recipients).");
+		const bad = body.to.find((address) => !isEmailAddress(address));
+		if (bad !== undefined) return invalid("to", "Not a valid email address.");
+	} else {
+		if (body.to !== undefined) return invalid("to", "to is only for the email format.");
+		if (body.url === undefined) return invalid("url", "url is required.");
 	}
-	if (dispatch !== (body.github_token !== undefined)) {
-		return {
-			kind: "invalid",
-			path: "github_token",
-			message: "github_token is required for the github_dispatch format, and only for it.",
-		};
+	const rule = FORMAT_URLS[format];
+	if (rule && !rule.pattern.test(body.url ?? "")) {
+		return invalid("url", `A ${format} URL is ${rule.example}.`);
 	}
-	const check = await checkOutboundUrl(body.url, ports.resolver);
-	if (!check.ok) return { kind: "invalid", path: "url", message: check.reason };
+	if (TOKEN_FORMATS.includes(format) !== (body.github_token !== undefined)) {
+		return invalid(
+			"github_token",
+			"github_token is required for the github_dispatch and github_issue formats, and only for them.",
+		);
+	}
+	if (body.events.includes("issue.spike") !== (body.spike_threshold !== undefined)) {
+		return invalid(
+			"spike_threshold",
+			"spike_threshold is required with the event issue.spike, and only with it.",
+		);
+	}
+	if (body.url !== undefined) {
+		const check = await checkOutboundUrl(body.url, ports.resolver);
+		if (!check.ok) return invalid("url", check.reason);
+	}
 	const projectId = body.project ? await findProjectRowId(ports.db, body.project) : null;
 	if (body.project && projectId === null) {
 		return { kind: "invalid", path: "project", message: "No such project." };
@@ -98,20 +185,28 @@ export async function createWebhook(
 	const uid = crypto.randomUUID();
 	const secret = `whsec_${toBase64Url(crypto.getRandomValues(new Uint8Array(32)))}`;
 	const encrypted = await encryptValue(ports.config.encryptionKeys, secret, secretContext(uid));
-	const auth = body.github_token
-		? await encryptValue(ports.config.encryptionKeys, body.github_token, authContext(uid))
+	// The encrypted extra: a GitHub token, or the secret URL of Slack and Discord.
+	const authValue = body.github_token ?? (rule?.secret ? body.url : undefined);
+	const auth = authValue
+		? await encryptValue(ports.config.encryptionKeys, authValue, authContext(uid))
+		: null;
+	const shownUrl =
+		body.url === undefined ? null : rule?.secret ? maskUrl(body.url, format) : body.url;
+	const recipients = body.to
+		? JSON.stringify([...new Set(body.to.map((a) => a.toLowerCase()))])
 		: null;
 	const now = ports.clock.now();
 	const events = JSON.stringify([...new Set(body.events)]);
 	const [inserted] = await ports.db.batch([
 		sql`INSERT INTO webhooks (uid, name, url, format, secret, auth, events, min_trust, project_id,
-				created_at, created_by)
-			VALUES (${uid}, ${body.name}, ${body.url}, ${body.format}, ${encrypted}, ${auth}, ${events},
-				${body.min_trust}, ${projectId}, ${now.toISOString()}, ${actor.name})
+				created_at, created_by, recipients, spike_threshold)
+			VALUES (${uid}, ${body.name}, ${shownUrl ?? ""}, ${format}, ${encrypted}, ${auth}, ${events},
+				${body.min_trust}, ${projectId}, ${now.toISOString()}, ${actor.name}, ${recipients},
+				${body.spike_threshold ?? null})
 			RETURNING id`,
 		sql`INSERT INTO activity (at, actor_type, actor_id, actor_name, action, target_type, target_id, data)
 			SELECT ${now.toISOString()}, ${actor.type}, ${actor.id}, ${actor.name}, 'webhook.create', 'webhook', id,
-				json_object('name', ${body.name}, 'url', ${body.url})
+				json_object('name', ${body.name}, 'format', ${format}, 'url', ${shownUrl})
 			FROM webhooks WHERE uid = ${uid}`,
 	]);
 	const id = Number(inserted?.rows[0]?.id);
@@ -120,15 +215,37 @@ export async function createWebhook(
 }
 
 const WEBHOOK_COLUMNS = `w.id, w.name, w.url, w.format, w.events, w.min_trust, p.public_id AS project_id,
-	w.created_at, w.created_by,
+	w.recipients, w.spike_threshold, w.created_at, w.created_by,
 	(SELECT status FROM webhook_deliveries WHERE webhook_id = w.id ORDER BY id DESC LIMIT 1) AS last_delivery_status`;
 const LIST_WEBHOOKS_SQL = `SELECT ${WEBHOOK_COLUMNS}
 	FROM webhooks w LEFT JOIN projects p ON p.id = w.project_id
 	WHERE w.deleted_at IS NULL ORDER BY w.id`;
 
 export async function listWebhooks(db: Db): Promise<Record<string, unknown>[]> {
-	const rows = await db.all<{ id: number; events: string }>({ sql: LIST_WEBHOOKS_SQL, params: [] });
-	return rows.map((row) => ({ ...row, events: JSON.parse(row.events) }));
+	const rows = await db.all<{ id: number; events: string; url: string; recipients: string | null }>(
+		{
+			sql: LIST_WEBHOOKS_SQL,
+			params: [],
+		},
+	);
+	return rows.map(({ recipients, ...row }) => ({
+		...row,
+		url: row.url === "" ? null : row.url,
+		events: JSON.parse(row.events),
+		...(recipients ? { to: JSON.parse(recipients) as string[] } : {}),
+	}));
+}
+
+/**
+ * Alert rules for readers (issues:read): no secrets, no email addresses, and URLs without their
+ * query string (a query can hold a token).
+ */
+export async function listAlerts(db: Db): Promise<Record<string, unknown>[]> {
+	return (await listWebhooks(db)).map(({ to, url, created_by: _by, ...rule }) => ({
+		...rule,
+		url: typeof url === "string" ? url.split(/[?#]/)[0] : null,
+		recipients: Array.isArray(to) ? to.length : null,
+	}));
 }
 
 export async function deleteWebhook(ports: P, actor: Actor, id: number): Promise<boolean> {
@@ -230,6 +347,35 @@ export function ingestDeliveryStatements(
 	};
 }
 
+// A spike: the hourly count of the issue just went from the threshold to threshold + 1, so the
+// alert fires once per issue and hour. Not for a duplicate event (the count did not change).
+const SPIKE_SQL = `INSERT INTO webhook_deliveries
+		(webhook_id, event, issue_id, next_attempt_at, created_at, data)
+	SELECT w.id, 'issue.spike', i.id, ?, ?, json_object('events_1h', c.count, 'threshold', w.spike_threshold)
+	FROM issues i
+	JOIN projects p ON p.id = i.project_id
+	JOIN issue_counts c ON c.issue_id = i.id AND c.hour = ?
+	JOIN webhooks w ON w.deleted_at IS NULL AND (w.project_id IS NULL OR w.project_id = i.project_id)
+	WHERE i.project_id = ? AND i.fingerprint = ? AND w.spike_threshold IS NOT NULL
+		AND c.count = w.spike_threshold + 1
+		AND NOT EXISTS (SELECT 1 FROM events WHERE project_id = ? AND event_id = ?)
+		AND EXISTS (SELECT 1 FROM json_each(w.events) WHERE value = 'issue.spike')
+		AND (w.min_trust = 'low' OR ${PROJECT_TRUST} = 'high')
+	RETURNING id`;
+
+/** The spike statement for the ingest batch: after the hourly count, before the event insert. */
+export function spikeDeliveryStatement(
+	projectId: number,
+	fingerprint: string,
+	eventId: string,
+	nowIso: string,
+): Statement {
+	return {
+		sql: SPIKE_SQL,
+		params: [nowIso, nowIso, nowIso.slice(0, 13), projectId, fingerprint, projectId, eventId],
+	};
+}
+
 /** The delivery statement for a fix verified in verifyFixes. */
 export function verifiedDeliveryStatement(fixId: number, nowIso: string): Statement {
 	return {
@@ -282,16 +428,18 @@ type DeliveryRow = {
 	webhook_id: number;
 	uid: string;
 	url: string;
-	format: (typeof WEBHOOK_FORMATS)[number];
+	format: Format;
 	secret: string;
 	auth: string | null;
+	recipients: string | null;
+	data: string | null;
 	deleted_at: string | null;
 };
 
 async function attempt(ports: P, id: number): Promise<void> {
 	const row = await ports.db.first<DeliveryRow>(
-		sql`SELECT d.id, d.event, d.issue_id, d.attempts, d.created_at, w.id AS webhook_id, w.uid, w.url,
-				w.format, w.secret, w.auth, w.deleted_at
+		sql`SELECT d.id, d.event, d.issue_id, d.attempts, d.created_at, d.data, w.id AS webhook_id, w.uid,
+				w.url, w.format, w.secret, w.auth, w.recipients, w.deleted_at
 			FROM webhook_deliveries d JOIN webhooks w ON w.id = d.webhook_id WHERE d.id = ${id}`,
 	);
 	if (!row) return;
@@ -300,43 +448,56 @@ async function attempt(ports: P, id: number): Promise<void> {
 	let error: string | null = null;
 	try {
 		if (row.deleted_at) throw new PermanentError("The webhook was deleted.");
-		const check = await checkOutboundUrl(row.url, ports.resolver);
-		if (!check.ok) throw new Error(check.reason);
-		const secret = await decryptValue(
-			ports.config.encryptionKeys,
-			row.secret,
-			secretContext(row.uid),
-		);
-		const content = await payload(ports, row);
-		const github =
-			row.format === "github_dispatch" && row.auth
-				? await decryptValue(ports.config.encryptionKeys, row.auth, authContext(row.uid))
-				: null;
-		const body = JSON.stringify(github ? dispatchBody(content) : content);
-		const timestamp = Math.floor(ports.clock.now().getTime() / 1000);
-		const response = await ports.http.send(row.url, {
-			method: "POST",
-			body,
-			redirect: "manual",
-			signal: AbortSignal.timeout(TIMEOUT_MS),
-			headers: {
-				"content-type": "application/json",
-				"user-agent": `Checkend-Webhook/${VERSION}`,
-				"x-checkend-event": row.event,
-				"x-checkend-delivery": String(row.id),
-				"x-checkend-signature": `t=${timestamp},v1=${await hmacHex(secret, `${timestamp}.${body}`)}`,
-				...(github
-					? {
-							authorization: `Bearer ${github}`,
-							accept: "application/vnd.github+json",
-							"x-github-api-version": "2022-11-28",
-						}
-					: {}),
-			},
-		});
-		status = response.status;
-		await response.body?.cancel();
-		if (status < 200 || status >= 300) error = `HTTP ${status}`;
+		const keys = ports.config.encryptionKeys;
+		const extra = row.auth ? await decryptValue(keys, row.auth, authContext(row.uid)) : null;
+		const { body: checkendBody, alert } = await payload(ports, row);
+		if (row.format === "email") {
+			if (!ports.mailer) throw new Error("Email is not configured (EMAIL and EMAIL_FROM).");
+			const to = row.recipients ? (JSON.parse(row.recipients) as string[]) : [];
+			await ports.mailer.send({ to, ...emailMessage(alert) });
+		} else {
+			// Slack and Discord: the stored URL is masked; the full URL is the encrypted extra.
+			const target = row.format === "slack" || row.format === "discord" ? (extra ?? "") : row.url;
+			const check = await checkOutboundUrl(target, ports.resolver);
+			if (!check.ok) throw new Error(check.reason);
+			const github = row.format === "github_dispatch" || row.format === "github_issue";
+			const content =
+				row.format === "slack"
+					? slackMessage(alert)
+					: row.format === "discord"
+						? discordMessage(alert)
+						: row.format === "github_issue"
+							? githubIssue(alert)
+							: row.format === "github_dispatch"
+								? dispatchBody(checkendBody)
+								: checkendBody;
+			const body = JSON.stringify(content);
+			const secret = await decryptValue(keys, row.secret, secretContext(row.uid));
+			const timestamp = Math.floor(ports.clock.now().getTime() / 1000);
+			const response = await ports.http.send(target, {
+				method: "POST",
+				body,
+				redirect: "manual",
+				signal: AbortSignal.timeout(TIMEOUT_MS),
+				headers: {
+					"content-type": "application/json",
+					"user-agent": `Checkend-Webhook/${VERSION}`,
+					"x-checkend-event": row.event,
+					"x-checkend-delivery": String(row.id),
+					"x-checkend-signature": `t=${timestamp},v1=${await hmacHex(secret, `${timestamp}.${body}`)}`,
+					...(github && extra
+						? {
+								authorization: `Bearer ${extra}`,
+								accept: "application/vnd.github+json",
+								"x-github-api-version": "2022-11-28",
+							}
+						: {}),
+				},
+			});
+			status = response.status;
+			await response.body?.cancel();
+			if (status < 200 || status >= 300) error = `HTTP ${status}`;
+		}
 	} catch (failure) {
 		error = (failure instanceof Error ? failure.message : String(failure)).slice(0, 300);
 		if (failure instanceof PermanentError) {
@@ -377,32 +538,66 @@ async function finish(
 	);
 }
 
-/** The body: the event, the issue and its brief (built at delivery time). */
+/**
+ * The Checkend body (the event, the issue and its brief, built at delivery time), and the alert
+ * content for the channels for people.
+ */
 async function payload(ports: P, row: DeliveryRow) {
 	const now = ports.clock.now();
 	const issue = row.issue_id === null ? null : await getIssue(ports.db, row.issue_id, now);
 	const brief =
 		row.issue_id === null ? null : await buildBrief(ports.db, row.issue_id, now, ports.blobs);
-	return {
+	const project = issue
+		? await ports.db.first<{ name: string }>(
+				sql`SELECT p.name FROM projects p JOIN issues i ON i.project_id = p.id WHERE i.id = ${row.issue_id}`,
+			)
+		: null;
+	const spike = row.data
+		? (JSON.parse(row.data) as { events_1h?: number; threshold?: number })
+		: null;
+	const alert: AlertContent = {
 		event: row.event,
-		delivery_id: row.id,
-		webhook_id: row.webhook_id,
-		created_at: row.created_at,
 		issue: issue && {
-			id: formatIssueId(Number(issue.id)),
-			project_id: issue.project_id,
-			status: issue.status,
-			level: issue.level,
-			trust: issue.trust,
-			priority: issue.priority,
-			times_seen: issue.times_seen,
-			users_affected: issue.users_affected,
-			first_seen: issue.first_seen,
-			last_seen: issue.last_seen,
-			fix: issue.fix,
-			title_untrusted: issue.title,
+			id: Number(issue.id),
+			status: String(issue.status),
+			trust: String(issue.trust),
+			priority: Number(issue.priority),
+			events_24h: Number(issue.events_24h),
+			users_affected: Number(issue.users_affected),
+			first_seen: String(issue.first_seen),
 		},
-		brief,
+		project: project?.name ?? null,
+		title_untrusted: issue ? String(issue.title) : null,
+		culprit_untrusted: issue?.culprit ? String(issue.culprit) : null,
+		spike:
+			spike?.events_1h !== undefined && spike.threshold !== undefined
+				? { events_1h: spike.events_1h, threshold: spike.threshold }
+				: null,
+		brief_markdown: brief?.markdown ?? null,
+	};
+	return {
+		alert,
+		body: {
+			event: row.event,
+			delivery_id: row.id,
+			webhook_id: row.webhook_id,
+			created_at: row.created_at,
+			issue: issue && {
+				id: formatIssueId(Number(issue.id)),
+				project_id: issue.project_id,
+				status: issue.status,
+				level: issue.level,
+				trust: issue.trust,
+				priority: issue.priority,
+				times_seen: issue.times_seen,
+				users_affected: issue.users_affected,
+				first_seen: issue.first_seen,
+				last_seen: issue.last_seen,
+				fix: issue.fix,
+				title_untrusted: issue.title,
+			},
+			brief,
+		},
 	};
 }
 
@@ -410,7 +605,7 @@ async function payload(ports: P, row: DeliveryRow) {
  * A GitHub repository_dispatch body. client_payload has at most 10 top-level keys (a GitHub
  * limit); the brief is its Markdown text, which the workflow gives to the agent.
  */
-function dispatchBody(content: Awaited<ReturnType<typeof payload>>) {
+function dispatchBody(content: Awaited<ReturnType<typeof payload>>["body"]) {
 	return {
 		event_type: `checkend.${content.event}`,
 		client_payload: {

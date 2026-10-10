@@ -90,6 +90,7 @@ export function mcpContract(
 					"get_issue_brief",
 					"ignore_issue",
 					"link_fix",
+					"list_alerts",
 					"list_issues",
 					"list_releases",
 					"merge_issues",
