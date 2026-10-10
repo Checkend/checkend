@@ -13,6 +13,7 @@ import { CreateProjectBody, EventListQuery, IssueListQuery } from "./issues.ts";
 import { LabelQuery } from "./labels.ts";
 import { UpdateProjectBody } from "./projects.ts";
 import { CreateTokenBody, type Scope } from "./tokens.ts";
+import { CreateWebhookBody } from "./webhooks.ts";
 
 export const ClaimBody = v.object({
 	minutes: v.optional(
@@ -234,6 +235,39 @@ export const API_ROUTES: ApiRoute[] = [
 		summary:
 			"Fix outcomes (verified or regressed), with the time to verify and who linked the fix, the most recent first.",
 		query: FixOutcomeQuery,
+	},
+	{
+		method: "GET",
+		path: "/v1/webhooks",
+		scope: "admin",
+		summary: "Outgoing webhooks (without their secrets).",
+	},
+	{
+		method: "POST",
+		path: "/v1/webhooks",
+		scope: "admin",
+		summary:
+			"Create an outgoing webhook: signed deliveries with the brief for issue.new, issue.regressed and issue.verified. The URL must be https with a public address. Returns the signing secret once. Needs ENCRYPTION_KEYS.",
+		body: CreateWebhookBody,
+	},
+	{
+		method: "DELETE",
+		path: "/v1/webhooks/:id",
+		scope: "admin",
+		summary: "Delete a webhook. Its pending deliveries fail.",
+	},
+	{
+		method: "POST",
+		path: "/v1/webhooks/:id/test",
+		scope: "admin",
+		summary: "Send a test delivery (event ping).",
+	},
+	{
+		method: "GET",
+		path: "/v1/webhooks/:id/deliveries",
+		scope: "admin",
+		summary: "The latest deliveries of a webhook, with their status and attempts.",
+		query: LimitQuery,
 	},
 	{
 		method: "GET",

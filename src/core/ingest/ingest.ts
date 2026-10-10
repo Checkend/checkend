@@ -1,5 +1,6 @@
 import { sql } from "../../ports/db.ts";
 import type { Ports } from "../../ports/index.ts";
+import { startDeliveries } from "../webhooks.ts";
 import { isValidKey, parseDsn, sentryKeyFromRequest } from "./auth.ts";
 import { readIngestBody } from "./body.ts";
 import { parseEnvelope } from "./envelope.ts";
@@ -113,7 +114,9 @@ export async function handleIngest(
 
 		const prepared = await prepareEvent(payload, now);
 		ports.defer(
-			storeEvent(ports, state, project.projectId, prepared, { browser: origin !== null }),
+			storeEvent(ports, state, project.projectId, prepared, { browser: origin !== null }).then(
+				(result) => (result.deliveries > 0 ? startDeliveries(ports) : undefined),
+			),
 		);
 		return json(200, { id: prepared.event.event_id });
 	} catch (error) {

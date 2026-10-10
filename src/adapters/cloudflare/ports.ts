@@ -1,6 +1,7 @@
 import { systemClock } from "../../core/clock.ts";
 import { parseEncryptionKeys } from "../../core/crypto.ts";
 import { type Config, DEFAULT_CONFIG } from "../../ports/config.ts";
+import { fetchClient } from "../../ports/http.ts";
 import type { Ports } from "../../ports/index.ts";
 import { noRateLimit, type RateLimiter } from "../../ports/rate-limiter.ts";
 import { d1Db } from "./d1-db.ts";
@@ -26,6 +27,9 @@ type WorkerEnv = Omit<Env, "INGEST_RATE_LIMITER"> &
 	ConfigEnv & {
 		// Optional binding: an install without it has no rate limit (H4: optional bindings).
 		INGEST_RATE_LIMITER?: Pick<RateLimit, "limit">;
+		// Optional binding: a queue that starts webhook deliveries. Without it, deliveries run
+		// after the response (waitUntil), and the cron retries them.
+		NOTIFY?: Pick<Queue<{ kind: "deliver" }>, "send">;
 	};
 
 const positiveInt = (value: string | undefined): number | undefined => {
@@ -75,5 +79,9 @@ export function cloudflarePorts(env: WorkerEnv, ctx: Pick<ExecutionContext, "wai
 		rateLimiter: rateLimiter(env.INGEST_RATE_LIMITER),
 		config: readConfig(env),
 		resolver: dohResolver,
+		http: fetchClient,
+		notifyQueue: env.NOTIFY
+			? { send: async (message) => void (await env.NOTIFY?.send(message)) }
+			: null,
 	};
 }

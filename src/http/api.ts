@@ -40,6 +40,15 @@ import {
 import { LabelQuery, listLabels } from "../core/labels.ts";
 import { createProject, listProjects, UpdateProjectBody, updateProject } from "../core/projects.ts";
 import { CreateTokenBody, createToken, listTokens, revokeToken } from "../core/tokens.ts";
+import {
+	CreateWebhookBody,
+	createWebhook,
+	deleteWebhook,
+	listDeliveries,
+	listWebhooks,
+	pingWebhook,
+	startDeliveries,
+} from "../core/webhooks.ts";
 import type { AppEnv } from "./app.ts";
 import { need, requireActor } from "./auth.ts";
 
@@ -336,6 +345,60 @@ export function apiRoutes(app: Hono<AppEnv>, state: IngestState): void {
 		if (!query.success) return invalid(c, query.issues);
 		return c.json({
 			data: await listFixOutcomes(c.env.ports.db, query.output, c.env.ports.clock.now()),
+		});
+	});
+
+	app.get("/v1/webhooks", need("admin"), async (c) =>
+		c.json({ data: await listWebhooks(c.env.ports.db) }),
+	);
+
+	app.post("/v1/webhooks", need("admin"), async (c) => {
+		const body = v.safeParse(CreateWebhookBody, await c.req.json().catch(() => null));
+		if (!body.success) return invalid(c, body.issues);
+		const result = await createWebhook(c.env.ports, c.get("actor"), body.output);
+		if (result.kind === "encryption_not_configured") {
+			return c.json(
+				{
+					error: "encryption_not_configured",
+					reason: "Set ENCRYPTION_KEYS: Checkend stores the signing secret encrypted.",
+				},
+				400,
+			);
+		}
+		if (result.kind === "invalid") {
+			return c.json(
+				{ error: "invalid_request", details: [{ path: result.path, message: result.message }] },
+				400,
+			);
+		}
+		return c.json({ data: result.webhook }, 201);
+	});
+
+	app.delete("/v1/webhooks/:id", need("admin"), async (c) => {
+		const params = v.safeParse(IdParam, c.req.param());
+		if (!params.success) return invalid(c, params.issues);
+		const deleted = await deleteWebhook(c.env.ports, c.get("actor"), params.output.id);
+		return deleted
+			? c.json({ data: { id: params.output.id, deleted: true } })
+			: c.json({ error: "not_found" }, 404);
+	});
+
+	app.post("/v1/webhooks/:id/test", need("admin"), async (c) => {
+		const params = v.safeParse(IdParam, c.req.param());
+		if (!params.success) return invalid(c, params.issues);
+		const deliveryId = await pingWebhook(c.env.ports, params.output.id);
+		if (deliveryId === null) return c.json({ error: "not_found" }, 404);
+		await startDeliveries(c.env.ports);
+		return c.json({ data: { delivery_id: deliveryId } }, 202);
+	});
+
+	app.get("/v1/webhooks/:id/deliveries", need("admin"), async (c) => {
+		const params = v.safeParse(IdParam, c.req.param());
+		const query = v.safeParse(LimitQuery, c.req.query());
+		if (!params.success) return invalid(c, params.issues);
+		if (!query.success) return invalid(c, query.issues);
+		return c.json({
+			data: await listDeliveries(c.env.ports.db, params.output.id, query.output.limit),
 		});
 	});
 

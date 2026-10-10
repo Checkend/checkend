@@ -7,6 +7,9 @@ import type { Ports } from "../../src/ports/index.ts";
 import { noRateLimit } from "../../src/ports/rate-limiter.ts";
 import { noResolver } from "../../src/ports/resolver.ts";
 
+/** Tests have no network: a test that sends webhooks passes its own HttpClient. */
+const noNetwork = { send: async () => Promise.reject(new Error("No network in tests.")) };
+
 export interface TestPorts {
 	ports: Ports;
 	clock: FixedClock;
@@ -30,6 +33,8 @@ export async function testPorts(
 		},
 		rateLimiter: noRateLimit,
 		resolver: noResolver,
+		http: noNetwork,
+		notifyQueue: null,
 		...overrides,
 		config: { ...DEFAULT_CONFIG, ...overrides.config },
 	};

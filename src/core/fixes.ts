@@ -5,6 +5,7 @@ import { activityStatement } from "./activity.ts";
 import { findProjectRowId, ProjectRef, parseSince, SINCE_PATTERN } from "./issues.ts";
 import { projectRepository } from "./projects.ts";
 import type { Actor } from "./tokens.ts";
+import { verifiedDeliveryStatement } from "./webhooks.ts";
 
 /**
  * The fix loop. An agent links a fix (a commit SHA or a pull request URL) to an issue: the
@@ -429,6 +430,7 @@ export async function verifyFixes(ports: P, now: Date): Promise<number> {
 			{ sql: VERIFY_ACTIVITY_SQL, params: [nowIso, hours, id, cutoff] },
 			{ sql: VERIFY_FIX_SQL, params: [nowIso, id, cutoff] },
 			{ sql: VERIFY_ISSUE_SQL, params: [nowIso, id, nowIso] },
+			verifiedDeliveryStatement(id, nowIso),
 		]),
 	);
 	return waiting.length;

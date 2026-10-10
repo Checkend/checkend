@@ -28,6 +28,8 @@ const portsWith = (db: Db): Ports => ({
 	defer: () => {},
 	rateLimiter: noRateLimit,
 	resolver: noResolver,
+	http: { send: async () => new Response(null, { status: 599 }) },
+	notifyQueue: null,
 	config: DEFAULT_CONFIG,
 });
 

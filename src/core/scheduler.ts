@@ -1,6 +1,7 @@
 import type { Ports } from "../ports/index.ts";
 import { verifyFixes } from "./fixes.ts";
 import { pruneDeliveries } from "./github.ts";
+import { deliverDue, reencryptSecrets } from "./webhooks.ts";
 
 /**
  * Work on a schedule. One Cron Trigger (every 5 minutes) calls this; each job decides by the
@@ -10,16 +11,15 @@ import { pruneDeliveries } from "./github.ts";
 export interface ScheduledRun {
 	/** Fixes verified (or checked again) in this run. */
 	fixes_checked: number;
+	/** Webhook delivery attempts in this run. */
+	deliveries: number;
 	errors: string[];
 }
 
-type Job = (ports: Pick<Ports, "db" | "clock" | "config">, now: Date) => Promise<void>;
+type Job = (ports: Ports, now: Date) => Promise<void>;
 
-export async function runScheduled(
-	ports: Pick<Ports, "db" | "clock" | "config">,
-	now: Date,
-): Promise<ScheduledRun> {
-	const run: ScheduledRun = { fixes_checked: 0, errors: [] };
+export async function runScheduled(ports: Ports, now: Date): Promise<ScheduledRun> {
+	const run: ScheduledRun = { fixes_checked: 0, deliveries: 0, errors: [] };
 	const jobs: [string, Job][] = [
 		// Every run: the quiet period is in hours, so 5 minutes late is fine.
 		[
@@ -28,6 +28,15 @@ export async function runScheduled(
 				run.fixes_checked = await verifyFixes(p, at);
 			},
 		],
+		// Webhook deliveries that are due (retries, and deliveries that the queue missed).
+		[
+			"deliver_webhooks",
+			async (p) => {
+				run.deliveries = await deliverDue(p);
+			},
+		],
+		// Rotation: secrets of an older key, encrypted again with the current key.
+		["reencrypt_secrets", async (p) => void (await reencryptSecrets(p))],
 		// Once a day (the run between 03:00 and 03:05 UTC).
 		[
 			"prune_github_deliveries",

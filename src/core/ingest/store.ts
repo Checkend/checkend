@@ -1,6 +1,7 @@
 import { type Statement, sql } from "../../ports/db.ts";
 import type { Ports } from "../../ports/index.ts";
 import { fixStatementsForEvent } from "../fixes.ts";
+import { ingestDeliveryStatements } from "../webhooks.ts";
 import { FINGERPRINT_VERSION, type IssueTitle } from "./fingerprint.ts";
 import type { PreparedEvent } from "./prepare.ts";
 import { type IngestMode, IngestState } from "./state.ts";
@@ -34,6 +35,8 @@ const PERMANENT =
 export interface StoreResult {
 	outcome: "stored" | "counted" | "failed";
 	attempts: number;
+	/** Webhook deliveries that the write added (start them with startDeliveries). */
+	deliveries: number;
 }
 
 export interface StoreOptions {
@@ -74,20 +77,21 @@ export async function storeEvent(
 		attempt++;
 		const started = Date.now();
 		try {
-			const write = await planWrite(ports, state, projectId, prepared, raw, rawBytes);
-			if (options.browser) {
-				// The first browser event makes the project low trust (see migration 0016).
-				write.statements.push(
-					sql`UPDATE projects SET browser_seen_at = ${ports.clock.now().toISOString()}
-						WHERE id = ${projectId} AND browser_seen_at IS NULL`,
-				);
-			}
-			await ports.db.batch(write.statements);
+			const write = await planWrite(ports, state, projectId, prepared, raw, rawBytes, options);
+			const results = await ports.db.batch(write.statements);
+			const deliveries = write.deliveryStatements.reduce(
+				(sum, i) => sum + (results[i]?.rows.length ?? 0),
+				0,
+			);
 			const now = ports.clock.now();
 			state.health.recordSuccess(Date.now() - started, now);
 			state.budget.add(now, write.rows);
 			state.tagKeys.add(projectId, write.newTagKeys);
-			return { outcome: write.mode === "full" ? "stored" : "counted", attempts: attempt };
+			return {
+				outcome: write.mode === "full" ? "stored" : "counted",
+				attempts: attempt,
+				deliveries,
+			};
 		} catch (error) {
 			lastError = error;
 			if (PERMANENT.test(String(error)) || attempt === MAX_ATTEMPTS) break;
@@ -115,7 +119,7 @@ export async function storeEvent(
 	} catch {
 		// D1 is down; the in-memory counter in /health still has the failure.
 	}
-	return { outcome: "failed", attempts: attempt };
+	return { outcome: "failed", attempts: attempt, deliveries: 0 };
 }
 
 interface PlannedWrite {
@@ -123,6 +127,8 @@ interface PlannedWrite {
 	statements: Statement[];
 	rows: number;
 	newTagKeys: string[];
+	/** Indexes of the statements that add webhook deliveries (RETURNING id). */
+	deliveryStatements: number[];
 }
 
 async function planWrite(
@@ -132,6 +138,7 @@ async function planWrite(
 	prepared: PreparedEvent,
 	raw: Uint8Array | null,
 	rawBytes: number,
+	options: StoreOptions,
 ): Promise<PlannedWrite> {
 	const now = clock.now();
 	const nowIso = now.toISOString();
@@ -175,7 +182,15 @@ async function planWrite(
 		return true;
 	});
 
-	const statements: Statement[] = [
+	const statements: Statement[] = [];
+	if (options.browser) {
+		// The first browser event makes the project low trust (migration 0016). First in the
+		// batch: the webhook deliveries below must see the new trust.
+		statements.push(
+			sql`UPDATE projects SET browser_seen_at = ${nowIso} WHERE id = ${projectId} AND browser_seen_at IS NULL`,
+		);
+	}
+	statements.push(
 		// A new event reopens a resolved issue (a regression). Not for an event_id that is stored.
 		sql`INSERT INTO activity (at, actor_type, actor_id, actor_name, action, target_type, target_id, data)
 			SELECT ${nowIso}, 'system', NULL, 'ingest', 'issue.regress', 'issue', id,
@@ -196,12 +211,17 @@ async function planWrite(
 				status_changed_at = CASE WHEN status = 'resolved' THEN excluded.last_seen ELSE status_changed_at END,
 				status = CASE WHEN status = 'resolved' THEN 'unresolved' ELSE status END,
 				level = excluded.level`,
-	];
+	);
 
 	// The fix loop: regressed (an event in a release with the fix), or the quiet period again.
 	statements.push(
 		...fixStatementsForEvent(projectId, fingerprint, event.event_id, event.release, nowIso),
 	);
+
+	// Webhook deliveries for a new issue or a regression (after the upsert and the regression).
+	const deliveries = ingestDeliveryStatements(projectId, fingerprint, event.event_id, nowIso);
+	const deliveryStatements = [statements.length, statements.length + 1];
+	statements.push(deliveries.newIssue, deliveries.regressed);
 
 	// Hourly count and users affected. Before the event insert: the duplicate check looks for
 	// the event_id in events, and the insert below adds it.
@@ -260,5 +280,5 @@ async function planWrite(
 				events_stored = events_stored + excluded.events_stored,
 				rows_written = rows_written + excluded.rows_written`,
 	);
-	return { mode, statements, rows, newTagKeys };
+	return { mode, statements, rows, newTagKeys, deliveryStatements };
 }
