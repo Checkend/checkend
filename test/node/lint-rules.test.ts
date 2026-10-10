@@ -33,7 +33,7 @@ function lintPasses(path: string, source: string): boolean {
 const cloudflareImport = 'import { env } from "cloudflare:workers";\nexport const x = env;\n';
 const nodeImport = 'import { readFile } from "node:fs/promises";\nexport const x = readFile;\n';
 
-describe("lint rule: cloudflare:* imports (D16)", () => {
+describe("lint rule: cloudflare:* imports", () => {
 	it.each([
 		"src/core/a.ts",
 		"src/ports/a.ts",
@@ -52,7 +52,7 @@ describe("lint rule: cloudflare:* imports (D16)", () => {
 	);
 });
 
-describe("lint rule: Web Standard APIs only in core, ports and http (D16)", () => {
+describe("lint rule: Web Standard APIs only in core, ports and http", () => {
 	it.each(["src/core/b.ts", "src/ports/b.ts", "src/http/b.ts"])(
 		"rejects a node:* import in %s",
 		(path) => {

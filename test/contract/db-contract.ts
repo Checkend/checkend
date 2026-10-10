@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { type Db, MAX_PARAMS, type Statement, sql } from "../../src/ports/db.ts";
 
 /**
- * The behaviour every `Db` adapter must have (D16). Each adapter's test file calls this
+ * The behaviour every `Db` adapter must have. Each adapter's test file calls this
  * with a factory. Tests in workerd run it against D1, tests in Node against SQLite.
  */
 export function dbContract(adapterName: string, makeDb: () => Promise<Db> | Db): void {

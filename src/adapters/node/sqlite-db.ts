@@ -11,7 +11,7 @@ import {
 const STATEMENT_CACHE_SIZE = 500;
 
 /**
- * `Db` on SQLite with the built-in `node:sqlite` module (D16). It is the database of the
+ * `Db` on SQLite with the built-in `node:sqlite` module. It is the database of the
  * Node entry and the fast test database. `batch()` runs in one transaction. The calls are
  * synchronous inside, so no other statement can run between the statements of a batch.
  */

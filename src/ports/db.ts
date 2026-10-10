@@ -1,5 +1,5 @@
 /**
- * The database port (D16). SQL only, async, bound parameters only.
+ * The database port. SQL only, async, bound parameters only.
  * Adapters: D1 (`adapters/cloudflare`) and SQLite (`adapters/node`).
  *
  * Portable rules:

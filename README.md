@@ -25,6 +25,11 @@ worked.
 - **Your own infrastructure.** One-click deploy to your Cloudflare account (Workers, D1, Queues, R2). No servers. Your error data stays in your account.
 - **An open spec.** The issue brief format and the fix-verification protocol will be published for any tool to use.
 
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). Coding agents: read [AGENTS.md](AGENTS.md) first.
+Security problems: see [SECURITY.md](SECURITY.md).
+
 ## License
 
 [Apache-2.0](LICENSE). Contributions use a DCO sign-off (`git commit -s`).

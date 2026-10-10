@@ -16,7 +16,7 @@
 						"patterns": [
 							{
 								"group": ["cloudflare:*", "cloudflare:*/**"],
-								"message": "D16: cloudflare:* imports are allowed only in src/adapters/cloudflare/ and src/entry/worker.ts. Use a port."
+								"message": "cloudflare:* imports are allowed only in src/adapters/cloudflare/ and src/entry/worker.ts. Use a port (see AGENTS.md)."
 							}
 						]
 					}
@@ -36,11 +36,11 @@
 								"patterns": [
 									{
 										"group": ["cloudflare:*", "cloudflare:*/**"],
-										"message": "D16: cloudflare:* imports are allowed only in src/adapters/cloudflare/ and src/entry/worker.ts. Use a port."
+										"message": "cloudflare:* imports are allowed only in src/adapters/cloudflare/ and src/entry/worker.ts. Use a port (see AGENTS.md)."
 									},
 									{
 										"group": ["node:*", "node:*/**"],
-										"message": "D16: core/, ports/ and http/ use Web Standard APIs only. Put runtime code in an adapter."
+										"message": "core/, ports/ and http/ use Web Standard APIs only. Put runtime code in an adapter (see AGENTS.md)."
 									}
 								]
 							}

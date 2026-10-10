@@ -1,7 +1,7 @@
 import { type Db, type Statement, sql } from "../ports/db.ts";
 
 /**
- * Migrations (D16, D17 rule 5): one set of plain SQL files in `migrations/`, valid on D1 and
+ * Migrations (see AGENTS.md): one set of plain SQL files in `migrations/`, valid on D1 and
  * SQLite. On Cloudflare, `wrangler d1 migrations apply` runs them. Elsewhere (Node, tests),
  * `applyMigrations()` runs them and records them in the same `d1_migrations` table.
  */

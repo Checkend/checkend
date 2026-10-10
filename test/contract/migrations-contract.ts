@@ -20,7 +20,7 @@ const tableExists = async (db: Db, name: string) =>
 	null;
 
 /**
- * The migrator must behave the same on every `Db` adapter (D16). `repoMigrations` is the
+ * The migrator must behave the same on every `Db` adapter. `repoMigrations` is the
  * real set from `migrations/`; it must apply cleanly on each database.
  */
 export function migrationsContract(
