@@ -28,18 +28,27 @@ ${values.map(
 
 const plain = (values: string[]) => values.map((value) => ({ value, label: value }));
 
+/** The "last seen" filter: values of the API `since` parameter. */
+export const SINCE_CHOICES = [
+	["1h", "Last hour"],
+	["24h", "Last 24 hours"],
+	["7d", "Last 7 days"],
+	["30d", "Last 30 days"],
+] as const;
+
 /** The inbox: filters (a GET form, works without JavaScript), then the issue list. */
 export function inboxView(
 	query: InboxQuery,
 	facets: InboxFacets,
-	page: InboxPage,
+	result: InboxPage | "project_not_found",
 	now: Date,
 ): Html {
+	const page = result === "project_not_found" ? { data: [], next_cursor: null } : result;
 	const filtered = Boolean(
-		query.project || query.status || query.environment || query.release || query.q,
+		query.project || query.status || query.environment || query.release || query.since || query.q,
 	);
 	const next = new URLSearchParams();
-	for (const key of ["project", "status", "environment", "release", "q"] as const) {
+	for (const key of ["project", "status", "environment", "release", "since", "q"] as const) {
 		const value = query[key];
 		if (value) next.set(key, value);
 	}
@@ -58,14 +67,23 @@ export function inboxView(
   ${select("status", "Status", plain([...ISSUE_STATUSES]), query.status, "Any status")}
   ${select("environment", "Environment", plain(facets.environments), query.environment, "All environments")}
   ${select("release", "Release", plain(facets.releases), query.release, "All releases")}
+  ${select(
+		"since",
+		"Last seen",
+		SINCE_CHOICES.map(([value, label]) => ({ value, label })),
+		query.since,
+		"Any time",
+	)}
   <div class="actions"><button class="btn" type="submit">Filter</button>${filtered ? h`<a href="/issues">Clear</a>` : ""}</div>
 </form>
 ${
 	page.data.length === 0
 		? h`<div class="empty">${
-				filtered
-					? h`<h2>No issues match these filters</h2><p><a href="/issues">Show all issues</a></p>`
-					: h`<h2>No issues yet</h2><p>Connect an app: create a project, then add its DSN to your Sentry SDK.</p><p><a class="btn" href="/projects">Go to projects</a></p>`
+				result === "project_not_found"
+					? h`<h2>No project ${t(query.project, 60)}</h2><p><a href="/projects">Show the projects</a></p>`
+					: filtered
+						? h`<h2>No issues match these filters</h2><p><a href="/issues">Show all issues</a></p>`
+						: h`<h2>No issues yet</h2><p>Connect an app: create a project, then add its DSN to your Sentry SDK.</p><p><a class="btn" href="/projects">Go to projects</a></p>`
 			}</div>`
 		: h`<table class="issues">
 <caption class="sr">Issues, most recently seen first</caption>

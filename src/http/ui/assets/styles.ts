@@ -94,7 +94,7 @@ input:hover, select:hover { border-color: var(--muted); }
 .status-line { min-height: 1.5em; font-size: 14px; margin: 12px 0 0; }
 
 /* Filters */
-.filters { display: grid; grid-template-columns: minmax(180px, 2fr) repeat(4, minmax(120px, 1fr)) auto; gap: 10px; align-items: end; margin-bottom: 18px; }
+.filters { display: grid; grid-template-columns: minmax(180px, 2fr) repeat(5, minmax(110px, 1fr)) auto; gap: 10px; align-items: end; margin-bottom: 18px; }
 .filters .actions { display: flex; gap: 8px; align-items: center; }
 .filters .actions a { font-size: 14px; color: var(--muted); }
 

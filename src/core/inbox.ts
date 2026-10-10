@@ -1,5 +1,5 @@
 import { type Db, sql } from "../ports/db.ts";
-import { decodeCursor, encodeCursor, type ISSUE_STATUSES, type IssueRow } from "./issues.ts";
+import { decodeCursor, type ISSUE_STATUSES, type IssueRow, listIssues } from "./issues.ts";
 
 /**
  * Reads for the web UI inbox. Same rules as the API: the project ID is the public ID, and
@@ -11,6 +11,8 @@ export interface InboxQuery {
 	status?: (typeof ISSUE_STATUSES)[number] | undefined;
 	environment?: string | undefined;
 	release?: string | undefined;
+	/** Last seen within a duration (24h, 7d) or after an ISO time. */
+	since?: string | undefined;
 	/** Text in the title or the culprit. */
 	q?: string | undefined;
 	limit: number;
@@ -22,59 +24,38 @@ export interface InboxPage {
 	next_cursor: string | null;
 }
 
-const likePattern = (text: string) => `%${text.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
-
-export async function listInbox(db: Db, query: InboxQuery): Promise<InboxPage> {
-	const [lastSeen, lastId] = (query.cursor ? decodeCursor(query.cursor) : null) ?? [
-		"9999",
-		Number.MAX_SAFE_INTEGER,
-	];
-	const project = query.project ?? null;
-	const environment = query.environment ?? null;
-	const release = query.release ?? null;
-	const q = query.q ? likePattern(query.q) : null;
-	const rows = await db.all<IssueRow>({
-		sql: `SELECT i.id, p.public_id AS project_id, p.name AS project_name, p.slug AS project_slug,
-				i.title, i.culprit, i.type, i.level, i.status, i.times_seen, i.first_seen, i.last_seen,
-				i.first_release, i.last_release
-			FROM issues i JOIN projects p ON p.id = i.project_id
-			WHERE (? IS NULL OR p.public_id = ? OR p.slug = ?)
-				AND (? IS NULL OR i.status = ?)
-				AND (? IS NULL OR EXISTS (SELECT 1 FROM events e WHERE e.issue_id = i.id AND e.environment = ?))
-				AND (? IS NULL OR i.first_release = ? OR i.last_release = ?
-					OR EXISTS (SELECT 1 FROM events e WHERE e.issue_id = i.id AND e.release = ?))
-				AND (? IS NULL OR i.title LIKE ? ESCAPE '\\' OR i.culprit LIKE ? ESCAPE '\\')
-				AND (i.last_seen < ? OR (i.last_seen = ? AND i.id < ?))
-			ORDER BY i.last_seen DESC, i.id DESC LIMIT ?`,
-		params: [
-			project,
-			project && /^\d{10}$/.test(project) ? Number(project) : null,
-			project,
-			query.status ?? null,
-			query.status ?? null,
-			environment,
-			environment,
-			release,
-			release,
-			release,
-			release,
-			q,
-			q,
-			q,
-			lastSeen,
-			lastSeen,
-			lastId,
-			query.limit + 1,
-		],
-	});
-	const page = rows.slice(0, query.limit);
-	const last = page.at(-1);
+/** The API issue list (same filters and cursor), with the project name of each issue. */
+export async function listInbox(
+	db: Db,
+	query: InboxQuery,
+	now: Date,
+): Promise<InboxPage | "project_not_found"> {
+	const after = query.cursor ? decodeCursor(query.cursor) : null;
+	const page = await listIssues(
+		db,
+		{
+			project: query.project,
+			status: query.status,
+			environment: query.environment,
+			release: query.release,
+			since: query.since,
+			search: query.q,
+			limit: query.limit,
+		},
+		after,
+		now,
+	);
+	if (page === "project_not_found") return page;
+	const projects = await db.all<{ id: number; name: string }>(
+		sql`SELECT public_id AS id, name FROM projects`,
+	);
+	const names = new Map(projects.map((p) => [p.id, p.name]));
 	return {
-		data: page,
-		next_cursor:
-			rows.length > query.limit && last
-				? encodeCursor(String(last.last_seen), Number(last.id))
-				: null,
+		...page,
+		data: page.data.map((issue) => ({
+			...issue,
+			project_name: names.get(Number(issue.project_id)) ?? null,
+		})),
 	};
 }
 

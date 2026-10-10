@@ -36,12 +36,15 @@ async function seeded() {
 	return { ...t, shop, api };
 }
 
-const titles = (page: InboxPage) => page.data.map((i) => i.title);
+const titles = (page: InboxPage | "project_not_found") =>
+	page === "project_not_found" ? [page] : page.data.map((i) => i.title);
+const NOW = new Date("2026-10-10T12:05:00Z");
 
 describe("inbox", () => {
 	it("lists issues by last seen, with counts and the public project ID", async () => {
 		const { ports, shop, api } = await seeded();
-		const page = await listInbox(ports.db, { limit: 25 });
+		const page = await listInbox(ports.db, { limit: 25 }, NOW);
+		if (page === "project_not_found") throw new Error(page);
 		expect(titles(page)).toEqual([
 			"DatabaseError: deadlock found",
 			expect.stringMatching(/^RangeError/),
@@ -59,7 +62,7 @@ describe("inbox", () => {
 	it("filters by project (public ID or slug), status, environment, release and text", async () => {
 		const { ports, shop } = await seeded();
 		const query = async (filters: Omit<InboxQuery, "limit">) =>
-			titles(await listInbox(ports.db, { limit: 25, ...filters }));
+			titles(await listInbox(ports.db, { limit: 25, ...filters }, NOW));
 		expect(await query({ project: String(shop.id) })).toHaveLength(2);
 		expect(await query({ project: "api" })).toEqual(["DatabaseError: deadlock found"]);
 		expect(await query({ status: "resolved" })).toEqual([]);
@@ -67,14 +70,18 @@ describe("inbox", () => {
 		expect(await query({ release: "shop@1.1.0" })).toEqual([expect.stringMatching(/^TypeError/)]);
 		expect(await query({ q: "deadlock" })).toEqual(["DatabaseError: deadlock found"]);
 		expect(await query({ q: "100%_" })).toEqual([]);
+		expect(await query({ since: "3m" })).toEqual(["DatabaseError: deadlock found"]);
+		expect(await query({ project: "no-such-project" })).toEqual(["project_not_found"]);
 	});
 
 	it("pages with a cursor", async () => {
 		const { ports } = await seeded();
-		const first = await listInbox(ports.db, { limit: 2 });
+		const first = await listInbox(ports.db, { limit: 2 }, NOW);
+		if (first === "project_not_found") throw new Error(first);
 		expect(first.data).toHaveLength(2);
 		expect(first.next_cursor).not.toBeNull();
-		const second = await listInbox(ports.db, { limit: 2, cursor: first.next_cursor ?? "" });
+		const second = await listInbox(ports.db, { limit: 2, cursor: first.next_cursor ?? "" }, NOW);
+		if (second === "project_not_found") throw new Error(second);
 		expect(second.data).toHaveLength(1);
 		expect(second.next_cursor).toBeNull();
 	});
@@ -89,7 +96,9 @@ describe("inbox", () => {
 
 	it("counts tag values over the stored events of an issue", async () => {
 		const { ports } = await seeded();
-		const typeError = (await listInbox(ports.db, { limit: 25, q: "TypeError" })).data[0];
+		const page = await listInbox(ports.db, { limit: 25, q: "TypeError" }, NOW);
+		if (page === "project_not_found") throw new Error(page);
+		const typeError = page.data[0];
 		const tags = await issueTags(ports.db, Number(typeError?.id));
 		expect(tags).toContainEqual({ key: "region", value: "us-east", count: 2 });
 		expect(tags).toContainEqual({ key: "environment", value: "production", count: 2 });

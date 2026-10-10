@@ -49,7 +49,7 @@ import {
 } from "./security.ts";
 import { loginView, notFoundView, setupClosedView, setupView } from "./views/auth.ts";
 import { type EventDetail, eventView } from "./views/event.ts";
-import { inboxView, issueView } from "./views/issues.ts";
+import { inboxView, issueView, SINCE_CHOICES } from "./views/issues.ts";
 import { PLATFORMS, projectsView, projectView } from "./views/projects.ts";
 import { type MemberRow, settingsView } from "./views/settings.ts";
 
@@ -182,6 +182,7 @@ export function uiRoutes(app: Hono<AppEnv>, state: IngestState): void {
 		status: v.optional(v.union([v.literal(""), v.picklist(ISSUE_STATUSES)])),
 		environment: v.optional(v.pipe(v.string(), v.maxLength(200))),
 		release: v.optional(v.pipe(v.string(), v.maxLength(200))),
+		since: v.optional(v.picklist(["", ...SINCE_CHOICES.map(([value]) => value)])),
 		q: v.optional(v.pipe(v.string(), v.trim(), v.maxLength(200))),
 		cursor: v.optional(v.pipe(v.string(), v.maxLength(200))),
 	});
@@ -192,19 +193,20 @@ export function uiRoutes(app: Hono<AppEnv>, state: IngestState): void {
 		if (!parsed.success || (cursor && !decodeCursor(cursor))) {
 			return render(c, "Issues", "issues", notFoundView(), 400);
 		}
-		const { project, status, environment, release, q } = parsed.output;
+		const { project, status, environment, release, since, q } = parsed.output;
 		const query = {
 			project: project || undefined,
 			status: status || undefined,
 			environment: environment || undefined,
 			release: release || undefined,
+			since: since || undefined,
 			q: q || undefined,
 			cursor: cursor || undefined,
 			limit: 50,
 		};
 		const [facets, inbox] = await Promise.all([
 			inboxFacets(c.env.ports.db),
-			listInbox(c.env.ports.db, query),
+			listInbox(c.env.ports.db, query, now(c)),
 		]);
 		return render(c, "Issues", "issues", inboxView(query, facets, inbox, now(c)));
 	});

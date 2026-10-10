@@ -130,6 +130,8 @@ describe("inbox", () => {
 		const byEnvironment = (await d.page("/issues?environment=staging")).html;
 		expect(byEnvironment).not.toContain("TypeError: cart");
 		expect(byEnvironment).toMatch(/<option value="staging" selected>/);
+		const recent = (await d.page("/issues?since=1h")).html;
+		expect(recent).toMatch(/<option value="1h" selected>/);
 		const bySearch = (await d.page("/issues?q=cart")).html;
 		expect(bySearch).toContain("TypeError: cart");
 		expect(bySearch).not.toContain("RangeError: page");
@@ -141,6 +143,9 @@ describe("inbox", () => {
 		expect((await d.page("/issues?q=nothing-matches")).html).toContain("No issues match");
 		expect((await d.page("/issues?status=exploded")).response.status).toBe(400);
 		expect((await d.page("/issues?cursor=%%%")).response.status).toBe(400);
+		expect((await d.page("/issues?since=forever")).response.status).toBe(400);
+		const unknown = await d.page("/issues?project=no-such-project");
+		expect(unknown.html).toContain("No project no-such-project");
 	});
 });
 
