@@ -3,7 +3,9 @@ import { logo } from "../layout.ts";
 
 const noScript = h`<p class="notice" data-no-js>Passkeys need JavaScript. Turn it on for this site.</p>`;
 
-export function loginView(): Html {
+const GUIDE_URL = "https://github.com/Checkend/checkend/blob/main/guides/web-ui.md";
+
+export function loginView({ devLogin }: { devLogin: boolean }): Html {
 	return h`<div class="auth">
 ${logo("/login")}
 <h1>Sign in</h1>
@@ -11,18 +13,38 @@ ${logo("/login")}
 ${noScript}
 <button class="btn" type="button" data-passkey-signin data-js-only hidden>Sign in with a passkey</button>
 <p class="status-line" id="auth-status" role="status" aria-live="polite"></p>
+<p class="hint">No passkey for this install? Ask the admin to add you.</p>
+${devLogin ? h`<p class="hint">Development mode: <a href="/dev/login">sign in as the local developer</a>.</p>` : ""}
 </div>`;
 }
 
-export function setupView(): Html {
+/** The notice for a browser without a valid setup link. */
+const setupMissing = (hidden: boolean) =>
+	h`<div class="notice" data-setup-missing${hidden ? h` hidden` : ""}>
+<p>This install is not set up yet. Open the setup link from your deploy output, or run <code>npm run setup-link</code>.</p>
+<p><a href="${GUIDE_URL}">Read the web UI guide</a></p>
+</div>`;
+
+/**
+ * "code": the setup link carries the code in the URL fragment; the client script reads it.
+ * "dev": development mode on localhost, no code. "missing": SETUP_CODE is not set.
+ */
+export function setupView(mode: "code" | "dev" | "missing"): Html {
+	if (mode === "missing") {
+		return h`<div class="auth">
+${logo("/setup")}
+<h1>Set up Checkend</h1>
+${setupMissing(false)}
+</div>`;
+	}
 	return h`<div class="auth">
 ${logo("/setup")}
 <h1>Set up Checkend</h1>
-<p>Make the first member of this install. You need the <code>ADMIN_TOKEN</code> secret of the Worker once. After this step, setup closes, and you sign in with your passkey.</p>
+<p>Make the first member of this install. After this step, setup closes, and you sign in with your passkey.</p>
 ${noScript}
-<form data-passkey-setup data-js-only hidden>
+${mode === "code" ? setupMissing(true) : ""}
+<form data-passkey-setup${mode === "code" ? h` data-needs-code` : ""} data-js-only hidden>
 <div class="field"><label for="s-name">Your name</label><input id="s-name" type="text" name="name" required maxlength="100" autocomplete="name"></div>
-<div class="field"><label for="s-token">Admin token</label><input id="s-token" type="password" name="token" required autocomplete="off"><p class="hint">Checkend does not store it. It only checks it.</p></div>
 <button class="btn" type="submit">Create a passkey</button>
 </form>
 <p class="status-line" id="auth-status" role="status" aria-live="polite"></p>

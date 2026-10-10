@@ -6,7 +6,7 @@
 export const CLIENT_SCRIPT = `"use strict";
 (function () {
   var MESSAGES = {
-    invalid_token: "The admin token is not correct.",
+    invalid_code: "This setup link is not valid. Use the newest link, or run npm run setup-link again.",
     invalid_name: "Enter your name (1 to 100 characters).",
     setup_closed: "Setup is closed. Sign in with your passkey.",
     invalid_credential: "This passkey did not work. Try again.",
@@ -107,15 +107,23 @@ export const CLIENT_SCRIPT = `"use strict";
       .catch(failure(statusEl, button));
   }
 
+  // The setup link carries the code in the URL fragment: browsers never send a fragment to a
+  // server, so it is not in logs or in a Referer. Read it once, remove it from the address bar,
+  // and send it in the request body.
+  var setupCode = "";
+  if (document.querySelector("[data-passkey-setup]") && location.hash.length > 1) {
+    setupCode = location.hash.slice(1);
+    history.replaceState(null, "", location.pathname + location.search);
+  }
+
   function setUp(form) {
     var statusEl = document.getElementById("auth-status");
     var button = form.querySelector("button[type=submit]");
     if (!supported()) return say(statusEl, "unsupported");
-    var token = form.elements.namedItem("token").value;
     var name = form.elements.namedItem("name").value;
     button.disabled = true;
     say(statusEl, "", "Waiting for your passkey…");
-    post("/setup/options", { token: token, name: name })
+    post("/setup/options", { code: setupCode, name: name })
       .then(function (o) {
         return navigator.credentials.create({
           publicKey: {
@@ -133,7 +141,7 @@ export const CLIENT_SCRIPT = `"use strict";
       })
       .then(function (cred) {
         return post("/setup/verify", {
-          token: token,
+          code: setupCode,
           response: {
             id: cred.id,
             rawId: toText(cred.rawId),
@@ -179,5 +187,12 @@ export const CLIENT_SCRIPT = `"use strict";
 
   document.querySelectorAll("[data-js-only]").forEach(function (el) { el.hidden = false; });
   document.querySelectorAll("[data-no-js]").forEach(function (el) { el.hidden = true; });
+
+  // A setup page that needs a code, opened without the link: show how to get the link.
+  var setupForm = document.querySelector("[data-passkey-setup][data-needs-code]");
+  if (setupForm && !setupCode) {
+    setupForm.hidden = true;
+    document.querySelectorAll("[data-setup-missing]").forEach(function (el) { el.hidden = false; });
+  }
 })();
 `;

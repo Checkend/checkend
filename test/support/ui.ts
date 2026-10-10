@@ -5,12 +5,15 @@ import type { Config } from "../../src/ports/config.ts";
 import { testPorts } from "./node-ports.ts";
 
 export const UI_ADMIN_TOKEN = "ui-admin-token-0123456789";
+export const UI_SETUP_CODE = "ui-setup-code-0123456789abcdefghijklmnopq";
 export const UI_ORIGIN = "https://checkend.test";
 export const SESSION_COOKIE = "__Host-checkend_session";
 
 /** The app with a test database, plus helpers to call UI routes as a browser would. */
 export async function uiApp(config: Partial<Config> = {}, origin = UI_ORIGIN) {
-	const t = await testPorts({ config: { adminToken: UI_ADMIN_TOKEN, ...config } });
+	const t = await testPorts({
+		config: { adminToken: UI_ADMIN_TOKEN, setupCode: UI_SETUP_CODE, ...config },
+	});
 	const app = createApp({ state: new IngestState() });
 
 	const request = (path: string, init: RequestInit & { session?: string } = {}) => {

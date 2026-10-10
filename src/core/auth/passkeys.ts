@@ -10,12 +10,14 @@ import {
 } from "@simplewebauthn/server";
 import { type Db, sql } from "../../ports/db.ts";
 import type { Ports } from "../../ports/index.ts";
-import { BOOTSTRAP_ADMIN } from "../tokens.ts";
+import type { Actor } from "../tokens.ts";
 import { type NewSession, sessionStatements, sha256Hex } from "./sessions.ts";
 
 /**
- * Passkeys (WebAuthn). The first member signs up through a one-time setup that needs the
- * ADMIN_TOKEN secret; setup closes for good when a member exists. Verification uses
+ * Passkeys (WebAuthn). The first member signs up through a one-time setup link: it carries the
+ * SETUP_CODE secret in the URL fragment, and the browser sends the code in the request body.
+ * A development request (CHECKEND_DEV on localhost) needs no code. Setup closes for good when a
+ * member exists. Verification uses
  * SimpleWebAuthn, which needs only Web Crypto, so it runs the same in workerd and on Node.
  */
 
@@ -25,7 +27,7 @@ export const CHALLENGE_TTL_MS = 5 * 60_000;
 /** ES256, EdDSA, RS256. */
 const ALGORITHMS = [-7, -8, -257];
 
-export type AuthError = "setup_closed" | "invalid_token" | "invalid_name" | "invalid_credential";
+export type AuthError = "setup_closed" | "invalid_code" | "invalid_name" | "invalid_credential";
 export type AuthResult<T> = { ok: true; value: T } | { ok: false; error: AuthError };
 
 const fail = (error: AuthError): { ok: false; error: AuthError } => ({ ok: false, error });
@@ -47,9 +49,21 @@ export async function isSetupOpen(db: Db): Promise<boolean> {
 	return (await db.first(sql`SELECT 1 AS found FROM members LIMIT 1`)) === null;
 }
 
-async function tokenMatches(adminToken: string | null, given: unknown): Promise<boolean> {
-	if (!adminToken || typeof given !== "string" || given.length > 1024) return false;
-	const [a, b] = await Promise.all([sha256Hex(given), sha256Hex(adminToken)]);
+/** Who does the setup, in the activity timeline. */
+const SETUP_ACTOR: Actor = { type: "system", id: null, name: "setup_link", scopes: [] };
+const DEV_SETUP_ACTOR: Actor = { type: "system", id: null, name: "development", scopes: [] };
+
+/** What a setup request carries. `devRequest`: CHECKEND_DEV and a direct localhost request. */
+interface SetupInput {
+	code: unknown;
+	devRequest?: boolean;
+}
+
+async function codeMatches(setupCode: string | null, input: SetupInput): Promise<boolean> {
+	if (input.devRequest === true) return true;
+	const given = input.code;
+	if (!setupCode || typeof given !== "string" || given.length > 1024) return false;
+	const [a, b] = await Promise.all([sha256Hex(given), sha256Hex(setupCode)]);
 	let difference = 0;
 	for (let i = 0; i < b.length; i++) difference |= a.charCodeAt(i) ^ b.charCodeAt(i);
 	return difference === 0;
@@ -95,14 +109,14 @@ function memberName(name: unknown): string | null {
 	return trimmed.length >= 1 && trimmed.length <= 100 ? trimmed : null;
 }
 
-/** Step 1 of setup: checks the ADMIN_TOKEN, then returns the passkey creation options. */
+/** Step 1 of setup: checks the setup code, then returns the passkey creation options. */
 export async function setupOptions(
 	{ db, clock, config }: Pick<Ports, "db" | "clock" | "config">,
 	rp: RelyingParty,
-	input: { token: unknown; name: unknown },
+	input: SetupInput & { name: unknown },
 ): Promise<AuthResult<PublicKeyCredentialCreationOptionsJSON>> {
 	if (!(await isSetupOpen(db))) return fail("setup_closed");
-	if (!(await tokenMatches(config.adminToken, input.token))) return fail("invalid_token");
+	if (!(await codeMatches(config.setupCode, input))) return fail("invalid_code");
 	const name = memberName(input.name);
 	if (!name) return fail("invalid_name");
 	const options = await generateRegistrationOptions({
@@ -145,9 +159,9 @@ function credentialShape(value: unknown): value is { id: string; response: objec
 export async function finishSetup(
 	{ db, clock, config }: Pick<Ports, "db" | "clock" | "config">,
 	rp: RelyingParty,
-	input: { token: unknown; response: unknown },
+	input: SetupInput & { response: unknown },
 ): Promise<AuthResult<NewSession>> {
-	if (!(await tokenMatches(config.adminToken, input.token))) return fail("invalid_token");
+	if (!(await codeMatches(config.setupCode, input))) return fail("invalid_code");
 	if (!(await isSetupOpen(db))) return fail("setup_closed");
 	if (!credentialShape(input.response)) return fail("invalid_credential");
 	const now = clock.now();
@@ -176,6 +190,7 @@ export async function finishSetup(
 
 	const nowIso = now.toISOString();
 	const { credential } = info;
+	const actor = input.devRequest === true ? DEV_SETUP_ACTOR : SETUP_ACTOR;
 	const { session, statements } = await sessionStatements(member.userHandle, now);
 	const [inserted] = await db.batch([
 		sql`INSERT INTO members (name, user_handle, created_at)
@@ -186,7 +201,7 @@ export async function finishSetup(
 				${credential.transports?.join(" ") ?? null}, ${info.credentialBackedUp ? 1 : 0}, ${nowIso}
 			FROM members WHERE user_handle = ${member.userHandle}`,
 		sql`INSERT INTO activity (at, actor_type, actor_id, actor_name, action, target_type, target_id, data)
-			SELECT ${nowIso}, ${BOOTSTRAP_ADMIN.type}, ${BOOTSTRAP_ADMIN.id}, ${BOOTSTRAP_ADMIN.name},
+			SELECT ${nowIso}, ${actor.type}, ${actor.id}, ${actor.name},
 				${"member.setup"}, ${"member"}, id, ${JSON.stringify({ name: member.name })}
 			FROM members WHERE user_handle = ${member.userHandle}`,
 		...statements,

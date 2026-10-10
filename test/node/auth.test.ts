@@ -25,21 +25,19 @@ import { VirtualAuthenticator } from "../shared/virtual-authenticator.ts";
 import { testPorts } from "../support/node-ports.ts";
 
 const ADMIN = "setup-admin-token-0123456789";
+const CODE = "setup-code-0123456789abcdefghijklmnopqrstu";
+const config = { adminToken: ADMIN, setupCode: CODE };
 const rp = relyingPartyFor("https://checkend.example/setup");
 
-passkeyContract(
-	"SQLite (Node)",
-	async () => (await testPorts({ config: { adminToken: ADMIN } })).ports,
-	ADMIN,
-);
+passkeyContract("SQLite (Node)", async () => (await testPorts({ config })).ports, CODE);
 
 async function setUp(name = "Simon") {
-	const t = await testPorts({ config: { adminToken: ADMIN } });
+	const t = await testPorts({ config });
 	const device = new VirtualAuthenticator(rp.origin);
-	const options = await setupOptions(t.ports, rp, { token: ADMIN, name });
+	const options = await setupOptions(t.ports, rp, { code: CODE, name });
 	if (!options.ok) throw new Error(options.error);
 	const created = await finishSetup(t.ports, rp, {
-		token: ADMIN,
+		code: CODE,
 		response: await device.create(options.value),
 	});
 	if (!created.ok) throw new Error(created.error);
@@ -47,54 +45,77 @@ async function setUp(name = "Simon") {
 }
 
 describe("setup (first member)", () => {
-	it("is open only while no member exists, and closes for good", async () => {
+	it("is open only while no member exists, and the code then does nothing", async () => {
 		const { ports } = await setUp();
 		expect(await isSetupOpen(ports.db)).toBe(false);
-		expect(await setupOptions(ports, rp, { token: ADMIN, name: "Mallory" })).toEqual({
+		expect(await setupOptions(ports, rp, { code: CODE, name: "Mallory" })).toEqual({
 			ok: false,
 			error: "setup_closed",
 		});
 	});
 
-	it("rejects a wrong token, and every token when ADMIN_TOKEN is not set", async () => {
-		const { ports } = await testPorts({ config: { adminToken: ADMIN } });
-		expect(await setupOptions(ports, rp, { token: "wrong", name: "A" })).toEqual({
+	it("rejects a wrong or missing code, and every code when SETUP_CODE is not set", async () => {
+		const { ports } = await testPorts({ config });
+		for (const code of ["wrong", "", undefined, null, 42, `${CODE}x`, CODE.slice(0, -1)]) {
+			expect(await setupOptions(ports, rp, { code, name: "A" }), String(code)).toEqual({
+				ok: false,
+				error: "invalid_code",
+			});
+		}
+		const unset = await testPorts({ config });
+		expect(await setupOptions(unset.ports, rp, { code: "", name: "A" })).toEqual({
 			ok: false,
-			error: "invalid_token",
-		});
-		const unset = await testPorts();
-		expect(await setupOptions(unset.ports, rp, { token: "", name: "A" })).toEqual({
-			ok: false,
-			error: "invalid_token",
+			error: "invalid_code",
 		});
 	});
 
-	it("checks the token again when it finishes", async () => {
-		const { ports } = await testPorts({ config: { adminToken: ADMIN } });
+	it("does not accept the ADMIN_TOKEN as a setup code", async () => {
+		const { ports } = await testPorts({ config });
+		expect(await setupOptions(ports, rp, { code: ADMIN, name: "A" })).toEqual({
+			ok: false,
+			error: "invalid_code",
+		});
+	});
+
+	it("needs no code for a development request (localhost, CHECKEND_DEV)", async () => {
+		const { ports } = await testPorts({ config });
 		const device = new VirtualAuthenticator(rp.origin);
-		const options = await setupOptions(ports, rp, { token: ADMIN, name: "A" });
+		const options = await setupOptions(ports, rp, { code: undefined, name: "A", devRequest: true });
+		if (!options.ok) throw new Error(options.error);
+		const created = await finishSetup(ports, rp, {
+			code: undefined,
+			response: await device.create(options.value),
+			devRequest: true,
+		});
+		expect(created.ok).toBe(true);
+	});
+
+	it("checks the code again when it finishes", async () => {
+		const { ports } = await testPorts({ config });
+		const device = new VirtualAuthenticator(rp.origin);
+		const options = await setupOptions(ports, rp, { code: CODE, name: "A" });
 		if (!options.ok) throw new Error(options.error);
 		const result = await finishSetup(ports, rp, {
-			token: "wrong",
+			code: "wrong",
 			response: await device.create(options.value),
 		});
-		expect(result).toEqual({ ok: false, error: "invalid_token" });
+		expect(result).toEqual({ ok: false, error: "invalid_code" });
 		expect(await isSetupOpen(ports.db)).toBe(true);
 	});
 
 	it("creates only one member when two setups race", async () => {
-		const { ports } = await testPorts({ config: { adminToken: ADMIN } });
+		const { ports } = await testPorts({ config });
 		const a = new VirtualAuthenticator(rp.origin);
 		const b = new VirtualAuthenticator(rp.origin);
-		const optionsA = await setupOptions(ports, rp, { token: ADMIN, name: "A" });
-		const optionsB = await setupOptions(ports, rp, { token: ADMIN, name: "B" });
+		const optionsA = await setupOptions(ports, rp, { code: CODE, name: "A" });
+		const optionsB = await setupOptions(ports, rp, { code: CODE, name: "B" });
 		if (!optionsA.ok || !optionsB.ok) throw new Error("options");
 		const first = await finishSetup(ports, rp, {
-			token: ADMIN,
+			code: CODE,
 			response: await a.create(optionsA.value),
 		});
 		const second = await finishSetup(ports, rp, {
-			token: ADMIN,
+			code: CODE,
 			response: await b.create(optionsB.value),
 		});
 		expect(first.ok).toBe(true);
@@ -104,20 +125,20 @@ describe("setup (first member)", () => {
 	});
 
 	it("requires user verification", async () => {
-		const { ports } = await testPorts({ config: { adminToken: ADMIN } });
+		const { ports } = await testPorts({ config });
 		const device = new VirtualAuthenticator(rp.origin);
 		device.userVerified = false;
-		const options = await setupOptions(ports, rp, { token: ADMIN, name: "A" });
+		const options = await setupOptions(ports, rp, { code: CODE, name: "A" });
 		if (!options.ok) throw new Error(options.error);
 		expect(
-			await finishSetup(ports, rp, { token: ADMIN, response: await device.create(options.value) }),
+			await finishSetup(ports, rp, { code: CODE, response: await device.create(options.value) }),
 		).toEqual({ ok: false, error: "invalid_credential" });
 	});
 
 	it("writes the setup to the activity timeline", async () => {
 		const { ports } = await setUp();
 		expect(await ports.db.all(sql`SELECT actor_type, action, target_type FROM activity`)).toEqual([
-			{ actor_type: "admin_token", action: "member.setup", target_type: "member" },
+			{ actor_type: "system", action: "member.setup", target_type: "member" },
 		]);
 	});
 });

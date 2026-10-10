@@ -61,6 +61,7 @@ describe("GET /health", () => {
 			version: pkg.version,
 			migrations: { level: Number(latest?.slice(0, 4)), latest, applied: migrations.length },
 			ingest: { mode: "full", write_failures_today: 0, retry_after_seconds: 0 },
+			setup_open: true,
 			time: "2026-10-10T12:00:00.000Z",
 		});
 	});
@@ -70,6 +71,7 @@ describe("GET /health", () => {
 		expect(status).toBe(200);
 		expect(body.migrations).toEqual({ level: 0, latest: null, applied: 0 });
 		expect(body.ingest).toBeNull();
+		expect(body.setup_open).toBeNull();
 	});
 
 	it("shows budget mode and write failures", async () => {
@@ -95,6 +97,7 @@ describe("GET /health", () => {
 			version: pkg.version,
 			migrations: null,
 			ingest: null,
+			setup_open: null,
 			time: "2026-10-10T12:00:00.000Z",
 		});
 		expect(JSON.stringify(body)).not.toContain("secret");

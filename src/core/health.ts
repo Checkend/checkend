@@ -1,4 +1,5 @@
 import type { Ports } from "../ports/index.ts";
+import { isSetupOpen } from "./auth/passkeys.ts";
 import type { IngestState } from "./ingest/state.ts";
 import { ingestStatus } from "./ingest-status.ts";
 import { type MigrationLevel, migrationLevel } from "./migrations.ts";
@@ -17,6 +18,8 @@ export interface Health {
 		/** Ingest answers 429 for this many seconds, because D1 is overloaded. */
 		retry_after_seconds: number;
 	} | null;
+	/** True while the web UI has no member: the setup link works. Null when unknown. */
+	setup_open: boolean | null;
 	time: string;
 }
 
@@ -27,7 +30,14 @@ export async function checkHealth(ports: Ports, state: IngestState): Promise<Hea
 	try {
 		migrations = await migrationLevel(ports.db);
 	} catch {
-		return { status: "error", version: VERSION, migrations: null, ingest: null, time };
+		return {
+			status: "error",
+			version: VERSION,
+			migrations: null,
+			ingest: null,
+			setup_open: null,
+			time,
+		};
 	}
 	let ingest: Health["ingest"] = null;
 	try {
@@ -40,5 +50,11 @@ export async function checkHealth(ports: Ports, state: IngestState): Promise<Hea
 	} catch {
 		// No ingest tables yet (before migration 0002).
 	}
-	return { status: "ok", version: VERSION, migrations, ingest, time };
+	let setupOpen: boolean | null = null;
+	try {
+		setupOpen = await isSetupOpen(ports.db);
+	} catch {
+		// No members table yet (before migration 0004).
+	}
+	return { status: "ok", version: VERSION, migrations, ingest, setup_open: setupOpen, time };
 }

@@ -20,6 +20,7 @@ describe("readConfig", () => {
 			}),
 		).toEqual({
 			adminToken: "s3cret-admin-token-of-32-chars-x",
+			setupCode: null,
 			dailyRowLimit: 100000,
 			eventsPerIssue: 20,
 			newIssuesPerHour: 5,

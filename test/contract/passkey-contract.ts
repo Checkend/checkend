@@ -13,12 +13,12 @@ import { VirtualAuthenticator } from "../shared/virtual-authenticator.ts";
 /**
  * Passkey setup and sign-in with a software authenticator. WebAuthn verification must give
  * the same result in workerd and on Node (Web Crypto only). `makePorts` returns ports with an
- * empty, migrated database and ADMIN_TOKEN = `adminToken`.
+ * empty, migrated database and SETUP_CODE = `setupCode`.
  */
 export function passkeyContract(
 	name: string,
 	makePorts: () => Promise<Ports>,
-	adminToken: string,
+	setupCode: string,
 ): void {
 	describe(`passkeys: ${name}`, () => {
 		it("sets up the first member, signs in, and rejects a replay and a wrong origin", async () => {
@@ -26,10 +26,10 @@ export function passkeyContract(
 			const rp = relyingPartyFor("https://checkend.example/setup");
 			const device = new VirtualAuthenticator(rp.origin);
 
-			const options = await setupOptions(ports, rp, { token: adminToken, name: "Simon" });
+			const options = await setupOptions(ports, rp, { code: setupCode, name: "Simon" });
 			if (!options.ok) throw new Error(options.error);
 			const created = await finishSetup(ports, rp, {
-				token: adminToken,
+				code: setupCode,
 				response: await device.create(options.value),
 			});
 			if (!created.ok) throw new Error(created.error);

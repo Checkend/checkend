@@ -8,20 +8,29 @@ import {
 	type RequestOptions,
 	VirtualAuthenticator,
 } from "../../shared/virtual-authenticator.ts";
-import { SESSION_COOKIE, sessionFrom, UI_ADMIN_TOKEN, uiApp } from "../../support/ui.ts";
+import {
+	SESSION_COOKIE,
+	sessionFrom,
+	UI_ADMIN_TOKEN,
+	UI_SETUP_CODE,
+	uiApp,
+} from "../../support/ui.ts";
 
-async function setUpWithPasskey() {
-	const ui = await uiApp();
-	const device = new VirtualAuthenticator(ui.origin);
-	const options = await ui.json("/setup/options", { token: UI_ADMIN_TOKEN, name: "Simon" });
+async function setUpWithPasskey(
+	ui?: Awaited<ReturnType<typeof uiApp>>,
+	code: unknown = UI_SETUP_CODE,
+) {
+	const app = ui ?? (await uiApp());
+	const device = new VirtualAuthenticator(app.origin);
+	const options = await app.json("/setup/options", { code, name: "Simon" });
 	expect(options.status).toBe(200);
-	const verify = await ui.json("/setup/verify", {
-		token: UI_ADMIN_TOKEN,
+	const verify = await app.json("/setup/verify", {
+		code,
 		response: await device.create((await options.json()) as CreationOptions),
 	});
 	expect(verify.status).toBe(200);
 	expect(await verify.json()).toEqual({ redirect: "/projects" });
-	return { ...ui, device, setupSession: sessionFrom(verify) };
+	return { ...app, device, setupSession: sessionFrom(verify) };
 }
 
 describe("setup over HTTP", () => {
@@ -34,7 +43,7 @@ describe("setup over HTTP", () => {
 		expect((await ui.request("/setup")).status).toBe(200);
 	});
 
-	it("registers the first passkey, signs in, and closes", async () => {
+	it("registers the first passkey with the setup code, signs in, and closes", async () => {
 		const ui = await setUpWithPasskey();
 		expect(ui.setupSession).not.toBeNull();
 		const page = await ui.request("/issues", { session: ui.setupSession ?? "" });
@@ -42,16 +51,118 @@ describe("setup over HTTP", () => {
 		const closed = await ui.request("/setup");
 		expect(closed.status).toBe(404);
 		expect(await closed.text()).toContain("Setup is closed");
-		const again = await ui.json("/setup/options", { token: UI_ADMIN_TOKEN, name: "Mallory" });
+		// The code works once: when a member exists, it does nothing.
+		const again = await ui.json("/setup/options", { code: UI_SETUP_CODE, name: "Mallory" });
 		expect(again.status).toBe(403);
 		expect(await again.json()).toEqual({ error: "setup_closed" });
 	});
 
-	it("rejects a wrong admin token", async () => {
+	it("rejects a wrong or missing setup code, and the ADMIN_TOKEN", async () => {
 		const ui = await uiApp();
-		const response = await ui.json("/setup/options", { token: "wrong", name: "A" });
+		for (const body of [
+			{ code: "wrong", name: "A" },
+			{ name: "A" },
+			{ code: UI_ADMIN_TOKEN, name: "A" },
+			{ token: UI_ADMIN_TOKEN, name: "A" },
+		]) {
+			const response = await ui.json("/setup/options", body);
+			expect(response.status, JSON.stringify(body)).toBe(403);
+			expect(await response.json()).toEqual({ error: "invalid_code" });
+		}
+	});
+
+	it("takes the code from the body only, never from the URL", async () => {
+		const ui = await uiApp();
+		const response = await ui.json(`/setup/options?code=${UI_SETUP_CODE}`, { name: "A" });
 		expect(response.status).toBe(403);
-		expect(await response.json()).toEqual({ error: "invalid_token" });
+		expect(await response.json()).toEqual({ error: "invalid_code" });
+	});
+
+	it("limits setup attempts per client", async () => {
+		const ui = await uiApp();
+		const headers = { origin: ui.origin, "cf-connecting-ip": "203.0.113.7" };
+		for (let i = 0; i < AUTH_ATTEMPT_LIMIT; i++) {
+			expect((await ui.json("/setup/options", { code: "x", name: "A" }, headers)).status).toBe(403);
+		}
+		const limited = await ui.json("/setup/options", { code: UI_SETUP_CODE, name: "A" }, headers);
+		expect(limited.status).toBe(429);
+	});
+
+	it("shows a name field and no secret field; the code comes from the link", async () => {
+		const ui = await uiApp();
+		const html = await (await ui.request("/setup")).text();
+		expect(html).toContain('name="name"');
+		expect(html).not.toContain('type="password"');
+		expect(html).not.toContain("ADMIN_TOKEN");
+		expect(html).toContain("data-needs-code");
+		expect(html).toContain("Open the setup link from your deploy output");
+		expect(html).toContain("npm run setup-link");
+		expect(html).toContain("https://github.com/Checkend/checkend/blob/main/guides/web-ui.md");
+	});
+
+	it("shows only the notice when SETUP_CODE is not set", async () => {
+		const ui = await uiApp({ setupCode: null });
+		const html = await (await ui.request("/setup")).text();
+		expect(html).not.toContain("data-passkey-setup");
+		expect(html).toContain("This install is not set up yet.");
+	});
+});
+
+describe("setup in development mode", () => {
+	it("needs no code on localhost", async () => {
+		const ui = await uiApp({ devMode: true, setupCode: null }, "http://localhost:8787");
+		const html = await (await ui.request("/setup")).text();
+		expect(html).toContain("data-passkey-setup");
+		expect(html).not.toContain("data-needs-code");
+		await setUpWithPasskey(ui, undefined);
+	});
+
+	it("needs the code through a proxy, on another host, or without the flag", async () => {
+		const cases = [
+			{
+				config: { devMode: true },
+				origin: "http://localhost:8787",
+				headers: { "x-forwarded-for": "203.0.113.5" },
+			},
+			{
+				config: { devMode: true },
+				origin: "http://localhost:8787",
+				headers: { "cf-connecting-ip": "203.0.113.5" },
+			},
+			{ config: { devMode: true }, origin: "https://checkend.example", headers: {} },
+			{ config: {}, origin: "http://localhost:8787", headers: {} },
+		];
+		for (const { config, origin, headers } of cases) {
+			const ui = await uiApp(config, origin);
+			const response = await ui.json("/setup/options", { name: "A" }, { origin, ...headers });
+			expect(response.status, JSON.stringify({ origin, headers })).toBe(403);
+			expect(await response.json()).toEqual({ error: "invalid_code" });
+		}
+	});
+});
+
+describe("sign-in page", () => {
+	it("tells a person without a passkey to ask the admin", async () => {
+		const ui = await setUpWithPasskey();
+		const html = await (await ui.request("/login")).text();
+		expect(html).toContain("No passkey for this install? Ask the admin to add you.");
+		expect(html).not.toContain('href="/dev/login"');
+	});
+
+	it("links to the development login in development mode only", async () => {
+		const ui = await setUpWithPasskey(await uiApp({ devMode: true }, "http://localhost:8787"));
+		expect(await (await ui.request("/login")).text()).toContain('href="/dev/login"');
+		const proxied = await ui.request("/login", { headers: { "x-forwarded-for": "203.0.113.5" } });
+		expect(await proxied.text()).not.toContain('href="/dev/login"');
+	});
+});
+
+describe("GET /health", () => {
+	it("says whether setup is open", async () => {
+		const ui = await uiApp();
+		expect(await (await ui.request("/health")).json()).toMatchObject({ setup_open: true });
+		await setUpWithPasskey(ui);
+		expect(await (await ui.request("/health")).json()).toMatchObject({ setup_open: false });
 	});
 });
 

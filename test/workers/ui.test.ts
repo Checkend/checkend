@@ -44,10 +44,10 @@ describe("web UI in the Worker (D1)", () => {
 		expect(first.status, await first.clone().text()).toBe(303);
 		expect(first.headers.get("location")).toBe("/setup");
 		const device = new VirtualAuthenticator(ORIGIN);
-		const options = await post("/setup/options", { token: env.ADMIN_TOKEN, name: "Simon" });
+		const options = await post("/setup/options", { code: env.SETUP_CODE, name: "Simon" });
 		expect(options.status).toBe(200);
 		const setup = await post("/setup/verify", {
-			token: env.ADMIN_TOKEN,
+			code: env.SETUP_CODE,
 			response: await device.create((await options.json()) as CreationOptions),
 		});
 		expect(setup.status).toBe(200);

@@ -5,6 +5,11 @@ export interface Config {
 	/** The admin bearer token for /v1. Null: the API rejects every request. */
 	adminToken: string | null;
 	/**
+	 * The one-time setup code (SETUP_CODE secret, made by `npm run setup-link`). The first member
+	 * needs it to set up the web UI. Null: setup needs development mode on localhost.
+	 */
+	setupCode: string | null;
+	/**
 	 * The D1 daily limit of rows written (100,000 on the Workers Free plan). Null: no limit.
 	 * Near the limit, ingest stores counters only (budget mode).
 	 */
@@ -52,6 +57,7 @@ export interface AiConfig {
 
 export const DEFAULT_CONFIG: Config = {
 	adminToken: null,
+	setupCode: null,
 	dailyRowLimit: null,
 	eventsPerIssue: 100,
 	newIssuesPerHour: 100,

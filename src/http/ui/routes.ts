@@ -88,7 +88,7 @@ export function uiRoutes(app: Hono<AppEnv>, state: IngestState): void {
 
 	app.get("/login", securityHeaders, async (c) => {
 		if (await isSetupOpen(c.env.ports.db)) return c.redirect("/setup", 303);
-		return c.html(page({ title: "Sign in", body: loginView() }));
+		return c.html(page({ title: "Sign in", body: loginView({ devLogin: isDevRequest(c) }) }));
 	});
 
 	/** Sign-in and setup attempts per client IP; answers 429 above the limit. */
@@ -127,12 +127,14 @@ export function uiRoutes(app: Hono<AppEnv>, state: IngestState): void {
 		if (!(await isSetupOpen(c.env.ports.db))) {
 			return c.html(page({ title: "Setup is closed", body: setupClosedView() }), 404);
 		}
-		return c.html(page({ title: "Set up", body: setupView() }));
+		const devRequest = isDevRequest(c);
+		const mode = devRequest ? "dev" : c.env.ports.config.setupCode ? "code" : "missing";
+		return c.html(page({ title: "Set up", body: setupView(mode) }));
 	});
 
 	const setupStatus = {
 		setup_closed: 403,
-		invalid_token: 403,
+		invalid_code: 403,
 		invalid_name: 400,
 		invalid_credential: 401,
 	} as const;
@@ -142,7 +144,8 @@ export function uiRoutes(app: Hono<AppEnv>, state: IngestState): void {
 		if (blocked) return blocked;
 		const input = await body(c);
 		const result = await setupOptions(c.env.ports, relyingPartyFor(c.req.url), {
-			token: input.token,
+			code: input.code,
+			devRequest: isDevRequest(c),
 			name: input.name,
 		});
 		if (!result.ok) return c.json({ error: result.error }, setupStatus[result.error]);
@@ -154,7 +157,8 @@ export function uiRoutes(app: Hono<AppEnv>, state: IngestState): void {
 		if (blocked) return blocked;
 		const input = await body(c);
 		const result = await finishSetup(c.env.ports, relyingPartyFor(c.req.url), {
-			token: input.token,
+			code: input.code,
+			devRequest: isDevRequest(c),
 			response: input.response,
 		});
 		if (!result.ok) return c.json({ error: result.error }, setupStatus[result.error]);
