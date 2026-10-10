@@ -5,6 +5,7 @@ declare global {
 	namespace Cloudflare {
 		interface Env {
 			ADMIN_TOKEN: string;
+			BLOBS: R2Bucket;
 			TEST_MIGRATIONS: Migration[];
 			TEST_D1_MIGRATIONS: D1Migration[];
 			TEST_SENTRY_FIXTURES: {

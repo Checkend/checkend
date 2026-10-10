@@ -2,6 +2,7 @@ import { readMigrations } from "../../src/adapters/node/migrations-fs.ts";
 import { openSqliteDb } from "../../src/adapters/node/sqlite-db.ts";
 import { type FixedClock, fixedClock } from "../../src/core/clock.ts";
 import { applyMigrations } from "../../src/core/migrations.ts";
+import { memoryBlobStore } from "../../src/ports/blob-store.ts";
 import { type Config, DEFAULT_CONFIG } from "../../src/ports/config.ts";
 import type { Ports } from "../../src/ports/index.ts";
 import { noRateLimit } from "../../src/ports/rate-limiter.ts";
@@ -35,6 +36,7 @@ export async function testPorts(
 		resolver: noResolver,
 		http: noNetwork,
 		notifyQueue: null,
+		blobs: memoryBlobStore(),
 		...overrides,
 		config: { ...DEFAULT_CONFIG, ...overrides.config },
 	};

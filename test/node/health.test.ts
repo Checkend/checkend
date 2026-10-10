@@ -30,6 +30,7 @@ const portsWith = (db: Db): Ports => ({
 	resolver: noResolver,
 	http: { send: async () => new Response(null, { status: 599 }) },
 	notifyQueue: null,
+	blobs: null,
 	config: DEFAULT_CONFIG,
 });
 

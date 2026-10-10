@@ -1,3 +1,4 @@
+import type { BlobStore } from "./blob-store.ts";
 import type { Clock } from "./clock.ts";
 import type { Config } from "./config.ts";
 import type { Db } from "./db.ts";
@@ -6,6 +7,7 @@ import type { HttpClient, NotifyQueue } from "./http.ts";
 import type { RateLimiter } from "./rate-limiter.ts";
 import type { Resolver } from "./resolver.ts";
 
+export type { BlobStore } from "./blob-store.ts";
 export type { Clock } from "./clock.ts";
 export type { Config } from "./config.ts";
 export type { Db } from "./db.ts";
@@ -30,4 +32,6 @@ export interface Ports {
 	http: HttpClient;
 	/** Starts webhook deliveries; null: deliveries run in `defer` and in the cron. */
 	notifyQueue: NotifyQueue | null;
+	/** Large values (source maps); null: no storage, so the features that need it are off. */
+	blobs: BlobStore | null;
 }

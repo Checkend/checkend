@@ -8,6 +8,8 @@ export default defineConfig(async () => ({
 		cloudflareTest({
 			wrangler: { configPath: "./wrangler.jsonc" },
 			miniflare: {
+				// The optional R2 bucket (BlobStore). Not in wrangler.jsonc: an install without it works.
+				r2Buckets: ["BLOBS"],
 				// Test-only bindings: the migration files, read here because workerd has no file system.
 				bindings: {
 					ADMIN_TOKEN: "workers-test-admin-token",

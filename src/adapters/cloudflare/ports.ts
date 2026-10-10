@@ -5,6 +5,7 @@ import { fetchClient } from "../../ports/http.ts";
 import type { Ports } from "../../ports/index.ts";
 import { noRateLimit, type RateLimiter } from "../../ports/rate-limiter.ts";
 import { d1Db } from "./d1-db.ts";
+import { r2BlobStore } from "./r2-blob-store.ts";
 import { dohResolver } from "./resolver.ts";
 
 /** Optional settings: Workers secrets (ADMIN_TOKEN) and vars. */
@@ -30,6 +31,8 @@ type WorkerEnv = Omit<Env, "INGEST_RATE_LIMITER"> &
 		// Optional binding: a queue that starts webhook deliveries. Without it, deliveries run
 		// after the response (waitUntil), and the cron retries them.
 		NOTIFY?: Pick<Queue<{ kind: "deliver" }>, "send">;
+		// Optional binding: an R2 bucket for source maps. Without it, source maps are off.
+		BLOBS?: Pick<R2Bucket, "put" | "get" | "delete">;
 	};
 
 const positiveInt = (value: string | undefined): number | undefined => {
@@ -79,6 +82,7 @@ export function cloudflarePorts(env: WorkerEnv, ctx: Pick<ExecutionContext, "wai
 		rateLimiter: rateLimiter(env.INGEST_RATE_LIMITER),
 		config: readConfig(env),
 		resolver: dohResolver,
+		blobs: env.BLOBS ? r2BlobStore(env.BLOBS) : null,
 		http: fetchClient,
 		notifyQueue: env.NOTIFY
 			? { send: async (message) => void (await env.NOTIFY?.send(message)) }
