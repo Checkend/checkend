@@ -19,7 +19,7 @@ export interface RetentionRun {
 }
 
 export async function runRetention(
-	ports: Pick<Ports, "db" | "config">,
+	ports: Pick<Ports, "db" | "config"> & Partial<Pick<Ports, "blobs">>,
 	now: Date,
 	options: { maxChunks?: number } = {},
 ): Promise<RetentionRun> {
@@ -32,12 +32,15 @@ export async function runRetention(
 
 	// Events: the oldest ids first (ids grow with time), then recount the issues they were in.
 	while (chunks > 0) {
-		const deleted = await db.all<{ issue_id: number }>(
+		const deleted = await db.all<{ issue_id: number; raw_key: string | null }>(
 			sql`DELETE FROM events WHERE id IN (
 					SELECT id FROM events WHERE received_at < ${cutoff} ORDER BY id LIMIT ${RETENTION_CHUNK})
-				RETURNING issue_id`,
+				RETURNING issue_id, raw_key`,
 		);
 		if (deleted.length === 0) break;
+		// Large raw payloads in blob storage go with their events (one call per chunk).
+		const keys = deleted.flatMap((r) => (r.raw_key ? [r.raw_key] : []));
+		if (keys.length > 0) await ports.blobs?.deleteMany(keys);
 		chunks--;
 		run.events += deleted.length;
 		const issues = JSON.stringify([...new Set(deleted.map((r) => r.issue_id))]);

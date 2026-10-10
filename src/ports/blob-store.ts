@@ -10,6 +10,8 @@ export interface BlobStore {
 	get(key: string): Promise<Uint8Array | null>;
 	/** Deletes the value; a missing key is not an error. */
 	delete(key: string): Promise<void>;
+	/** Deletes up to 1000 values in one call (R2 counts it as one operation). */
+	deleteMany(keys: string[]): Promise<void>;
 }
 
 const SEGMENT = /^[A-Za-z0-9._@=+-]{1,200}$/;
@@ -40,6 +42,10 @@ export function memoryBlobStore(): BlobStore {
 		async delete(key) {
 			checkBlobKey(key);
 			values.delete(key);
+		},
+		async deleteMany(keys) {
+			for (const key of keys) checkBlobKey(key);
+			for (const key of keys) values.delete(key);
 		},
 	};
 }

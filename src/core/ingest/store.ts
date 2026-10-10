@@ -8,8 +8,20 @@ import { type IngestMode, IngestState } from "./state.ts";
 
 export { IngestState };
 
-/** A compressed raw payload above this size is not stored (D1 rows: 2 MB at most). */
+/**
+ * A compressed raw payload above this size does not go into D1 (D1 rows: 2 MB at most). With
+ * blob storage it goes there (raw/<project>/<event_id>.json.gz); without, it is not kept.
+ */
 export const MAX_RAW_BYTES = 64 * 1024;
+
+/** The ports of a write. Blob storage is optional: large raw payloads go there. */
+type StorePorts = Pick<Ports, "db" | "clock" | "config"> & Partial<Pick<Ports, "blobs">>;
+
+/** The raw payload of an event: in the row (small), or the key of a blob (large), or neither. */
+interface RawPayload {
+	inline: Uint8Array | null;
+	blob: { key: string; bytes: Uint8Array } | null;
+}
 
 /** New fingerprints above the hourly cap of a project go to this one issue (H2 layer 3). */
 export const FLOOD_FINGERPRINT = "flood";
@@ -60,7 +72,7 @@ async function gzip(text: string): Promise<Uint8Array> {
  * idempotent per event_id, so a retry does not count an event twice.
  */
 export async function storeEvent(
-	ports: Pick<Ports, "db" | "clock" | "config">,
+	ports: StorePorts,
 	state: IngestState,
 	projectId: number,
 	prepared: PreparedEvent,
@@ -81,7 +93,7 @@ export async function storeEvent(
  * so the sampling and the duplicate checks work across the group.
  */
 export async function storeEvents(
-	ports: Pick<Ports, "db" | "clock" | "config">,
+	ports: StorePorts,
 	state: IngestState,
 	projectId: number,
 	items: { prepared: PreparedEvent; browser: boolean }[],
@@ -89,9 +101,13 @@ export async function storeEvents(
 ): Promise<StoreResult> {
 	const sleep = options.sleep ?? defaultSleep;
 	const raws = await Promise.all(
-		items.map(async ({ prepared }) => {
+		items.map(async ({ prepared }): Promise<RawPayload> => {
 			const compressed = prepared.rawJson === null ? null : await gzip(prepared.rawJson);
-			return compressed && compressed.byteLength <= MAX_RAW_BYTES ? compressed : null;
+			if (!compressed) return { inline: null, blob: null };
+			if (compressed.byteLength <= MAX_RAW_BYTES) return { inline: compressed, blob: null };
+			if (!ports.blobs) return { inline: null, blob: null };
+			const key = `raw/${projectId}/${prepared.event.event_id}.json.gz`;
+			return { inline: null, blob: { key, bytes: compressed } };
 		}),
 	);
 
@@ -106,22 +122,27 @@ export async function storeEvents(
 			let rows = 0;
 			let stored = false;
 			const newTagKeys: string[] = [];
+			const blobs: { key: string; bytes: Uint8Array }[] = [];
 			for (const [i, item] of items.entries()) {
+				const raw = raws[i] ?? { inline: null, blob: null };
 				const write = await planWrite(
 					ports,
 					state,
 					projectId,
 					item.prepared,
-					raws[i] ?? null,
+					raw,
 					item.prepared.payloadBytes,
 					{ ...options, browser: item.browser },
 				);
+				// The blob goes first: the row that names it is written after it.
+				if (write.mode === "full" && raw.blob) blobs.push(raw.blob);
 				deliveryStatements.push(...write.deliveryStatements.map((at) => at + statements.length));
 				statements.push(...write.statements);
 				rows += write.rows;
 				stored ||= write.mode === "full";
 				newTagKeys.push(...write.newTagKeys);
 			}
+			await Promise.all(blobs.map((blob) => ports.blobs?.put(blob.key, blob.bytes)));
 			const results = await ports.db.batch(statements);
 			const deliveries = deliveryStatements.reduce(
 				(sum, at) => sum + (results[at]?.rows.length ?? 0),
@@ -176,7 +197,7 @@ async function planWrite(
 	state: IngestState,
 	projectId: number,
 	prepared: PreparedEvent,
-	raw: Uint8Array | null,
+	raw: RawPayload,
 	rawBytes: number,
 	options: StoreOptions,
 ): Promise<PlannedWrite> {
@@ -288,9 +309,9 @@ async function planWrite(
 		const data = JSON.stringify({ ...event, tags });
 		statements.push(
 			sql`INSERT INTO events (project_id, issue_id, event_id, timestamp, received_at, level,
-					release, environment, data, raw, raw_size)
+					release, environment, data, raw, raw_key, raw_size)
 				SELECT ${projectId}, id, ${event.event_id}, ${event.timestamp}, ${nowIso}, ${event.level},
-					${event.release}, ${event.environment}, ${data}, ${raw}, ${rawBytes}
+					${event.release}, ${event.environment}, ${data}, ${raw.inline}, ${raw.blob?.key ?? null}, ${rawBytes}
 				FROM issues
 				WHERE project_id = ${projectId} AND fingerprint = ${fingerprint}
 					AND stored_events < ${config.eventsPerIssue}

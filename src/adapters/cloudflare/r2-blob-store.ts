@@ -16,5 +16,10 @@ export function r2BlobStore(bucket: Pick<R2Bucket, "put" | "get" | "delete">): B
 			checkBlobKey(key);
 			await bucket.delete(key);
 		},
+		async deleteMany(keys) {
+			for (const key of keys) checkBlobKey(key);
+			// R2 deletes at most 1000 keys per call.
+			for (let at = 0; at < keys.length; at += 1000) await bucket.delete(keys.slice(at, at + 1000));
+		},
 	};
 }

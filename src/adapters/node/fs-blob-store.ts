@@ -31,5 +31,9 @@ export function fsBlobStore(root: string): BlobStore {
 		async delete(key) {
 			await rm(path(key), { force: true });
 		},
+		async deleteMany(keys) {
+			const paths = keys.map(path);
+			await Promise.all(paths.map((file) => rm(file, { force: true })));
+		},
 	};
 }

@@ -43,6 +43,17 @@ export function blobStoreContract(
 			await store.delete(`${prefix}/r`); // deleting a missing key is not an error
 		});
 
+		it("deletes many keys in one call; missing keys are not an error", async () => {
+			await store.put(`${prefix}/m1`, "1");
+			await store.put(`${prefix}/m2`, "2");
+			await store.put(`${prefix}/m3`, "3");
+			await store.deleteMany([`${prefix}/m1`, `${prefix}/m2`, `${prefix}/missing`]);
+			expect(await store.get(`${prefix}/m1`)).toBeNull();
+			expect(await store.get(`${prefix}/m2`)).toBeNull();
+			expect(await store.get(`${prefix}/m3`)).not.toBeNull();
+			await store.deleteMany([]);
+		});
+
 		it("keeps keys with slashes apart", async () => {
 			await store.put(`${prefix}/x/y`, "deep");
 			await store.put(`${prefix}/x`, "flat");
