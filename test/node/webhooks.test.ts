@@ -268,4 +268,64 @@ describe("webhooks: deliveries", () => {
 		await send("cart total failed");
 		expect(verify(secret, sent[0] as Sent)).toBe(true);
 	});
+
+	describe("webhooks: GitHub repository_dispatch format", () => {
+		const dispatchUrl = "https://api.github.com/repos/acme/shop/dispatches";
+
+		it("sends a repository_dispatch with the GitHub token; the token is stored encrypted", async () => {
+			const { create, send, sent, dns, ports, call } = await setup();
+			dns["api.github.com"] = ["140.82.112.6"];
+			const created = await create({
+				url: dispatchUrl,
+				format: "github_dispatch",
+				github_token: "github_pat_example_token",
+			});
+			expect(created.status).toBe(201);
+			expect(created.body.data).toMatchObject({ format: "github_dispatch" });
+			expect(JSON.stringify((await call("GET", "/v1/webhooks")).body)).not.toContain("github_pat");
+			const row = await ports.db.first<{ auth: string }>(sql`SELECT auth FROM webhooks`);
+			expect(row?.auth).toMatch(/^enc1:k1:/);
+			// Rotation covers the token too.
+			ports.config.encryptionKeys = [k2, k1];
+			await runScheduled(ports, ports.clock.now());
+			const rotated = await ports.db.first<{ auth: string }>(sql`SELECT auth FROM webhooks`);
+			expect(rotated?.auth).toMatch(/^enc1:k2:/);
+			ports.config.encryptionKeys = [k2];
+			await send("cart total failed");
+			const delivery = sent[0] as Sent;
+			expect(delivery.url).toBe(dispatchUrl);
+			expect(delivery.headers).toMatchObject({
+				authorization: "Bearer github_pat_example_token",
+				accept: "application/vnd.github+json",
+				"x-github-api-version": "2022-11-28",
+			});
+			const body = JSON.parse(delivery.body);
+			expect(Object.keys(body)).toEqual(["event_type", "client_payload"]);
+			expect(body.event_type).toBe("checkend.issue.new");
+			expect(body.client_payload).toMatchObject({
+				event: "issue.new",
+				delivery_id: expect.any(Number),
+				issue: { title_untrusted: "cart total failed", trust: "high" },
+				brief_markdown: expect.stringContaining("(brief v1)"),
+			});
+			expect(Object.keys(body.client_payload).length).toBeLessThanOrEqual(10);
+		});
+
+		it("needs the dispatches URL of a repository and a token", async () => {
+			const { create, dns } = await setup();
+			dns["api.github.com"] = ["140.82.112.6"];
+			for (const body of [
+				{ url: dispatchUrl, format: "github_dispatch" },
+				{ url: "https://hooks.example/x", format: "github_dispatch", github_token: "t" },
+				{
+					url: "https://api.github.com/repos/acme/shop/issues",
+					format: "github_dispatch",
+					github_token: "t",
+				},
+				{ url: "https://hooks.example/x", github_token: "t" },
+			]) {
+				expect((await create(body)).status, JSON.stringify(body)).toBe(400);
+			}
+		});
+	});
 });

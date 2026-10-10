@@ -22,9 +22,21 @@ import { VERSION } from "./version.ts";
 export const WEBHOOK_EVENTS = ["issue.new", "issue.regressed", "issue.verified"] as const;
 export type WebhookEvent = (typeof WEBHOOK_EVENTS)[number] | "ping";
 
+/**
+ * Formats: "checkend" (the Checkend body, for your own receiver), or "github_dispatch" (a
+ * GitHub repository_dispatch, so that a GitHub Actions workflow starts an agent; needs
+ * github_token, a token that can only create dispatches for that repository).
+ */
+export const WEBHOOK_FORMATS = ["checkend", "github_dispatch"] as const;
+const DISPATCH_URL =
+	/^https:\/\/api\.github\.com\/repos\/[A-Za-z0-9][A-Za-z0-9-]{0,38}\/[A-Za-z0-9._-]{1,100}\/dispatches$/;
+
 export const CreateWebhookBody = v.strictObject({
 	name: v.pipe(v.string(), v.trim(), v.minLength(1), v.maxLength(100)),
 	url: v.pipe(v.string(), v.maxLength(2000)),
+	format: v.optional(v.picklist(WEBHOOK_FORMATS), "checkend"),
+	/** github_dispatch only: the token for the GitHub API (stored encrypted). */
+	github_token: v.optional(v.pipe(v.string(), v.minLength(1), v.maxLength(500))),
 	events: v.pipe(v.array(v.picklist(WEBHOOK_EVENTS)), v.minLength(1), v.maxLength(10)),
 	min_trust: v.optional(v.picklist(["low", "high"]), "high"),
 	/** Only issues of this project; default: all projects. */
@@ -43,6 +55,7 @@ const TIMEOUT_MS = 10_000;
 type P = Ports;
 
 const secretContext = (uid: string) => `webhooks.secret:${uid}`;
+const authContext = (uid: string) => `webhooks.auth:${uid}`;
 
 const toBase64Url = (bytes: Uint8Array) =>
 	btoa(String.fromCharCode(...bytes))
@@ -61,6 +74,21 @@ export async function createWebhook(
 	body: CreateWebhookBody,
 ): Promise<CreateResult> {
 	if (ports.config.encryptionKeys.length === 0) return { kind: "encryption_not_configured" };
+	const dispatch = body.format === "github_dispatch";
+	if (dispatch && !DISPATCH_URL.test(body.url)) {
+		return {
+			kind: "invalid",
+			path: "url",
+			message: "A github_dispatch URL is https://api.github.com/repos/<owner>/<repo>/dispatches.",
+		};
+	}
+	if (dispatch !== (body.github_token !== undefined)) {
+		return {
+			kind: "invalid",
+			path: "github_token",
+			message: "github_token is required for the github_dispatch format, and only for it.",
+		};
+	}
 	const check = await checkOutboundUrl(body.url, ports.resolver);
 	if (!check.ok) return { kind: "invalid", path: "url", message: check.reason };
 	const projectId = body.project ? await findProjectRowId(ports.db, body.project) : null;
@@ -70,12 +98,16 @@ export async function createWebhook(
 	const uid = crypto.randomUUID();
 	const secret = `whsec_${toBase64Url(crypto.getRandomValues(new Uint8Array(32)))}`;
 	const encrypted = await encryptValue(ports.config.encryptionKeys, secret, secretContext(uid));
+	const auth = body.github_token
+		? await encryptValue(ports.config.encryptionKeys, body.github_token, authContext(uid))
+		: null;
 	const now = ports.clock.now();
 	const events = JSON.stringify([...new Set(body.events)]);
 	const [inserted] = await ports.db.batch([
-		sql`INSERT INTO webhooks (uid, name, url, secret, events, min_trust, project_id, created_at, created_by)
-			VALUES (${uid}, ${body.name}, ${body.url}, ${encrypted}, ${events}, ${body.min_trust},
-				${projectId}, ${now.toISOString()}, ${actor.name})
+		sql`INSERT INTO webhooks (uid, name, url, format, secret, auth, events, min_trust, project_id,
+				created_at, created_by)
+			VALUES (${uid}, ${body.name}, ${body.url}, ${body.format}, ${encrypted}, ${auth}, ${events},
+				${body.min_trust}, ${projectId}, ${now.toISOString()}, ${actor.name})
 			RETURNING id`,
 		sql`INSERT INTO activity (at, actor_type, actor_id, actor_name, action, target_type, target_id, data)
 			SELECT ${now.toISOString()}, ${actor.type}, ${actor.id}, ${actor.name}, 'webhook.create', 'webhook', id,
@@ -250,14 +282,16 @@ type DeliveryRow = {
 	webhook_id: number;
 	uid: string;
 	url: string;
+	format: (typeof WEBHOOK_FORMATS)[number];
 	secret: string;
+	auth: string | null;
 	deleted_at: string | null;
 };
 
 async function attempt(ports: P, id: number): Promise<void> {
 	const row = await ports.db.first<DeliveryRow>(
 		sql`SELECT d.id, d.event, d.issue_id, d.attempts, d.created_at, w.id AS webhook_id, w.uid, w.url,
-				w.secret, w.deleted_at
+				w.format, w.secret, w.auth, w.deleted_at
 			FROM webhook_deliveries d JOIN webhooks w ON w.id = d.webhook_id WHERE d.id = ${id}`,
 	);
 	if (!row) return;
@@ -273,7 +307,12 @@ async function attempt(ports: P, id: number): Promise<void> {
 			row.secret,
 			secretContext(row.uid),
 		);
-		const body = JSON.stringify(await payload(ports, row));
+		const content = await payload(ports, row);
+		const github =
+			row.format === "github_dispatch" && row.auth
+				? await decryptValue(ports.config.encryptionKeys, row.auth, authContext(row.uid))
+				: null;
+		const body = JSON.stringify(github ? dispatchBody(content) : content);
 		const timestamp = Math.floor(ports.clock.now().getTime() / 1000);
 		const response = await ports.http.send(row.url, {
 			method: "POST",
@@ -286,6 +325,13 @@ async function attempt(ports: P, id: number): Promise<void> {
 				"x-checkend-event": row.event,
 				"x-checkend-delivery": String(row.id),
 				"x-checkend-signature": `t=${timestamp},v1=${await hmacHex(secret, `${timestamp}.${body}`)}`,
+				...(github
+					? {
+							authorization: `Bearer ${github}`,
+							accept: "application/vnd.github+json",
+							"x-github-api-version": "2022-11-28",
+						}
+					: {}),
 			},
 		});
 		status = response.status;
@@ -359,6 +405,23 @@ async function payload(ports: P, row: DeliveryRow) {
 	};
 }
 
+/**
+ * A GitHub repository_dispatch body. client_payload has at most 10 top-level keys (a GitHub
+ * limit); the brief is its Markdown text, which the workflow gives to the agent.
+ */
+function dispatchBody(content: Awaited<ReturnType<typeof payload>>) {
+	return {
+		event_type: `checkend.${content.event}`,
+		client_payload: {
+			event: content.event,
+			delivery_id: content.delivery_id,
+			webhook_id: content.webhook_id,
+			issue: content.issue,
+			brief_markdown: content.brief?.markdown ?? null,
+		},
+	};
+}
+
 async function hmacHex(secret: string, text: string): Promise<string> {
 	const encoder = new TextEncoder();
 	const key = await crypto.subtle.importKey(
@@ -379,22 +442,31 @@ async function hmacHex(secret: string, text: string): Promise<string> {
 export async function reencryptSecrets(ports: P): Promise<number> {
 	const current = ports.config.encryptionKeys[0];
 	if (!current) return 0;
-	const rows = await ports.db.all<{ id: number; uid: string; secret: string }>(
-		sql`SELECT id, uid, secret FROM webhooks WHERE secret NOT LIKE ${`enc1:${current.id}:%`} LIMIT 50`,
+	const rows = await ports.db.all<{ id: number; uid: string; secret: string; auth: string | null }>(
+		sql`SELECT id, uid, secret, auth FROM webhooks
+			WHERE secret NOT LIKE ${`enc1:${current.id}:%`} OR auth NOT LIKE ${`enc1:${current.id}:%`}
+			LIMIT 50`,
 	);
+	const again = async (value: string, context: string) =>
+		keyIdOf(value) === current.id
+			? value
+			: encryptValue(
+					ports.config.encryptionKeys,
+					await decryptValue(ports.config.encryptionKeys, value, context),
+					context,
+				);
 	let changed = 0;
 	for (const row of rows) {
-		if (keyIdOf(row.secret) === current.id) continue;
 		try {
-			const context = secretContext(row.uid);
-			const plain = await decryptValue(ports.config.encryptionKeys, row.secret, context);
-			const again = await encryptValue(ports.config.encryptionKeys, plain, context);
+			const secret = await again(row.secret, secretContext(row.uid));
+			const auth = row.auth === null ? null : await again(row.auth, authContext(row.uid));
 			await ports.db.run(
-				sql`UPDATE webhooks SET secret = ${again} WHERE id = ${row.id} AND secret = ${row.secret}`,
+				sql`UPDATE webhooks SET secret = ${secret}, auth = ${auth}
+					WHERE id = ${row.id} AND secret = ${row.secret} AND auth IS ${row.auth}`,
 			);
 			changed++;
 		} catch {
-			// The old key is not listed: the value stays until the key is back.
+			// An old key is not listed: the values stay until the key is back.
 		}
 	}
 	return changed;

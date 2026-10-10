@@ -29,6 +29,7 @@ describe("webhooks on D1", () => {
 		const created = await createWebhook(ports, BOOTSTRAP_ADMIN, {
 			name: "runner",
 			url: "https://hooks.example/x",
+			format: "checkend",
 			events: ["issue.new"],
 			min_trust: "high",
 			project: project.slug,
