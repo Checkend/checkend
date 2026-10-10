@@ -16,7 +16,8 @@ The core is portable, so the same code can also run on Node with SQLite.
 | `npm run lint` | Biome: format and lint checks. `npm run lint:fix` fixes what it can. |
 | `npm run typecheck` | TypeScript for the Workers runtime and for Node. |
 | `npm run types` | Generate `worker-configuration.d.ts` again after you change `wrangler.jsonc`. It ignores `.dev.vars`, so local secrets do not change the types. |
-| `npm run dev` | Run the Worker locally. First run `npx wrangler d1 migrations apply DB --local`. |
+| `npm run dev` | Run the Worker locally, in development mode (`CHECKEND_DEV=1`). First run `npx wrangler d1 migrations apply DB --local`. |
+| `npm run demo` | Local only: create a "Demo" project and send about 500 realistic events over 14 days through ingest. Needs `npm run dev` and `ADMIN_TOKEN` in `.dev.vars`. Refuses any URL that is not localhost. |
 | `npm run migrations:build` | Write `src/entry/migrations.generated.ts` (the migrations of the hosted install) again after you add a migration. A test fails when it is out of date. |
 | `npm run check` | Lint, typecheck, tests and the CPU budget. Run it before each commit. |
 | `npm run project -- create --name <name>` | Create a project and print its DSN (needs `CHECKEND_URL` and `CHECKEND_ADMIN_TOKEN`). `list` prints all projects. |
@@ -93,6 +94,16 @@ Checkend runs on Cloudflare first, and it must also run off Cloudflare. These ru
 - **API:** `/v1/projects`, `/v1/issues`, `/v1/issues/:id`, `/v1/issues/:id/events`,
   `/v1/events/:id`. Each request needs `Authorization: Bearer <ADMIN_TOKEN>`. The API never
   returns the raw payload.
+- **Web UI:** server-rendered HTML in `src/http/ui/` (no SPA, no build step). Passkey sign-in;
+  `/setup` registers the first member with the ADMIN_TOKEN, then closes. Cookie sessions
+  (`__Host-`, HttpOnly, Secure, SameSite=Strict) and a CSRF token on every form; the UI never
+  uses bearer tokens. Write HTML only with the `h` tag in `src/http/ui/html.ts` (it escapes);
+  no `raw()` and no `innerHTML` (a test checks). Put event data in `untrusted()` blocks and
+  through `displayText()`. Strict CSP: no inline script or style. Format issue, event and
+  project IDs in URLs only with `src/http/ui/ids.ts`; never show the internal project row ID.
+- **Development mode** (`CHECKEND_DEV=1`, only from `npm run dev`; never in `wrangler.jsonc`):
+  `/dev/login` signs in without a passkey, and ingest accepts `X-Checkend-Demo-Time`. Both work
+  only for requests to localhost. Tests check that they are off otherwise.
 - **Untrusted input:** every ingest check lives in `src/core/ingest/`, so each entry point gets
   it. Order: project, DSN key, rate limit, D1 state, body caps (1 MB sent, 2 MB decompressed,
   1 MB per event), JSON depth, schema and limits, scrubbing. Add a hostile case to
