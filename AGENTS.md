@@ -21,7 +21,8 @@ The core is portable, so the same code can also run on Node with SQLite.
 | `npm run migrations:build` | Write `src/entry/migrations.generated.ts` (the migrations of the hosted install) again after you add a migration. A test fails when it is out of date. |
 | `npm run check` | Lint, typecheck, tests and the CPU budget. Run it before each commit. |
 | `npm run project -- create --name <name>` | Create a project and print its DSN (needs `CHECKEND_URL` and `CHECKEND_ADMIN_TOKEN`). `list` prints all projects. |
-| `npm run deploy:production` | People only (see rule 9). Deploys with `wrangler.production.jsonc`: a copy of `wrangler.jsonc` with your Worker name and `database_id`. Files named `wrangler.*.jsonc` are git-ignored and blocked by the pre-commit hook. |
+| `npm run deploy:production` | People only (see rule 9). Deploys with `wrangler.production.jsonc`: a copy of `wrangler.jsonc` with your Worker name and `database_id`. Files named `wrangler.*.jsonc` are git-ignored and blocked by the pre-commit hook. Both deploy scripts (`scripts/deploy.ts`) apply the migrations, deploy, then run `setup-link` while setup is open. |
+| `npm run setup-link -- --url <url> [--config <file>]` | People only. While the web UI has no member: store a new random `SETUP_CODE` secret (through stdin) and print the one-time setup link `https://<host>/setup#<code>`. |
 
 Requirements: Node 22.18 or later (built-in SQLite and TypeScript type stripping).
 
@@ -95,15 +96,17 @@ Checkend runs on Cloudflare first, and it must also run off Cloudflare. These ru
   `/v1/events/:id`. Each request needs `Authorization: Bearer <ADMIN_TOKEN>`. The API never
   returns the raw payload.
 - **Web UI:** server-rendered HTML in `src/http/ui/` (no SPA, no build step). Passkey sign-in;
-  `/setup` registers the first member with the ADMIN_TOKEN, then closes. Cookie sessions
+  `/setup` registers the first member with the one-time setup link (the `SETUP_CODE` secret in
+  the URL fragment; the client sends it in the body), then closes. ADMIN_TOKEN is not accepted. Cookie sessions
   (`__Host-`, HttpOnly, Secure, SameSite=Strict) and a CSRF token on every form; the UI never
   uses bearer tokens. Write HTML only with the `h` tag in `src/http/ui/html.ts` (it escapes);
   no `raw()` and no `innerHTML` (a test checks). Put event data in `untrusted()` blocks and
   through `displayText()`. Strict CSP: no inline script or style. Format issue, event and
   project IDs in URLs only with `src/http/ui/ids.ts`; never show the internal project row ID.
 - **Development mode** (`CHECKEND_DEV=1`, only from `npm run dev`; never in `wrangler.jsonc`):
-  `/dev/login` signs in without a passkey, and ingest accepts `X-Checkend-Demo-Time`. Both work
-  only for requests to localhost. Tests check that they are off otherwise.
+  `/dev/login` signs in without a passkey, `/setup` needs no code, and ingest accepts
+  `X-Checkend-Demo-Time`. All three work only for requests to localhost. Tests check that they
+  are off otherwise.
 - **Untrusted input:** every ingest check lives in `src/core/ingest/`, so each entry point gets
   it. Order: project, DSN key, rate limit, D1 state, body caps (1 MB sent, 2 MB decompressed,
   1 MB per event), JSON depth, schema and limits, scrubbing. Add a hostile case to
@@ -120,6 +123,7 @@ Settings (Workers secrets and vars; all optional):
 | Name | Default | Purpose |
 |---|---|---|
 | `ADMIN_TOKEN` (secret) | none | Bearer token for `/v1`. Without it, the API rejects all requests. |
+| `SETUP_CODE` (secret) | none | The one-time code of the setup link. `npm run setup-link` sets it; do not set it by hand. |
 | `D1_DAILY_ROW_LIMIT` | none | Set `100000` on the Workers Free plan: from 80% of it, ingest stores counters only until 00:00 UTC. |
 | `EVENTS_PER_ISSUE` | 100 | Stored events per issue. |
 | `NEW_ISSUES_PER_HOUR` | 100 | New issues per project per hour; more go to one "flood" issue. |

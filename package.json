@@ -11,8 +11,9 @@
 	"scripts": {
 		"dev": "wrangler dev --var CHECKEND_DEV:1",
 		"demo": "node scripts/demo.ts",
-		"deploy": "wrangler d1 migrations apply DB --remote && wrangler deploy",
-		"deploy:production": "wrangler d1 migrations apply DB --remote --config wrangler.production.jsonc && wrangler deploy --config wrangler.production.jsonc",
+		"deploy": "node scripts/deploy.ts",
+		"deploy:production": "node scripts/deploy.ts --config wrangler.production.jsonc",
+		"setup-link": "node scripts/setup-link.ts",
 		"test": "vitest run",
 		"test:watch": "vitest",
 		"lint": "biome check .",
