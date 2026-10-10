@@ -1,7 +1,22 @@
+import * as v from "valibot";
 import { type Db, sql } from "../ports/db.ts";
 import type { Ports } from "../ports/index.ts";
 import { activityStatement } from "./activity.ts";
+import { findProjectRowId } from "./issues.ts";
 import type { Actor } from "./tokens.ts";
+
+/** A GitHub repository: owner/name. Stored lowercase (GitHub names are case-insensitive). */
+export const RepositoryName = v.pipe(
+	v.string(),
+	v.regex(/^[A-Za-z0-9][A-Za-z0-9-]{0,38}\/[A-Za-z0-9._-]{1,100}$/),
+	v.transform((name) => name.toLowerCase()),
+);
+
+export const UpdateProjectBody = v.strictObject({
+	/** The GitHub repository of the project, or null to remove it. */
+	repository: v.optional(v.nullable(RepositoryName)),
+});
+export type UpdateProjectBody = v.InferOutput<typeof UpdateProjectBody>;
 
 export interface CreatedProject {
 	/** The public ID: in the DSN, the ingest URL and the API. */
@@ -20,6 +35,7 @@ export interface ProjectSummary {
 	name: string;
 	slug: string;
 	platform: string | null;
+	repository: string | null;
 	created_at: string;
 	keys: string[];
 }
@@ -106,7 +122,8 @@ export async function createProject(
 
 export async function listProjects(db: Db): Promise<ProjectSummary[]> {
 	const projects = await db.all<Omit<ProjectSummary, "keys"> & { internal_id: number }>(
-		sql`SELECT id AS internal_id, public_id AS id, name, slug, platform, created_at FROM projects ORDER BY internal_id`,
+		sql`SELECT id AS internal_id, public_id AS id, name, slug, platform, repository, created_at
+			FROM projects ORDER BY internal_id`,
 	);
 	const keys = await db.all<{ project_id: number; public_key: string }>(
 		sql`SELECT project_id, public_key FROM project_keys WHERE revoked_at IS NULL ORDER BY id`,
@@ -115,6 +132,37 @@ export async function listProjects(db: Db): Promise<ProjectSummary[]> {
 		...p,
 		keys: keys.filter((k) => k.project_id === internal_id).map((k) => k.public_key),
 	}));
+}
+
+/** Changes project settings. Returns false when there is no such project. */
+export async function updateProject(
+	ports: Pick<Ports, "db" | "clock">,
+	actor: Actor,
+	ref: string,
+	body: UpdateProjectBody,
+): Promise<boolean> {
+	const projectId = await findProjectRowId(ports.db, ref);
+	if (projectId === null) return false;
+	if (body.repository === undefined) return true;
+	await ports.db.batch([
+		sql`UPDATE projects SET repository = ${body.repository} WHERE id = ${projectId}`,
+		activityStatement(
+			actor,
+			"project.update",
+			{ type: "project", id: projectId },
+			{ repository: body.repository },
+			ports.clock.now(),
+		),
+	]);
+	return true;
+}
+
+/** The GitHub repository of a project, or null. */
+export async function projectRepository(db: Db, projectId: number): Promise<string | null> {
+	const row = await db.first<{ repository: string | null }>(
+		sql`SELECT repository FROM projects WHERE id = ${projectId}`,
+	);
+	return row?.repository ?? null;
 }
 
 interface CacheEntry {

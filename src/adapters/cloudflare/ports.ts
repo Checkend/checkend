@@ -14,6 +14,8 @@ export interface ConfigEnv {
 	/** Comma-separated: ignore, merge. */
 	REQUIRE_APPROVAL?: string;
 	VERIFY_QUIET_HOURS?: string;
+	/** A secret: the GitHub webhook secret. */
+	GITHUB_WEBHOOK_SECRET?: string;
 }
 
 type WorkerEnv = Omit<Env, "INGEST_RATE_LIMITER"> &
@@ -39,6 +41,7 @@ export function readConfig(env: ConfigEnv): Config {
 			.map((a) => a.trim())
 			.filter((a) => a === "ignore" || a === "merge"),
 		verifyQuietHours: positiveInt(env.VERIFY_QUIET_HOURS) ?? DEFAULT_CONFIG.verifyQuietHours,
+		githubWebhookSecret: env.GITHUB_WEBHOOK_SECRET?.trim() || null,
 	};
 }
 

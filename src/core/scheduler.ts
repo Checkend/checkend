@@ -1,5 +1,6 @@
 import type { Ports } from "../ports/index.ts";
 import { verifyFixes } from "./fixes.ts";
+import { pruneDeliveries } from "./github.ts";
 
 /**
  * Work on a schedule. One Cron Trigger (every 5 minutes) calls this; each job decides by the
@@ -25,6 +26,13 @@ export async function runScheduled(
 			"verify_fixes",
 			async (p, at) => {
 				run.fixes_checked = await verifyFixes(p, at);
+			},
+		],
+		// Once a day (the run between 03:00 and 03:05 UTC).
+		[
+			"prune_github_deliveries",
+			async (p, at) => {
+				if (at.getUTCHours() === 3 && at.getUTCMinutes() < 5) await pruneDeliveries(p, at);
 			},
 		],
 	];

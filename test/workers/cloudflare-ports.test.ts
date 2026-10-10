@@ -26,6 +26,7 @@ describe("readConfig", () => {
 			tagKeysPerProject: 10,
 			requireApproval: [],
 			verifyQuietHours: 6,
+			githubWebhookSecret: null,
 		});
 	});
 

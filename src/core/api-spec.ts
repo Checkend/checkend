@@ -11,6 +11,7 @@ import { NativeEvent } from "./ingest/native.ts";
 import { MAX_MERGE_SOURCES, MAX_SPLIT_EVENTS } from "./issue-actions.ts";
 import { CreateProjectBody, EventListQuery, IssueListQuery } from "./issues.ts";
 import { LabelQuery } from "./labels.ts";
+import { UpdateProjectBody } from "./projects.ts";
 import { CreateTokenBody, type Scope } from "./tokens.ts";
 
 export const ClaimBody = v.object({
@@ -48,7 +49,7 @@ export const LimitQuery = v.object({
 });
 
 export interface ApiRoute {
-	method: "GET" | "POST" | "DELETE";
+	method: "GET" | "POST" | "PATCH" | "DELETE";
 	/** Hono path syntax: /v1/issues/:id */
 	path: string;
 	/** The bearer-token scope; null for routes that use the DSN key (X-Checkend-Key). */
@@ -92,6 +93,14 @@ export const API_ROUTES: ApiRoute[] = [
 		scope: "admin",
 		summary: "Create a project. Returns its DSN.",
 		body: CreateProjectBody,
+	},
+	{
+		method: "PATCH",
+		path: "/v1/projects/:project",
+		scope: "admin",
+		summary:
+			"Change project settings: repository (GitHub owner/name, or null). The GitHub webhook and pull request fixes use it.",
+		body: UpdateProjectBody,
 	},
 	{
 		method: "GET",

@@ -35,9 +35,10 @@ import {
 	IssueListQuery,
 	listIssueEvents,
 	listIssues,
+	ProjectRef,
 } from "../core/issues.ts";
 import { LabelQuery, listLabels } from "../core/labels.ts";
-import { createProject, listProjects } from "../core/projects.ts";
+import { createProject, listProjects, UpdateProjectBody, updateProject } from "../core/projects.ts";
 import { CreateTokenBody, createToken, listTokens, revokeToken } from "../core/tokens.ts";
 import type { AppEnv } from "./app.ts";
 import { need, requireActor } from "./auth.ts";
@@ -119,6 +120,22 @@ export function apiRoutes(app: Hono<AppEnv>, state: IngestState): void {
 			},
 			201,
 		);
+	});
+
+	app.patch("/v1/projects/:project", need("admin"), async (c) => {
+		const ref = v.safeParse(ProjectRef, c.req.param("project"));
+		if (!ref.success) return c.json({ error: "not_found" }, 404);
+		const body = v.safeParse(UpdateProjectBody, await c.req.json().catch(() => null));
+		if (!body.success) return invalid(c, body.issues);
+		const found = await updateProject(c.env.ports, c.get("actor"), ref.output, body.output);
+		if (!found) return c.json({ error: "not_found" }, 404);
+		const origin = new URL(c.req.url).origin;
+		const project = (await listProjects(c.env.ports.db)).find(
+			(p) => p.slug === ref.output || String(p.id) === ref.output,
+		);
+		if (!project) return c.json({ error: "not_found" }, 404);
+		const { keys, ...rest } = project;
+		return c.json({ data: { ...rest, dsns: keys.map((k) => dsn(origin, k, rest.id)) } });
 	});
 
 	app.get("/v1/issues", need("issues:read"), async (c) => {
@@ -279,6 +296,12 @@ export function apiRoutes(app: Hono<AppEnv>, state: IngestState): void {
 		if (!body.success) return invalid(c, body.issues);
 		const result = await linkFix(c.env.ports, c.get("actor"), params.output.id, body.output);
 		if (result === "not_found") return c.json({ error: "not_found" }, 404);
+		if (typeof result === "object") {
+			return c.json(
+				{ error: "invalid_request", details: [{ path: "pr_url", message: result.invalid }] },
+				400,
+			);
+		}
 		return c.json({
 			data: await getIssue(c.env.ports.db, params.output.id, c.env.ports.clock.now()),
 		});

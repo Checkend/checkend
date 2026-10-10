@@ -3,6 +3,7 @@ import { type Db, type SqlValue, type Statement, sql } from "../ports/db.ts";
 import type { Ports } from "../ports/index.ts";
 import { activityStatement } from "./activity.ts";
 import { findProjectRowId, ProjectRef, parseSince, SINCE_PATTERN } from "./issues.ts";
+import { projectRepository } from "./projects.ts";
 import type { Actor } from "./tokens.ts";
 
 /**
@@ -166,12 +167,17 @@ export async function linkFix(
 	actor: Actor,
 	issueId: number,
 	body: LinkFixBody,
-): Promise<"done" | "not_found"> {
+): Promise<"done" | "not_found" | { invalid: string }> {
 	const issue = await ports.db.first<{ project_id: number; status: string; last_seen: string }>(
 		sql`SELECT project_id, status, last_seen FROM issues WHERE id = ${issueId} AND status != 'merged'`,
 	);
 	if (!issue) return "not_found";
 	const [kind, ref] = "commit" in body ? ["commit", body.commit] : ["pr", body.pr_url];
+	// A project with a repository accepts pull requests of that repository only.
+	const repository = kind === "pr" ? await projectRepository(ports.db, issue.project_id) : null;
+	if (repository && !ref.toLowerCase().startsWith(`https://github.com/${repository}/pull/`)) {
+		return { invalid: `The pull request must be in the repository of the project: ${repository}.` };
+	}
 	const deploy = await ports.db.first<{ id: number; deployed_at: string }>({
 		sql: FIRST_DEPLOY_WITH_REF_SQL,
 		params: [kind, ref, issue.project_id],
@@ -212,6 +218,31 @@ export interface DeployResult {
 	/** Issues whose fix this deploy contains (the first deploy with the fix). */
 	fixes_deployed: number[];
 }
+
+/**
+ * Commits that GitHub reported as pushed: a deploy of commit C contains the commits pushed to
+ * the branch of C up to C, after the commit of the previous deploy to the same environment
+ * (at most 1000). Parameter: the deploy uid.
+ */
+const PUSHED_REFS_SQL = `INSERT OR IGNORE INTO deploy_refs (deploy_id, kind, ref)
+	SELECT d.id, 'commit', pc.sha
+	FROM deploys d
+	JOIN pushed_commits head ON head.id = (SELECT max(id) FROM pushed_commits
+		WHERE project_id = d.project_id AND sha LIKE d.commit_sha || '%')
+	JOIN pushed_commits pc ON pc.project_id = d.project_id AND pc.branch = head.branch AND pc.id <= head.id
+	WHERE d.uid = ? AND pc.id > coalesce((SELECT max(p2.id) FROM deploys d2
+		JOIN pushed_commits p2 ON p2.project_id = d2.project_id AND p2.branch = head.branch
+			AND p2.sha LIKE d2.commit_sha || '%'
+		WHERE d2.project_id = d.project_id AND d2.environment = d.environment AND d2.id < d.id), 0)
+	ORDER BY pc.id DESC LIMIT 1000`;
+
+/** Merged pull requests whose merge commit the deploy contains. Parameter: the deploy uid. */
+const MERGED_PR_REFS_SQL = `INSERT OR IGNORE INTO deploy_refs (deploy_id, kind, ref)
+	SELECT d.id, 'pr', m.pr_url
+	FROM deploys d
+	JOIN deploy_refs x ON x.deploy_id = d.id AND x.kind = 'commit'
+	JOIN pr_merges m ON m.project_id = d.project_id AND m.merge_sha = x.ref
+	WHERE d.uid = ?`;
 
 const MARK_DEPLOYED_SQL = `UPDATE fixes AS f SET deploy_id = (SELECT id FROM deploys WHERE uid = ?),
 		deployed_at = ?, quiet_since = ?
@@ -258,6 +289,8 @@ export async function recordDeploy(
 			SELECT d.id, 'commit', j.value FROM deploys d, json_each(${commits}) j WHERE d.uid = ${uid}`,
 		sql`INSERT OR IGNORE INTO deploy_refs (deploy_id, kind, ref)
 			SELECT d.id, 'pr', j.value FROM deploys d, json_each(${prs}) j WHERE d.uid = ${uid}`,
+		{ sql: PUSHED_REFS_SQL, params: [uid] },
+		{ sql: MERGED_PR_REFS_SQL, params: [uid] },
 		sql`INSERT INTO activity (at, actor_type, actor_id, actor_name, action, target_type, target_id, data)
 			SELECT ${nowIso}, ${actor.type}, ${actor.id}, ${actor.name}, 'release.deploy', 'release', release_id,
 				json_object('release', ${version}, 'environment', ${input.environment}, 'commit', ${input.commit},
@@ -279,8 +312,8 @@ export async function recordDeploy(
 		{ sql: MARK_DEPLOYED_SQL, params: [uid, nowIso, nowIso, projectId, uid] },
 		sql`SELECT d.id, p.public_id FROM deploys d JOIN projects p ON p.id = d.project_id WHERE d.uid = ${uid}`,
 	]);
-	const fixed = (results[6]?.rows ?? []).map((row) => Number(row.issue_id));
-	const deploy = results[7]?.rows[0];
+	const fixed = (results.at(-2)?.rows ?? []).map((row) => Number(row.issue_id));
+	const deploy = results.at(-1)?.rows[0];
 	return {
 		id: Number(deploy?.id),
 		project_id: Number(deploy?.public_id),

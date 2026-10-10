@@ -17,6 +17,8 @@ export interface Config {
 	requireApproval: string[];
 	/** Hours without the error, after a deploy with the fix, before the fix is verified. */
 	verifyQuietHours: number;
+	/** The secret of the GitHub webhook (HMAC-SHA256). Null: the webhook is off (404). */
+	githubWebhookSecret: string | null;
 }
 
 export const DEFAULT_CONFIG: Config = {
@@ -27,4 +29,5 @@ export const DEFAULT_CONFIG: Config = {
 	tagKeysPerProject: 200,
 	requireApproval: [],
 	verifyQuietHours: 24,
+	githubWebhookSecret: null,
 };

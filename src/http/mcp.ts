@@ -294,6 +294,7 @@ function createServer(ports: Ports, actor: Actor): McpServer {
 			const body = commit !== undefined ? { commit } : { pr_url: pr_url as string };
 			const result = id === null ? "not_found" : await linkFix(ports, actor, id, body);
 			if (result === "not_found") return errorResult(`Issue ${issue_id} not found.`);
+			if (typeof result === "object") return errorResult(result.invalid);
 			return textResult(JSON.stringify(await getIssue(db, id as number, now())));
 		},
 	);

@@ -14,9 +14,10 @@ import {
 	listReleases,
 	recordDeploy,
 } from "../../src/core/fixes.ts";
+import { handleGithubEvent } from "../../src/core/github.ts";
 import { prepareEvent } from "../../src/core/ingest/prepare.ts";
 import { IngestState, storeEvent } from "../../src/core/ingest/store.ts";
-import { createProject } from "../../src/core/projects.ts";
+import { createProject, updateProject } from "../../src/core/projects.ts";
 import { BOOTSTRAP_ADMIN } from "../../src/core/tokens.ts";
 import worker from "../../src/entry/worker.ts";
 import { sql } from "../../src/ports/db.ts";
@@ -91,5 +92,37 @@ describe("the fix loop on D1", () => {
 		expect(outcomes).toEqual([
 			expect.objectContaining({ issue_id: issue, outcome: "regressed", hours_to_verified: 25 }),
 		]);
+	});
+
+	it("GitHub: a push and a deployment deploy a fix that is not the head commit (D1 SQL)", async () => {
+		const ports = cloudflarePorts(env, createExecutionContext());
+		const project = await createProject(ports, { name: "D1 GitHub" });
+		await updateProject(ports, BOOTSTRAP_ADMIN, project.slug, { repository: "acme/d1" });
+		const raw = new TextEncoder().encode(JSON.stringify({ message: "d1 github", release: "x" }));
+		await storeEvent(
+			ports,
+			new IngestState(),
+			project.internalId,
+			await prepareEvent(raw, new Date()),
+		);
+		const issue =
+			(
+				await ports.db.first<{ id: number }>(
+					sql`SELECT id FROM issues WHERE project_id = ${project.internalId}`,
+				)
+			)?.id ?? 0;
+		await linkFix(ports, BOOTSTRAP_ADMIN, issue, { commit: "1".repeat(40) });
+		const repository = { full_name: "Acme/D1" };
+		await handleGithubEvent(ports, "push", "d1-1", {
+			ref: "refs/heads/main",
+			repository,
+			commits: [{ id: "1".repeat(40) }, { id: "2".repeat(40) }],
+		});
+		const result = await handleGithubEvent(ports, "deployment_status", "d1-2", {
+			repository,
+			deployment_status: { state: "success" },
+			deployment: { sha: "2".repeat(40), environment: "production" },
+		});
+		expect(result).toMatchObject({ deploys: [{ fixes_deployed: [issue] }] });
 	});
 });
