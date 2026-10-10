@@ -9,7 +9,8 @@
 		"worker-configuration.d.ts",
 		"src/**/*.ts",
 		"test/contract/**/*.ts",
-		"test/workers/**/*.ts"
+		"test/workers/**/*.ts",
+		"test/shared/**/*.ts"
 	],
 	"exclude": ["src/adapters/node/**", "src/entry/server.ts"]
 }

@@ -17,6 +17,7 @@
 		"src/entry/server.ts",
 		"test/contract/**/*.ts",
 		"test/node/**/*.ts",
+		"test/shared/**/*.ts",
 		"test/fixtures/**/*.ts",
 		"test/support/**/*.ts",
 		"test/perf/**/*.ts",
