@@ -7,12 +7,17 @@ import { migrationsContract } from "../contract/migrations-contract.ts";
 
 const db = () => d1Db(env.DB);
 const reset = async () => {
-	const tables = await db().all<{ name: string }>(
-		sql`SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%'`,
+	// Views first: a view can depend on a table.
+	const objects = await db().all<{ name: string; type: string }>(
+		sql`SELECT name, type FROM sqlite_master WHERE type IN ('view', 'table')
+			AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%' ORDER BY type DESC`,
 	);
 	await db().batch(
-		// biome-ignore lint/plugin: test reset drops the tables that sqlite_master lists.
-		tables.map(({ name }) => ({ sql: `DROP TABLE "${name}"`, params: [] })),
+		objects.map(({ name, type }) => ({
+			// biome-ignore lint/plugin: test reset drops the views and tables that sqlite_master lists.
+			sql: `DROP ${type === "view" ? "VIEW" : "TABLE"} "${name}"`,
+			params: [],
+		})),
 	);
 };
 

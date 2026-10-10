@@ -24,6 +24,7 @@ import {
 	listIssueEvents,
 	listIssues,
 } from "../core/issues.ts";
+import { LabelQuery, listLabels } from "../core/labels.ts";
 import { createProject, listProjects } from "../core/projects.ts";
 import { CreateTokenBody, createToken, listTokens, revokeToken } from "../core/tokens.ts";
 import type { AppEnv } from "./app.ts";
@@ -258,6 +259,14 @@ export function apiRoutes(app: Hono<AppEnv>, state: IngestState): void {
 			{ data: await getIssue(c.env.ports.db, result.newIssueId, c.env.ports.clock.now()) },
 			201,
 		);
+	});
+
+	app.get("/v1/labels", need("admin"), async (c) => {
+		const query = v.safeParse(LabelQuery, c.req.query());
+		if (!query.success) return invalid(c, query.issues);
+		return c.json({
+			data: await listLabels(c.env.ports.db, query.output, c.env.ports.clock.now()),
+		});
 	});
 
 	app.get("/v1/approvals", need("admin"), async (c) => {

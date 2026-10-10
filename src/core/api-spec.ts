@@ -3,6 +3,7 @@ import { CLAIM_MAX_MINUTES, NOTE_MAX_CHARS } from "./claims.ts";
 import { NativeEvent } from "./ingest/native.ts";
 import { MAX_MERGE_SOURCES, MAX_SPLIT_EVENTS } from "./issue-actions.ts";
 import { CreateProjectBody, EventListQuery, IssueListQuery } from "./issues.ts";
+import { LabelQuery } from "./labels.ts";
 import { CreateTokenBody, type Scope } from "./tokens.ts";
 
 export const ClaimBody = v.object({
@@ -172,6 +173,14 @@ export const API_ROUTES: ApiRoute[] = [
 		summary:
 			"Move stored events of this issue to a new issue (the opposite of a merge). Returns the new issue.",
 		body: SplitBody,
+	},
+	{
+		method: "GET",
+		path: "/v1/labels",
+		scope: "admin",
+		summary:
+			"Triage history: decisions on issues and their corrections (from the activity), the most recent first.",
+		query: LabelQuery,
 	},
 	{
 		method: "GET",

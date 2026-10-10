@@ -5,6 +5,7 @@ import { claimIssue } from "../../src/core/claims.ts";
 import { prepareEvent } from "../../src/core/ingest/prepare.ts";
 import { IngestState, storeEvent } from "../../src/core/ingest/store.ts";
 import { mergeIssues, splitIssue } from "../../src/core/issue-actions.ts";
+import { listLabels } from "../../src/core/labels.ts";
 import { createProject } from "../../src/core/projects.ts";
 import { BOOTSTRAP_ADMIN } from "../../src/core/tokens.ts";
 import { sql } from "../../src/ports/db.ts";
@@ -59,5 +60,10 @@ describe("issue actions on D1", () => {
 			users_affected: 3,
 		});
 		expect((await claimIssue(ports, BOOTSTRAP_ADMIN, issue)).kind).toBe("done");
+		const labels = await listLabels(ports.db, { limit: 10 }, new Date());
+		expect(labels.map((l) => [l.label, l.corrects])).toEqual([
+			["merged", null],
+			["split", "grouping"],
+		]);
 	});
 });
