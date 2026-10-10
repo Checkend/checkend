@@ -1,5 +1,6 @@
 import * as v from "valibot";
 import { CLAIM_MAX_MINUTES, NOTE_MAX_CHARS } from "./claims.ts";
+import { NativeEvent } from "./ingest/native.ts";
 import { MAX_MERGE_SOURCES } from "./issue-actions.ts";
 import { CreateProjectBody, EventListQuery, IssueListQuery } from "./issues.ts";
 import { CreateTokenBody, type Scope } from "./tokens.ts";
@@ -34,7 +35,8 @@ export interface ApiRoute {
 	method: "GET" | "POST" | "DELETE";
 	/** Hono path syntax: /v1/issues/:id */
 	path: string;
-	scope: Scope;
+	/** The bearer-token scope; null for routes that use the DSN key (X-Checkend-Key). */
+	scope: Scope | null;
 	summary: string;
 	query?: v.GenericSchema;
 	body?: v.GenericSchema;
@@ -44,7 +46,24 @@ export interface ApiRoute {
  * Every /v1 route: the source for the OpenAPI document and llms.txt. A test checks that the
  * app has exactly these routes.
  */
+export const IngestQuery = v.object({
+	project: v.pipe(
+		v.string(),
+		v.regex(/^[a-z0-9][a-z0-9-]{0,47}$/),
+		v.description("The public project ID or the slug."),
+	),
+});
+
 export const API_ROUTES: ApiRoute[] = [
+	{
+		method: "POST",
+		path: "/v1/ingest",
+		scope: null,
+		summary:
+			"Send one error as simple JSON (for scripts and languages without a Sentry SDK). Auth: the DSN public key in X-Checkend-Key.",
+		query: IngestQuery,
+		body: NativeEvent,
+	},
 	{
 		method: "GET",
 		path: "/v1/projects",

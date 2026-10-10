@@ -39,8 +39,8 @@ export function openApiDocument(base: string): Record<string, unknown> {
 		paths[path] ??= {};
 		paths[path][route.method.toLowerCase()] = {
 			summary: route.summary,
-			"x-required-scope": route.scope,
-			security: [{ bearer: [] }],
+			...(route.scope ? { "x-required-scope": route.scope } : {}),
+			security: [route.scope ? { bearer: [] } : { dsnKey: [] }],
 			...(parameters.length > 0 ? { parameters } : {}),
 			...(route.body
 				? {
@@ -52,8 +52,14 @@ export function openApiDocument(base: string): Record<string, unknown> {
 				: {}),
 			responses: {
 				"200": { description: "Success. JSON with a data field." },
-				"401": { description: "No token, or a token that is not valid." },
-				"403": { description: `The token does not have the scope ${route.scope}.` },
+				"401": {
+					description: route.scope
+						? "No token, or a token that is not valid."
+						: "Unknown project, or a wrong DSN key.",
+				},
+				...(route.scope
+					? { "403": { description: `The token does not have the scope ${route.scope}.` } }
+					: {}),
 			},
 		};
 	}
@@ -61,7 +67,12 @@ export function openApiDocument(base: string): Record<string, unknown> {
 		openapi: "3.1.0",
 		info: { title: "Checkend API", version: VERSION },
 		servers: [{ url: base }],
-		components: { securitySchemes: { bearer: { type: "http", scheme: "bearer" } } },
+		components: {
+			securitySchemes: {
+				bearer: { type: "http", scheme: "bearer" },
+				dsnKey: { type: "apiKey", in: "header", name: "X-Checkend-Key" },
+			},
+		},
 		paths,
 	};
 }

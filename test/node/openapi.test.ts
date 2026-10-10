@@ -34,11 +34,31 @@ describe("OpenAPI 3.1 document", () => {
 			const path = route.path.replace(/:(\w+)/g, "{$1}");
 			const operation = document.paths[path]?.[route.method.toLowerCase()];
 			expect(operation, `${route.method} ${route.path}`).toBeDefined();
+			if (route.path === "/v1/ingest") {
+				// Native ingest uses the DSN key header, not a bearer token.
+				expect(operation.security).toEqual([{ dsnKey: [] }]);
+				expect(operation["x-required-scope"]).toBeUndefined();
+				continue;
+			}
 			expect(operation["x-required-scope"], `${route.method} ${route.path}`).toMatch(
 				/^(issues:read|issues:write|admin)$/,
 			);
 			expect(operation.security).toEqual([{ bearer: [] }]);
 		}
+	});
+
+	it("documents the DSN key scheme of POST /v1/ingest", async () => {
+		const { document } = await getDocument();
+		expect(document.components.securitySchemes.dsnKey).toEqual({
+			type: "apiKey",
+			in: "header",
+			name: "X-Checkend-Key",
+		});
+		const ingest = document.paths["/v1/ingest"].post;
+		expect(ingest.parameters.map((p: { name: string }) => p.name)).toEqual(["project"]);
+		expect(ingest.requestBody.content["application/json"].schema.properties).toHaveProperty(
+			"frames",
+		);
 	});
 
 	it("documents only routes that the app has", async () => {

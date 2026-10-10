@@ -1,14 +1,18 @@
+import { sql } from "../../ports/db.ts";
 import type { Ports } from "../../ports/index.ts";
 import { isValidKey, parseDsn, sentryKeyFromRequest } from "./auth.ts";
 import { readIngestBody } from "./body.ts";
 import { parseEnvelope } from "./envelope.ts";
 import { IngestError } from "./errors.ts";
+import { parseJson } from "./json.ts";
 import { INGEST_LIMITS } from "./limits.ts";
+import { nativeToSentry } from "./native.ts";
 import { prepareEvent } from "./prepare.ts";
 import type { IngestState } from "./state.ts";
 import { storeEvent } from "./store.ts";
 
-export type IngestKind = "envelope" | "store";
+/** envelope and store: the Sentry protocol. native: POST /v1/ingest (simple JSON). */
+export type IngestKind = "envelope" | "store" | "native";
 
 const RATE_LIMIT_SECONDS = 60;
 
@@ -33,21 +37,41 @@ const tooManyRequests = (seconds: number, scope: "key" | "organization") =>
 export async function handleIngest(
 	request: Request,
 	kind: IngestKind,
-	projectParam: string,
+	projectParamInput: string,
 	ports: Ports,
 	state: IngestState,
 ): Promise<Response> {
+	let projectParam = projectParamInput;
 	try {
+		// A D1 key lookup (cache miss), a slug lookup and the tunnel path cost work before
+		// authentication, so they are rate-limited per client IP first.
+		const client = request.headers.get("cf-connecting-ip") ?? "unknown";
+		const lookupAllowed = () => ports.rateLimiter.allow(`key-lookup:${client}`);
+		const invalidKey = () => new IngestError(401, "invalid_key", "Invalid or missing DSN key.");
+
+		if (kind === "native") {
+			// ?project= is a public ID or a slug. An unknown project gives the same 401 as a
+			// wrong key, so that the response does not show which projects exist.
+			if (/^[a-z0-9][a-z0-9-]{0,47}$/.test(projectParam) && !/^\d{10}$/.test(projectParam)) {
+				if (!(await lookupAllowed())) return tooManyRequests(RATE_LIMIT_SECONDS, "key");
+				const found = await ports.db.first<{ public_id: number }>(
+					sql`SELECT public_id FROM projects WHERE slug = ${projectParam}`,
+				);
+				if (!found) throw invalidKey();
+				projectParam = String(found.public_id);
+			}
+			if (!/^\d{10}$/.test(projectParam)) throw invalidKey();
+		}
 		if (!/^\d{1,10}$/.test(projectParam)) return json(404, { detail: "Unknown project." });
 		const projectId = Number(projectParam);
 		const now = ports.clock.now();
 
-		// A D1 key lookup (cache miss) and the tunnel path cost work before authentication,
-		// so they are rate-limited per client IP first.
-		const client = request.headers.get("cf-connecting-ip") ?? "unknown";
-		const lookupAllowed = () => ports.rateLimiter.allow(`key-lookup:${client}`);
-
-		let key = sentryKeyFromRequest(request);
+		// The native endpoint reads the key only from X-Checkend-Key: never from the query
+		// string (it ends up in logs), and never a bearer token (an ingest key gives no reads).
+		let key =
+			kind === "native"
+				? (request.headers.get("x-checkend-key")?.trim().toLowerCase() ?? null)
+				: sentryKeyFromRequest(request);
 		let body: Uint8Array | null = null;
 		if (key === null && kind === "envelope") {
 			if (!(await lookupAllowed())) return tooManyRequests(RATE_LIMIT_SECONDS, "key");
@@ -56,13 +80,13 @@ export async function handleIngest(
 			const dsn = parseDsn(parseEnvelope(body).header.dsn);
 			if (dsn && dsn.projectId === projectParam) key = dsn.key;
 		}
-		if (!isValidKey(key)) throw new IngestError(401, "invalid_key", "Invalid or missing DSN key.");
+		if (!isValidKey(key)) throw invalidKey();
 		if (state.keys.peek(projectId, key, now) === undefined && !(await lookupAllowed())) {
 			return tooManyRequests(RATE_LIMIT_SECONDS, "key");
 		}
 		// The URL has the public project ID; the write needs the internal row ID.
 		const project = await state.keys.find(ports.db, projectId, key, now);
-		if (!project) throw new IngestError(401, "invalid_key", "Invalid or missing DSN key.");
+		if (!project) throw invalidKey();
 
 		if (!(await ports.rateLimiter.allow(`${projectId}:${key}`))) {
 			return tooManyRequests(RATE_LIMIT_SECONDS, "key");
@@ -71,7 +95,12 @@ export async function handleIngest(
 		if (overload > 0) return tooManyRequests(overload, "organization");
 
 		body ??= await readIngestBody(request);
-		const payload = kind === "store" ? body : parseEnvelope(body).event;
+		const payload =
+			kind === "native"
+				? new TextEncoder().encode(JSON.stringify(nativeToSentry(parseJson(body))))
+				: kind === "store"
+					? body
+					: parseEnvelope(body).event;
 		if (!payload) return json(200, {}); // sessions, client reports, ...: dropped
 		if (payload.byteLength > INGEST_LIMITS.eventBytes) {
 			throw new IngestError(413, "event_too_large", "The event is larger than 1 MB.");

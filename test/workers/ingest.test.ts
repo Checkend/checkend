@@ -49,3 +49,28 @@ describe("Worker ingest on D1 (golden fixtures)", () => {
 		},
 	);
 });
+
+describe("Worker native ingest on D1", () => {
+	it("stores a native JSON error sent with the project slug and the X-Checkend-Key header", async () => {
+		const response = await exports.default.fetch(
+			new Request("https://checkend.test/v1/ingest?project=fixture-app", {
+				method: "POST",
+				headers: { "content-type": "application/json", "x-checkend-key": project.publicKey },
+				body: JSON.stringify({ type: "NativeError", message: "from the native endpoint" }),
+			}),
+		);
+		expect(response.status).toBe(200);
+		const { id } = (await response.json()) as { id: string };
+		const row = await vi.waitFor(
+			async () => {
+				const found = await ports().db.first<{ title: string }>(
+					sql`SELECT i.title FROM events e JOIN issues i ON i.id = e.issue_id WHERE e.event_id = ${id}`,
+				);
+				if (!found) throw new Error("not stored yet");
+				return found;
+			},
+			{ timeout: 5000, interval: 20 },
+		);
+		expect(row.title).toBe("NativeError: from the native endpoint");
+	});
+});

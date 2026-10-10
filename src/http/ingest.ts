@@ -16,6 +16,12 @@ const PREFLIGHT = {
 };
 
 export function ingestRoutes(app: Hono<AppEnv>, state: IngestState): void {
+	// Native JSON ingest. Before the /v1 bearer auth: it uses the DSN key (X-Checkend-Key).
+	// No CORS: browsers use the Sentry endpoints.
+	app.post("/v1/ingest", (c) =>
+		handleIngest(c.req.raw, "native", c.req.query("project") ?? "", c.env.ports, state),
+	);
+
 	for (const kind of ["envelope", "store"] satisfies IngestKind[]) {
 		for (const path of [`/api/:project/${kind}/`, `/api/:project/${kind}`]) {
 			app.options(path, () => new Response(null, { status: 204, headers: PREFLIGHT }));
