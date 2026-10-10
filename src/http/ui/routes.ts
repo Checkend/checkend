@@ -214,14 +214,14 @@ export function uiRoutes(app: Hono<AppEnv>, state: IngestState): void {
 
 	app.get("/issues/:id", ...member, async (c) => {
 		const id = parseIssueId(c.req.param("id"));
-		const issue = id === null ? null : await getIssue(c.env.ports.db, id);
+		const issue = id === null ? null : await getIssue(c.env.ports.db, id, now(c));
 		if (!issue || id === null) return notFound(c);
 		const [latest, events, tags, project] = await Promise.all([
 			issue.latest_event_id ? getEvent(c.env.ports.db, Number(issue.latest_event_id)) : null,
 			listIssueEvents(c.env.ports.db, id, 20),
 			issueTags(c.env.ports.db, id),
 			c.env.ports.db.first<{ id: number; name: string }>(
-				sql`SELECT public_id AS id, name FROM projects WHERE public_id = ${issue.project_id ?? null}`,
+				sql`SELECT public_id AS id, name FROM projects WHERE public_id = ${Number(issue.project_id)}`,
 			),
 		]);
 		return render(

@@ -105,7 +105,8 @@ function issueRow(issue: IssueRow, now: Date): Html {
 }
 
 export interface IssueDetail {
-	issue: IssueRow;
+	/** From getIssue(): the API shape of an issue. */
+	issue: Record<string, unknown>;
 	project: { id: number; name: string } | null;
 	event: (Record<string, unknown> & { event: NormalizedEvent }) | null;
 	events: IssueRow[];

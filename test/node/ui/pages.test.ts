@@ -1,3 +1,4 @@
+import { readdirSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { createProject } from "../../../src/core/projects.ts";
 import { CSP } from "../../../src/http/ui/security.ts";
@@ -238,7 +239,11 @@ describe("settings", () => {
 		const d = await withData();
 		const { html } = await d.page("/settings");
 		expect(html).toContain("Developer (local)");
-		expect(html).toContain("0004_members_passkeys_sessions.sql");
+		const latest = readdirSync("migrations")
+			.filter((f) => f.endsWith(".sql"))
+			.sort()
+			.at(-1);
+		expect(html).toContain(latest);
 		expect(html).toMatch(/Ingest mode<\/dt>\s*<dd>[^<]*full/);
 		expect(html).toContain(`name="_csrf" value="${d.session.csrf}"`);
 		expect(html).toContain('action="/logout"');
