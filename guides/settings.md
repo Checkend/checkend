@@ -18,6 +18,8 @@ All settings are optional. Set them as Workers secrets or variables (in your
 | `ENCRYPTION_KEYS` (secret) | none | The keys that encrypt stored secrets, for example `k2:<base64>,k1:<base64>`, the current key first. [Webhooks](webhooks.md) need it. See [Encryption keys](webhooks.md#encryption-keys). |
 | `BLOBS` (binding) | none | An R2 bucket for [source maps](source-maps.md) and for large [raw payloads](what-checkend-stores.md#5-the-raw-payload). Without it, source map uploads give `400` `storage_not_configured`, and raw payloads above 64 KB (compressed) are not kept. |
 | `INGEST_QUEUE` (binding) | none | Optional overflow queue for events when D1 is overloaded. See [Bursts and overload](sending-errors.md#bursts-and-overload). |
+| `EMAIL` (binding) | none | The Cloudflare Email Service binding (`"send_email": [{"name": "EMAIL"}]`) for [email alerts](alerts.md#email). |
+| `EMAIL_FROM` | none | The sender of email alerts: an address on a domain that is onboarded to the Email Service. Email alerts need it and `EMAIL`. |
 | `NOTIFY` (binding) | none | Optional Cloudflare Queue for webhook deliveries. Without it, deliveries work. |
 | `RETENTION_DAYS` | 90 | Days that Checkend keeps stored events and hourly counts (hourly counts at least 8 days). See [Data retention](#data-retention). |
 | `REQUIRE_APPROVAL` | none | Actions that need a person's approval: a comma-separated list of `ignore` and `merge`. See [Approvals](api.md#approvals). |

@@ -37,7 +37,29 @@ escapes a quote). When there is no closing quote, Checkend filters to the end of
 Checkend removes secrets everywhere: in the stored event, in the issue title, and in the raw
 payload.
 
-The list is fixed for now. You cannot change it yet.
+### Your own scrub rules
+
+You can add rules for each project with
+[`PATCH /v1/projects/:project`](api.md#patch-v1projectsproject):
+
+- **`scrub_keys`**: up to 50 key names (letters, digits, `_`, `.` and `-`; any case). The value of
+  any key with one of these names becomes `[Filtered]`: in the event, `extra`, `contexts`, tags,
+  request headers and the raw payload. Prefer keys: they are fast and exact.
+- **`scrub_patterns`**: up to 10 regular expressions (JavaScript syntax), each at most 200
+  characters. Every match in every string becomes `[Filtered]`, also in the issue title, so
+  grouping uses the filtered text.
+
+```json
+{"scrub_keys": ["patient_id", "x-internal-token"], "scrub_patterns": ["ACCT-[0-9]{8}"]}
+```
+
+Your rules apply after the default rules, within 60 seconds of a change.
+
+Checkend checks each pattern before it saves it, so that a pattern cannot make ingest slow. It
+rejects a pattern that is not valid, that has a backreference (`\1`), that has a nested
+quantifier such as `(a+)+`, or that is slow on long inputs (it runs the pattern on test inputs of
+up to 16,384 characters). Then the response is `400` with the reason. Saving can take up to about
+a second.
 
 ## 2. Size limits
 

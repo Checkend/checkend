@@ -4,8 +4,8 @@ Checkend is open-source error tracking for coding agents. It runs as one Cloudfl
 D1 database, in your own Cloudflare account.
 
 > **Status: early development.** Checkend can receive errors from Sentry SDKs, group them into
-> issues, and give them to coding agents through an MCP server and a JSON API. It has no web UI
-> and no alerts yet. Expect changes.
+> issues, give them to coding agents through an MCP server and a JSON API, and send alerts. It
+> has no web UI yet. Expect changes.
 
 ## Guides
 
@@ -14,6 +14,7 @@ D1 database, in your own Cloudflare account.
 | [Quick start](quick-start.md) | Run Checkend, connect an app, and read its errors. |
 | [MCP server](mcp.md) | Connect a coding agent, and read issue briefs. |
 | [Webhooks](webhooks.md) | Call your agent runner when an issue is new, regressed or verified, or [start an agent from GitHub Actions](webhooks.md#start-an-agent-from-github-actions). |
+| [Alerts](alerts.md) | Tell people in Slack, Discord, a GitHub issue or email. |
 | [Verify fixes](fix-loop.md) | Link a fix, report deploys, and let Checkend verify the fix in production. |
 | [Send errors](sending-errors.md) | Know what the ingest endpoints accept, and what they return. |
 | [Source maps](source-maps.md) | Upload source maps, so that briefs show the original JavaScript. |
@@ -45,6 +46,8 @@ Contributors and coding agents: read [AGENTS.md](../AGENTS.md) and
   issue that gets a new event becomes unresolved again.
 - **The fix loop**: an agent links its fix, CI reports deploys, and Checkend verifies the fix
   when the error stops, or marks the issue regressed when the error comes back.
+- **Alerts** in Slack, Discord, GitHub issues and email, also for spikes, with safe messages.
+- **Your own scrub rules**: key names and patterns for each project.
 - **Outgoing webhooks**: signed requests with the issue brief, with retries, for new,
   regressed and verified issues.
 - **Unusual tags**: the brief shows tag values that are much more common in an issue than in
@@ -67,5 +70,4 @@ Contributors and coding agents: read [AGENTS.md](../AGENTS.md) and
 These features are planned. They are **not** available now:
 
 - a web UI
-- alerts
 - a Node or Docker entry (the core can run on Node, but there is no Node server yet)

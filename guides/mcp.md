@@ -96,6 +96,11 @@ returns the new issue. See [split](api.md#post-v1issuesidsplit) for what a split
 - `list_releases(project?, limit?)` lists the releases and their deploys, the most recently
   deployed first. `limit` is 1 to 100.
 
+### `list_alerts`
+
+Lists the alert rules and webhooks (see [Alerts](alerts.md)), without secrets, email addresses or
+URL query strings. It needs only `issues:read`.
+
 ### `merge_issues`
 
 Merges 1 to 10 issues into a target issue. Inputs: `target_id` and `source_ids`. See

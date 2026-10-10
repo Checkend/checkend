@@ -28,7 +28,7 @@ curl -X POST "$CHECKEND_URL/v1/webhooks" \
 | `events` | One or more of `issue.new`, `issue.regressed` and `issue.verified`. |
 | `min_trust` | `high` (the default) or `low`. See [Trust](#trust). |
 | `project` | A public project ID or slug. The default is all projects. |
-| `format` | `checkend` (the default: the body below) or `github_dispatch` (see [Start an agent from GitHub Actions](#start-an-agent-from-github-actions)). |
+| `format` | `checkend` (the default: the body below) or `github_dispatch` (see [Start an agent from GitHub Actions](#start-an-agent-from-github-actions)). For Slack, Discord, GitHub issues and email, see [Alerts](alerts.md). |
 | `github_token` | Only for `github_dispatch`, and required for it. Checkend stores it encrypted and never returns it. |
 
 The response (`201`) has the webhook and its `secret` (`whsec_...`). **The secret is only in this
@@ -39,6 +39,7 @@ response.** Keep it: your receiver needs it to check the signature.
 | `issue.new` | The first event of a new issue. |
 | `issue.regressed` | A regression: a resolved issue gets an event, or the error comes back after a fix (see [Verify fixes](fix-loop.md#regression)). |
 | `issue.verified` | A fix is verified. |
+| `issue.spike` | The events of an issue in the current clock hour go above `spike_threshold` (see [Alerts](alerts.md#events)). |
 
 ## The request
 

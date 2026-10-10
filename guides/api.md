@@ -25,7 +25,7 @@ secret.
 
 | Scope | Gives access to |
 |---|---|
-| `issues:read` | `GET /v1/projects`, `/v1/issues`, `/v1/issues/:id`, `/v1/issues/:id/events`, `/v1/issues/:id/activity`, `/v1/events/:id`, `/v1/releases`, `/v1/releases/:version`, `/v1/sourcemaps` |
+| `issues:read` | `GET /v1/projects`, `/v1/issues`, `/v1/issues/:id`, `/v1/issues/:id/events`, `/v1/issues/:id/activity`, `/v1/events/:id`, `/v1/releases`, `/v1/releases/:version`, `/v1/sourcemaps`, `/v1/alerts` |
 | `issues:write` | `POST /v1/issues/:id/resolve`, `/ignore`, `/unresolve`, `/merge`, `/split`, `/fix`, `/claim`, `/release` and `/notes`, `DELETE /v1/issues/:id/claim`, and the MCP tools that change issues |
 | `admin` | All scopes, and also `POST /v1/projects`, `PATCH /v1/projects/:project`, `GET` and `POST /v1/tokens`, `DELETE /v1/tokens/:id`, `GET /v1/activity`, `GET /v1/labels`, `GET /v1/fix-outcomes`, `GET /v1/approvals`, `POST /v1/approvals/:id/approve` and `/reject`, and all `/v1/webhooks` endpoints |
 | `releases:write` | `POST /v1/deploys`, `POST /v1/sourcemaps`, `DELETE /v1/sourcemaps/:id` |
@@ -61,6 +61,7 @@ Lists all projects, with their DSNs. Each project also has:
 - `trust_setting`: `low`, `high`, or `null` (automatic)
 - `allowed_origins`: a list of origins, or `null` (any origin)
 - `daily_quota`: the daily event quota, or `null` (no quota)
+- `scrub_keys` and `scrub_patterns`: the [scrub settings](what-checkend-stores.md#your-own-scrub-rules) of the project
 - `events_today`: the events of the project since 00:00 UTC (a repeated `event_id` counts once)
 
 ```json
@@ -94,6 +95,8 @@ or the slug. The body has one or more of these fields:
 | `repository` | `"owner/name"`, or `null` to remove it. Checkend stores it in lowercase. It is used by the [GitHub webhook](fix-loop.md#or-use-the-github-webhook), and a linked pull request must be in this repository. |
 | `trust` | `"low"`, `"high"`, or `null` for automatic. See [Trust and allowed origins](sending-errors.md#trust-and-allowed-origins). |
 | `daily_quota` | 1 to 1,000,000,000 events each day (UTC), or `null` to remove the quota (the default). Other values give `400`. At the quota, ingest answers `429` until 00:00 UTC (see [Back-pressure](sending-errors.md#back-pressure-429)). A change takes effect within 60 seconds. |
+| `scrub_keys` | Up to 50 key names (letters, digits, `_`, `.` and `-`; any case). The value of any key with one of these names becomes `[Filtered]`. See [Your own scrub rules](what-checkend-stores.md#your-own-scrub-rules). |
+| `scrub_patterns` | Up to 10 regular expressions (JavaScript syntax), each at most 200 characters. A pattern that fails the safety check gives `400` with the path `scrub_patterns.<index>` and the reason. Saving can take up to about a second. |
 | `allowed_origins` | 1 to 20 origins (`scheme://host[:port]`, `http` or `https`, no path, no wildcard; stored in lowercase), or `null` for any origin. |
 
 Other fields or values give `400`. An unknown project gives `404`. Returns the project, as in
@@ -367,16 +370,22 @@ the `admin` scope.
 
 ### `POST /v1/webhooks`
 
-Creates a webhook. Body: `name` (1 to 100 characters), `url`, `events` (one or more of
-`issue.new`, `issue.regressed` and `issue.verified`), `min_trust` (`high`, the default, or
-`low`), `project` (optional: a public ID or slug; the default is all projects), `format`
-(`checkend`, the default, or `github_dispatch`) and `github_token` (required for
-`github_dispatch`, not allowed for other formats; stored encrypted and never returned). Other
-fields give `400`.
+Creates a webhook or an [alert](alerts.md). Other fields give `400`.
 
-For `github_dispatch`, the `url` must be
-`https://api.github.com/repos/<owner>/<repo>/dispatches` (else `400` with the path `url`). See
-[Start an agent from GitHub Actions](webhooks.md#start-an-agent-from-github-actions).
+| Field | Value |
+|---|---|
+| `name` | 1 to 100 characters. |
+| `format` | `checkend` (the default), `github_dispatch`, `slack`, `discord`, `github_issue` or `email`. |
+| `url` | The target. Not for `email`. For `github_dispatch`: `https://api.github.com/repos/<owner>/<repo>/dispatches`; for `github_issue`: `https://api.github.com/repos/<owner>/<repo>/issues`; for `slack`: `https://hooks.slack.com/services/...`; for `discord`: `https://discord.com/api/webhooks/<id>/<token>`. Slack and Discord URLs are stored encrypted and shown masked. |
+| `to` | For `email` only: 1 to 20 addresses. |
+| `github_token` | For `github_dispatch` and `github_issue` only, and required for them. Stored encrypted and never returned. |
+| `events` | One or more of `issue.new`, `issue.regressed`, `issue.verified` and `issue.spike`. |
+| `spike_threshold` | 1 to 1,000,000. Required with `issue.spike`, and only with it. |
+| `min_trust` | `high` (the default) or `low`. |
+| `project` | A public ID or slug. The default is all projects. |
+
+See [Start an agent from GitHub Actions](webhooks.md#start-an-agent-from-github-actions) and
+[Alerts](alerts.md).
 
 Returns `201` with `id`, `name`, `url`, `format`, `events`, `min_trust`, `project_id`,
 `created_at`, `created_by`, `last_delivery_status` and `secret` (`whsec_...`). **The secret is
@@ -386,8 +395,16 @@ Errors:
 
 - `400` `{"error": "encryption_not_configured", "reason": "Set ENCRYPTION_KEYS: ..."}`: the
   Worker has no [encryption keys](webhooks.md#encryption-keys).
+- `400` `{"error": "email_not_configured"}`: an `email` alert, but the Worker has no
+  [email settings](alerts.md#email).
 - `400` `invalid_request` with the path `url` (the reason, see the
-  [URL rules](webhooks.md#url-rules)), `project` or `github_token`.
+  [URL rules](webhooks.md#url-rules)), `to`, `project`, `github_token` or `spike_threshold`.
+
+### `GET /v1/alerts`
+
+Lists the webhooks and alerts for agents and people who are not admins. Needs `issues:read`. It
+does not show secrets, email addresses (only their number), or the query strings of URLs. The
+MCP tool `list_alerts` returns the same list.
 
 ### `GET /v1/webhooks`
 
@@ -563,7 +580,7 @@ The actions are:
 | `sourcemap.delete` | A source map is deleted. |
 | `webhook.create` | A webhook is created. `data` has `name` and `url`. |
 | `webhook.delete` | A webhook is deleted. |
-| `project.update` | The settings of a project change (`repository`, `trust`, `allowed_origins` or `daily_quota`). `data` has the changed fields. |
+| `project.update` | The settings of a project change (`repository`, `trust`, `allowed_origins`, `daily_quota`, `scrub_keys` or `scrub_patterns`). `data` has the changed fields. |
 | `approval.request`, `approval.approve`, `approval.reject` | An approval is requested or decided. |
 
 ## Triage labels
