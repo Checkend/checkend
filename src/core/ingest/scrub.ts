@@ -76,7 +76,6 @@ const KEY_SEPARATOR =
 	/(?<![A-Za-z0-9_.-])(["']?)([A-Za-z][A-Za-z0-9_.-]{0,63})\1\s{0,8}[:=]\s{0,8}/g;
 const MAYBE_SENSITIVE =
 	/pass|pwd|secret|token|auth|cookie|session|csrf|xsrf|cvv|cvc|ssn|dsn|key|card/i;
-const QUOTED_MAX = 512;
 const CARD_CANDIDATE = /\b(?:\d[ -]?){12,18}\d\b/g;
 
 /** Replaces secret formats inside one string. */
@@ -155,23 +154,28 @@ function scrubKeyValues(text: string): string {
 }
 
 /**
- * The part of the text to replace, after a separator. Quotes stay. A quoted value ends at
- * its closing quote (up to 512 characters, on one line). Otherwise the value ends at a space,
- * a quote, & or ; (also inside a quote that is too long or has no end).
+ * The part of the text to replace, after a separator. Quotes stay. A quoted value ends at its
+ * matching closing quote (a backslash escapes a quote), across spaces and line breaks, with no
+ * length limit; without a closing quote, it ends at the end of the text. An unquoted value
+ * ends at a space, a quote, & or ;. Linear: each quote is checked once.
  */
 function findValue(text: string, at: number): { start: number; end: number } {
 	const quote = text[at];
-	let start = at;
 	if (quote === '"' || quote === "'") {
-		start = at + 1;
-		const close = text.indexOf(quote, start);
-		if (close !== -1 && close - at <= QUOTED_MAX && !text.slice(start, close).includes("\n")) {
-			return { start, end: close };
+		const start = at + 1;
+		for (let i = start; ; ) {
+			const close = text.indexOf(quote, i);
+			if (close === -1) return { start, end: text.length };
+			let backslashes = 0;
+			while (close - 1 - backslashes >= start && text.charCodeAt(close - 1 - backslashes) === 92)
+				backslashes++;
+			if (backslashes % 2 === 0) return { start, end: close };
+			i = close + 1;
 		}
 	}
-	let end = start;
+	let end = at;
 	while (end < text.length && !/[\s"'&;]/.test(text[end] as string)) end++;
-	return { start, end };
+	return { start: at, end };
 }
 
 const HEADER_MAX = 64;

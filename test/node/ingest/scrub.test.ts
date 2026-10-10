@@ -136,10 +136,25 @@ describe("scrub: key=value pairs inside text", () => {
 		expect(scrubString(input)).toBe(output);
 	});
 
-	it("filters a quoted value above 512 characters, or one with a line break, up to a space or quote", () => {
-		const long = "x".repeat(600);
-		expect(scrubString(`{"password": "${long}"}`)).toBe(`{"password": "${FILTERED}"}`);
-		expect(scrubString(`password: "abc\ndef"`)).toBe(`password: "${FILTERED}\ndef"`);
+	it.each([
+		["a real line break", 'password: "line1\nline2"', `password: "${FILTERED}"`],
+		["a CRLF line break", 'password: "line1\r\nline2" next', `password: "${FILTERED}" next`],
+		[
+			"a long value with a space",
+			`{"password": "${"x".repeat(600)} tail"}`,
+			`{"password": "${FILTERED}"}`,
+		],
+		[
+			"an escaped quote inside",
+			'{"password": "ab\\"cd", "user": "ada"}',
+			`{"password": "${FILTERED}", "user": "ada"}`,
+		],
+		["a value with spaces", 'token="abc def" ok', `token="${FILTERED}" ok`],
+		["a single-quoted value", "secret: 'a b c' end", `secret: '${FILTERED}' end`],
+		["no closing quote: to the end", 'password: "abc def\nmore text', `password: "${FILTERED}`],
+		["an empty value", 'password: "" x', 'password: "" x'],
+	])("filters a quoted value to its closing quote: %s", (_label, input, output) => {
+		expect(scrubString(input)).toBe(output);
 	});
 
 	it.each([
@@ -160,6 +175,9 @@ describe("scrub: key=value pairs, linear time", () => {
 		["repeated quoted keys without a closing quote", '"password": "'.repeat(size / 13)],
 		["a sensitive word, then long prose", `token ${"abcdefgh ".repeat(size / 9)}`],
 		["a long key-like run", `password ${"a".repeat(size)}=x`],
+		["an unclosed quote after a sensitive key", `password: "${"a b \n".repeat(size / 6)}`],
+		["many short quoted values", 'password: "a" '.repeat(size / 14)],
+		["many escaped quotes in one value", `password: "${'\\"'.repeat(size / 2)}"`],
 	])("%s: under 100 ms for 256 KB", (_label, text) => {
 		const start = performance.now();
 		scrubString(text);
