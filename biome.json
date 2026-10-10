@@ -8,6 +8,7 @@
 	"linter": {
 		"rules": {
 			"preset": "recommended",
+			"correctness": { "useImportExtensions": "error" },
 			"style": {
 				"noRestrictedImports": {
 					"level": "error",

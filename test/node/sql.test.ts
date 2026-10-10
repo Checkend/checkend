@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkStatement, MAX_PARAMS, sql } from "../../src/ports/db";
+import { checkStatement, MAX_PARAMS, sql } from "../../src/ports/db.ts";
 
 describe("sql tagged template", () => {
 	it("turns each interpolated value into a bound parameter", () => {

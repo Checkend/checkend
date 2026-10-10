@@ -1,4 +1,4 @@
-import type { Clock } from "../ports/clock";
+import type { Clock } from "../ports/clock.ts";
 
 /** The real time. Portable: it uses only `Date`. */
 export const systemClock: Clock = {

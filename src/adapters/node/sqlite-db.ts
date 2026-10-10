@@ -6,7 +6,7 @@ import {
 	type Row,
 	type RunResult,
 	type Statement,
-} from "../../ports/db";
+} from "../../ports/db.ts";
 
 const STATEMENT_CACHE_SIZE = 500;
 

@@ -6,7 +6,7 @@ import {
 	type RunResult,
 	type SqlValue,
 	type Statement,
-} from "../../ports/db";
+} from "../../ports/db.ts";
 
 /** `Db` on Cloudflare D1 (D16). D1 runs each `batch()` as one transaction. */
 export function d1Db(d1: D1Database): Db {

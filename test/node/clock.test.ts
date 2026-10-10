@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fixedClock, systemClock } from "../../src/core/clock";
+import { fixedClock, systemClock } from "../../src/core/clock.ts";
 
 describe("Clock port", () => {
 	it("systemClock returns the current time", () => {

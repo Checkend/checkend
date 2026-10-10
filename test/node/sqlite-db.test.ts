@@ -1,4 +1,4 @@
-import { openSqliteDb } from "../../src/adapters/node/sqlite-db";
-import { dbContract } from "../contract/db-contract";
+import { openSqliteDb } from "../../src/adapters/node/sqlite-db.ts";
+import { dbContract } from "../contract/db-contract.ts";
 
 dbContract("SQLite (node:sqlite)", () => openSqliteDb(":memory:"));
