@@ -4,6 +4,7 @@ import { IngestState } from "../core/ingest/state.ts";
 import type { Actor } from "../core/tokens.ts";
 import type { Ports } from "../ports/index.ts";
 import { apiRoutes } from "./api.ts";
+import { docsRoutes } from "./docs.ts";
 import { ingestRoutes } from "./ingest.ts";
 import { mcpRoutes } from "./mcp.ts";
 
@@ -30,6 +31,8 @@ export function createApp(options: AppOptions = {}): Hono<AppEnv> {
 	});
 
 	ingestRoutes(app, state);
+	// Before apiRoutes: /v1/openapi.json is public, so it must answer before the /v1 auth.
+	docsRoutes(app);
 	apiRoutes(app, state);
 	mcpRoutes(app);
 

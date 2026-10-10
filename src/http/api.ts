@@ -1,6 +1,7 @@
 import type { Context, Hono } from "hono";
 import * as v from "valibot";
 import { listActivity } from "../core/activity.ts";
+import { LimitQuery } from "../core/api-spec.ts";
 import type { IngestState } from "../core/ingest/state.ts";
 import { ingestStatus } from "../core/ingest-status.ts";
 import {
@@ -32,13 +33,6 @@ const dsn = (origin: string, key: string, projectId: number) => {
 	const url = new URL(origin);
 	return `${url.protocol}//${key}@${url.host}/${projectId}`;
 };
-
-const LimitQuery = v.object({
-	limit: v.optional(
-		v.pipe(v.string(), v.regex(/^\d{1,3}$/), v.transform(Number), v.minValue(1), v.maxValue(100)),
-		"25",
-	),
-});
 
 /**
  * The JSON API, `/v1`. Each request needs `Authorization: Bearer <token>`: a scoped token,
