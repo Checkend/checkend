@@ -176,6 +176,28 @@ describe("normalizeEvent: limits", () => {
 		expect(event.extra?.list as unknown[]).toHaveLength(EVENT_LIMITS.arrayItems);
 	});
 
+	it("keeps the stored JSON under the size limit, also when every frame field is long", () => {
+		const long = (n: number, c: string) => c.repeat(n);
+		const frames = Array.from({ length: 50 }, (_, i) => ({
+			filename: `/${long(600, "f")}${i}`,
+			abs_path: `/${long(3000, "a")}${i}`,
+			module: long(300, "m") + i,
+			function: long(300, "g") + i,
+			in_app: true,
+		}));
+		const values = Array.from({ length: 10 }, (_, i) => ({
+			type: long(300, "T") + i,
+			value: long(9000, "v"),
+			stacktrace: { frames },
+		}));
+		const event = normalize({ message: long(9000, "m"), exception: { values } });
+		expect(new TextEncoder().encode(JSON.stringify(event)).byteLength).toBeLessThanOrEqual(
+			EVENT_LIMITS.jsonBytes,
+		);
+		expect(event.truncated).toBe(true);
+		expect(event.exceptions.length).toBeGreaterThan(0);
+	});
+
 	it("keeps the stored JSON under the size limit", () => {
 		const big = "x".repeat(1000);
 		const breadcrumbs = Array.from({ length: 50 }, () => ({ message: big, data: { big } }));

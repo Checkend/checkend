@@ -436,6 +436,31 @@ const SHRINK: ((event: NormalizedEvent) => void)[] = [
 		}
 		e.exceptions = e.exceptions.slice(-3);
 	},
+	(e) => {
+		const short = (value: string | null) => value && cleanText(value, 128);
+		for (const x of e.exceptions) {
+			for (const f of x.frames) {
+				f.abs_path = null;
+				f.filename = short(f.filename);
+				f.module = short(f.module);
+				f.function = short(f.function);
+				f.context_line = null;
+			}
+		}
+	},
+	// The last step bounds every field, so the result is always under the limit.
+	(e) => {
+		e.message = e.message && cleanText(e.message, 512);
+		e.message_template = e.message_template && cleanText(e.message_template, 512);
+		e.request = null;
+		e.user = null;
+		e.exceptions = e.exceptions.slice(-1);
+		for (const x of e.exceptions) {
+			x.type = x.type && cleanText(x.type, 128);
+			x.value = cleanText(x.value, 512);
+			x.module = x.module && cleanText(x.module, 128);
+		}
+	},
 ];
 
 function fitSize(event: NormalizedEvent): NormalizedEvent {
