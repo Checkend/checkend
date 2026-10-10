@@ -13,6 +13,7 @@ export interface ConfigEnv {
 	TAG_KEYS_PER_PROJECT?: string;
 	/** Comma-separated: ignore, merge. */
 	REQUIRE_APPROVAL?: string;
+	VERIFY_QUIET_HOURS?: string;
 }
 
 type WorkerEnv = Omit<Env, "INGEST_RATE_LIMITER"> &
@@ -37,6 +38,7 @@ export function readConfig(env: ConfigEnv): Config {
 			.split(",")
 			.map((a) => a.trim())
 			.filter((a) => a === "ignore" || a === "merge"),
+		verifyQuietHours: positiveInt(env.VERIFY_QUIET_HOURS) ?? DEFAULT_CONFIG.verifyQuietHours,
 	};
 }
 

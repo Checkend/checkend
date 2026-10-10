@@ -89,7 +89,9 @@ export function mcpContract(
 					"get_event",
 					"get_issue_brief",
 					"ignore_issue",
+					"link_fix",
 					"list_issues",
+					"list_releases",
 					"merge_issues",
 					"release_claim",
 					"resolve_issue",
@@ -286,6 +288,38 @@ export function mcpContract(
 				(await client.callTool({ name: "get_issue_brief", arguments: { issue_id: "4x" } })).isError,
 			).toBe(true);
 			await client.close();
+		});
+
+		it("link_fix sets fix_pending; it needs one of commit and pr_url, and issues:write", async () => {
+			const { reader, writer, issueId } = await tokens();
+			const client = await connect(writer);
+			const sha = "0123456789abcdef0123456789abcdef01234567";
+			const linked = await client.callTool({
+				name: "link_fix",
+				arguments: { issue_id: String(issueId), commit: sha },
+			});
+			expect(linked.isError).toBeFalsy();
+			expect(JSON.parse(text(linked))).toMatchObject({
+				status: "fix_pending",
+				fix: { kind: "commit", commit: sha, linked_by: "writer", deployed_at: null },
+			});
+			for (const args of [
+				{ issue_id: issueId },
+				{ issue_id: issueId, commit: sha, pr_url: "https://github.com/acme/shop/pull/1" },
+				{ issue_id: issueId, pr_url: "https://example.com/acme/shop/pull/1" },
+			]) {
+				expect((await client.callTool({ name: "link_fix", arguments: args })).isError).toBe(true);
+			}
+			await client.close();
+			const readOnly = await connect(reader);
+			const denied = await readOnly.callTool({
+				name: "link_fix",
+				arguments: { issue_id: issueId, commit: sha },
+			});
+			expect(denied.isError).toBe(true);
+			const releases = await readOnly.callTool({ name: "list_releases", arguments: {} });
+			expect(JSON.parse(text(releases))).toEqual({ releases: [] });
+			await readOnly.close();
 		});
 	});
 }

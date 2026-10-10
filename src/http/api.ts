@@ -3,6 +3,18 @@ import * as v from "valibot";
 import { listActivity } from "../core/activity.ts";
 import { ClaimBody, LimitQuery, MergeBody, NoteBody, SplitBody } from "../core/api-spec.ts";
 import { addNote, claimIssue, issueTimeline, releaseClaim } from "../core/claims.ts";
+import {
+	DeployBody,
+	FixOutcomeQuery,
+	getRelease,
+	LinkFixBody,
+	linkFix,
+	listFixOutcomes,
+	listReleases,
+	ReleaseListQuery,
+	ReleaseQuery,
+	recordDeploy,
+} from "../core/fixes.ts";
 import type { IngestState } from "../core/ingest/state.ts";
 import { ingestStatus } from "../core/ingest-status.ts";
 import {
@@ -258,6 +270,50 @@ export function apiRoutes(app: Hono<AppEnv>, state: IngestState): void {
 			{ data: await getIssue(c.env.ports.db, result.newIssueId, c.env.ports.clock.now()) },
 			201,
 		);
+	});
+
+	app.post("/v1/issues/:id/fix", need("issues:write"), async (c) => {
+		const params = v.safeParse(IdParam, c.req.param());
+		if (!params.success) return invalid(c, params.issues);
+		const body = v.safeParse(LinkFixBody, await c.req.json().catch(() => null));
+		if (!body.success) return invalid(c, body.issues);
+		const result = await linkFix(c.env.ports, c.get("actor"), params.output.id, body.output);
+		if (result === "not_found") return c.json({ error: "not_found" }, 404);
+		return c.json({
+			data: await getIssue(c.env.ports.db, params.output.id, c.env.ports.clock.now()),
+		});
+	});
+
+	app.post("/v1/deploys", need("releases:write"), async (c) => {
+		const body = v.safeParse(DeployBody, await c.req.json().catch(() => null));
+		if (!body.success) return invalid(c, body.issues);
+		const result = await recordDeploy(c.env.ports, c.get("actor"), body.output);
+		if (result === "project_not_found") return c.json({ error: "project_not_found" }, 404);
+		return c.json({ data: result }, 201);
+	});
+
+	app.get("/v1/releases", need("issues:read"), async (c) => {
+		const query = v.safeParse(ReleaseListQuery, c.req.query());
+		if (!query.success) return invalid(c, query.issues);
+		const releases = await listReleases(c.env.ports.db, query.output);
+		if (releases === "project_not_found") return c.json({ error: "project_not_found" }, 404);
+		return c.json({ data: releases });
+	});
+
+	app.get("/v1/releases/:version", need("issues:read"), async (c) => {
+		const query = v.safeParse(ReleaseQuery, c.req.query());
+		if (!query.success) return invalid(c, query.issues);
+		const version = c.req.param("version");
+		const release = await getRelease(c.env.ports.db, query.output.project, version);
+		return release ? c.json({ data: release }) : c.json({ error: "not_found" }, 404);
+	});
+
+	app.get("/v1/fix-outcomes", need("admin"), async (c) => {
+		const query = v.safeParse(FixOutcomeQuery, c.req.query());
+		if (!query.success) return invalid(c, query.issues);
+		return c.json({
+			data: await listFixOutcomes(c.env.ports.db, query.output, c.env.ports.clock.now()),
+		});
 	});
 
 	app.get("/v1/labels", need("admin"), async (c) => {

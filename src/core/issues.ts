@@ -5,7 +5,15 @@ import { type Db, sql } from "../ports/db.ts";
  * Read API (v1). Route schemas are Valibot, so that the OpenAPI document can be generated
  * from them later. Responses never include the raw payload.
  */
-export const ISSUE_STATUSES = ["unresolved", "resolved", "ignored", "merged"] as const;
+export const ISSUE_STATUSES = [
+	"unresolved",
+	"resolved",
+	"ignored",
+	"merged",
+	"fix_pending",
+	"verified",
+	"regressed",
+] as const;
 
 const id = v.pipe(v.string(), v.regex(/^\d{1,15}$/), v.transform(Number));
 
@@ -102,14 +110,16 @@ const hourBefore = (now: Date, hours: number) =>
 
 /**
  * Issue columns for the API, with the counts and priority score v1:
- * (1 + users affected) x (1 + events in 24 h) x recency x newness, where recency is
- * 1 / (1 + days since last seen), and newness is 2 for an issue first seen in the last 24 h.
+ * (1 + users affected) x (1 + events in 24 h) x recency x newness x regression, where recency
+ * is 1 / (1 + days since last seen), newness is 2 for an issue first seen in the last 24 h, and
+ * regression is 2 for a regressed issue (its fix did not work).
  * Parameters: hour24, hour7d, now, now24 (ISO).
  */
 const SCORED_ISSUES = `SELECT *,
 		round((1 + users_affected) * (1 + events_24h)
 			* (1.0 / (1 + max(0, julianday(?) - julianday(last_seen))))
-			* (CASE WHEN first_seen > ? THEN 2 ELSE 1 END), 3) AS priority
+			* (CASE WHEN first_seen > ? THEN 2 ELSE 1 END)
+			* (CASE WHEN status = 'regressed' THEN 2 ELSE 1 END), 3) AS priority
 	FROM (SELECT i.id, p.public_id AS project_id, i.title, i.culprit, i.type, i.level, i.platform,
 			i.status, i.times_seen, i.stored_events, i.users_affected, i.first_seen, i.last_seen,
 			i.first_release, i.last_release, i.fingerprint, i.fingerprint_version, i.merged_into,
@@ -234,6 +244,39 @@ export function withClaim<T extends Record<string, unknown>>(
 	};
 }
 
+/** The fix of an issue as the API shows it. */
+export interface Fix {
+	kind: "commit" | "pr";
+	commit?: string;
+	pr_url?: string;
+	linked_by: string;
+	linked_at: string;
+	release: string | null;
+	environment: string | null;
+	deployed_at: string | null;
+	outcome: "verified" | "regressed" | null;
+	verified_at: string | null;
+	regressed_at: string | null;
+	regressed_in: string | null;
+}
+
+/** The current fix of an issue, or null. */
+export async function currentFix(db: Db, issueId: number): Promise<Fix | null> {
+	const row = await db.first<Record<string, string | null>>(
+		sql`SELECT f.kind, f.ref, f.linked_by, f.linked_at, f.deployed_at, f.outcome, f.verified_at,
+				f.regressed_at, f.regressed_in, r.version AS release, d.environment
+			FROM fixes f LEFT JOIN deploys d ON d.id = f.deploy_id LEFT JOIN releases r ON r.id = d.release_id
+			WHERE f.issue_id = ${issueId} ORDER BY f.id DESC LIMIT 1`,
+	);
+	if (!row) return null;
+	const { kind, ref, ...rest } = row;
+	return {
+		kind: kind as Fix["kind"],
+		...(kind === "commit" ? { commit: String(ref) } : { pr_url: String(ref) }),
+		...(rest as Omit<Fix, "kind" | "commit" | "pr_url">),
+	};
+}
+
 export async function getIssue(
 	db: Db,
 	issueId: number,
@@ -247,7 +290,11 @@ export async function getIssue(
 	const latest = await db.first<{ id: number }>(
 		sql`SELECT id FROM events WHERE issue_id = ${issueId} ORDER BY id DESC LIMIT 1`,
 	);
-	return { ...forApi(issue, now), latest_event_id: latest?.id ?? null };
+	return {
+		...forApi(issue, now),
+		latest_event_id: latest?.id ?? null,
+		fix: await currentFix(db, issueId),
+	};
 }
 
 export async function listIssueEvents(db: Db, issueId: number, limit: number): Promise<IssueRow[]> {

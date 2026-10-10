@@ -1,5 +1,12 @@
 import * as v from "valibot";
 import { CLAIM_MAX_MINUTES, NOTE_MAX_CHARS } from "./claims.ts";
+import {
+	DeployBody,
+	FixOutcomeQuery,
+	LinkFixBody,
+	ReleaseListQuery,
+	ReleaseQuery,
+} from "./fixes.ts";
 import { NativeEvent } from "./ingest/native.ts";
 import { MAX_MERGE_SOURCES, MAX_SPLIT_EVENTS } from "./issue-actions.ts";
 import { CreateProjectBody, EventListQuery, IssueListQuery } from "./issues.ts";
@@ -179,6 +186,45 @@ export const API_ROUTES: ApiRoute[] = [
 		summary:
 			"Move stored events of this issue to a new issue (the opposite of a merge). Returns the new issue.",
 		body: SplitBody,
+	},
+	{
+		method: "POST",
+		path: "/v1/issues/:id/fix",
+		scope: "issues:write",
+		summary:
+			"Link a fix: a commit SHA or a GitHub pull request URL. The status becomes fix_pending; a deploy that contains the fix and a quiet period make it verified.",
+		body: LinkFixBody,
+	},
+	{
+		method: "POST",
+		path: "/v1/deploys",
+		scope: "releases:write",
+		summary:
+			"Report a deploy of a release (created on first use; the default version is the commit SHA). List the commits since the last deploy, so that Checkend knows which fixes it contains.",
+		body: DeployBody,
+	},
+	{
+		method: "GET",
+		path: "/v1/releases",
+		scope: "issues:read",
+		summary: "Releases, the most recently deployed first, with their deploys.",
+		query: ReleaseListQuery,
+	},
+	{
+		method: "GET",
+		path: "/v1/releases/:version",
+		scope: "issues:read",
+		summary:
+			"One release: its deploys, the issues first seen in it, the fixes it deployed, and the issues that regressed in it.",
+		query: ReleaseQuery,
+	},
+	{
+		method: "GET",
+		path: "/v1/fix-outcomes",
+		scope: "admin",
+		summary:
+			"Fix outcomes (verified or regressed), with the time to verify and who linked the fix, the most recent first.",
+		query: FixOutcomeQuery,
 	},
 	{
 		method: "GET",

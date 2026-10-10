@@ -4,6 +4,8 @@
 	"main": "src/entry/worker.ts",
 	"compatibility_date": "2026-10-06",
 	"observability": { "enabled": true },
+	// One schedule for all jobs (the fix verification); the Worker decides by the time.
+	"triggers": { "crons": ["*/5 * * * *"] },
 	// Optional: a rate limit per DSN key for ingest. Without it, ingest has no rate limit.
 	"ratelimits": [
 		{

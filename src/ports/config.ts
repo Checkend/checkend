@@ -15,6 +15,8 @@ export interface Config {
 	tagKeysPerProject: number;
 	/** Issue actions that need a human approval: "ignore", "merge". Empty: none (default). */
 	requireApproval: string[];
+	/** Hours without the error, after a deploy with the fix, before the fix is verified. */
+	verifyQuietHours: number;
 }
 
 export const DEFAULT_CONFIG: Config = {
@@ -24,4 +26,5 @@ export const DEFAULT_CONFIG: Config = {
 	newIssuesPerHour: 100,
 	tagKeysPerProject: 200,
 	requireApproval: [],
+	verifyQuietHours: 24,
 };

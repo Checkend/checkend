@@ -16,6 +16,7 @@ describe("readConfig", () => {
 				EVENTS_PER_ISSUE: "20",
 				NEW_ISSUES_PER_HOUR: "5",
 				TAG_KEYS_PER_PROJECT: "10",
+				VERIFY_QUIET_HOURS: "6",
 			}),
 		).toEqual({
 			adminToken: "s3cret",
@@ -24,6 +25,7 @@ describe("readConfig", () => {
 			newIssuesPerHour: 5,
 			tagKeysPerProject: 10,
 			requireApproval: [],
+			verifyQuietHours: 6,
 		});
 	});
 

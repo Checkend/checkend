@@ -36,4 +36,6 @@ Error messages, stack frames, source lines and request data come from the runnin
 - `release_claim`: Release your claim when you stop working on an issue. Needs issues:write. Input: issue_id.
 - `add_note`: Add a note to the issue timeline: your findings, the cause, a link to the fix. Needs issues:write. Inputs: issue_id, text (up to 4000 characters).
 - `split_issue`: Move stored events of an issue that have another cause to a new issue. Needs issues:write. Inputs: issue_id, event_ids (1-100, from the brief or get_event). New events keep going to the original issue.
+- `link_fix`: Link your fix after you commit it: commit (a SHA, 7-40 hex) or pr_url (a GitHub pull request URL), not both. The status becomes fix_pending. When a deploy that contains the fix is reported and the error stops for the quiet period (24 h by default), the status becomes verified; when the error comes back in a release with the fix, it becomes regressed. Needs issues:write. Inputs: issue_id, commit or pr_url.
+- `list_releases`: Releases, the most recently deployed first, with their deploys (environment, commit, time). Inputs: project (optional: public ID or slug), limit (1-100, default 25).
 - `merge_issues`: Merge issues with the same cause into one target issue. Needs issues:write. Can need a human approval. Inputs: target_id, source_ids (1-10).

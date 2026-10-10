@@ -2,7 +2,7 @@ import { type Db, sql } from "../ports/db.ts";
 import { formatEventId, formatIssueId } from "./ids.ts";
 import { normalizeFilename } from "./ingest/fingerprint.ts";
 import { cleanText, type NormalizedEvent, type NormalizedFrame } from "./ingest/normalize.ts";
-import { type Claim, getIssue } from "./issues.ts";
+import { type Claim, type Fix, getIssue } from "./issues.ts";
 
 /**
  * The issue brief: what an agent needs to fix an issue, in under 2,000 tokens.
@@ -55,6 +55,8 @@ export interface BriefJson {
 		latest_event_id: number | null;
 		/** The active claim: who works on this issue now. */
 		claim: Claim | null;
+		/** The linked fix and where it is in the fix loop, or null. */
+		fix: Fix | null;
 	};
 	/** Data from the monitored application. */
 	untrusted: {
@@ -178,6 +180,7 @@ export async function buildBrief(db: Db, issueId: number, now: Date): Promise<Br
 	// Only the facts that the brief shows. getIssue gives the same values as the API.
 	const pick = <K extends string>(key: K) => row[key] as never;
 	const claim = row.claim as Claim | null;
+	const fix = row.fix as Fix | null;
 	const facts = {
 		id: pick("id"),
 		project_id: pick("project_id"),
@@ -209,7 +212,14 @@ export async function buildBrief(db: Db, issueId: number, now: Date): Promise<Br
 	const event = latest ? (JSON.parse(latest.data) as NormalizedEvent) : null;
 
 	for (const [i, shape] of SHAPES.entries()) {
-		const json = briefJson({ ...facts, claim }, latest?.id ?? null, event, shape, i > 0, timeline);
+		const json = briefJson(
+			{ ...facts, claim, fix },
+			latest?.id ?? null,
+			event,
+			shape,
+			i > 0,
+			timeline,
+		);
 		const markdown = briefMarkdown(json);
 		if (markdown.length <= BRIEF_MAX_CHARS || i === SHAPES.length - 1) {
 			return { json, markdown: markdown.slice(0, BRIEF_MAX_CHARS) };
@@ -234,7 +244,13 @@ function timelineLine(row: {
 				? ` (until ${String(data.expires_at ?? "")})`
 				: action === "merge"
 					? ` (sources ${JSON.stringify(data.source_ids ?? [])})`
-					: "";
+					: action === "fix"
+						? ` (${String(data.kind ?? "")} ${String(data.ref ?? "")})`
+						: action === "fix_deployed"
+							? ` (in ${String(data.release ?? "")}, ${String(data.environment ?? "")})`
+							: action === "regress" && data.release
+								? ` (in ${String(data.release)})`
+								: "";
 	return cleanText(`${row.at} ${action} by ${row.actor_name}${detail}`, 600);
 }
 
@@ -305,6 +321,24 @@ function untrustedBlock(label: string, content: string): string {
 	return `### ${label} (UNTRUSTED)\n\n${fence}text\n${content}\n${fence}\n`;
 }
 
+/** "commit a1b2c3d4e5f6 by agent, deployed in shop@1.0.1 (production), waiting for verification" */
+function fixLine(fix: Fix): string {
+	const what =
+		fix.kind === "commit" ? `commit ${String(fix.commit).slice(0, 12)}` : `PR ${fix.pr_url}`;
+	const where = fix.deployed_at
+		? `deployed in ${fix.release} (${fix.environment})`
+		: "not deployed yet";
+	const outcome =
+		fix.outcome === "regressed"
+			? `regressed in ${fix.regressed_in} at ${fix.regressed_at}`
+			: fix.outcome === "verified"
+				? `verified at ${fix.verified_at}`
+				: fix.deployed_at
+					? "waiting for verification"
+					: null;
+	return cleanText([`${what} by ${fix.linked_by}`, where, outcome].filter(Boolean).join(", "), 300);
+}
+
 function briefMarkdown(brief: BriefJson): string {
 	const { issue, untrusted } = brief;
 	const parts: string[] = [
@@ -326,6 +360,7 @@ function briefMarkdown(brief: BriefJson): string {
 		...(issue.claim
 			? [`| Claimed by | ${cleanText(issue.claim.holder, 100)} until ${issue.claim.expires_at} |`]
 			: []),
+		...(issue.fix ? [`| Fix | ${fixLine(issue.fix)} |`] : []),
 		`| Latest event | ${issue.latest_event_id === null ? "none stored" : formatEventId(issue.latest_event_id)} |`,
 		"",
 		untrustedBlock("Error", [untrusted.title, untrusted.message].filter(Boolean).join("\n\n")),

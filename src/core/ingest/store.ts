@@ -1,5 +1,6 @@
 import { type Statement, sql } from "../../ports/db.ts";
 import type { Ports } from "../../ports/index.ts";
+import { fixStatementsForEvent } from "../fixes.ts";
 import { FINGERPRINT_VERSION, type IssueTitle } from "./fingerprint.ts";
 import type { PreparedEvent } from "./prepare.ts";
 import { type IngestMode, IngestState } from "./state.ts";
@@ -187,6 +188,11 @@ async function planWrite(
 				status = CASE WHEN status = 'resolved' THEN 'unresolved' ELSE status END,
 				level = excluded.level`,
 	];
+
+	// The fix loop: regressed (an event in a release with the fix), or the quiet period again.
+	statements.push(
+		...fixStatementsForEvent(projectId, fingerprint, event.event_id, event.release, nowIso),
+	);
 
 	// Hourly count and users affected. Before the event insert: the duplicate check looks for
 	// the event_id in events, and the insert below adds it.

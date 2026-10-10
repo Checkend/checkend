@@ -26,7 +26,10 @@ export function openApiDocument(base: string): Record<string, unknown> {
 			name: m[1],
 			in: "path",
 			required: true,
-			schema: { type: "string", pattern: "^\\d{1,15}$" },
+			schema:
+				m[1] === "id"
+					? { type: "string", pattern: "^\\d{1,15}$" }
+					: { type: "string", minLength: 1, maxLength: 200 },
 		}));
 		const query = route.query ? schemaOf(route.query) : null;
 		const queryParams = Object.entries(query?.properties ?? {}).map(([name, schema]) => ({

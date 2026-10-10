@@ -6,6 +6,7 @@ import { MCP_TOOLS } from "../core/agent-docs.ts";
 import { ClaimBody, MergeBody, NoteBody, SplitBody } from "../core/api-spec.ts";
 import { buildBrief, UNTRUSTED_NOTICE } from "../core/brief.ts";
 import { addNote, claimIssue, releaseClaim } from "../core/claims.ts";
+import { CommitSha, linkFix, listReleases, PullRequestUrl } from "../core/fixes.ts";
 import { formatEventId, formatIssueId, parseEventId, parseIssueId } from "../core/ids.ts";
 import {
 	type ActionResult,
@@ -269,6 +270,49 @@ function createServer(ports: Ports, actor: Actor): McpServer {
 				);
 			}
 			return textResult(JSON.stringify(await getIssue(db, id as number, now())));
+		},
+	);
+
+	server.registerTool(
+		"link_fix",
+		{
+			description: `${tool("link_fix")} ${UNTRUSTED_HINT}`,
+			inputSchema: toStandardJsonSchema(
+				v.object({
+					issue_id: Id,
+					commit: v.optional(CommitSha),
+					pr_url: v.optional(PullRequestUrl),
+				}),
+			),
+		},
+		async ({ issue_id, commit, pr_url }) => {
+			if (!hasScope(actor, "issues:write")) return errorResult(NEEDS_WRITE);
+			if ((commit === undefined) === (pr_url === undefined)) {
+				return errorResult("Give one of commit (a SHA) and pr_url (a GitHub pull request URL).");
+			}
+			const id = parseIssueId(issue_id);
+			const body = commit !== undefined ? { commit } : { pr_url: pr_url as string };
+			const result = id === null ? "not_found" : await linkFix(ports, actor, id, body);
+			if (result === "not_found") return errorResult(`Issue ${issue_id} not found.`);
+			return textResult(JSON.stringify(await getIssue(db, id as number, now())));
+		},
+	);
+
+	server.registerTool(
+		"list_releases",
+		{
+			description: `${tool("list_releases")} ${UNTRUSTED_HINT}`,
+			inputSchema: toStandardJsonSchema(
+				v.object({
+					project: v.optional(ProjectRef),
+					limit: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(100))),
+				}),
+			),
+		},
+		async ({ project, limit }) => {
+			const releases = await listReleases(db, { project, limit: limit ?? 25 });
+			if (releases === "project_not_found") return errorResult(`Project ${project} not found.`);
+			return textResult(JSON.stringify({ releases }));
 		},
 	);
 
