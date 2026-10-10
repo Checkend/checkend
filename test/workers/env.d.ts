@@ -6,6 +6,12 @@ declare global {
 		interface Env {
 			TEST_MIGRATIONS: Migration[];
 			TEST_D1_MIGRATIONS: D1Migration[];
+			TEST_SENTRY_FIXTURES: {
+				name: string;
+				path: string;
+				headers: Record<string, string>;
+				bodyBase64: string;
+			}[];
 		}
 	}
 }
