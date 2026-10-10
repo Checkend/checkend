@@ -95,10 +95,38 @@ export class TagKeyCache {
 	}
 }
 
+/**
+ * Events of today per project, for the daily quota: read from issue_counts at most every 60 s,
+ * plus the events this isolate accepted since. Approximate: other isolates add events too, so a
+ * project can go a little over its quota.
+ */
+export class QuotaCounter {
+	private entries = new Map<number, { day: string; count: number; fetchedAt: number }>();
+
+	/** Counts one event. False when the project is at its quota for today. */
+	async allow(db: Db, projectId: number, quota: number, now: Date): Promise<boolean> {
+		const day = now.toISOString().slice(0, 10);
+		let entry = this.entries.get(projectId);
+		if (!entry || entry.day !== day || now.getTime() - entry.fetchedAt > 60_000) {
+			const row = await db.first<{ n: number }>(
+				sql`SELECT coalesce(sum(c.count), 0) AS n FROM issue_counts c JOIN issues i ON i.id = c.issue_id
+					WHERE i.project_id = ${projectId} AND c.hour >= ${`${day}T00`}`,
+			);
+			if (this.entries.size > 1000) this.entries.clear();
+			entry = { day, count: row?.n ?? 0, fetchedAt: now.getTime() };
+			this.entries.set(projectId, entry);
+		}
+		if (entry.count >= quota) return false;
+		entry.count++;
+		return true;
+	}
+}
+
 /** In-memory ingest state of one isolate. The app holds one instance. */
 export class IngestState {
 	readonly keys = new KeyCache();
 	readonly health = new WriteHealth();
 	readonly budget = new BudgetTracker();
 	readonly tagKeys = new TagKeyCache();
+	readonly quota = new QuotaCounter();
 }

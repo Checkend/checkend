@@ -30,6 +30,10 @@ export const UpdateProjectBody = v.strictObject({
 	allowed_origins: v.optional(
 		v.nullable(v.pipe(v.array(Origin), v.minLength(1), v.maxLength(MAX_ALLOWED_ORIGINS))),
 	),
+	/** Events per day (UTC) that ingest accepts; null: no quota. */
+	daily_quota: v.optional(
+		v.nullable(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(1_000_000_000))),
+	),
 });
 export type UpdateProjectBody = v.InferOutput<typeof UpdateProjectBody>;
 
@@ -55,6 +59,9 @@ export interface ProjectSummary {
 	trust: "low" | "high";
 	trust_setting: "low" | "high" | null;
 	allowed_origins: string[] | null;
+	/** Events per day that ingest accepts (null: no quota), and the events of today (UTC). */
+	daily_quota: number | null;
+	events_today: number;
 	created_at: string;
 	keys: string[];
 }
@@ -139,7 +146,8 @@ export async function createProject(
 	}
 }
 
-export async function listProjects(db: Db): Promise<ProjectSummary[]> {
+export async function listProjects(db: Db, now: Date = new Date()): Promise<ProjectSummary[]> {
+	const today = `${now.toISOString().slice(0, 10)}T00`;
 	const projects = await db.all<
 		Omit<ProjectSummary, "keys" | "allowed_origins"> & {
 			internal_id: number;
@@ -148,7 +156,10 @@ export async function listProjects(db: Db): Promise<ProjectSummary[]> {
 	>(
 		sql`SELECT id AS internal_id, public_id AS id, name, slug, platform, repository,
 				coalesce(trust, CASE WHEN browser_seen_at IS NULL THEN 'high' ELSE 'low' END) AS trust,
-				trust AS trust_setting, allowed_origins, created_at
+				trust AS trust_setting, allowed_origins, daily_quota,
+				(SELECT coalesce(sum(c.count), 0) FROM issue_counts c JOIN issues i ON i.id = c.issue_id
+					WHERE i.project_id = projects.id AND c.hour >= ${today}) AS events_today,
+				created_at
 			FROM projects ORDER BY internal_id`,
 	);
 	const keys = await db.all<{ project_id: number; public_key: string }>(
@@ -185,6 +196,11 @@ export async function updateProject(
 			: null;
 		statements.push(sql`UPDATE projects SET allowed_origins = ${origins} WHERE id = ${projectId}`);
 	}
+	if (body.daily_quota !== undefined) {
+		statements.push(
+			sql`UPDATE projects SET daily_quota = ${body.daily_quota} WHERE id = ${projectId}`,
+		);
+	}
 	if (statements.length === 0) return true;
 	await ports.db.batch([
 		...statements,
@@ -212,6 +228,8 @@ export interface KeyLookup {
 	projectId: number;
 	/** Origins that browser events can come from; null: any origin. */
 	allowedOrigins: string[] | null;
+	/** Events per day that ingest accepts; null: no quota. */
+	dailyQuota: number | null;
 }
 
 interface CacheEntry {
@@ -255,8 +273,12 @@ export class KeyCache {
 		if (cached !== undefined) return cached;
 
 		// projectId here is the public ID from the URL; the result has the internal row ID.
-		const row = await db.first<{ project_id: number; allowed_origins: string | null }>(
-			sql`SELECT k.project_id, p.allowed_origins FROM project_keys k JOIN projects p ON p.id = k.project_id
+		const row = await db.first<{
+			project_id: number;
+			allowed_origins: string | null;
+			daily_quota: number | null;
+		}>(
+			sql`SELECT k.project_id, p.allowed_origins, p.daily_quota FROM project_keys k JOIN projects p ON p.id = k.project_id
 				WHERE k.public_key = ${publicKey} AND p.public_id = ${projectId} AND k.revoked_at IS NULL`,
 		);
 		const value = row
@@ -265,6 +287,7 @@ export class KeyCache {
 					allowedOrigins: row.allowed_origins
 						? (JSON.parse(row.allowed_origins) as string[])
 						: null,
+					dailyQuota: row.daily_quota,
 				}
 			: null;
 		const cacheKey = `${projectId}:${publicKey}`;

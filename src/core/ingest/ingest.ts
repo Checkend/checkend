@@ -24,11 +24,18 @@ const json = (status: number, body: unknown, headers: Record<string, string> = {
 		headers: { "content-type": "application/json", ...headers },
 	});
 
-const tooManyRequests = (seconds: number, scope: "key" | "organization") =>
+const tooManyRequests = (seconds: number, scope: "key" | "organization", reason?: string) =>
 	json(
 		429,
-		{ detail: "Too many requests. Retry later." },
-		{ "retry-after": String(seconds), "x-sentry-rate-limits": `${seconds}::${scope}` },
+		{
+			detail: reason
+				? "The daily quota of this project is used up."
+				: "Too many requests. Retry later.",
+		},
+		{
+			"retry-after": String(seconds),
+			"x-sentry-rate-limits": `${seconds}::${scope}${reason ? `:${reason}` : ""}`,
+		},
 	);
 
 /**
@@ -97,6 +104,18 @@ export async function handleIngest(
 
 		if (!(await ports.rateLimiter.allow(`${projectId}:${key}`))) {
 			return tooManyRequests(RATE_LIMIT_SECONDS, "key");
+		}
+		// The daily quota of the project: until midnight UTC.
+		if (
+			project.dailyQuota !== null &&
+			!(await state.quota.allow(ports.db, project.projectId, project.dailyQuota, now))
+		) {
+			const midnight = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1);
+			return tooManyRequests(
+				Math.ceil((midnight - now.getTime()) / 1000),
+				"organization",
+				"quota_exceeded",
+			);
 		}
 		// D1 is overloaded: 429, unless the overflow queue can take the event (below).
 		const overload = state.health.snapshot(now).retryAfterSeconds;

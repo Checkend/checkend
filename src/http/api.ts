@@ -114,7 +114,7 @@ export function apiRoutes(app: Hono<AppEnv>, state: IngestState): void {
 
 	app.get("/v1/projects", need("issues:read"), async (c) => {
 		const origin = new URL(c.req.url).origin;
-		const projects = await listProjects(c.env.ports.db);
+		const projects = await listProjects(c.env.ports.db, c.env.ports.clock.now());
 		return c.json({
 			data: projects.map(({ keys, ...p }) => ({
 				...p,
@@ -148,7 +148,7 @@ export function apiRoutes(app: Hono<AppEnv>, state: IngestState): void {
 		const found = await updateProject(c.env.ports, c.get("actor"), ref.output, body.output);
 		if (!found) return c.json({ error: "not_found" }, 404);
 		const origin = new URL(c.req.url).origin;
-		const project = (await listProjects(c.env.ports.db)).find(
+		const project = (await listProjects(c.env.ports.db, c.env.ports.clock.now())).find(
 			(p) => p.slug === ref.output || String(p.id) === ref.output,
 		);
 		if (!project) return c.json({ error: "not_found" }, 404);
