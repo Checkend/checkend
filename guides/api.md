@@ -25,10 +25,10 @@ secret.
 
 | Scope | Gives access to |
 |---|---|
-| `issues:read` | `GET /v1/projects`, `/v1/issues`, `/v1/issues/:id`, `/v1/issues/:id/events`, `/v1/issues/:id/activity`, `/v1/events/:id` |
-| `issues:write` | `POST /v1/issues/:id/resolve`, `/ignore`, `/unresolve`, `/merge`, `/split`, `/claim`, `/release` and `/notes`, and the MCP tools that change issues |
-| `admin` | All scopes, and also `POST /v1/projects`, `GET` and `POST /v1/tokens`, `DELETE /v1/tokens/:id`, `GET /v1/activity`, `GET /v1/labels`, `GET /v1/approvals`, `POST /v1/approvals/:id/approve` and `/reject` |
-| `releases:write` | No endpoint uses it yet. |
+| `issues:read` | `GET /v1/projects`, `/v1/issues`, `/v1/issues/:id`, `/v1/issues/:id/events`, `/v1/issues/:id/activity`, `/v1/events/:id`, `/v1/releases`, `/v1/releases/:version`, `/v1/sourcemaps` |
+| `issues:write` | `POST /v1/issues/:id/resolve`, `/ignore`, `/unresolve`, `/merge`, `/split`, `/fix`, `/claim`, `/release` and `/notes`, `DELETE /v1/issues/:id/claim`, and the MCP tools that change issues |
+| `admin` | All scopes, and also `POST /v1/projects`, `PATCH /v1/projects/:project`, `GET` and `POST /v1/tokens`, `DELETE /v1/tokens/:id`, `GET /v1/activity`, `GET /v1/labels`, `GET /v1/fix-outcomes`, `GET /v1/approvals`, `POST /v1/approvals/:id/approve` and `/reject`, and all `/v1/webhooks` endpoints |
+| `releases:write` | `POST /v1/deploys`, `POST /v1/sourcemaps`, `DELETE /v1/sourcemaps/:id` |
 
 A coding agent that only reads errors needs `issues:read`. An agent that also resolves,
 ignores or merges issues needs `["issues:read", "issues:write"]`. Coding agents can also use the
@@ -54,7 +54,12 @@ Sentry SDKs accept only digits as the project ID of a DSN.
 
 ### `GET /v1/projects`
 
-Lists all projects, with their DSNs.
+Lists all projects, with their DSNs. Each project also has:
+
+- `repository`: `owner/name`, or `null`
+- `trust`: the [trust level](sending-errors.md#trust-and-allowed-origins) now, `low` or `high`
+- `trust_setting`: `low`, `high`, or `null` (automatic)
+- `allowed_origins`: a list of origins, or `null` (any origin)
 
 ```json
 { "data": [ { "id": 4821937065, "name": "My App", "slug": "my-app", "platform": "node",
@@ -77,6 +82,20 @@ Returns `201`:
 
 The [project CLI](quick-start.md#3-create-a-project-and-get-a-dsn) calls these two endpoints.
 
+### `PATCH /v1/projects/:project`
+
+Changes the settings of a project. Needs the `admin` scope. `:project` is the public project ID
+or the slug. The body has one or more of these fields:
+
+| Field | Value |
+|---|---|
+| `repository` | `"owner/name"`, or `null` to remove it. Checkend stores it in lowercase. It is used by the [GitHub webhook](fix-loop.md#or-use-the-github-webhook), and a linked pull request must be in this repository. |
+| `trust` | `"low"`, `"high"`, or `null` for automatic. See [Trust and allowed origins](sending-errors.md#trust-and-allowed-origins). |
+| `allowed_origins` | 1 to 20 origins (`scheme://host[:port]`, `http` or `https`, no path, no wildcard; stored in lowercase), or `null` for any origin. |
+
+Other fields or values give `400`. An unknown project gives `404`. Returns the project, as in
+`GET /v1/projects`. The activity row `project.update` has the changed fields.
+
 ## Issues
 
 ### `GET /v1/issues`
@@ -86,7 +105,7 @@ Lists issues. By default, the issue with the most recent event comes first.
 | Query parameter | Values |
 |---|---|
 | `project` | A project ID (for example `4821937065`) or a project slug (for example `my-app`). |
-| `status` | `unresolved`, `resolved`, `ignored` or `merged`. Without `status`, the list does not show merged issues. |
+| `status` | `unresolved`, `resolved`, `ignored`, `merged`, `fix_pending`, `verified` or `regressed`. Without `status`, the list does not show merged issues. |
 | `limit` | 1 to 100. The default is 25. |
 | `cursor` | The `next_cursor` from the previous page. |
 | `release` | Issues with this release: the first or last release of the issue, or a stored event. |
@@ -109,7 +128,7 @@ When `project` matches no project ID and no slug, the response is `404`
 Each issue has these fields: `id`, `project_id` (the public project ID), `title`, `culprit`,
 `type`, `level`, `platform`, `status`, `times_seen`, `stored_events`, `events_24h`,
 `events_7d`, `users_affected`, `priority`, `first_seen`, `last_seen`, `first_release`,
-`last_release`, `fingerprint`, `fingerprint_version`, `merged_into` and `claim`.
+`last_release`, `fingerprint`, `fingerprint_version`, `merged_into`, `claim` and `trust`.
 
 - `events_24h` and `events_7d`: the events in the last 24 hours and the last 7 days. Checkend
   counts them per UTC hour, so each window is the full hours inside it.
@@ -119,6 +138,8 @@ Each issue has these fields: `id`, `project_id` (the public project ID), `title`
   user.
 - `priority`: the [priority score](#priority-score).
 - `merged_into`: the ID of the issue that this issue was merged into, or `null`.
+- `trust`: the [trust level](sending-errors.md#trust-and-allowed-origins) of the project, `low`
+  or `high`.
 
 An SDK that sends the same event again (the same `event_id`, while the event is stored) does not
 make the counts go up twice. A merge moves the hourly counts and the users to the target issue.
@@ -131,17 +152,22 @@ make the counts go up twice. A merge moves the hourly counts and the users to th
 
 ### `GET /v1/issues/:id`
 
-Returns one issue, with one more field: `latest_event_id`, the ID of its most recent stored
-event.
+Returns one issue, with two more fields:
+
+- `latest_event_id`: the ID of its most recent stored event.
+- `fix`: the linked fix (see [Verify fixes](fix-loop.md)), or `null`. It has `kind`, `commit`
+  or `pr_url`, `linked_by`, `linked_at`, `release`, `environment`, `deployed_at`, `outcome`
+  (`null`, `verified` or `regressed`), `verified_at`, `regressed_at` and `regressed_in`.
 
 ### Priority score
 
 The priority score (version 1) puts the issues that hurt the most users now at the top:
 
 ```
-priority = (1 + users_affected) × (1 + events_24h) × recency × newness
-recency  = 1 / (1 + days since last seen)
-newness  = 2 when the issue was first seen in the last 24 hours, else 1
+priority = (1 + users_affected) × (1 + events_24h) × recency × newness × regression
+recency    = 1 / (1 + days since last seen)
+newness    = 2 when the issue was first seen in the last 24 hours, else 1
+regression = 2 when the issue is regressed, else 1
 ```
 
 Checkend computes the score when you ask for it, so it changes over time. It is a number with 3
@@ -192,6 +218,19 @@ The response is `400` with `{"error": "invalid_request", "details": [{"path": "s
 when a source is the target, when the target or a source is already merged, when a source is in
 another project, or when a source is unknown. An unknown target issue (`:id`) gives `404`.
 
+### `POST /v1/issues/:id/fix`
+
+Links a fix to the issue (see [Verify fixes](fix-loop.md)). Body: `{"commit": "<SHA>"}` or
+`{"pr_url": "https://github.com/<owner>/<repo>/pull/<number>"}`, exactly one of them. The SHA has
+7 to 40 hex characters (Checkend stores it in lowercase). Returns `200` with the issue: its status
+is `fix_pending`, and it has `fix`.
+
+A new link replaces the open fix. When a deploy with this commit or pull request was already
+reported, the fix counts as deployed at once. Both fields, another host, or `http` gives `400`.
+When the project has a repository, a pull request in another repository also gives `400`: "The
+pull request must be in the repository of the project: owner/name."
+An unknown or merged issue gives `404`.
+
 ### `POST /v1/issues/:id/split`
 
 The opposite of a merge: moves some stored events of this issue to a new issue. Body:
@@ -214,6 +253,158 @@ The response is `400` with `{"error": "invalid_request", "details": [{"path": "e
 for an empty list, an unknown event, or an event of another issue. An unknown or merged issue
 gives `404`.
 
+## Releases and deploys
+
+See [Verify fixes](fix-loop.md) for how deploys verify fixes.
+
+### `POST /v1/deploys`
+
+Reports a deploy. Needs the `releases:write` scope. Returns `201`.
+
+| Field | Value |
+|---|---|
+| `project` | Required. The public project ID (a number or a string) or the slug. |
+| `commit` | Required. The deployed commit SHA. |
+| `release` | The release version. The default is the commit SHA. Checkend creates the release when it is first used. |
+| `environment` | The default is `production`. |
+| `commits` | Up to 1000 SHAs: the commits since the last deploy, for example from `git rev-list <previous>..HEAD`. |
+| `pull_requests` | Up to 100 GitHub pull request URLs. |
+
+A fix counts as deployed only when its commit is the deployed `commit` or is in `commits`, or
+when its pull request is in `pull_requests`.
+
+The response `data` has `id`, `project_id`, `release`, `environment`, `commit`, `deployed_at` and
+`fixes_deployed` (the IDs of the issues whose fix this deploy contains). An unknown project gives
+`404` `{"error": "project_not_found"}`.
+
+### `POST /hooks/github`
+
+The GitHub webhook (see [Verify fixes](fix-loop.md#or-use-the-github-webhook)). It is not under
+`/v1`, and it does not use a bearer token: GitHub signs each request with the
+`GITHUB_WEBHOOK_SECRET` (the `X-Hub-Signature-256` header). Without the secret, the endpoint
+answers `404`.
+
+| Status | When |
+|---|---|
+| `200` `{"ok": true, "projects": n, "commits": n}` | A push. |
+| `200` `{"ok": true, "projects": n, "merged": "<url>"}` | A merged pull request. |
+| `200` `{"ok": true, "deploys": [...]}` | A successful deployment. The deploys look like the response of `POST /v1/deploys`. |
+| `200` `{"ok": true, "ignored": "..."}` | Another event, or no project has this repository. |
+| `200` `{"ok": true, "duplicate": true}` | The same delivery again. |
+| `400` | The body is not JSON. |
+| `401` `{"error": "invalid_signature"}` | The signature is wrong or missing. |
+| `413` | The body is larger than 2 MB. |
+
+### `POST /v1/sourcemaps`
+
+Uploads a source map. Needs `releases:write`. See [Source maps](source-maps.md).
+
+| Query parameter | Value |
+|---|---|
+| `project` | Required. The public project ID or the slug. |
+| `release` | Required. The release, the same as in the SDK. |
+| `name` | Required. The minified file: its URL, `~/path` (any host), or a path. Checkend keeps the URL path. |
+
+The body is the source map JSON (`Content-Type: application/json`), or a prebuilt index
+(`application/x-checkend-sourcemap-index`). Other types give `415`. The body is at most 30 MB
+(else `413`). A new upload for the same project, release and path replaces the old map.
+
+Returns `201` with `id`, `project_id`, `release`, `name`, `path`, `size` (the bytes of the index),
+`sources` (the number of original files in the map), `uploaded_at` and `uploaded_by`.
+
+Errors:
+
+- `400` `{"error": "invalid_sourcemap", "reason": "..."}`: not version 3, a map with `sections`
+  (not supported), broken mappings, a broken index, or not JSON.
+- `400` `storage_not_configured`: the Worker has no `BLOBS` bucket.
+- `400` `invalid_request`: a query parameter is missing.
+- `404` `project_not_found`.
+
+### `GET /v1/sourcemaps`
+
+Lists the source maps, the most recent first. Needs `issues:read`. Query: `project` (required)
+and `release` (optional). An unknown project gives `404` `project_not_found`.
+
+### `DELETE /v1/sourcemaps/:id`
+
+Deletes a source map. Needs `releases:write`. Returns `200` with
+`{"data": {"id": ..., "deleted": true}}`, or `404` for an unknown source map.
+
+### `GET /v1/releases`
+
+Lists the releases, the most recently deployed first. Needs `issues:read`. Query: `project`
+(optional) and `limit` (1 to 100, the default is 25).
+
+Each release has `project_id`, `version`, `commit`, `created_at` and `deploys` (the latest
+first). Each deploy has `id`, `environment`, `commit`, `source` and `deployed_at`.
+
+### `GET /v1/releases/:version`
+
+One release. Needs `issues:read`. The `project` query parameter is required. URL-encode the
+version. The response has the release and its deploys, and also `new_issue_ids` (the issues
+first seen in this release), `fixes_deployed` (each with `issue_id`, `kind`, `ref` and
+`outcome`) and `regressed_issue_ids`. An unknown release gives `404`.
+
+### `GET /v1/fix-outcomes`
+
+The fixes that have an outcome (`verified` or `regressed`), the most recent first. Needs the
+`admin` scope. Query: `limit` (1 to 1000, the default is 100) and `since` (a duration or an ISO
+time).
+
+Each row has `fix_id`, `issue_id`, `kind`, `ref`, `linked_by_type`, `linked_by`, `linked_at`,
+`deployed_at`, `outcome`, `verified_at`, `regressed_at`, `regressed_in`, `hours_to_verified`
+(from the link) and `hours_to_fix` (from the first event of the issue). A fix that was verified
+and then regressed has the outcome `regressed`, and it still has `verified_at`.
+
+## Webhooks
+
+Outgoing webhooks call your URL for `issue.new`, `issue.regressed` and `issue.verified`. See
+[Webhooks](webhooks.md) for the request, the signature and the retries. All these endpoints need
+the `admin` scope.
+
+### `POST /v1/webhooks`
+
+Creates a webhook. Body: `name` (1 to 100 characters), `url`, `events` (one or more of
+`issue.new`, `issue.regressed` and `issue.verified`), `min_trust` (`high`, the default, or
+`low`), `project` (optional: a public ID or slug; the default is all projects), `format`
+(`checkend`, the default, or `github_dispatch`) and `github_token` (required for
+`github_dispatch`, not allowed for other formats; stored encrypted and never returned). Other
+fields give `400`.
+
+For `github_dispatch`, the `url` must be
+`https://api.github.com/repos/<owner>/<repo>/dispatches` (else `400` with the path `url`). See
+[Start an agent from GitHub Actions](webhooks.md#start-an-agent-from-github-actions).
+
+Returns `201` with `id`, `name`, `url`, `format`, `events`, `min_trust`, `project_id`,
+`created_at`, `created_by`, `last_delivery_status` and `secret` (`whsec_...`). **The secret is
+only in this response.**
+
+Errors:
+
+- `400` `{"error": "encryption_not_configured", "reason": "Set ENCRYPTION_KEYS: ..."}`: the
+  Worker has no [encryption keys](webhooks.md#encryption-keys).
+- `400` `invalid_request` with the path `url` (the reason, see the
+  [URL rules](webhooks.md#url-rules)), `project` or `github_token`.
+
+### `GET /v1/webhooks`
+
+Lists the webhooks, without their secrets.
+
+### `DELETE /v1/webhooks/:id`
+
+Deletes a webhook. Its pending deliveries fail. An unknown webhook gives `404`.
+
+### `POST /v1/webhooks/:id/test`
+
+Sends a `ping` event (`issue` and `brief` are `null`). Returns `202` with `{"delivery_id": ...}`.
+
+### `GET /v1/webhooks/:id/deliveries`
+
+Lists the deliveries of a webhook, the most recent first. `limit` is 1 to 100 (the default is
+25). Each delivery has `id`, `event`, `issue_id`, `status` (`pending`, `delivered` or `failed`),
+`attempts`, `last_status` (the HTTP status), `last_error`, `created_at`, `next_attempt_at` and
+`delivered_at`.
+
 ## Claims and notes
 
 A claim tells other agents that one agent works on an issue. It is a lease: it ends when it
@@ -235,8 +426,12 @@ gives `404`.
 
 Releases the claim. Returns `200` with the issue (`claim` is `null`). Only the holder, or a token
 with the `admin` scope, can release an active claim. Other tokens get `403`
-`{"error": "forbidden", "reason": "Only the holder of the claim or an admin can release it."}`.
+`{"error": "not_claim_holder", "claim": {"holder": "agent-a", "expires_at": "..."}}`.
 When the issue has no active claim, the response is `200`.
+
+### `DELETE /v1/issues/:id/claim`
+
+The same as [`POST /v1/issues/:id/release`](#post-v1issuesidrelease), with the same responses.
 
 ### `POST /v1/issues/:id/notes`
 
@@ -356,7 +551,16 @@ The actions are:
 | `issue.claim` | An issue is claimed. `data` is `{"minutes": ..., "expires_at": ...}`. |
 | `issue.release` | A claim is released. |
 | `issue.note` | A note is added. `data` is `{"text": ...}`. |
-| `issue.regress` | A new event arrives for a resolved issue, so it becomes unresolved. The actor is `system`, with the name `ingest`. |
+| `issue.regress` | A new event arrives for a resolved issue, so it becomes unresolved; or the error comes back in a release that contains the fix, so the issue becomes regressed. The actor is `system`, with the name `ingest`. |
+| `issue.fix` | A fix is linked. `data` has `kind`, `ref`, `from` and `to`. |
+| `issue.fix_deployed` | A deploy contains the fix. `data` has `release`, `environment` and `fix_id`. |
+| `issue.verify` | The fix is verified. The actor is `system`, with the name `verifier`. |
+| `release.deploy` | A deploy is reported. `target_type` is `release`. |
+| `sourcemap.upload` | A source map is uploaded. `target_type` is `project`; `data` has `release`, `name` and `size`. |
+| `sourcemap.delete` | A source map is deleted. |
+| `webhook.create` | A webhook is created. `data` has `name` and `url`. |
+| `webhook.delete` | A webhook is deleted. |
+| `project.update` | The settings of a project change (`repository`, `trust` or `allowed_origins`). `data` has the changed fields. |
 | `approval.request`, `approval.approve`, `approval.reject` | An approval is requested or decided. |
 
 ## Triage labels

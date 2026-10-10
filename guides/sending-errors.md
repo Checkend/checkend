@@ -4,6 +4,62 @@ Checkend receives errors with the Sentry protocol. Checkend is Sentry SDK compat
 SDK can send to a Checkend DSN. You do not need a special SDK. Without a Sentry SDK, use the
 [native JSON endpoint](#native-json-ingest).
 
+## Tested SDKs
+
+Other Sentry SDKs should work. Checkend is tested with real requests from these SDKs:
+
+| Language | SDK |
+|---|---|
+| JavaScript (browser) | `@sentry/browser` 11.6.0 |
+| JavaScript (Node) | `@sentry/node` 11.6.0 |
+| Python | `sentry-sdk` 2.71.0 |
+| Ruby | `sentry-ruby` 7.1.0 |
+| PHP | `sentry/sentry` 4.34.0 |
+| Go | `sentry-go` 0.50.0 |
+| .NET | `Sentry` 6.12.0 |
+
+Java is not tested yet.
+
+In each SDK, set the DSN and the release. The release must be the same as the release in your
+[deploy reports](fix-loop.md#2-report-deploys).
+
+```js
+// JavaScript (browser or Node)
+Sentry.init({ dsn: "https://<key>@<your-worker>/<project-id>", release: "my-app@1.4.1" });
+```
+
+```python
+# Python
+sentry_sdk.init(dsn="https://<key>@<your-worker>/<project-id>", release="my-app@1.4.1")
+```
+
+```ruby
+# Ruby
+Sentry.init do |config|
+  config.dsn = "https://<key>@<your-worker>/<project-id>"
+  config.release = "my-app@1.4.1"
+end
+```
+
+```php
+// PHP
+\Sentry\init(['dsn' => 'https://<key>@<your-worker>/<project-id>', 'release' => 'my-app@1.4.1']);
+```
+
+```go
+// Go
+sentry.Init(sentry.ClientOptions{Dsn: "https://<key>@<your-worker>/<project-id>", Release: "my-app@1.4.1"})
+```
+
+```csharp
+// .NET
+SentrySdk.Init(options =>
+{
+    options.Dsn = "https://<key>@<your-worker>/<project-id>";
+    options.Release = "my-app@1.4.1";
+});
+```
+
 ## Endpoints
 
 | Endpoint | Used by |
@@ -40,6 +96,7 @@ Checkend drops all other items: sessions, transactions, client reports and attac
 | `200` with `{}` | The request had no error event (for example, only a session). Nothing is kept. |
 | `400` | The body is empty, or it is not valid. |
 | `401` | The DSN key is missing, not valid, or not for this project, or the project ID is unknown. |
+| `403` | `{"detail": "This origin cannot send events here."}`: a browser event from an origin that the project does not allow (see [allowed origins](#trust-and-allowed-origins)). |
 | `404` | The project ID is not a number. |
 | `413` | The body or the event is too large (see the limits below). |
 | `415` | Checkend does not accept this `Content-Type` or `Content-Encoding`. |
@@ -76,6 +133,43 @@ Checkend answers `429` with the `Retry-After` and `X-Sentry-Rate-Limits` headers
 
 Sentry SDKs read these headers and wait before they send again. Each Worker instance keeps its
 own count of failed writes.
+
+## Trust and allowed origins
+
+A DSN that a browser uses is public: anyone can read it from the page and send events with any
+text. Text from such events must not steer an agent. So each project has a trust level:
+
+- **`high`**: Checkend has seen only events from servers.
+- **`low`**: the DSN can be public, so anyone can send events.
+
+By default, the trust is automatic. A project is `high` until its first event with an `Origin`
+header (a browser sends one). After that, the project is `low` for good: a later server event
+does not make it `high` again, because the DSN stays public. An admin can set the trust with
+[`PATCH /v1/projects/:project`](api.md#patch-v1projectsproject): `{"trust": "low"}`,
+`{"trust": "high"}`, or `{"trust": null}` for automatic.
+
+The trust is for the project, not for each event. A request without an `Origin` header can come
+from anyone who has the DSN, so the header cannot make an event trusted.
+
+A low-trust issue is still shown, and an agent can still fix it. But the agent must treat its
+text with more care. Automatic agent runs ([webhooks](webhooks.md#trust)) skip low-trust issues
+by default. The issues, `list_issues` and the [issue brief](mcp.md#the-issue-brief) show
+the trust.
+
+### Allowed origins
+
+A project can list the websites that can send browser events:
+
+```json
+{"allowed_origins": ["https://shop.example", "http://localhost:3000"]}
+```
+
+Set it with [`PATCH /v1/projects/:project`](api.md#patch-v1projectsproject). Then a browser event
+from another origin gets `403`, on the Sentry endpoints and on `/v1/ingest`. Events without an
+`Origin` header (from servers) are not affected. A change takes effect within 60 seconds.
+
+> **Caution:** allowed origins stop other websites. They do not stop a script that sends no
+> `Origin` header, so they do not make a public DSN secret.
 
 ## Native JSON ingest
 

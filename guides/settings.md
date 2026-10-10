@@ -12,6 +12,12 @@ All settings are optional. Set them as Workers secrets or variables (in your
 | `EVENTS_PER_ISSUE` | 100 | Stored events per issue. |
 | `NEW_ISSUES_PER_HOUR` | 100 | New issues per project per hour. More go into one "flood" issue. |
 | `TAG_KEYS_PER_PROJECT` | 200 | Different tag keys per project. |
+| `VERIFY_QUIET_HOURS` | 24 | Hours without the error, after the deploy, before a fix is verified. See [Verify fixes](fix-loop.md). |
+| `GITHUB_TOKEN` (secret) | none | Optional. A GitHub token that can read the repository contents (a fine-grained token with "Contents: Read-only"). Checkend uses it to get the commits of each deploy, for [suspect commits](fix-loop.md#suspect-commits). |
+| `GITHUB_WEBHOOK_SECRET` (secret) | none | The secret of the [GitHub webhook](fix-loop.md#or-use-the-github-webhook). Without it, the webhook is off. |
+| `ENCRYPTION_KEYS` (secret) | none | The keys that encrypt stored secrets, for example `k2:<base64>,k1:<base64>`, the current key first. [Webhooks](webhooks.md) need it. See [Encryption keys](webhooks.md#encryption-keys). |
+| `BLOBS` (binding) | none | An R2 bucket for [source maps](source-maps.md). Without it, source map uploads give `400` `storage_not_configured`. |
+| `NOTIFY` (binding) | none | Optional Cloudflare Queue for webhook deliveries. Without it, deliveries work. |
 | `REQUIRE_APPROVAL` | none | Actions that need a person's approval: a comma-separated list of `ignore` and `merge`. See [Approvals](api.md#approvals). |
 | `INGEST_RATE_LIMITER` (binding) | 1000 requests a minute per DSN key | A Rate Limiting binding. `wrangler.jsonc` includes it. Without it, ingest has no rate limit. |
 

@@ -146,3 +146,6 @@ claude mcp add --transport http checkend "$CHECKEND_URL/mcp" \
 Then ask the agent, for example: "Fix the top unresolved error in Checkend." The agent calls
 `list_issues`, then `get_issue_brief`. See [MCP server](mcp.md) for the tools and the issue
 brief.
+
+To let Checkend check in production that the fixes work, report your deploys. See
+[Verify fixes](fix-loop.md).

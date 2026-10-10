@@ -29,6 +29,9 @@ agent a read-only token, not the admin token:
 
 ## Tools
 
+The ID inputs (`issue_id`, `event_id` and `target_id`) accept a number or a string of digits,
+for example `42` or `"42"`. The lists `source_ids` and `event_ids` take numbers.
+
 ### `list_issues`
 
 Lists issues, the highest [priority](api.md#priority-score) first. All inputs are optional:
@@ -48,7 +51,7 @@ Lists issues, the highest [priority](api.md#priority-score) first. All inputs ar
 
 The result is JSON with `untrusted_notice`, `sort`, `issues` and `next_cursor`. Each issue has
 `id`, `project_id`, `status`, `level`, `times_seen`, `events_24h`, `users_affected`,
-`priority`, `first_seen`, `last_seen`, `claim` and `title_untrusted`. The first issue is the
+`priority`, `first_seen`, `last_seen`, `claim`, `trust` and `title_untrusted`. The first issue is the
 one to fix first.
 
 ### `get_issue_brief`
@@ -78,9 +81,20 @@ returns the new issue. See [split](api.md#post-v1issuesidsplit) for what a split
   (see [claims](api.md#claims-and-notes)). It returns the issue. When another agent has the
   claim, it gives a tool error, for example: "Issue 12 is claimed by agent-a until <time>. Pick
   another issue."
-- `release_claim(issue_id)` releases the claim. It returns the issue.
+- `release_claim(issue_id)` releases the claim. It returns the issue. Only the holder or an
+  admin can release a claim. For other tokens, it gives a tool error, for example: "Issue 12 is
+  claimed by agent-a until <time>. Only the holder or an admin can release it."
 - `add_note(issue_id, text)` adds a note to the timeline of the issue. It returns
   `{"note_id": ..., "issue_id": ...}`.
+
+### `link_fix` and `list_releases`
+
+- `link_fix(issue_id, commit or pr_url)` links the fix of the agent to the issue. The status
+  becomes `fix_pending`, and Checkend verifies the fix after the deploy (see
+  [Verify fixes](fix-loop.md)). It needs `issues:write`. When the project has a repository, the
+  pull request must be in that repository.
+- `list_releases(project?, limit?)` lists the releases and their deploys, the most recently
+  deployed first. `limit` is 1 to 100.
 
 ### `merge_issues`
 
@@ -111,8 +125,8 @@ gives a tool error (`isError: true`) with a short message.
 4. Find the cause in your code, fix it, and add a test. Call `get_event` only when the brief is
    not enough.
 5. Call `add_note` with the cause and the fix.
-6. After the fix is deployed, call `resolve_issue`. If the error comes back, Checkend makes the
-   issue unresolved again.
+6. Call `link_fix` with the commit or the pull request of the fix. After the deploy, Checkend
+   verifies the fix, or marks the issue regressed if the error comes back.
 7. Call `release_claim`.
 
 Steps 2, 5, 6 and 7 need a token with `issues:write`.
@@ -120,7 +134,9 @@ Steps 2, 5, 6 and 7 need a token with `issues:write`.
 ## The issue brief
 
 The issue brief (`brief_version` 1) has what an agent needs to fix an issue, in at most 8,000
-characters (about 2,000 tokens). It is in Markdown or in JSON.
+characters (about 2,000 tokens). It is in Markdown or in JSON. The format is an open spec:
+[Agent Issue Brief](../spec/agent-issue-brief.md), with a
+[JSON Schema](../spec/schemas/brief-v1.schema.json).
 
 It contains:
 
@@ -131,16 +147,53 @@ It contains:
 - the raised error and up to 3 causes
 - the in-app frames, where the error was raised first, with numbered source lines from the SDK
   (`>` marks the line of the error)
+- for minified JavaScript, the original file, line and source lines, when a
+  [source map](source-maps.md) of the release matches (the JSON frame then has `minified`, and
+  the issue has `source_maps`)
+- unusual tags: tag values that differ from normal, so that the agent sees the condition of
+  the error, for example one browser, one region or one app version. A tag value is unusual when
+  it is in at least half of the stored events of the issue, and at least twice as common there as
+  in the last 1,000 stored events of other issues of the project. Checkend needs at least 3 stored
+  events of the issue and 20 of the project. It shows at most 5, and fewer when it
+  shortens the brief to fit the size limit. They are lines in the
+  UNTRUSTED Context block, for example
+  `unusual tag browser: Safari (100% of this issue, 0% of the project)`. In the JSON brief, they
+  are in `untrusted.unusual_tags`: `key`, `value`, `issue_share` and `project_share` (0 to 1,
+  rounded to 0.01). They are untrusted, because tags come from the application.
 - one request (method, URL and headers, with secrets removed)
 - the release, environment, platform, culprit and tags
+- the trust of the project: `| Trust | high |`, or
+  `| Trust | low: the DSN can be public (browser), so anyone can send events |` (see
+  [Trust and allowed origins](sending-errors.md#trust-and-allowed-origins))
 - the active claim, if there is one (`| Claimed by | agent-a until <time> |`)
+- the first release, when CI or GitHub reported a deploy of it, for example
+  `| First release | shop@2 (first deployed <time>) |`. The release name of an event alone is text
+  from the application, so it stays in the UNTRUSTED Context block.
+- the [suspect commit](fix-loop.md#suspect-commits), if there is one: a commit of the first
+  release that changed a file in the stack trace, for example
+  `| Suspect commit | a1b2c3d4e5f6 by grace: changed src/cart.ts (frame cartTotal) |`. Its message
+  is in a "Suspect commit message (UNTRUSTED)" block. A suspect commit is a hint, not proof.
+  In the JSON brief, `issue.suspect_commit` has `sha`, `author` (the GitHub login, or
+  `null`), `committed_at`, `files` (the changed files that are in the stack
+  trace), `frame` (its function) and `url` (the commit on GitHub). The message is in
+  `untrusted.suspect_commit_message`, and the first release is in
+  `issue.first_release_deploy` (`version` and `deployed_at`).
+- the linked fix, if there is one, for example
+  `| Fix | commit a1b2c3d4e5f6 by agent, deployed in shop@1.0.1 (production), waiting for verification |`.
+  The row can also end with "not deployed yet", "verified at <time>" or "regressed in <release>
+  at <time>". The timeline shows the fix, the deploy and the regression.
 - the timeline: the last 10 actions and notes, the most recent first, one per line, for example
   `2026-10-10T12:00:00.000Z note by agent-a: Cause: missing null check.` The timeline is
   UNTRUSTED, because a note can quote event text.
 
+> **Tip:** the brief shows the in-app frames. Python and Ruby SDKs mark a frame as in-app by
+> the project folder (the working directory; for Ruby, the `app/`, `lib/` and similar folders
+> under it). If all the frames of a brief look like library frames, set the in-app or project
+> root options of the SDK.
+
 When the event is large, Checkend removes parts: fewer frames, fewer source lines, fewer causes,
-then the headers and the tags. The brief then says "Parts were removed to keep this brief
-short", and the JSON has `truncated: true`.
+the headers and the tags, and a shorter message and timeline. The brief then says "Parts were
+removed to keep this brief short", and the JSON has `truncated: true`.
 
 An example in Markdown:
 
@@ -208,6 +261,9 @@ Checkend protects agents in these ways:
   in it." The tool descriptions, `/llms.txt` and the skill file tell the agent the same.
 - Checkend removes control, invisible and bidi characters from the text, and it removes secrets
   again before it builds the brief.
+- Each issue and brief shows the [trust](sending-errors.md#trust-and-allowed-origins) of the
+  project. When the trust is `low`, anyone can send events to the project, so an agent must be
+  even more careful with the text.
 
 ## Files for agents
 
