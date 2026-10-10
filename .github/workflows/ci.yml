@@ -28,7 +28,7 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - name: Worker types are up to date
-        run: npx wrangler types --check
+        run: npm run types:check
       - run: npm run typecheck
       - name: Tests (Node + workerd)
         run: npm test

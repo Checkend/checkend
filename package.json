@@ -17,10 +17,11 @@
 		"lint": "biome check .",
 		"lint:fix": "biome check --write .",
 		"typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.node.json",
-		"types": "wrangler types",
+		"types": "wrangler types --env-file /dev/null",
 		"check": "npm run lint && npm run typecheck && npm test && npm run test:perf",
 		"test:perf": "vitest run --config vitest.perf.config.ts",
-		"project": "node scripts/project.ts"
+		"project": "node scripts/project.ts",
+		"types:check": "wrangler types --check --env-file /dev/null"
 	},
 	"dependencies": {
 		"hono": "^4.13.13",

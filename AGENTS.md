@@ -15,7 +15,7 @@ The core is portable, so the same code can also run on Node with SQLite.
 | `npx vitest run --project node` | Run only the Node tests (fast: core, SQLite, tools). |
 | `npm run lint` | Biome: format and lint checks. `npm run lint:fix` fixes what it can. |
 | `npm run typecheck` | TypeScript for the Workers runtime and for Node. |
-| `npm run types` | Generate `worker-configuration.d.ts` again after you change `wrangler.jsonc`. |
+| `npm run types` | Generate `worker-configuration.d.ts` again after you change `wrangler.jsonc`. It ignores `.dev.vars`, so local secrets do not change the types. |
 | `npm run dev` | Run the Worker locally. First run `npx wrangler d1 migrations apply DB --local`. |
 | `npm run check` | Lint, typecheck, tests and the CPU budget. Run it before each commit. |
 | `npm run project -- create --name <name>` | Create a project and print its DSN (needs `CHECKEND_URL` and `CHECKEND_ADMIN_TOKEN`). `list` prints all projects. |
