@@ -5,8 +5,10 @@ import { openSqliteDb } from "../../src/adapters/node/sqlite-db.ts";
 import { fixedClock } from "../../src/core/clock.ts";
 import { applyMigrations } from "../../src/core/migrations.ts";
 import { createApp } from "../../src/http/app.ts";
+import { DEFAULT_CONFIG } from "../../src/ports/config.ts";
 import type { Db } from "../../src/ports/db.ts";
 import type { Ports } from "../../src/ports/index.ts";
+import { noRateLimit } from "../../src/ports/rate-limiter.ts";
 
 const migrations = readMigrations("migrations");
 const latest = migrations.at(-1)?.name;
@@ -18,6 +20,14 @@ const brokenDb: Db = {
 	run: () => Promise.reject(new Error("D1_ERROR: secret internal detail")),
 	batch: () => Promise.reject(new Error("D1_ERROR: secret internal detail")),
 };
+
+const portsWith = (db: Db): Ports => ({
+	db,
+	clock,
+	defer: () => {},
+	rateLimiter: noRateLimit,
+	config: DEFAULT_CONFIG,
+});
 
 async function getHealth(ports: Ports) {
 	const response = await createApp().request("/health", {}, { ports });
@@ -32,7 +42,7 @@ describe("GET /health", () => {
 	it("returns the version and the migration level", async () => {
 		const db = openSqliteDb(":memory:");
 		await applyMigrations(db, migrations);
-		const { status, headers, body } = await getHealth({ db, clock });
+		const { status, headers, body } = await getHealth(portsWith(db));
 		expect(status).toBe(200);
 		expect(headers.get("cache-control")).toBe("no-store");
 		expect(body).toEqual({
@@ -44,13 +54,13 @@ describe("GET /health", () => {
 	});
 
 	it("reports level 0 before any migration", async () => {
-		const { status, body } = await getHealth({ db: openSqliteDb(":memory:"), clock });
+		const { status, body } = await getHealth(portsWith(openSqliteDb(":memory:")));
 		expect(status).toBe(200);
 		expect(body.migrations).toEqual({ level: 0, latest: null, applied: 0 });
 	});
 
 	it("returns 503 without internal details when the database fails", async () => {
-		const { status, body } = await getHealth({ db: brokenDb, clock });
+		const { status, body } = await getHealth(portsWith(brokenDb));
 		expect(status).toBe(503);
 		expect(body).toEqual({
 			status: "error",
@@ -67,7 +77,7 @@ describe("unknown routes", () => {
 		const response = await createApp().request(
 			"/nope",
 			{},
-			{ ports: { db: openSqliteDb(":memory:"), clock } },
+			{ ports: portsWith(openSqliteDb(":memory:")) },
 		);
 		expect(response.status).toBe(404);
 		expect(await response.json()).toEqual({ error: "not_found" });

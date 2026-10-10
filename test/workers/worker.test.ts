@@ -1,4 +1,4 @@
-import { applyD1Migrations, env } from "cloudflare:test";
+import { applyD1Migrations, createExecutionContext, env } from "cloudflare:test";
 import { exports } from "cloudflare:workers";
 import { beforeAll, describe, expect, it } from "vitest";
 import pkg from "../../package.json" with { type: "json" };
@@ -27,7 +27,7 @@ describe("Worker entry", () => {
 
 describe("cloudflarePorts", () => {
 	it("builds the Db port on the DB binding and a system clock", async () => {
-		const ports = cloudflarePorts(env);
+		const ports = cloudflarePorts(env, createExecutionContext());
 		expect(await ports.db.first(sql`SELECT ${41} + ${1} AS answer`)).toEqual({ answer: 42 });
 		expect(Math.abs(ports.clock.now().getTime() - Date.now())).toBeLessThan(5_000);
 	});

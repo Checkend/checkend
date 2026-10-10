@@ -1,0 +1,24 @@
+/** Settings of this install, from the environment. */
+export interface Config {
+	/** The admin bearer token for /v1. Null: the API rejects every request. */
+	adminToken: string | null;
+	/**
+	 * The D1 daily limit of rows written (100,000 on the Workers Free plan). Null: no limit.
+	 * Near the limit, ingest stores counters only (budget mode).
+	 */
+	dailyRowLimit: number | null;
+	/** Stored events per issue. */
+	eventsPerIssue: number;
+	/** New issues per project per hour; more new fingerprints go to one "flood" issue. */
+	newIssuesPerHour: number;
+	/** Distinct tag keys per project. */
+	tagKeysPerProject: number;
+}
+
+export const DEFAULT_CONFIG: Config = {
+	adminToken: null,
+	dailyRowLimit: null,
+	eventsPerIssue: 100,
+	newIssuesPerHour: 100,
+	tagKeysPerProject: 200,
+};

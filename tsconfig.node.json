@@ -13,6 +13,7 @@
 		"test/contract/**/*.ts",
 		"test/node/**/*.ts",
 		"test/fixtures/**/*.ts",
+		"test/support/**/*.ts",
 		"*.config.ts"
 	]
 }

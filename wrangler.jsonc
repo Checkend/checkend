@@ -4,6 +4,14 @@
 	"main": "src/entry/worker.ts",
 	"compatibility_date": "2026-10-06",
 	"observability": { "enabled": true },
+	// Optional: a rate limit per DSN key for ingest. Without it, ingest has no rate limit.
+	"ratelimits": [
+		{
+			"name": "INGEST_RATE_LIMITER",
+			"namespace_id": "1001",
+			"simple": { "limit": 1000, "period": 60 }
+		}
+	],
 	"d1_databases": [
 		{
 			"binding": "DB",
