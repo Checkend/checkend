@@ -1,0 +1,42 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`fingerprintEvent > is stable for every golden fixture (a change splits issues: needs a new version) 1`] = `
+{
+  "browser-caught-type-error": {
+    "hash": "0b3e9a82b17fec354129e56cea29d5f6",
+    "method": "stack",
+  },
+  "browser-message": {
+    "hash": "92693ea0f265d12cb15b191b8639d78d",
+    "method": "message",
+  },
+  "browser-unhandled-error": {
+    "hash": "8f8de18119aba16e9d8ed80a57502b89",
+    "method": "message",
+  },
+  "browser-unhandled-rejection": {
+    "hash": "aacf1caddbe6da3296f649e8d2e57083",
+    "method": "stack",
+  },
+  "node-error-with-cause": {
+    "hash": "c41830b6d907889c2bf6d12a187040a3",
+    "method": "stack",
+  },
+  "node-gzip-large": {
+    "hash": "3f589f033858286264396113e19dbce9",
+    "method": "stack",
+  },
+  "node-message": {
+    "hash": "d9b288b0d739d303b2a2dbb6e0990663",
+    "method": "message",
+  },
+  "node-secrets": {
+    "hash": "80381871b76e7dd9b24dba1c6e65b817",
+    "method": "stack",
+  },
+  "node-type-error": {
+    "hash": "c4e9b3429728289b27535dfd2458619e",
+    "method": "stack",
+  },
+}
+`;
