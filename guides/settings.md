@@ -16,8 +16,10 @@ All settings are optional. Set them as Workers secrets or variables (in your
 | `GITHUB_TOKEN` (secret) | none | Optional. A GitHub token that can read the repository contents (a fine-grained token with "Contents: Read-only"). Checkend uses it to get the commits of each deploy, for [suspect commits](fix-loop.md#suspect-commits). |
 | `GITHUB_WEBHOOK_SECRET` (secret) | none | The secret of the [GitHub webhook](fix-loop.md#or-use-the-github-webhook). Without it, the webhook is off. |
 | `ENCRYPTION_KEYS` (secret) | none | The keys that encrypt stored secrets, for example `k2:<base64>,k1:<base64>`, the current key first. [Webhooks](webhooks.md) need it. See [Encryption keys](webhooks.md#encryption-keys). |
-| `BLOBS` (binding) | none | An R2 bucket for [source maps](source-maps.md). Without it, source map uploads give `400` `storage_not_configured`. |
+| `BLOBS` (binding) | none | An R2 bucket for [source maps](source-maps.md) and for large [raw payloads](what-checkend-stores.md#5-the-raw-payload). Without it, source map uploads give `400` `storage_not_configured`, and raw payloads above 64 KB (compressed) are not kept. |
+| `INGEST_QUEUE` (binding) | none | Optional overflow queue for events when D1 is overloaded. See [Bursts and overload](sending-errors.md#bursts-and-overload). |
 | `NOTIFY` (binding) | none | Optional Cloudflare Queue for webhook deliveries. Without it, deliveries work. |
+| `RETENTION_DAYS` | 90 | Days that Checkend keeps stored events and hourly counts (hourly counts at least 8 days). See [Data retention](#data-retention). |
 | `REQUIRE_APPROVAL` | none | Actions that need a person's approval: a comma-separated list of `ignore` and `merge`. See [Approvals](api.md#approvals). |
 | `INGEST_RATE_LIMITER` (binding) | 1000 requests a minute per DSN key | A Rate Limiting binding. `wrangler.jsonc` includes it. Without it, ingest has no rate limit. |
 
@@ -47,6 +49,25 @@ Worker instance reads the count again at most every 30 seconds.
 When the estimate reaches 80% of this limit, it goes into **budget mode** until 00:00 UTC. In
 budget mode, Checkend still counts events, but it does not store them. `/health` and the API
 show the mode as `counters_only`.
+
+## Data retention
+
+Every 5 minutes, the cron deletes data that is older than `RETENTION_DAYS` (90 by default):
+
+- stored events, with their raw payloads (also the ones in `BLOBS`)
+- hourly counts
+- the records of pushed commits
+- finished webhook deliveries (delivered or failed), after 30 days. Pending deliveries stay.
+
+Checkend keeps the issues (with their total `times_seen`), the activity timeline (the audit
+record), and the user hashes behind `users_affected`.
+
+Hourly counts stay for at least 8 days, also when `RETENTION_DAYS` is shorter, because
+`events_7d` and the priority score use them.
+
+To keep each run small in D1 row writes, Checkend deletes in chunks: 500 rows, at most 4 chunks in
+each run. A large backlog, for example after you lower `RETENTION_DAYS`, goes away over several
+runs. After it deletes events, Checkend updates the stored-event counts of the issues.
 
 ## Health
 

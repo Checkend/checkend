@@ -60,6 +60,8 @@ Lists all projects, with their DSNs. Each project also has:
 - `trust`: the [trust level](sending-errors.md#trust-and-allowed-origins) now, `low` or `high`
 - `trust_setting`: `low`, `high`, or `null` (automatic)
 - `allowed_origins`: a list of origins, or `null` (any origin)
+- `daily_quota`: the daily event quota, or `null` (no quota)
+- `events_today`: the events of the project since 00:00 UTC (a repeated `event_id` counts once)
 
 ```json
 { "data": [ { "id": 4821937065, "name": "My App", "slug": "my-app", "platform": "node",
@@ -91,6 +93,7 @@ or the slug. The body has one or more of these fields:
 |---|---|
 | `repository` | `"owner/name"`, or `null` to remove it. Checkend stores it in lowercase. It is used by the [GitHub webhook](fix-loop.md#or-use-the-github-webhook), and a linked pull request must be in this repository. |
 | `trust` | `"low"`, `"high"`, or `null` for automatic. See [Trust and allowed origins](sending-errors.md#trust-and-allowed-origins). |
+| `daily_quota` | 1 to 1,000,000,000 events each day (UTC), or `null` to remove the quota (the default). Other values give `400`. At the quota, ingest answers `429` until 00:00 UTC (see [Back-pressure](sending-errors.md#back-pressure-429)). A change takes effect within 60 seconds. |
 | `allowed_origins` | 1 to 20 origins (`scheme://host[:port]`, `http` or `https`, no path, no wildcard; stored in lowercase), or `null` for any origin. |
 
 Other fields or values give `400`. An unknown project gives `404`. Returns the project, as in
@@ -560,7 +563,7 @@ The actions are:
 | `sourcemap.delete` | A source map is deleted. |
 | `webhook.create` | A webhook is created. `data` has `name` and `url`. |
 | `webhook.delete` | A webhook is deleted. |
-| `project.update` | The settings of a project change (`repository`, `trust` or `allowed_origins`). `data` has the changed fields. |
+| `project.update` | The settings of a project change (`repository`, `trust`, `allowed_origins` or `daily_quota`). `data` has the changed fields. |
 | `approval.request`, `approval.approve`, `approval.reject` | An approval is requested or decided. |
 
 ## Triage labels

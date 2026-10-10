@@ -65,6 +65,9 @@ You need:
    npx wrangler secret put ADMIN_TOKEN --config wrangler.mine.jsonc
    ```
 
+For a project with many users, also add a rate limiting rule in front of ingest: see
+[Protect the ingest path](sending-errors.md#protect-the-ingest-path).
+
 Apply the migrations before each deploy. Wrangler records each applied migration and skips it,
 so it is safe to run the command again.
 

@@ -105,7 +105,11 @@ events again. The raw payload:
 
 - has its secrets removed, like the stored event
 - is compressed with gzip
-- is kept only for events of 256 KB or less (and 64 KB or less after compression)
+- is kept only for events of 256 KB or less
+- is in D1 when it is 64 KB or less after compression. A larger one goes to the `BLOBS` bucket
+  (see [Settings and health](settings.md)); without `BLOBS`, it is not kept, and only the
+  processed event is stored.
+- is deleted with its event (see [Data retention](settings.md#data-retention))
 - is used only to process events again. The API never returns it.
 
 ## 6. Untrusted data

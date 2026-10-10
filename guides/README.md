@@ -68,5 +68,4 @@ These features are planned. They are **not** available now:
 
 - a web UI
 - alerts
-- queue mode for ingest
 - a Node or Docker entry (the core can run on Node, but there is no Node server yet)

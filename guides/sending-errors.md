@@ -128,11 +128,92 @@ Checkend answers `429` with the `Retry-After` and `X-Sentry-Rate-Limits` headers
   `INGEST_RATE_LIMITER` binding, which `wrangler.jsonc` includes. Without the binding, there is no
   rate limit.
 - **One client IP causes too many key lookups in the database.** The same binding sets this limit.
+- **The project used its daily quota.** A project can have a daily event quota (see
+  [`PATCH /v1/projects/:project`](api.md#patch-v1projectsproject)). At the quota, Checkend answers
+  `429` `{"detail": "The daily quota of this project is used up."}`, with `Retry-After` set to the
+  seconds until 00:00 UTC, and `X-Sentry-Rate-Limits: <seconds>::organization:quota_exceeded`.
+  Sentry SDKs stop sending until then. The quota is approximate: each Worker instance reads the
+  count at most every 60 seconds, so with several instances a project can go a little over it.
+  The quota adds no database writes.
 - **The database is overloaded.** After 3 failed writes in a row, or one write that takes more
-  than 5 seconds, Checkend answers `429` for 30 seconds.
+  than 5 seconds, Checkend answers `429` for 30 seconds. With the
+  [overflow queue](#bursts-and-overload), it answers `200` and queues the event instead.
 
 Sentry SDKs read these headers and wait before they send again. Each Worker instance keeps its
 own count of failed writes.
+
+### Bursts and overload
+
+By default (direct mode), Checkend writes each event to D1 after the response. When D1 is
+overloaded, the SDK gets `429`, and it sends the event again later.
+
+An optional Cloudflare Queue, `INGEST_QUEUE`, keeps events in a burst instead:
+
+- When D1 is overloaded, the event goes to the queue, and the SDK gets `200` instead of `429`.
+- A direct write that fails after its 3 attempts goes to the queue, instead of being lost.
+- A large event (above 120 KB as a queue message) needs the `BLOBS` bucket (see
+  [Source maps](source-maps.md#set-up-storage)): its data goes there. Without `BLOBS`, such an
+  event gets `429` as before while D1 is overloaded.
+
+The queue consumer writes the queued events in groups: one atomic batch for each project and
+fingerprint, so a burst of one error becomes a few writes. An event that the queue delivers
+twice counts once, and the limit of stored events for each issue still applies.
+
+To set it up:
+
+```sh
+npx wrangler queues create checkend-ingest
+```
+
+Then add the queue to your Worker config, as producer and consumer:
+
+```jsonc
+"queues": {
+  "producers": [{ "binding": "INGEST_QUEUE", "queue": "checkend-ingest" }],
+  "consumers": [{ "queue": "checkend-ingest" }]
+}
+```
+
+Checkend uses the queue only for overflow, so normal traffic does not use it. This matters on the
+Workers Free plan, where Queues allow 10,000 operations each day (see the
+[Cloudflare announcement](https://developers.cloudflare.com/changelog/post/2026-02-04-queues-free-plan/)).
+
+> **Caution:** on the Free plan, a queue keeps a message for at most 24 hours (on paid plans, 14
+> days). An event that waits in the queue longer than that is lost.
+
+### Protect the ingest path
+
+Checkend's own limits (the rate limit for each key, quotas, budget mode) run inside the Worker.
+So in a flood, the Worker still runs for each request. A Cloudflare WAF rate limiting rule runs
+before the Worker: a request that it blocks never runs the Worker, so it uses no Worker CPU and
+no D1.
+
+The rule needs Checkend on a custom domain (a route or a custom domain in a Cloudflare zone).
+Zone WAF rules do not apply to `*.workers.dev` addresses.
+
+In the Cloudflare dashboard, open **Security rules**, select **Create rule**, then **Rate limiting
+rules**:
+
+- Expression:
+
+  ```
+  (http.request.method eq "POST" and (http.request.uri.path wildcard "/api/*/envelope*"
+    or http.request.uri.path wildcard "/api/*/store*" or http.request.uri.path eq "/v1/ingest"))
+  ```
+
+- Characteristics: IP (the only choice on the Free plan).
+- Period and duration: 10 seconds, action **Block**. The Free plan allows 1 rule, with a period
+  and a duration of 10 seconds; paid plans allow more rules and longer periods.
+- A starting value: 300 requests in 10 seconds for each IP.
+
+A limit for each IP fits browser projects, because their events come from many IPs. A busy server
+sends all its events from one IP: set the value above the normal peak of the server, or exclude
+the IP addresses of your servers in the expression (`and not http.request.ip in {...}`).
+
+A blocked SDK gets the 429 of Cloudflare (error 1015), not the 429 of Checkend with `Retry-After`.
+Sentry SDKs wait after a 429 in both cases.
+
+See the Cloudflare docs: [Rate limiting rules](https://developers.cloudflare.com/waf/rate-limiting-rules/).
 
 ## Trust and allowed origins
 
