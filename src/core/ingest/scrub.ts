@@ -99,11 +99,13 @@ export function scrub(value: unknown): unknown {
 		return value.map(scrub);
 	}
 	if (value !== null && typeof value === "object") {
-		const out: Record<string, unknown> = {};
-		for (const [key, item] of Object.entries(value)) {
-			out[key] = isSensitiveKey(key) ? FILTERED : scrub(item);
-		}
-		return out;
+		// fromEntries defines own properties, so a "__proto__" key stays a plain key.
+		return Object.fromEntries(
+			Object.entries(value).map(([key, item]) => [
+				key,
+				isSensitiveKey(key) ? FILTERED : scrub(item),
+			]),
+		);
 	}
 	return value;
 }

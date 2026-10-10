@@ -198,13 +198,12 @@ function limitValue(value: unknown, depth: number = EVENT_LIMITS.depth): unknown
 	if (Array.isArray(value)) {
 		return value.slice(0, EVENT_LIMITS.arrayItems).map((item) => limitValue(item, depth - 1));
 	}
-	const out: Record<string, unknown> = {};
-	let keys = 0;
-	for (const [key, item] of Object.entries(value)) {
-		if (keys++ >= EVENT_LIMITS.objectKeys) break;
-		out[cleanText(key, 64)] = limitValue(item, depth - 1);
-	}
-	return out;
+	// fromEntries defines own properties, so a "__proto__" key stays a plain key.
+	return Object.fromEntries(
+		Object.entries(value)
+			.slice(0, EVENT_LIMITS.objectKeys)
+			.map(([key, item]) => [cleanText(key, 64), limitValue(item, depth - 1)]),
+	);
 }
 
 const limitRecord = (value: Record<string, unknown> | undefined) =>
