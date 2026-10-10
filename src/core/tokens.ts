@@ -1,9 +1,15 @@
+import * as v from "valibot";
 import { type Db, sql } from "../ports/db.ts";
 import type { Ports } from "../ports/index.ts";
 
 /** API scopes. `admin` includes all the others. */
 export const SCOPES = ["issues:read", "issues:write", "releases:write", "admin"] as const;
 export type Scope = (typeof SCOPES)[number];
+
+export const CreateTokenBody = v.object({
+	name: v.pipe(v.string(), v.trim(), v.minLength(1), v.maxLength(100)),
+	scopes: v.pipe(v.array(v.picklist(SCOPES)), v.minLength(1), v.maxLength(SCOPES.length)),
+});
 
 /** Who makes a request: a scoped token, or the bootstrap ADMIN_TOKEN secret. */
 export interface Actor {

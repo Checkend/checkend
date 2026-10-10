@@ -1,13 +1,18 @@
 import { Hono } from "hono";
 import { checkHealth } from "../core/health.ts";
 import { IngestState } from "../core/ingest/state.ts";
+import type { Actor } from "../core/tokens.ts";
 import type { Ports } from "../ports/index.ts";
 import { apiRoutes } from "./api.ts";
 import { ingestRoutes } from "./ingest.ts";
 import { mcpRoutes } from "./mcp.ts";
 
 /** Each entry passes its ports as the Hono environment: `app.fetch(request, { ports })`. */
-export type AppEnv = { Bindings: { ports: Ports } };
+export type AppEnv = {
+	Bindings: { ports: Ports };
+	/** `actor`: who calls /v1, set by the auth middleware. */
+	Variables: { actor: Actor };
+};
 
 export interface AppOptions {
 	/** In-memory ingest state (caches, D1 write state). One per isolate. */

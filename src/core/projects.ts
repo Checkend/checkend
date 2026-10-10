@@ -1,5 +1,7 @@
 import { type Db, sql } from "../ports/db.ts";
 import type { Ports } from "../ports/index.ts";
+import { activityStatement } from "./activity.ts";
+import type { Actor } from "./tokens.ts";
 
 export interface CreatedProject {
 	/** The public ID: in the DSN, the ingest URL and the API. */
@@ -52,6 +54,7 @@ export function newPublicKey(): string {
 export async function createProject(
 	{ db, clock }: Pick<Ports, "db" | "clock">,
 	input: { name: string; platform?: string | null | undefined },
+	actor?: Actor,
 ): Promise<CreatedProject> {
 	const name = input.name.trim();
 	if (name.length === 0 || name.length > 100) {
@@ -79,6 +82,18 @@ export async function createProject(
 					VALUES (${name}, ${slug}, ${platform}, ${createdAt}, ${publicId}) RETURNING id`,
 				sql`INSERT INTO project_keys (project_id, public_key, label, created_at)
 					SELECT id, ${publicKey}, ${"default"}, ${createdAt} FROM projects WHERE slug = ${slug}`,
+				// The activity target is the public ID: the row ID never leaves Checkend.
+				...(actor
+					? [
+							activityStatement(
+								actor,
+								"project.create",
+								{ type: "project", id: publicId },
+								{ name, slug, platform },
+								new Date(createdAt),
+							),
+						]
+					: []),
 			]);
 			const internalId = Number(project?.rows[0]?.id);
 			return { id: publicId, internalId, name, slug, platform, publicKey, createdAt };
