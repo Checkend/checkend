@@ -24,12 +24,15 @@
 		"types:check": "wrangler types --check --env-file /dev/null"
 	},
 	"dependencies": {
+		"@modelcontextprotocol/server": "^2.3.1",
+		"@valibot/to-json-schema": "^1.8.0",
 		"hono": "^4.13.13",
 		"valibot": "^1.5.0"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.5.15",
 		"@cloudflare/vitest-plugin": "^1.4.0",
+		"@modelcontextprotocol/client": "^2.3.1",
 		"@sentry/browser": "^11.6.0",
 		"@sentry/node": "^11.6.0",
 		"@types/node": "^26.6.5",
