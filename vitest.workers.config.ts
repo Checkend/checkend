@@ -10,6 +10,7 @@ export default defineConfig(async () => ({
 			miniflare: {
 				// Test-only bindings: the migration files, read here because workerd has no file system.
 				bindings: {
+					ADMIN_TOKEN: "workers-test-admin-token",
 					TEST_MIGRATIONS: readMigrations("migrations"),
 					TEST_D1_MIGRATIONS: await readD1Migrations("migrations"),
 					TEST_SENTRY_FIXTURES: loadSentryFixtures().map((f) => ({

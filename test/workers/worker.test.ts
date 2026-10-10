@@ -33,3 +33,25 @@ describe("cloudflarePorts", () => {
 		expect(Math.abs(ports.clock.now().getTime() - Date.now())).toBeLessThan(5_000);
 	});
 });
+
+describe("Worker API", () => {
+	const get = (path: string, token?: string) =>
+		exports.default.fetch(
+			new Request(`https://checkend.test${path}`, {
+				headers: token ? { authorization: `Bearer ${token}` } : {},
+			}),
+		);
+
+	it("reads ADMIN_TOKEN from the Worker environment", async () => {
+		expect((await get("/v1/issues")).status).toBe(401);
+		expect((await get("/v1/issues", "wrong")).status).toBe(401);
+		const response = await get("/v1/issues", env.ADMIN_TOKEN);
+		expect(response.status).toBe(200);
+		expect(await response.json()).toMatchObject({ data: expect.any(Array), next_cursor: null });
+	});
+
+	it("runs the issue filters on D1", async () => {
+		const response = await get("/v1/issues?project=1&status=unresolved&limit=5", env.ADMIN_TOKEN);
+		expect(response.status).toBe(200);
+	});
+});
