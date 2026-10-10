@@ -87,7 +87,6 @@ export async function storeEvent(
 	console.error(
 		JSON.stringify({
 			message: "checkend: ingest write failed",
-			project_id: projectId,
 			event_id: prepared.event.event_id,
 			attempts: attempt,
 			error: String(lastError).slice(0, 300),

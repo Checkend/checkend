@@ -2,7 +2,10 @@ import { type Db, sql } from "../ports/db.ts";
 import type { Ports } from "../ports/index.ts";
 
 export interface CreatedProject {
+	/** The public ID: in the DSN, the ingest URL and the API. */
 	id: number;
+	/** The row ID. Internal only: it never leaves Checkend. */
+	internalId: number;
 	name: string;
 	slug: string;
 	platform: string | null;
@@ -26,6 +29,17 @@ export function slugify(name: string): string {
 		.replace(/^-+|-+$/g, "")
 		.slice(0, 48);
 	return slug || "project";
+}
+
+/**
+ * A random public project ID with 10 digits (1000000000 to 9999999999), never in order, so
+ * that IDs do not show how many projects exist. Numeric, because Sentry SDKs accept only
+ * digits as the project ID of a DSN.
+ */
+export function newPublicProjectId(): number {
+	const [high = 0, low = 0] = crypto.getRandomValues(new Uint32Array(2));
+	const random = (high % 2 ** 21) * 2 ** 32 + low; // 53 random bits
+	return 1_000_000_000 + (random % 9_000_000_000);
 }
 
 /** A DSN public key: 16 random bytes as hex. It identifies the project; it is not a secret. */
@@ -57,30 +71,39 @@ export async function createProject(
 
 	const createdAt = clock.now().toISOString();
 	const publicKey = newPublicKey();
-	const [project] = await db.batch([
-		sql`INSERT INTO projects (name, slug, platform, created_at)
-			VALUES (${name}, ${slug}, ${platform}, ${createdAt}) RETURNING id`,
-		sql`INSERT INTO project_keys (project_id, public_key, label, created_at)
-			SELECT id, ${publicKey}, ${"default"}, ${createdAt} FROM projects WHERE slug = ${slug}`,
-	]);
-	const id = Number(project?.rows[0]?.id);
-	return { id, name, slug, platform, publicKey, createdAt };
+	for (let attempt = 1; ; attempt++) {
+		const publicId = newPublicProjectId();
+		try {
+			const [project] = await db.batch([
+				sql`INSERT INTO projects (name, slug, platform, created_at, public_id)
+					VALUES (${name}, ${slug}, ${platform}, ${createdAt}, ${publicId}) RETURNING id`,
+				sql`INSERT INTO project_keys (project_id, public_key, label, created_at)
+					SELECT id, ${publicKey}, ${"default"}, ${createdAt} FROM projects WHERE slug = ${slug}`,
+			]);
+			const internalId = Number(project?.rows[0]?.id);
+			return { id: publicId, internalId, name, slug, platform, publicKey, createdAt };
+		} catch (error) {
+			// A public ID collision (1 in 9 billion per project): try another one.
+			if (attempt >= 5 || !/UNIQUE.*public_id|projects_public_id/i.test(String(error))) throw error;
+		}
+	}
 }
 
 export async function listProjects(db: Db): Promise<ProjectSummary[]> {
-	const projects = await db.all<Omit<ProjectSummary, "keys">>(
-		sql`SELECT id, name, slug, platform, created_at FROM projects ORDER BY id`,
+	const projects = await db.all<Omit<ProjectSummary, "keys"> & { internal_id: number }>(
+		sql`SELECT id AS internal_id, public_id AS id, name, slug, platform, created_at FROM projects ORDER BY internal_id`,
 	);
 	const keys = await db.all<{ project_id: number; public_key: string }>(
 		sql`SELECT project_id, public_key FROM project_keys WHERE revoked_at IS NULL ORDER BY id`,
 	);
-	return projects.map((p) => ({
+	return projects.map(({ internal_id, ...p }) => ({
 		...p,
-		keys: keys.filter((k) => k.project_id === p.id).map((k) => k.public_key),
+		keys: keys.filter((k) => k.project_id === internal_id).map((k) => k.public_key),
 	}));
 }
 
 interface CacheEntry {
+	/** projectId is the internal row ID, for the write. */
 	value: { projectId: number } | null;
 	expires: number;
 }
@@ -120,9 +143,10 @@ export class KeyCache {
 		const cached = this.peek(projectId, publicKey, now);
 		if (cached !== undefined) return cached;
 
+		// projectId here is the public ID from the URL; the result has the internal row ID.
 		const row = await db.first<{ project_id: number }>(
-			sql`SELECT project_id FROM project_keys
-				WHERE public_key = ${publicKey} AND project_id = ${projectId} AND revoked_at IS NULL`,
+			sql`SELECT k.project_id FROM project_keys k JOIN projects p ON p.id = k.project_id
+				WHERE k.public_key = ${publicKey} AND p.public_id = ${projectId} AND k.revoked_at IS NULL`,
 		);
 		const value = row ? { projectId: row.project_id } : null;
 		const cacheKey = `${projectId}:${publicKey}`;

@@ -33,7 +33,7 @@ async function setup(config: Partial<Config> = {}, db?: Db) {
 	const project = await createProject(t.ports, { name: "Shop" });
 	const state = new IngestState();
 	const store = async (raw: Record<string, unknown>) =>
-		storeEvent(t.ports, state, project.id, await prepareEvent(bytes(raw), t.clock.now()), {
+		storeEvent(t.ports, state, project.internalId, await prepareEvent(bytes(raw), t.clock.now()), {
 			sleep: noSleep,
 		});
 	const one = <T extends Record<string, unknown>>(query: ReturnType<typeof sql>) =>

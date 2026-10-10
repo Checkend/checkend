@@ -71,13 +71,15 @@ describe("projects API", () => {
 		const { call } = await setup();
 		const response = await call("POST", "/v1/projects", { name: "Shop", platform: "javascript" });
 		expect(response.status).toBe(201);
+		expect(String(response.body.data.id)).toMatch(/^[1-9]\d{9}$/);
 		expect(response.body.data).toMatchObject({
-			id: 1,
 			name: "Shop",
 			slug: "shop",
 			platform: "javascript",
 		});
-		expect(response.body.data.dsn).toMatch(/^https:\/\/[0-9a-f]{32}@checkend\.test\/1$/);
+		expect(response.body.data.dsn).toBe(
+			`https://${new URL(response.body.data.dsn).username}@checkend.test/${response.body.data.id}`,
+		);
 	});
 
 	it("rejects an invalid body with 400", async () => {
@@ -93,7 +95,9 @@ describe("projects API", () => {
 		await call("POST", "/v1/projects", { name: "B" });
 		const response = await call("GET", "/v1/projects");
 		expect(response.body.data.map((p: { slug: string }) => p.slug)).toEqual(["a", "b"]);
-		expect(response.body.data[0].dsns[0]).toMatch(/^https:\/\/[0-9a-f]{32}@checkend\.test\/1$/);
+		expect(response.body.data[0].dsns[0]).toMatch(
+			/^https:\/\/[0-9a-f]{32}@checkend\.test\/[1-9]\d{9}$/,
+		);
 	});
 });
 
@@ -111,7 +115,7 @@ describe("issues API", () => {
 	}
 
 	it("lists issues, newest last_seen first, with counts and the ingest state", async () => {
-		const { call } = await withIssues();
+		const { call, project } = await withIssues();
 		const response = await call("GET", "/v1/issues");
 		expect(response.status).toBe(200);
 		expect(response.body.data.map((i: { title: string }) => i.title)).toEqual([
@@ -121,7 +125,7 @@ describe("issues API", () => {
 		]);
 		expect(response.body.data[0]).toMatchObject({
 			id: expect.any(Number),
-			project_id: 1,
+			project_id: project.id,
 			status: "unresolved",
 			level: "error",
 			times_seen: 1,
@@ -144,11 +148,19 @@ describe("issues API", () => {
 	});
 
 	it("filters by project and status, and rejects invalid filters", async () => {
-		const { call } = await withIssues();
-		expect((await call("GET", "/v1/issues?project=2")).body.data).toEqual([]);
-		expect((await call("GET", "/v1/issues?project=1&status=unresolved")).body.data).toHaveLength(3);
+		const { call, project } = await withIssues();
+		expect((await call("GET", "/v1/issues?project=1234567890")).body.data).toEqual([]);
+		expect(
+			(await call("GET", `/v1/issues?project=${project.id}&status=unresolved`)).body.data,
+		).toHaveLength(3);
 		expect((await call("GET", "/v1/issues?status=resolved")).body.data).toEqual([]);
-		for (const query of ["limit=0", "limit=101", "status=nope", "project=x", "cursor=%%%"]) {
+		for (const query of [
+			"limit=0",
+			"limit=101",
+			"status=nope",
+			"project=Bad_Slug!",
+			"cursor=%%%",
+		]) {
 			expect((await call("GET", `/v1/issues?${query}`)).status, query).toBe(400);
 		}
 	});

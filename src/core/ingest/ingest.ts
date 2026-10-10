@@ -60,9 +60,9 @@ export async function handleIngest(
 		if (state.keys.peek(projectId, key, now) === undefined && !(await lookupAllowed())) {
 			return tooManyRequests(RATE_LIMIT_SECONDS, "key");
 		}
-		if (!(await state.keys.find(ports.db, projectId, key, now))) {
-			throw new IngestError(401, "invalid_key", "Invalid or missing DSN key.");
-		}
+		// The URL has the public project ID; the write needs the internal row ID.
+		const project = await state.keys.find(ports.db, projectId, key, now);
+		if (!project) throw new IngestError(401, "invalid_key", "Invalid or missing DSN key.");
 
 		if (!(await ports.rateLimiter.allow(`${projectId}:${key}`))) {
 			return tooManyRequests(RATE_LIMIT_SECONDS, "key");
@@ -78,7 +78,7 @@ export async function handleIngest(
 		}
 
 		const prepared = await prepareEvent(payload, now);
-		ports.defer(storeEvent(ports, state, projectId, prepared));
+		ports.defer(storeEvent(ports, state, project.projectId, prepared));
 		return json(200, { id: prepared.event.event_id });
 	} catch (error) {
 		if (error instanceof IngestError) return json(error.status, { detail: error.message });

@@ -32,15 +32,16 @@ describe("scripts/project.ts", () => {
 		const { cli, lines } = await setup();
 		expect(await cli(["create", "--name", "My Shop", "--platform", "javascript"])).toBe(0);
 		const output = lines.join("\n");
-		expect(output).toContain("Created project 1 (my-shop)");
-		expect(output).toMatch(/DSN: https:\/\/[0-9a-f]{32}@errors\.example\.com\/1/);
+		expect(output).toMatch(/Created project [1-9]\d{9} \(my-shop\)/);
+		expect(output).toMatch(/DSN: https:\/\/[0-9a-f]{32}@errors\.example\.com\/[1-9]\d{9}/);
 	});
 
 	it("prints JSON with --json", async () => {
 		const { cli, lines } = await setup();
 		expect(await cli(["create", "--name", "API", "--json"])).toBe(0);
 		const data = JSON.parse(lines.join("\n"));
-		expect(data).toMatchObject({ id: 1, slug: "api", dsn: expect.stringMatching(/^https:\/\//) });
+		expect(data).toMatchObject({ slug: "api", dsn: expect.stringMatching(/^https:\/\//) });
+		expect(String(data.id)).toMatch(/^[1-9]\d{9}$/);
 	});
 
 	it("lists projects with their DSNs", async () => {
@@ -49,8 +50,10 @@ describe("scripts/project.ts", () => {
 		await cli(["create", "--name", "B"]);
 		lines.length = 0;
 		expect(await cli(["list"])).toBe(0);
-		expect(lines.join("\n")).toMatch(/1\s+a\s+A\s+https:\/\/[0-9a-f]{32}@errors\.example\.com\/1/);
-		expect(lines.join("\n")).toMatch(/2\s+b\s+B/);
+		expect(lines.join("\n")).toMatch(
+			/[1-9]\d{9}\s+a\s+A\s+https:\/\/[0-9a-f]{32}@errors\.example\.com\/[1-9]\d{9}/,
+		);
+		expect(lines.join("\n")).toMatch(/[1-9]\d{9}\s+b\s+B/);
 	});
 
 	it("fails with a clear message without URL or token, or with a wrong token", async () => {

@@ -11,8 +11,11 @@ const id = v.pipe(v.string(), v.regex(/^\d{1,15}$/), v.transform(Number));
 
 export const IdParam = v.object({ id });
 
+/** A project: its public ID (10 digits) or its slug. Never the internal row ID. */
+export const ProjectRef = v.pipe(v.string(), v.regex(/^[a-z0-9][a-z0-9-]{0,47}$/));
+
 export const IssueListQuery = v.object({
-	project: v.optional(id),
+	project: v.optional(ProjectRef),
 	status: v.optional(v.picklist(ISSUE_STATUSES)),
 	limit: v.optional(
 		v.pipe(v.string(), v.regex(/^\d{1,3}$/), v.transform(Number), v.minValue(1), v.maxValue(100)),
@@ -61,15 +64,16 @@ export async function listIssues(
 ): Promise<{ data: IssueRow[]; next_cursor: string | null }> {
 	const [lastSeen, lastId] = after ?? ["9999", Number.MAX_SAFE_INTEGER];
 	const rows = await db.all<IssueRow>({
-		sql: `SELECT id, project_id, title, culprit, type, level, platform, status, times_seen,
-				stored_events, first_seen, last_seen, first_release, last_release, fingerprint,
-				fingerprint_version
-			FROM issues
-			WHERE (? IS NULL OR project_id = ?) AND (? IS NULL OR status = ?)
-				AND (last_seen < ? OR (last_seen = ? AND id < ?))
-			ORDER BY last_seen DESC, id DESC LIMIT ?`,
+		sql: `SELECT i.id, p.public_id AS project_id, i.title, i.culprit, i.type, i.level, i.platform,
+				i.status, i.times_seen, i.stored_events, i.first_seen, i.last_seen, i.first_release,
+				i.last_release, i.fingerprint, i.fingerprint_version
+			FROM issues i JOIN projects p ON p.id = i.project_id
+			WHERE (? IS NULL OR p.public_id = ? OR p.slug = ?) AND (? IS NULL OR i.status = ?)
+				AND (i.last_seen < ? OR (i.last_seen = ? AND i.id < ?))
+			ORDER BY i.last_seen DESC, i.id DESC LIMIT ?`,
 		params: [
 			query.project ?? null,
+			query.project && /^\d{10}$/.test(query.project) ? Number(query.project) : null,
 			query.project ?? null,
 			query.status ?? null,
 			query.status ?? null,
@@ -90,10 +94,10 @@ export async function listIssues(
 
 export async function getIssue(db: Db, issueId: number): Promise<IssueRow | null> {
 	const issue = await db.first<IssueRow>({
-		sql: `SELECT id, project_id, title, culprit, type, level, platform, status, times_seen,
-				stored_events, first_seen, last_seen, first_release, last_release, fingerprint,
-				fingerprint_version
-			FROM issues WHERE id = ?`,
+		sql: `SELECT i.id, p.public_id AS project_id, i.title, i.culprit, i.type, i.level, i.platform,
+				i.status, i.times_seen, i.stored_events, i.first_seen, i.last_seen, i.first_release,
+				i.last_release, i.fingerprint, i.fingerprint_version
+			FROM issues i JOIN projects p ON p.id = i.project_id WHERE i.id = ?`,
 		params: [issueId],
 	});
 	if (!issue) return null;
@@ -105,16 +109,19 @@ export async function getIssue(db: Db, issueId: number): Promise<IssueRow | null
 
 export async function listIssueEvents(db: Db, issueId: number, limit: number): Promise<IssueRow[]> {
 	return db.all<IssueRow>({
-		sql: `SELECT id, issue_id, project_id, event_id, timestamp, received_at, level, release, environment
-			FROM events WHERE issue_id = ? ORDER BY id DESC LIMIT ?`,
+		sql: `SELECT e.id, e.issue_id, p.public_id AS project_id, e.event_id, e.timestamp, e.received_at,
+				e.level, e.release, e.environment
+			FROM events e JOIN projects p ON p.id = e.project_id
+			WHERE e.issue_id = ? ORDER BY e.id DESC LIMIT ?`,
 		params: [issueId, limit],
 	});
 }
 
 export async function getEvent(db: Db, eventId: number): Promise<Record<string, unknown> | null> {
 	const row = await db.first<IssueRow & { data: string }>({
-		sql: `SELECT id, issue_id, project_id, event_id, timestamp, received_at, level, release, environment, data
-			FROM events WHERE id = ?`,
+		sql: `SELECT e.id, e.issue_id, p.public_id AS project_id, e.event_id, e.timestamp, e.received_at,
+				e.level, e.release, e.environment, e.data
+			FROM events e JOIN projects p ON p.id = e.project_id WHERE e.id = ?`,
 		params: [eventId],
 	});
 	if (!row) return null;

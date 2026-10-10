@@ -57,7 +57,7 @@ export function apiRoutes(app: Hono<AppEnv>, state: IngestState): void {
 		const body = v.safeParse(CreateProjectBody, await c.req.json().catch(() => null));
 		if (!body.success) return invalid(c, body.issues);
 		const project = await createProject(c.env.ports, body.output);
-		const { publicKey, createdAt, ...rest } = project;
+		const { publicKey, createdAt, internalId: _internal, ...rest } = project;
 		return c.json(
 			{
 				data: {
