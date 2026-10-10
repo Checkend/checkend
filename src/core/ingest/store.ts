@@ -32,9 +32,15 @@ const FLOOD_TITLE: IssueTitle = {
 };
 
 // Estimated D1 rows written (D1 counts index updates as rows). Used for budget mode.
+// Measured on D1 (test/workers/d1-rows.test.ts): a stored repeat 9-10, a repeat above the
+// per-issue cap 6, a new issue 14-16. The estimate must not be below the real rows.
 const ROWS_STORED = 10;
 const ROWS_COUNTED = 6;
 const ROWS_PER_USER = 2;
+/** A new issue: the issue row and its indexes. */
+const ROWS_NEW_ISSUE = 5;
+/** A new tag key: its row and its index. */
+const ROWS_PER_TAG_KEY = 2;
 
 /** Users stored per issue; users_affected stops at this number. */
 export const MAX_USERS_PER_ISSUE = 1000;
@@ -49,6 +55,8 @@ export interface StoreResult {
 	attempts: number;
 	/** Webhook deliveries that the write added (start them with startDeliveries). */
 	deliveries: number;
+	/** The estimated D1 rows written (for the daily budget). */
+	rows: number;
 }
 
 export interface StoreOptions {
@@ -152,7 +160,7 @@ export async function storeEvents(
 			state.health.recordSuccess(Date.now() - started, now);
 			state.budget.add(now, rows);
 			state.tagKeys.add(projectId, newTagKeys);
-			return { outcome: stored ? "stored" : "counted", attempts: attempt, deliveries };
+			return { outcome: stored ? "stored" : "counted", attempts: attempt, deliveries, rows };
 		} catch (error) {
 			lastError = error;
 			if (PERMANENT.test(String(error)) || attempt === MAX_ATTEMPTS) break;
@@ -180,7 +188,7 @@ export async function storeEvents(
 	} catch {
 		// D1 is down; the in-memory counter in /health still has the failure.
 	}
-	return { outcome: "failed", attempts: attempt, deliveries: 0 };
+	return { outcome: "failed", attempts: attempt, deliveries: 0, rows: 0 };
 }
 
 interface PlannedWrite {
@@ -330,7 +338,8 @@ async function planWrite(
 
 	const rows =
 		(mode === "full" ? ROWS_STORED : ROWS_COUNTED) +
-		newTagKeys.length +
+		(existing ? 0 : ROWS_NEW_ISSUE) +
+		newTagKeys.length * ROWS_PER_TAG_KEY +
 		(prepared.userHash ? ROWS_PER_USER : 0);
 	const day = nowIso.slice(0, 10);
 	statements.push(
