@@ -133,10 +133,14 @@ export class KeyCache {
 	private known = new Map<string, CacheEntry>();
 	private unknown = new Map<string, CacheEntry>();
 
-	constructor(
-		private readonly maxEntries = 1000,
-		private readonly ttlMs = 60_000,
-	) {}
+	private readonly maxEntries: number;
+	private readonly ttlMs: number;
+
+	// Plain fields, not parameter properties: Node type stripping does not support those.
+	constructor(maxEntries = 1000, ttlMs = 60_000) {
+		this.maxEntries = maxEntries;
+		this.ttlMs = ttlMs;
+	}
 
 	get size(): number {
 		return this.known.size + this.unknown.size;
