@@ -11,15 +11,17 @@ The core is portable, so the same code can also run on Node with SQLite.
 |---|---|
 | `npm ci` | Install the dependencies. |
 | `npm test` | Run all tests: the `node` project and the `workers` project (`workerd`). |
+| `npm run test:perf` | The CPU budget test. It runs alone, so that the times are stable. |
 | `npx vitest run --project node` | Run only the Node tests (fast: core, SQLite, tools). |
 | `npm run lint` | Biome: format and lint checks. `npm run lint:fix` fixes what it can. |
 | `npm run typecheck` | TypeScript for the Workers runtime and for Node. |
 | `npm run types` | Generate `worker-configuration.d.ts` again after you change `wrangler.jsonc`. |
 | `npm run dev` | Run the Worker locally. First run `npx wrangler d1 migrations apply DB --local`. |
-| `npm run check` | Lint, typecheck and test. Run it before each commit. |
+| `npm run check` | Lint, typecheck, tests and the CPU budget. Run it before each commit. |
+| `npm run project -- create --name <name>` | Create a project and print its DSN (needs `CHECKEND_URL` and `CHECKEND_ADMIN_TOKEN`). `list` prints all projects. |
 | `npm run deploy:production` | People only (see rule 9). Deploys with `wrangler.production.jsonc`: a copy of `wrangler.jsonc` with your Worker name and `database_id`. Files named `wrangler.*.jsonc` are git-ignored and blocked by the pre-commit hook. |
 
-Requirements: Node 22.13 or later.
+Requirements: Node 22.18 or later (built-in SQLite and TypeScript type stripping).
 
 ## Layout (ports and adapters)
 
@@ -80,6 +82,37 @@ Checkend runs on Cloudflare first, and it must also run off Cloudflare. These ru
 9. **Agents do not deploy.** Do not deploy, push to `main`, or change production resources.
    A maintainer does that.
 10. **Tag each increment** as `v0.N`, with short release notes.
+
+## Ingest and API
+
+- **Ingest:** `POST /api/<project>/envelope/` and `/api/<project>/store/`, the Sentry protocol.
+  Any Sentry SDK works with a Checkend DSN. Only error events are kept; other items are dropped.
+- **API:** `/v1/projects`, `/v1/issues`, `/v1/issues/:id`, `/v1/issues/:id/events`,
+  `/v1/events/:id`. Each request needs `Authorization: Bearer <ADMIN_TOKEN>`. The API never
+  returns the raw payload.
+- **Untrusted input:** every ingest check lives in `src/core/ingest/`, so each entry point gets
+  it. Order: project, DSN key, rate limit, D1 state, body caps (1 MB sent, 2 MB decompressed,
+  1 MB per event), JSON depth, schema and limits, scrubbing. Add a hostile case to
+  `test/node/ingest/hostile.test.ts` for each new input path.
+- **Grouping:** `src/core/ingest/fingerprint.ts` (version 1). A change splits issues: it needs
+  a new version. The fixture snapshot test fails on any change.
+- **CPU budget:** the Workers Free plan allows 10 ms of CPU per request. `npm run test:perf`
+  measures the worst events.
+- **Golden fixtures:** `test/fixtures/sentry/` holds real SDK requests. Record new ones with
+  `node test/fixtures/sentry/capture-node.ts` (and `capture-browser.ts` with a browser).
+
+Settings (Workers secrets and vars; all optional):
+
+| Name | Default | Purpose |
+|---|---|---|
+| `ADMIN_TOKEN` (secret) | none | Bearer token for `/v1`. Without it, the API rejects all requests. |
+| `D1_DAILY_ROW_LIMIT` | none | Set `100000` on the Workers Free plan: from 80% of it, ingest stores counters only until 00:00 UTC. |
+| `EVENTS_PER_ISSUE` | 100 | Stored events per issue. |
+| `NEW_ISSUES_PER_HOUR` | 100 | New issues per project per hour; more go to one "flood" issue. |
+| `TAG_KEYS_PER_PROJECT` | 200 | Distinct tag keys per project. |
+| `INGEST_RATE_LIMITER` (binding) | 1000/min per DSN key | Optional Rate Limiting binding. Without it, there is no rate limit. |
+
+For local development, put `ADMIN_TOKEN=...` in `.dev.vars` (git-ignored).
 
 ## Migrations
 

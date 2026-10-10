@@ -10,7 +10,7 @@ Thank you for your help. This guide tells you how to make a change that we can m
 
 ## Set up
 
-1. Install Node 22.13 or later.
+1. Install Node 22.18 or later.
 2. Clone the repository and install the dependencies:
 
    ```sh

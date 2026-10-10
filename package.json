@@ -6,7 +6,7 @@
 	"license": "Apache-2.0",
 	"type": "module",
 	"engines": {
-		"node": ">=22.13"
+		"node": ">=22.18"
 	},
 	"scripts": {
 		"dev": "wrangler dev",
