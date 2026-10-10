@@ -1,7 +1,7 @@
 import type { Context, Hono } from "hono";
 import * as v from "valibot";
 import { listActivity } from "../core/activity.ts";
-import { ClaimBody, LimitQuery, MergeBody, NoteBody } from "../core/api-spec.ts";
+import { ClaimBody, LimitQuery, MergeBody, NoteBody, SplitBody } from "../core/api-spec.ts";
 import { addNote, claimIssue, issueTimeline, releaseClaim } from "../core/claims.ts";
 import type { IngestState } from "../core/ingest/state.ts";
 import { ingestStatus } from "../core/ingest-status.ts";
@@ -11,6 +11,7 @@ import {
 	listApprovals,
 	mergeIssues,
 	setIssueStatus,
+	splitIssue,
 } from "../core/issue-actions.ts";
 import {
 	CreateProjectBody,
@@ -233,6 +234,30 @@ export function apiRoutes(app: Hono<AppEnv>, state: IngestState): void {
 		if (!params.success) return invalid(c, params.issues);
 		if (!query.success) return invalid(c, query.issues);
 		return c.json({ data: await issueTimeline(c.env.ports, params.output.id, query.output.limit) });
+	});
+
+	app.post("/v1/issues/:id/split", need("issues:write"), async (c) => {
+		const params = v.safeParse(IdParam, c.req.param());
+		if (!params.success) return invalid(c, params.issues);
+		const body = v.safeParse(SplitBody, await c.req.json().catch(() => null));
+		if (!body.success) return invalid(c, body.issues);
+		const result = await splitIssue(
+			c.env.ports,
+			c.get("actor"),
+			params.output.id,
+			body.output.event_ids,
+		);
+		if (result.kind === "not_found") return c.json({ error: "not_found" }, 404);
+		if (result.kind === "invalid") {
+			return c.json(
+				{ error: "invalid_request", details: [{ path: "event_ids", message: result.message }] },
+				400,
+			);
+		}
+		return c.json(
+			{ data: await getIssue(c.env.ports.db, result.newIssueId, c.env.ports.clock.now()) },
+			201,
+		);
 	});
 
 	app.get("/v1/approvals", need("admin"), async (c) => {

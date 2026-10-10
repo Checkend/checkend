@@ -1,7 +1,7 @@
 import * as v from "valibot";
 import { CLAIM_MAX_MINUTES, NOTE_MAX_CHARS } from "./claims.ts";
 import { NativeEvent } from "./ingest/native.ts";
-import { MAX_MERGE_SOURCES } from "./issue-actions.ts";
+import { MAX_MERGE_SOURCES, MAX_SPLIT_EVENTS } from "./issue-actions.ts";
 import { CreateProjectBody, EventListQuery, IssueListQuery } from "./issues.ts";
 import { CreateTokenBody, type Scope } from "./tokens.ts";
 
@@ -13,6 +13,14 @@ export const ClaimBody = v.object({
 
 export const NoteBody = v.object({
 	text: v.pipe(v.string(), v.minLength(1), v.maxLength(NOTE_MAX_CHARS)),
+});
+
+export const SplitBody = v.object({
+	event_ids: v.pipe(
+		v.array(v.pipe(v.number(), v.integer(), v.minValue(1))),
+		v.minLength(1),
+		v.maxLength(MAX_SPLIT_EVENTS),
+	),
 });
 
 export const MergeBody = v.object({
@@ -156,6 +164,14 @@ export const API_ROUTES: ApiRoute[] = [
 		scope: "issues:read",
 		summary: "The timeline of an issue: actions and notes, the most recent first.",
 		query: LimitQuery,
+	},
+	{
+		method: "POST",
+		path: "/v1/issues/:id/split",
+		scope: "issues:write",
+		summary:
+			"Move stored events of this issue to a new issue (the opposite of a merge). Returns the new issue.",
+		body: SplitBody,
 	},
 	{
 		method: "GET",

@@ -3,11 +3,16 @@ import { toStandardJsonSchema } from "@valibot/to-json-schema";
 import type { Hono } from "hono";
 import * as v from "valibot";
 import { MCP_TOOLS } from "../core/agent-docs.ts";
-import { ClaimBody, MergeBody, NoteBody } from "../core/api-spec.ts";
+import { ClaimBody, MergeBody, NoteBody, SplitBody } from "../core/api-spec.ts";
 import { buildBrief, UNTRUSTED_NOTICE } from "../core/brief.ts";
 import { addNote, claimIssue, releaseClaim } from "../core/claims.ts";
 import { formatEventId, formatIssueId, parseEventId, parseIssueId } from "../core/ids.ts";
-import { type ActionResult, mergeIssues, setIssueStatus } from "../core/issue-actions.ts";
+import {
+	type ActionResult,
+	mergeIssues,
+	setIssueStatus,
+	splitIssue,
+} from "../core/issue-actions.ts";
 import {
 	decodeCursor,
 	getEvent,
@@ -272,6 +277,30 @@ function createServer(ports: Ports, actor: Actor): McpServer {
 			const noteId = id === null ? null : await addNote(ports, actor, id, text);
 			if (noteId === null) return errorResult(`Issue ${issue_id} not found.`);
 			return textResult(JSON.stringify({ note_id: noteId, issue_id }));
+		},
+	);
+
+	server.registerTool(
+		"split_issue",
+		{
+			description: `${tool("split_issue")} ${UNTRUSTED_HINT}`,
+			inputSchema: toStandardJsonSchema(
+				v.object({
+					issue_id: IssueIdInput.entries.issue_id,
+					event_ids: SplitBody.entries.event_ids,
+				}),
+			),
+		},
+		async ({ issue_id, event_ids }) => {
+			if (!hasScope(actor, "issues:write")) return errorResult(NEEDS_WRITE);
+			const id = parseIssueId(issue_id);
+			const result =
+				id === null
+					? { kind: "not_found" as const }
+					: await splitIssue(ports, actor, id, event_ids);
+			if (result.kind === "not_found") return errorResult(`Issue ${issue_id} not found.`);
+			if (result.kind === "invalid") return errorResult(result.message);
+			return textResult(JSON.stringify(await getIssue(db, result.newIssueId, now())));
 		},
 	);
 

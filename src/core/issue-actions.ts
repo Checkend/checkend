@@ -1,6 +1,8 @@
 import { type Statement, sql } from "../ports/db.ts";
 import type { Ports } from "../ports/index.ts";
 import { activityStatement } from "./activity.ts";
+import { issueTitle } from "./ingest/fingerprint.ts";
+import type { NormalizedEvent } from "./ingest/normalize.ts";
 import type { Actor } from "./tokens.ts";
 
 /**
@@ -253,4 +255,124 @@ export async function decideApproval(
 		return { failed: reason };
 	}
 	return "done";
+}
+
+// --- split -----------------------------------------------------------------------------------
+
+export const MAX_SPLIT_EVENTS = 100;
+
+export type SplitResult =
+	| { kind: "done"; newIssueId: number }
+	| { kind: "not_found" }
+	| { kind: "invalid"; message: string };
+
+/**
+ * Moves stored events of an issue to a new issue (the opposite of a merge). The new issue
+ * gets the title of the first moved event, and the hourly counts of the moved events. New
+ * events keep going to the original issue: a split does not change grouping.
+ */
+export async function splitIssue(
+	ports: P,
+	actor: Actor,
+	issueId: number,
+	eventIds: number[],
+): Promise<SplitResult> {
+	const ids = [...new Set(eventIds)];
+	if (ids.length === 0 || ids.length > MAX_SPLIT_EVENTS) {
+		return { kind: "invalid", message: `Give 1 to ${MAX_SPLIT_EVENTS} event IDs.` };
+	}
+	const issue = await ports.db.first<{
+		project_id: number;
+		status: string;
+		fingerprint: string;
+		fingerprint_version: number;
+	}>(
+		sql`SELECT project_id, status, fingerprint, fingerprint_version FROM issues WHERE id = ${issueId}`,
+	);
+	if (!issue || issue.status === "merged") return { kind: "not_found" };
+
+	// One bound parameter for all IDs (a JSON array): it keeps the statement under 100 parameters.
+	const idList = JSON.stringify(ids);
+	const events = await ports.db.all<{
+		id: number;
+		issue_id: number;
+		received_at: string;
+		data: string;
+	}>(
+		sql`SELECT id, issue_id, received_at, data FROM events WHERE id IN (SELECT value FROM json_each(${idList})) ORDER BY id`,
+	);
+	if (events.length !== ids.length || events.some((e) => e.issue_id !== issueId)) {
+		return { kind: "invalid", message: "Each event must be a stored event of this issue." };
+	}
+
+	const first = events[0] as (typeof events)[number];
+	const event = JSON.parse(first.data) as NormalizedEvent;
+	const title = issueTitle(event);
+	const received = events.map((e) => e.received_at).sort();
+	const fingerprint = `${issue.fingerprint}:split:${crypto.randomUUID().replace(/-/g, "")}`;
+	const now = ports.clock.now();
+	const perHour = new Map<string, number>();
+	for (const e of events)
+		perHour.set(e.received_at.slice(0, 13), (perHour.get(e.received_at.slice(0, 13)) ?? 0) + 1);
+
+	const statements: Statement[] = [
+		sql`INSERT INTO issues (project_id, fingerprint, fingerprint_version, title, culprit, type, level, platform,
+				first_seen, last_seen, first_release, last_release, times_seen, stored_events, status_changed_at)
+			VALUES (${issue.project_id}, ${fingerprint}, ${issue.fingerprint_version}, ${title.title}, ${title.culprit},
+				${title.type}, ${event.level}, ${event.platform}, ${received[0] ?? now.toISOString()},
+				${received.at(-1) ?? now.toISOString()}, ${event.release}, ${event.release}, ${events.length},
+				${events.length}, ${now.toISOString()})`,
+		sql`UPDATE events
+			SET issue_id = (SELECT id FROM issues WHERE project_id = ${issue.project_id} AND fingerprint = ${fingerprint})
+			WHERE id IN (SELECT value FROM json_each(${idList}))`,
+	];
+	for (const [hour, count] of perHour) {
+		statements.push(
+			sql`UPDATE issue_counts SET count = max(0, count - ${count}) WHERE issue_id = ${issueId} AND hour = ${hour}`,
+			{
+				sql: `INSERT INTO issue_counts (issue_id, hour, count) SELECT id, ?, ? FROM issues
+					WHERE project_id = ? AND fingerprint = ?`,
+				params: [hour, count, issue.project_id, fingerprint],
+			},
+		);
+	}
+	statements.push(
+		sql`UPDATE issues SET times_seen = max(1, times_seen - ${events.length}),
+				stored_events = (SELECT COUNT(*) FROM events WHERE events.issue_id = issues.id)
+			WHERE id = ${issueId}`,
+		{
+			sql: `INSERT INTO activity (at, actor_type, actor_id, actor_name, action, target_type, target_id, data)
+				SELECT ?, ?, ?, ?, 'issue.split', 'issue', ?, json_object('new_issue_id', id, 'event_ids', json(?))
+				FROM issues WHERE project_id = ? AND fingerprint = ?`,
+			params: [
+				now.toISOString(),
+				actor.type,
+				actor.id,
+				actor.name,
+				issueId,
+				idList,
+				issue.project_id,
+				fingerprint,
+			],
+		},
+		{
+			sql: `INSERT INTO activity (at, actor_type, actor_id, actor_name, action, target_type, target_id, data)
+				SELECT ?, ?, ?, ?, 'issue.split_from', 'issue', id, json_object('issue_id', ?)
+				FROM issues WHERE project_id = ? AND fingerprint = ?`,
+			params: [
+				now.toISOString(),
+				actor.type,
+				actor.id,
+				actor.name,
+				issueId,
+				issue.project_id,
+				fingerprint,
+			],
+		},
+	);
+	await ports.db.batch(statements);
+	const created = await ports.db.first<{ id: number }>(
+		sql`SELECT id FROM issues WHERE project_id = ${issue.project_id} AND fingerprint = ${fingerprint}`,
+	);
+	return { kind: "done", newIssueId: Number(created?.id) };
 }

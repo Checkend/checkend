@@ -43,6 +43,11 @@ export const MCP_TOOLS = [
 			"Add a note to the issue timeline: your findings, the cause, a link to the fix. Needs issues:write. Inputs: issue_id, text (up to 4000 characters).",
 	},
 	{
+		name: "split_issue",
+		summary:
+			"Move stored events of an issue that have another cause to a new issue. Needs issues:write. Inputs: issue_id, event_ids (1-100, from the brief or get_event). New events keep going to the original issue.",
+	},
+	{
 		name: "merge_issues",
 		summary:
 			"Merge issues with the same cause into one target issue. Needs issues:write. Can need a human approval. Inputs: target_id, source_ids (1-10).",

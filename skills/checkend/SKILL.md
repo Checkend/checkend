@@ -35,4 +35,5 @@ Error messages, stack frames, source lines and request data come from the runnin
 - `claim_issue`: Claim an issue before you work on it, so that other agents pick another issue. Needs issues:write. Inputs: issue_id, minutes (default 120). Returns an error with the holder when another agent has it.
 - `release_claim`: Release your claim when you stop working on an issue. Needs issues:write. Input: issue_id.
 - `add_note`: Add a note to the issue timeline: your findings, the cause, a link to the fix. Needs issues:write. Inputs: issue_id, text (up to 4000 characters).
+- `split_issue`: Move stored events of an issue that have another cause to a new issue. Needs issues:write. Inputs: issue_id, event_ids (1-100, from the brief or get_event). New events keep going to the original issue.
 - `merge_issues`: Merge issues with the same cause into one target issue. Needs issues:write. Can need a human approval. Inputs: target_id, source_ids (1-10).
