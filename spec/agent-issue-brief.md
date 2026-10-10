@@ -17,8 +17,9 @@ A brief has two forms with the same content:
   (JSON Schema, generated from the reference implementation).
 - **Markdown**: for agents that read text. At most 8,000 characters.
 
-A producer MAY send one or both forms. In Checkend, the MCP tool `get_issue_brief` returns both,
-and an outgoing webhook sends both (a GitHub `repository_dispatch` sends the Markdown form).
+A producer MAY send one or both forms. In Checkend, the MCP tool `get_issue_brief` returns one of
+them (`format`: `markdown`, the default, or `json`), an outgoing webhook sends both, and a GitHub
+`repository_dispatch` sends the Markdown form.
 
 ## 2. Trust model
 
@@ -65,7 +66,7 @@ The schema is the reference; this section explains the fields.
 | Field | Meaning |
 |---|---|
 | `id`, `project_id` | The issue and the project. |
-| `status` | `unresolved`, `resolved`, `ignored`, `fix_pending`, `verified` or `regressed` (see the [fix verification protocol](fix-verification.md)). |
+| `status` | `unresolved`, `resolved`, `ignored`, `fix_pending`, `verified` or `regressed` (see the [fix verification protocol](fix-verification.md)), or `merged`: the issue was merged into another issue, and new events go to that issue. |
 | `level` | The level of the latest event. |
 | `times_seen`, `stored_events` | All events of the issue, and the events stored in full. |
 | `events_24h`, `events_7d` | Events in the last 24 hours and 7 days. |
