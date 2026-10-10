@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { cloudflareTest, readD1Migrations } from "@cloudflare/vitest-plugin";
 import { defineConfig } from "vitest/config";
 import { readMigrations } from "./src/adapters/node/migrations-fs.ts";
@@ -14,6 +15,7 @@ export default defineConfig(async () => ({
 				bindings: {
 					ADMIN_TOKEN: "workers-test-admin-token",
 					TEST_MIGRATIONS: readMigrations("migrations"),
+					TEST_SOURCEMAP: readFileSync("test/fixtures/sourcemaps/app.min.js.map", "utf8"),
 					TEST_D1_MIGRATIONS: await readD1Migrations("migrations"),
 					TEST_SENTRY_FIXTURES: loadSentryFixtures().map((f) => ({
 						name: f.name,

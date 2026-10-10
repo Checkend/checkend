@@ -1,8 +1,10 @@
+import type { BlobStore } from "../ports/blob-store.ts";
 import { type Db, sql } from "../ports/db.ts";
 import { formatEventId, formatIssueId } from "./ids.ts";
 import { normalizeFilename } from "./ingest/fingerprint.ts";
 import { cleanText, type NormalizedEvent, type NormalizedFrame } from "./ingest/normalize.ts";
 import { type Claim, type Fix, getIssue } from "./issues.ts";
+import { symbolicateEvent } from "./sourcemaps.ts";
 
 /**
  * The issue brief: what an agent needs to fix an issue, in under 2,000 tokens.
@@ -29,6 +31,8 @@ export interface BriefFrame {
 	file: string | null;
 	line: number | null;
 	source: string[];
+	/** The minified "<file>:<line>:<column>" when a source map gave this frame; else null. */
+	minified: string | null;
 }
 
 export interface BriefJson {
@@ -57,6 +61,8 @@ export interface BriefJson {
 		claim: Claim | null;
 		/** low: anyone can send events to this project (a public browser DSN); high: servers. */
 		trust: "low" | "high";
+		/** Frames that a source map can map (with a line and a column), and frames it mapped. */
+		source_maps: { frames: number; mapped: number };
 		/** The linked fix and where it is in the fix loop, or null. */
 		fix: Fix | null;
 	};
@@ -112,6 +118,7 @@ function briefFrames(frames: NormalizedFrame[], max: number, withSource: number)
 		),
 		file: text(frame.filename, 200),
 		line: frame.lineno,
+		minified: text(frame.mapped_from, 300),
 		source:
 			i < withSource
 				? sourceLines(frame, 5, 5)
@@ -176,7 +183,13 @@ const SHAPES: Shape[] = [
 	},
 ];
 
-export async function buildBrief(db: Db, issueId: number, now: Date): Promise<Brief | null> {
+/** The brief of an issue. With blob storage, source maps make minified frames readable. */
+export async function buildBrief(
+	db: Db,
+	issueId: number,
+	now: Date,
+	blobs: BlobStore | null = null,
+): Promise<Brief | null> {
 	const row = await getIssue(db, issueId, now);
 	if (!row) return null;
 	// Only the facts that the brief shows. getIssue gives the same values as the API.
@@ -212,11 +225,14 @@ export async function buildBrief(db: Db, issueId: number, now: Date): Promise<Br
 	const latest = await db.first<{ id: number; data: string }>(
 		sql`SELECT id, data FROM events WHERE issue_id = ${issueId} ORDER BY id DESC LIMIT 1`,
 	);
-	const event = latest ? (JSON.parse(latest.data) as NormalizedEvent) : null;
+	const stored = latest ? (JSON.parse(latest.data) as NormalizedEvent) : null;
+	const symbolicated = stored ? await symbolicateEvent(db, blobs, issueId, stored) : null;
+	const event = symbolicated?.event ?? null;
+	const source_maps = { frames: symbolicated?.frames ?? 0, mapped: symbolicated?.mapped ?? 0 };
 
 	for (const [i, shape] of SHAPES.entries()) {
 		const json = briefJson(
-			{ ...facts, claim, fix },
+			{ ...facts, claim, fix, source_maps },
 			latest?.id ?? null,
 			event,
 			shape,

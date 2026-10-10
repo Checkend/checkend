@@ -12,6 +12,7 @@ import { MAX_MERGE_SOURCES, MAX_SPLIT_EVENTS } from "./issue-actions.ts";
 import { CreateProjectBody, EventListQuery, IssueListQuery } from "./issues.ts";
 import { LabelQuery } from "./labels.ts";
 import { UpdateProjectBody } from "./projects.ts";
+import { SourceMapListQuery, SourceMapUploadQuery } from "./sourcemaps.ts";
 import { CreateTokenBody, type Scope } from "./tokens.ts";
 import { CreateWebhookBody } from "./webhooks.ts";
 
@@ -235,6 +236,27 @@ export const API_ROUTES: ApiRoute[] = [
 		summary:
 			"Fix outcomes (verified or regressed), with the time to verify and who linked the fix, the most recent first.",
 		query: FixOutcomeQuery,
+	},
+	{
+		method: "POST",
+		path: "/v1/sourcemaps",
+		scope: "releases:write",
+		summary:
+			"Upload the source map of one minified file of a release. The body is the source map JSON (application/json) or a prebuilt index (application/x-checkend-sourcemap-index); at most 30 MB. A new upload for the same release and file path replaces the old one. Needs blob storage (the BLOBS binding).",
+		query: SourceMapUploadQuery,
+	},
+	{
+		method: "GET",
+		path: "/v1/sourcemaps",
+		scope: "issues:read",
+		summary: "The source maps of a project, the latest first (optionally of one release).",
+		query: SourceMapListQuery,
+	},
+	{
+		method: "DELETE",
+		path: "/v1/sourcemaps/:id",
+		scope: "releases:write",
+		summary: "Delete a source map.",
 	},
 	{
 		method: "GET",

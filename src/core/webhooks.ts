@@ -381,7 +381,8 @@ async function finish(
 async function payload(ports: P, row: DeliveryRow) {
 	const now = ports.clock.now();
 	const issue = row.issue_id === null ? null : await getIssue(ports.db, row.issue_id, now);
-	const brief = row.issue_id === null ? null : await buildBrief(ports.db, row.issue_id, now);
+	const brief =
+		row.issue_id === null ? null : await buildBrief(ports.db, row.issue_id, now, ports.blobs);
 	return {
 		event: row.event,
 		delivery_id: row.id,

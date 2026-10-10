@@ -165,7 +165,7 @@ function createServer(ports: Ports, actor: Actor): McpServer {
 		},
 		async ({ issue_id, format }) => {
 			const id = parseIssueId(issue_id);
-			const brief = id === null ? null : await buildBrief(db, id, now());
+			const brief = id === null ? null : await buildBrief(db, id, now(), ports.blobs);
 			if (!brief) return errorResult(`Issue ${issue_id} not found.`);
 			return textResult(format === "json" ? JSON.stringify(brief.json) : brief.markdown);
 		},

@@ -114,6 +114,7 @@ describe("issue brief v1", () => {
 				location: "checkout",
 				file: "/srv/app/src/checkout.ts",
 				line: 42,
+				minified: null,
 				source: [
 					"   39 | function chargeCard(order) {",
 					"   40 |   // ```",

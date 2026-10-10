@@ -39,6 +39,15 @@ import {
 } from "../core/issues.ts";
 import { LabelQuery, listLabels } from "../core/labels.ts";
 import { createProject, listProjects, UpdateProjectBody, updateProject } from "../core/projects.ts";
+import {
+	deleteSourceMap,
+	INDEX_CONTENT_TYPE,
+	listProjectSourceMaps,
+	MAX_SOURCEMAP_BYTES,
+	SourceMapListQuery,
+	SourceMapUploadQuery,
+	uploadSourceMap,
+} from "../core/sourcemaps.ts";
 import { CreateTokenBody, createToken, listTokens, revokeToken } from "../core/tokens.ts";
 import {
 	CreateWebhookBody,
@@ -346,6 +355,69 @@ export function apiRoutes(app: Hono<AppEnv>, state: IngestState): void {
 		return c.json({
 			data: await listFixOutcomes(c.env.ports.db, query.output, c.env.ports.clock.now()),
 		});
+	});
+
+	app.post("/v1/sourcemaps", need("releases:write"), async (c) => {
+		const query = v.safeParse(SourceMapUploadQuery, c.req.query());
+		if (!query.success) return invalid(c, query.issues);
+		const type = (c.req.header("content-type") ?? "").split(";")[0]?.trim().toLowerCase();
+		if (type !== "application/json" && type !== INDEX_CONTENT_TYPE) {
+			return c.json(
+				{
+					error: "unsupported_media_type",
+					reason: `Use application/json or ${INDEX_CONTENT_TYPE}.`,
+				},
+				415,
+			);
+		}
+		const tooLarge = () =>
+			c.json({ error: "payload_too_large", max_bytes: MAX_SOURCEMAP_BYTES }, 413);
+		if (Number(c.req.header("content-length") ?? 0) > MAX_SOURCEMAP_BYTES) return tooLarge();
+		const body = new Uint8Array(await c.req.arrayBuffer());
+		if (body.byteLength > MAX_SOURCEMAP_BYTES) return tooLarge();
+		const result = await uploadSourceMap(
+			c.env.ports,
+			c.get("actor"),
+			query.output,
+			body,
+			type === INDEX_CONTENT_TYPE,
+		);
+		switch (result.kind) {
+			case "storage_not_configured":
+				return c.json(
+					{
+						error: "storage_not_configured",
+						reason: "Bind an R2 bucket as BLOBS: Checkend stores source maps there.",
+					},
+					400,
+				);
+			case "project_not_found":
+				return c.json({ error: "project_not_found" }, 404);
+			case "invalid":
+				return c.json({ error: "invalid_sourcemap", reason: result.message }, 400);
+			case "done":
+				return c.json({ data: result.sourcemap }, 201);
+		}
+	});
+
+	app.get("/v1/sourcemaps", need("issues:read"), async (c) => {
+		const query = v.safeParse(SourceMapListQuery, c.req.query());
+		if (!query.success) return invalid(c, query.issues);
+		const maps = await listProjectSourceMaps(
+			c.env.ports.db,
+			query.output.project,
+			query.output.release ?? null,
+		);
+		return maps ? c.json({ data: maps }) : c.json({ error: "project_not_found" }, 404);
+	});
+
+	app.delete("/v1/sourcemaps/:id", need("releases:write"), async (c) => {
+		const params = v.safeParse(IdParam, c.req.param());
+		if (!params.success) return invalid(c, params.issues);
+		const deleted = await deleteSourceMap(c.env.ports, c.get("actor"), params.output.id);
+		return deleted
+			? c.json({ data: { id: params.output.id, deleted: true } })
+			: c.json({ error: "not_found" }, 404);
 	});
 
 	app.get("/v1/webhooks", need("admin"), async (c) =>

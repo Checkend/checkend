@@ -41,6 +41,8 @@ export interface NormalizedFrame {
 	context_line: string | null;
 	pre_context: string[];
 	post_context: string[];
+	/** Set when a source map changed the frame: the minified "<file>:<line>:<column>". */
+	mapped_from?: string;
 }
 
 export interface NormalizedException {
