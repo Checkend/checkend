@@ -18,6 +18,22 @@ exports[`fingerprintEvent > is stable for every golden fixture (a change splits 
     "hash": "aacf1caddbe6da3296f649e8d2e57083",
     "method": "stack",
   },
+  "dotnet-message": {
+    "hash": "d9b288b0d739d303b2a2dbb6e0990663",
+    "method": "message",
+  },
+  "dotnet-type-error": {
+    "hash": "74c54403d25f29b40b875749cd02bd42",
+    "method": "stack",
+  },
+  "go-message": {
+    "hash": "d9b288b0d739d303b2a2dbb6e0990663",
+    "method": "message",
+  },
+  "go-type-error": {
+    "hash": "de1336679260f5471cf84ddf68227539",
+    "method": "stack",
+  },
   "node-error-with-cause": {
     "hash": "c41830b6d907889c2bf6d12a187040a3",
     "method": "stack",
@@ -36,6 +52,30 @@ exports[`fingerprintEvent > is stable for every golden fixture (a change splits 
   },
   "node-type-error": {
     "hash": "c4e9b3429728289b27535dfd2458619e",
+    "method": "stack",
+  },
+  "php-message": {
+    "hash": "d9b288b0d739d303b2a2dbb6e0990663",
+    "method": "message",
+  },
+  "php-type-error": {
+    "hash": "bcca8184399ed6a3ab4c7212d6f30c61",
+    "method": "stack",
+  },
+  "python-message": {
+    "hash": "d9b288b0d739d303b2a2dbb6e0990663",
+    "method": "message",
+  },
+  "python-type-error": {
+    "hash": "d6afdf92885b23ff847d2b5c6c6d9871",
+    "method": "stack",
+  },
+  "ruby-message": {
+    "hash": "d9b288b0d739d303b2a2dbb6e0990663",
+    "method": "message",
+  },
+  "ruby-type-error": {
+    "hash": "ce4627a611aebf2fbcbe3fb313b2e984",
     "method": "stack",
   },
 }

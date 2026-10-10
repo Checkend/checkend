@@ -6,6 +6,7 @@ import { createApp } from "../../../src/http/app.ts";
 import { sql } from "../../../src/ports/db.ts";
 import type { Ports } from "../../../src/ports/index.ts";
 import { loadSentryFixtures } from "../../fixtures/sentry/load.ts";
+import { withKey } from "../../fixtures/sentry/with-key.ts";
 import { testPorts } from "../../support/node-ports.ts";
 
 async function setup(overrides: Partial<Ports> = {}) {
@@ -40,7 +41,7 @@ describe("ingest: golden fixtures end to end", () => {
 			query.set("sentry_key", project.publicKey);
 			const response = await send(`/api/${project.id}/envelope/?${query}`, {
 				method: "POST",
-				headers: fixture.headers,
+				headers: withKey(fixture.headers, project.publicKey),
 				body: fixture.body,
 			});
 			expect(response.status).toBe(200);
@@ -55,6 +56,24 @@ describe("ingest: golden fixtures end to end", () => {
 			expect(issue?.title.length).toBeGreaterThan(0);
 		},
 	);
+
+	it("uses the envelope event_id when the event has none (PHP), so a retry counts once", async () => {
+		const { send, project, settle, ports } = await setup();
+		const fixture = loadSentryFixtures().find((f) => f.name === "php-message");
+		if (!fixture) throw new Error("fixture");
+		const ids: string[] = [];
+		for (let i = 0; i < 2; i++) {
+			const response = await send(`/api/${project.id}/envelope/`, {
+				method: "POST",
+				headers: withKey(fixture.headers, project.publicKey),
+				body: fixture.body,
+			});
+			ids.push(((await response.json()) as { id: string }).id);
+		}
+		await settle();
+		expect(ids).toEqual(["39a8e111613e4340817c0c1f3aba2178", "39a8e111613e4340817c0c1f3aba2178"]);
+		expect(await ports.db.all(sql`SELECT times_seen FROM issues`)).toEqual([{ times_seen: 1 }]);
+	});
 
 	it("groups the same Node error sent twice into one issue", async () => {
 		const { send, project, settle, ports } = await setup();

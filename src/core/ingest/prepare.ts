@@ -42,8 +42,23 @@ async function userHash(user: Record<string, unknown> | null): Promise<string | 
  * Normalization comes first, so that scrubbing works on bounded data. Normalization scrubs
  * each string before it truncates it, so that a cut cannot leave part of a secret.
  */
-export async function prepareEvent(payload: Uint8Array, receivedAt: Date): Promise<PreparedEvent> {
+/**
+ * fallbackEventId: the event_id of the envelope header, used when the event has none (so that a
+ * retry of the same envelope is the same event).
+ */
+export async function prepareEvent(
+	payload: Uint8Array,
+	receivedAt: Date,
+	fallbackEventId: string | null = null,
+): Promise<PreparedEvent> {
 	const raw = parseJson(payload);
+	if (
+		fallbackEventId &&
+		typeof raw.event_id !== "string" &&
+		/^[0-9a-f]{32}$/.test(fallbackEventId.replace(/-/g, "").toLowerCase())
+	) {
+		raw.event_id = fallbackEventId;
+	}
 	const event = scrub(normalizeEvent(raw, receivedAt), { patterns: false }) as NormalizedEvent;
 	return {
 		event,

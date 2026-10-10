@@ -4,6 +4,7 @@ import { createApp } from "../../src/http/app.ts";
 import type { Config } from "../../src/ports/config.ts";
 import { sql } from "../../src/ports/db.ts";
 import { loadSentryFixtures } from "../fixtures/sentry/load.ts";
+import { withKey } from "../fixtures/sentry/with-key.ts";
 import { testPorts } from "../support/node-ports.ts";
 
 const TOKEN = "test-admin-token-0123456789";
@@ -38,7 +39,7 @@ async function setup(config: Partial<Config> = { adminToken: TOKEN }) {
 		if (!fixture) throw new Error(fixtureName);
 		await app.request(
 			`https://checkend.test/api/${projectId}/envelope/?sentry_key=${key}`,
-			{ method: "POST", headers: fixture.headers, body: fixture.body },
+			{ method: "POST", headers: withKey(fixture.headers, key), body: fixture.body },
 			{ ports: t.ports },
 		);
 		await t.settle();

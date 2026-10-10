@@ -1,0 +1,13 @@
+{
+	"sdk": "sentry.python",
+	"sdkVersion": "2.71.0",
+	"method": "POST",
+	"path": "/api/1/envelope/",
+	"headers": {
+		"content-type": "application/x-sentry-envelope",
+		"content-encoding": "gzip",
+		"x-sentry-auth": "Sentry sentry_key=0123456789abcdef0123456789abcdef, sentry_version=7, sentry_client=sentry.python/2.71.0",
+		"user-agent": "sentry.python/2.71.0"
+	},
+	"bodyBase64": "H4sIAAAAAAAAE5VSzWrcMBC+5ynMQG/erST/61ToK/SUEpaxPd5V15aFJLsxi9+9SJuEUtqU3GRpvj9/cwNaSfuT6kFCxguR5X3FRMNzzuuWtX1WiYZTkxdFXkIKLgyjBwmCifLA2YGzbyKTLJdcHJs651n2CCl4ix2BvN0Pd/qywqLJWFm1TZ/XrEJiOavLFllV9dR0kALpVdlZT6SDhLFzv3RezRpSsDQSOgIJg3r2i6UDGvOFH8UxgxTM0o6qO11pAwmMiywvyqpusO16Gv78hn1/uIHfTGCL+SGFbtY+hHu5RmNG1WEQ//zDRQcj6bO/gCzKMuAncg7PYfYrdhdKJuVcYtFTgu28UtKwT8kw2+RKW7I4sjK4iDQrjSDhJ1qt9Dmk/lAFXk3kPE7mnyVklSgeXyM9e/fWw8cLcQb1fbhmfcPqIRvyNm+wEuGnow3G32b0Mo77HsvXDmNxJ6WHGeRtT6G1hH1nl6mNhlYcF3Igvz/t/yv3na1wZFeyJ43T7+DL7EKlrr8GpZfHsLp2O5rNXyJ0JesCiQRxrPiRxUDdFc/R1RvMbEbJO/YQCP8C3J9SUNrT2cZ9eQ1lRvTDbKdIEkX3h1/avEoScAMAAA=="
+}

@@ -8,6 +8,7 @@ import { newPublicProjectId } from "../../src/core/projects.ts";
 import { createApp } from "../../src/http/app.ts";
 import { sql } from "../../src/ports/db.ts";
 import { loadSentryFixtures } from "../fixtures/sentry/load.ts";
+import { withKey } from "../fixtures/sentry/with-key.ts";
 import { testPorts } from "../support/node-ports.ts";
 
 const TOKEN = "public-id-test-admin-token-0123";
@@ -89,7 +90,7 @@ describe("public project IDs", () => {
 		if (!fixture) throw new Error("fixture");
 		await app.request(
 			`https://checkend.test/api/${project.id}/envelope/?sentry_key=${key}`,
-			{ method: "POST", headers: fixture.headers, body: fixture.body },
+			{ method: "POST", headers: withKey(fixture.headers, key), body: fixture.body },
 			{ ports },
 		);
 		await settle();

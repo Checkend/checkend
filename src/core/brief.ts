@@ -120,16 +120,19 @@ function sourceLines(frame: NormalizedFrame, before: number, after: number): str
 	];
 }
 
+const file = (frame: NormalizedFrame) => frame.filename ?? frame.abs_path;
+
 function briefFrames(frames: NormalizedFrame[], max: number, withSource: number): BriefFrame[] {
 	const inApp = frames.filter((f) => f.in_app === true);
 	const chosen = (inApp.length > 0 ? inApp : frames).slice(-max).reverse();
 	return chosen.map((frame, i) => ({
 		function: text(frame.function, 120),
 		location: text(
-			frame.module ?? (frame.filename ? normalizeFilename(frame.filename) : null),
+			frame.module ?? (file(frame) ? normalizeFilename(file(frame) as string) : null),
 			160,
 		),
-		file: text(frame.filename, 200),
+		// Some SDKs (Go) send only abs_path.
+		file: text(file(frame), 200),
 		line: frame.lineno,
 		minified: text(frame.mapped_from, 300),
 		source:

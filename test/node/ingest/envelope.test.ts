@@ -61,7 +61,11 @@ describe("parseEnvelope", () => {
 			const envelope = parseEnvelope(body);
 			expect(envelope.header.event_id, fixture.name).toMatch(/^[0-9a-f]{32}$/);
 			const event = envelope.event ? parseJson(envelope.event) : null;
-			expect(event?.event_id, fixture.name).toBe(envelope.header.event_id);
+			expect(event, fixture.name).not.toBeNull();
+			// Some SDKs (PHP) put the event_id only in the envelope header.
+			if (event?.event_id !== undefined) {
+				expect(event.event_id, fixture.name).toBe(envelope.header.event_id);
+			}
 		}
 	});
 

@@ -4,6 +4,7 @@ import { beforeAll, describe, expect, it, vi } from "vitest";
 import { cloudflarePorts } from "../../src/adapters/cloudflare/ports.ts";
 import { type CreatedProject, createProject } from "../../src/core/projects.ts";
 import { sql } from "../../src/ports/db.ts";
+import { withKey } from "../fixtures/sentry/with-key.ts";
 
 const ports = () => cloudflarePorts(env, createExecutionContext());
 let project: CreatedProject;
@@ -24,7 +25,7 @@ describe("Worker ingest on D1 (golden fixtures)", () => {
 			const response = await exports.default.fetch(
 				new Request(`https://checkend.test/api/${project.id}/envelope/?${query}`, {
 					method: "POST",
-					headers: fixture.headers,
+					headers: withKey(fixture.headers, project.publicKey),
 					body: decode(fixture.bodyBase64),
 				}),
 			);

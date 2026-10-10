@@ -101,18 +101,25 @@ export async function handleIngest(
 		if (overload > 0) return tooManyRequests(overload, "organization");
 
 		body ??= await readIngestBody(request);
+		const envelope = kind === "envelope" ? parseEnvelope(body) : null;
 		const payload =
 			kind === "native"
 				? new TextEncoder().encode(JSON.stringify(nativeToSentry(parseJson(body))))
 				: kind === "store"
 					? body
-					: parseEnvelope(body).event;
+					: (envelope?.event ?? null);
 		if (!payload) return json(200, {}); // sessions, client reports, ...: dropped
 		if (payload.byteLength > INGEST_LIMITS.eventBytes) {
 			throw new IngestError(413, "event_too_large", "The event is larger than 1 MB.");
 		}
 
-		const prepared = await prepareEvent(payload, now);
+		// Some SDKs (PHP) put the event_id only in the envelope header.
+		const headerId = envelope?.header.event_id;
+		const prepared = await prepareEvent(
+			payload,
+			now,
+			typeof headerId === "string" ? headerId : null,
+		);
 		ports.defer(
 			storeEvent(ports, state, project.projectId, prepared, { browser: origin !== null }).then(
 				(result) => (result.deliveries > 0 ? startDeliveries(ports) : undefined),

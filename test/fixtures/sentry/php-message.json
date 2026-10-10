@@ -1,0 +1,13 @@
+{
+	"sdk": "sentry.php",
+	"sdkVersion": "4.34.0",
+	"method": "POST",
+	"path": "/api/1/envelope/",
+	"headers": {
+		"content-type": "application/x-sentry-envelope",
+		"content-encoding": "gzip",
+		"x-sentry-auth": "Sentry sentry_version=7, sentry_client=sentry.php/4.34.0, sentry_key=0123456789abcdef0123456789abcdef",
+		"user-agent": "sentry.php/4.34.0"
+	},
+	"bodyBase64": "H4sIAAAAAAAAE71Sy47bMAy871cYBHpTHL3ih04L9Bd6alMEtEwnbvwQJMXdIPC/F0rSPRQFCuyhJ1EEh+TM8AaBpnjACAYkl8VG8I3gX6QyXBpRfAUGbZjAwClGZ/bb/ZYLqfSuKKsaG9tS9+f/Vcgy5znPhSlUUVT7rQAGoT2DucGEI4G5z/TX3J0cMFjIh35OM3SudM6BgUN7xiMFMN/eMXYe3RzImwd4v328f2uwfl8Z0JKI9S0YUDVWJIQohCKtNK9EabkVncIGpSgrYBA9Wkob3oMHrO60rG1dqk43ulG2Fi11hda1ltJ2sky0cHQDHTxOCcBzyQVXu8Tg0gy9PZzpmvL/kAwYeBoIQ+LZ9W/x4mmDzr2KXOYKGNC09H6eRpqST87P7cXGRHldX24Qry4B74SBgZ2nmKg/0+jc0FtM5fvtj5BACdOPFCKODowoa1GUSqki11qonWTgBozd7Mc07O7R/7dvoIUGMPAT/dRPx7QD+YX84dnvt0ynOcSP6/dU6y2Gd+8/cAQOp0dx0SByK8tKIemmIVhXBiOFgMe02me0J8rGPoTMY6QMm3mhrOafsm722Zmu2SUplK4D1pdfJwsN1ZsDAAA="
+}
