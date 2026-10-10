@@ -5,6 +5,7 @@ import type { Db } from "./db.ts";
 import type { Defer } from "./defer.ts";
 import type { HttpClient, NotifyQueue } from "./http.ts";
 import type { IngestQueue } from "./ingest-queue.ts";
+import type { Mailer } from "./mailer.ts";
 import type { RateLimiter } from "./rate-limiter.ts";
 import type { Resolver } from "./resolver.ts";
 
@@ -15,6 +16,7 @@ export type { Db } from "./db.ts";
 export type { Defer } from "./defer.ts";
 export type { HttpClient, NotifyQueue } from "./http.ts";
 export type { IngestQueue } from "./ingest-queue.ts";
+export type { Mailer } from "./mailer.ts";
 export type { RateLimiter } from "./rate-limiter.ts";
 export type { Resolver } from "./resolver.ts";
 
@@ -38,4 +40,6 @@ export interface Ports {
 	blobs: BlobStore | null;
 	/** The ingest overflow queue; null: no queue (direct mode only, 429 when D1 is overloaded). */
 	ingestQueue: IngestQueue | null;
+	/** Email for alerts; null: email alerts are off. */
+	mailer: Mailer | null;
 }

@@ -5,6 +5,7 @@ import { fetchClient } from "../../ports/http.ts";
 import type { Ports } from "../../ports/index.ts";
 import { noRateLimit, type RateLimiter } from "../../ports/rate-limiter.ts";
 import { d1Db } from "./d1-db.ts";
+import { cloudflareMailer, type EmailBinding } from "./email-mailer.ts";
 import { cloudflareIngestQueue } from "./ingest-queue.ts";
 import { r2BlobStore } from "./r2-blob-store.ts";
 import { dohResolver } from "./resolver.ts";
@@ -26,6 +27,8 @@ export interface ConfigEnv {
 	/** A secret: a GitHub token with read access to the repositories (commits per release). */
 	GITHUB_TOKEN?: string;
 	RETENTION_DAYS?: string;
+	/** The sender of email alerts; a domain onboarded to Email Service. */
+	EMAIL_FROM?: string;
 }
 
 type WorkerEnv = Omit<Env, "INGEST_RATE_LIMITER"> &
@@ -39,6 +42,8 @@ type WorkerEnv = Omit<Env, "INGEST_RATE_LIMITER"> &
 		BLOBS?: Pick<R2Bucket, "put" | "get" | "delete">;
 		// Optional binding: the ingest overflow queue. Without it, an overloaded D1 gives 429.
 		INGEST_QUEUE?: Pick<Queue<object>, "send">;
+		// Optional binding: Email Service (send_email). Email alerts need it and EMAIL_FROM.
+		EMAIL?: EmailBinding;
 	};
 
 const positiveInt = (value: string | undefined): number | undefined => {
@@ -92,6 +97,7 @@ export function cloudflarePorts(env: WorkerEnv, ctx: Pick<ExecutionContext, "wai
 		resolver: dohResolver,
 		blobs: env.BLOBS ? r2BlobStore(env.BLOBS) : null,
 		ingestQueue: env.INGEST_QUEUE ? cloudflareIngestQueue(env.INGEST_QUEUE) : null,
+		mailer: env.EMAIL && env.EMAIL_FROM ? cloudflareMailer(env.EMAIL, env.EMAIL_FROM) : null,
 		http: fetchClient,
 		notifyQueue: env.NOTIFY
 			? { send: async (message) => void (await env.NOTIFY?.send(message)) }

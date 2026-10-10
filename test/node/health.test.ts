@@ -32,6 +32,7 @@ const portsWith = (db: Db): Ports => ({
 	notifyQueue: null,
 	blobs: null,
 	ingestQueue: null,
+	mailer: null,
 	config: DEFAULT_CONFIG,
 });
 
