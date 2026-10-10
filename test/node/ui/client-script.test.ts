@@ -10,6 +10,7 @@ function setupPage(hash: string) {
 	class HTMLFormElement {}
 	class Element {}
 	const listeners: Record<string, (event: unknown) => void> = {};
+	const location = { hash, pathname: "/setup", search: "", assign: () => {} };
 	const replaced: string[] = [];
 	const requests: { url: string; body: Record<string, unknown> }[] = [];
 	const status = { textContent: "" };
@@ -31,7 +32,7 @@ function setupPage(hash: string) {
 		"/setup/verify": { redirect: "/projects" },
 	};
 	const context = {
-		location: { hash, pathname: "/setup", search: "", assign: () => {} },
+		location,
 		history: {
 			replaceState: (_state: unknown, _title: string, url: string) => replaced.push(url),
 		},
@@ -75,13 +76,24 @@ function setupPage(hash: string) {
 	};
 	runInNewContext(CLIENT_SCRIPT, {
 		...context,
-		window: { ...context, PublicKeyCredential: () => {} },
+		window: {
+			...context,
+			PublicKeyCredential: () => {},
+			addEventListener: (type: string, listener: (event: unknown) => void) => {
+				listeners[`window:${type}`] = listener;
+			},
+		},
 	});
 	const submit = async () => {
 		listeners.submit?.({ target: form, preventDefault: () => {} });
 		for (let i = 0; i < 20; i++) await new Promise((resolve) => setImmediate(resolve));
 	};
-	return { form, notice, replaced, requests, submit };
+	/** The person pastes the link into the open tab: only the fragment changes, no reload. */
+	const openLink = (newHash: string) => {
+		location.hash = newHash;
+		listeners["window:hashchange"]?.({});
+	};
+	return { form, notice, replaced, requests, submit, openLink };
 }
 
 describe("client script: the setup link", () => {
@@ -103,5 +115,15 @@ describe("client script: the setup link", () => {
 		expect(page.replaced).toEqual([]);
 		expect(page.form.hidden).toBe(true);
 		expect(page.notice.hidden).toBe(false);
+	});
+
+	it("reads a link pasted into the open setup page (only the fragment changes)", async () => {
+		const page = setupPage("");
+		page.openLink(`#${CODE}`);
+		expect(page.replaced).toEqual(["/setup"]);
+		expect(page.form.hidden).toBe(false);
+		expect(page.notice.hidden).toBe(true);
+		await page.submit();
+		expect(page.requests[0]?.body.code).toBe(CODE);
 	});
 });

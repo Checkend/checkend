@@ -111,10 +111,26 @@ export const CLIENT_SCRIPT = `"use strict";
   // server, so it is not in logs or in a Referer. Read it once, remove it from the address bar,
   // and send it in the request body.
   var setupCode = "";
-  if (document.querySelector("[data-passkey-setup]") && location.hash.length > 1) {
+  var setupForm = document.querySelector("[data-passkey-setup]");
+
+  // Shows the form when a code is present; else, when the page needs one, how to get the link.
+  function showSetup() {
+    if (!setupForm || !setupForm.hasAttribute("data-needs-code")) return;
+    setupForm.hidden = !setupCode;
+    document.querySelectorAll("[data-setup-missing]").forEach(function (el) { el.hidden = !!setupCode; });
+  }
+
+  function readSetupCode() {
+    if (!setupForm || location.hash.length <= 1) return;
     setupCode = location.hash.slice(1);
     history.replaceState(null, "", location.pathname + location.search);
   }
+  readSetupCode();
+  // A link pasted into the open setup page changes only the fragment: the page does not reload.
+  window.addEventListener("hashchange", function () {
+    readSetupCode();
+    showSetup();
+  });
 
   function setUp(form) {
     var statusEl = document.getElementById("auth-status");
@@ -188,11 +204,6 @@ export const CLIENT_SCRIPT = `"use strict";
   document.querySelectorAll("[data-js-only]").forEach(function (el) { el.hidden = false; });
   document.querySelectorAll("[data-no-js]").forEach(function (el) { el.hidden = true; });
 
-  // A setup page that needs a code, opened without the link: show how to get the link.
-  var setupForm = document.querySelector("[data-passkey-setup][data-needs-code]");
-  if (setupForm && !setupCode) {
-    setupForm.hidden = true;
-    document.querySelectorAll("[data-setup-missing]").forEach(function (el) { el.hidden = false; });
-  }
+  showSetup();
 })();
 `;
