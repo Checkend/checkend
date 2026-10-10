@@ -1,0 +1,19 @@
+{
+	// The CPU benchmark Worker: the same code as Checkend, with its own name and D1 database, so
+	// that a benchmark never touches a real install. See bench/README.md. Do not add the rate
+	// limiter or the cron: the benchmark measures ingest only.
+	"$schema": "../node_modules/wrangler/config-schema.json",
+	"name": "checkend-bench",
+	"main": "../src/entry/worker.ts",
+	"compatibility_date": "2026-10-06",
+	"observability": { "enabled": true, "head_sampling_rate": 1 },
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "checkend-bench",
+			// Set the ID from `npx wrangler d1 create checkend-bench` in your local copy.
+			"database_id": "00000000-0000-0000-0000-000000000000",
+			"migrations_dir": "../migrations"
+		}
+	]
+}

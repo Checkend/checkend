@@ -16,6 +16,7 @@
 		"test/support/**/*.ts",
 		"test/perf/**/*.ts",
 		"scripts/**/*.ts",
+		"bench/**/*.ts",
 		"*.config.ts"
 	]
 }
