@@ -210,14 +210,20 @@ export async function decideApproval(
 		status: string;
 		requested_by_type: string;
 		requested_by_id: number | null;
+		requested_by: string;
 	}>(
-		sql`SELECT action, issue_id, payload, status, requested_by_type, requested_by_id FROM approvals WHERE id = ${approvalId}`,
+		sql`SELECT action, issue_id, payload, status, requested_by_type, requested_by_id, requested_by
+			FROM approvals WHERE id = ${approvalId}`,
 	);
 	if (!approval) return "not_found";
 	if (approval.status !== "pending") return "not_pending";
+	// No actor decides its own request, ADMIN_TOKEN included: another actor (a second admin, or a
+	// person in the UI) must. The name matters for actors without an ID (ADMIN_TOKEN, system).
 	const ownRequest =
-		approval.requested_by_type === actor.type && approval.requested_by_id === actor.id;
-	if (ownRequest && actor.type !== "admin_token") return "own_request";
+		approval.requested_by_type === actor.type &&
+		approval.requested_by_id === actor.id &&
+		approval.requested_by === actor.name;
+	if (ownRequest) return "own_request";
 
 	const now = ports.clock.now();
 	// Mark first, only while it is still pending: a second approve cannot run the action twice.

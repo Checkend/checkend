@@ -210,9 +210,10 @@ describe("approvals (REQUIRE_APPROVAL)", () => {
 		).toBe(409);
 	});
 
-	it("does not let the requester approve its own request, except the bootstrap admin token", async () => {
-		const { store, call, token } = await setup({ requireApproval: ["ignore"] });
+	it("does not let any requester approve its own request, ADMIN_TOKEN included", async () => {
+		const { store, call, token } = await setup({ requireApproval: ["ignore", "merge"] });
 		const id = await store("AlphaError");
+		const other = await store("BetaError");
 		const admin = await token("admin-agent", ["admin"]);
 		const own = await call("POST", `/v1/issues/${id}/ignore`, admin);
 		expect(own.status).toBe(202);
@@ -221,6 +222,16 @@ describe("approvals (REQUIRE_APPROVAL)", () => {
 		).toBe(403);
 		expect(
 			(await call("POST", `/v1/approvals/${own.body.approval_id}/approve`, ADMIN)).status,
+		).toBe(200);
+		// The bootstrap ADMIN_TOKEN cannot approve its own request either (here a merge).
+		const byBootstrap = await call("POST", `/v1/issues/${other}/merge`, ADMIN, {
+			source_ids: [id],
+		});
+		expect(byBootstrap.status).toBe(202);
+		const self = await call("POST", `/v1/approvals/${byBootstrap.body.approval_id}/approve`, ADMIN);
+		expect(self.status).toBe(403);
+		expect(
+			(await call("POST", `/v1/approvals/${byBootstrap.body.approval_id}/approve`, admin)).status,
 		).toBe(200);
 	});
 
