@@ -7,6 +7,7 @@ import {
 	listInbox,
 } from "../../src/core/inbox.ts";
 import { createProject } from "../../src/core/projects.ts";
+import { sql } from "../../src/ports/db.ts";
 import { testPorts } from "../support/node-ports.ts";
 import { errorEvent, send } from "../support/seed.ts";
 
@@ -92,6 +93,15 @@ describe("inbox", () => {
 		expect(facets.projects.map((p) => p.name)).toEqual(["API", "Shop"]);
 		expect(facets.environments).toEqual(["production", "staging"]);
 		expect(facets.releases).toEqual(["shop@1.0.0", "shop@1.1.0"]);
+	});
+
+	it("leaves deleted projects out of the filters", async () => {
+		const { ports } = await seeded();
+		await ports.db.run(
+			sql`UPDATE projects SET deleted_at = ${NOW.toISOString()} WHERE name = 'API'`,
+		);
+		const facets = await inboxFacets(ports.db);
+		expect(facets.projects.map((p) => p.name)).toEqual(["Shop"]);
 	});
 
 	it("counts tag values over the stored events of an issue", async () => {

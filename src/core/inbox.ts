@@ -47,7 +47,7 @@ export async function listInbox(
 	);
 	if (page === "project_not_found") return page;
 	const projects = await db.all<{ id: number; name: string }>(
-		sql`SELECT public_id AS id, name FROM projects`,
+		sql`SELECT public_id AS id, name FROM projects WHERE deleted_at IS NULL`,
 	);
 	const names = new Map(projects.map((p) => [p.id, p.name]));
 	return {
@@ -69,7 +69,7 @@ export interface InboxFacets {
 export async function inboxFacets(db: Db): Promise<InboxFacets> {
 	const [projects, environments, releases] = await Promise.all([
 		db.all<{ id: number; name: string; slug: string }>(
-			sql`SELECT public_id AS id, name, slug FROM projects ORDER BY name, id`,
+			sql`SELECT public_id AS id, name, slug FROM projects WHERE deleted_at IS NULL ORDER BY name, id`,
 		),
 		db.all<{ value: string }>(
 			sql`SELECT DISTINCT environment AS value FROM
