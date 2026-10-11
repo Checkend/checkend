@@ -4,16 +4,11 @@
 	"main": "src/entry/worker.ts",
 	"compatibility_date": "2026-10-06",
 	"observability": { "enabled": true },
-	// One schedule for all jobs (the fix verification); the Worker decides by the time.
+	// One schedule for all jobs (fix verification, retries, retention); the Worker decides by the time.
 	"triggers": { "crons": ["*/5 * * * *"] },
-	// Optional: a rate limit per DSN key for ingest. Without it, ingest has no rate limit.
-	"ratelimits": [
-		{
-			"name": "INGEST_RATE_LIMITER",
-			"namespace_id": "1001",
-			"simple": { "limit": 1000, "period": 60 }
-		}
-	],
+	// This file is also the deploy-button config: only what a new Workers Free account can deploy.
+	// Optional bindings (a rate limit per DSN key, R2, Queues, Email) are in the docs; the Worker
+	// detects them at runtime and works without them.
 	"d1_databases": [
 		{
 			"binding": "DB",

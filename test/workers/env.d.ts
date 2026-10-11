@@ -6,6 +6,7 @@ declare global {
 		interface Env {
 			ADMIN_TOKEN: string;
 			BLOBS: R2Bucket;
+			INGEST_RATE_LIMITER: RateLimit;
 			INGEST_QUEUE: Queue<object>;
 			TEST_MIGRATIONS: Migration[];
 			TEST_SOURCEMAP: string;

@@ -11,6 +11,10 @@ export default defineConfig(async () => ({
 			miniflare: {
 				// The optional R2 bucket (BlobStore). Not in wrangler.jsonc: an install without it works.
 				r2Buckets: ["BLOBS"],
+				// The optional per-key rate limit (not in wrangler.jsonc: see the docs).
+				ratelimits: {
+					INGEST_RATE_LIMITER: { namespace_id: "1001", simple: { limit: 1000, period: 60 } },
+				},
 				// The optional ingest overflow queue (producer and consumer on the test Worker).
 				queueProducers: { INGEST_QUEUE: "checkend-ingest-test" },
 				queueConsumers: ["checkend-ingest-test"],
