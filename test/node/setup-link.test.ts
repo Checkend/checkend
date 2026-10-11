@@ -1,5 +1,8 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { recordD1Bookmark } from "../../scripts/d1-bookmark.ts";
 import { run as deploy, workerUrl } from "../../scripts/deploy.ts";
 import { newSetupCode, run as setupLink } from "../../scripts/setup-link.ts";
 import { IngestState } from "../../src/core/ingest/state.ts";
@@ -123,6 +126,8 @@ describe("scripts/deploy.ts", () => {
 		const links: string[][] = [];
 		let outputFile = "";
 		const deps = {
+			// Never the real helper here: it would run wrangler against an account.
+			recordBookmark: (_config?: string) => {},
 			wrangler: async (args: string[], env?: Record<string, string>) => {
 				steps.push(args.join(" "));
 				if (args[0] === "d1") return exits.migrate ?? 0;
@@ -144,6 +149,59 @@ describe("scripts/deploy.ts", () => {
 		};
 		return { deps, lines, steps, links, outputFile: () => outputFile };
 	}
+
+	it("records a D1 bookmark with the same config before the migrations", async () => {
+		const d = fakeDeploy(["https://checkend.acme.workers.dev"]);
+		const log = join(mkdtempSync(join(tmpdir(), "checkend-bookmark-")), "d1-bookmarks.jsonl");
+		const order: string[] = [];
+		// The builder's helper with a fake wrangler: `d1 time-travel info` answers JSON.
+		const recordBookmark = (config?: string) => {
+			recordD1Bookmark({
+				...(config ? { config } : {}),
+				log,
+				run: (args) => {
+					order.push(args.join(" "));
+					return 'Some banner\n{"bookmark": "00000085-0000024c-00004c6d-8e61117bf38d7adb71b934ebbf891683"}';
+				},
+			});
+		};
+		const wrangler = d.deps.wrangler;
+		const deps = {
+			...d.deps,
+			recordBookmark,
+			wrangler: (args: string[], env?: Record<string, string>) => {
+				order.push(args.join(" "));
+				return wrangler(args, env);
+			},
+		};
+		expect(await deploy(["--config", "wrangler.production.jsonc"], {}, deps)).toBe(0);
+		expect(order).toEqual([
+			"d1 time-travel info DB --json --config wrangler.production.jsonc",
+			"d1 migrations apply DB --remote --config wrangler.production.jsonc",
+			"deploy --config wrangler.production.jsonc",
+		]);
+		expect(readFileSync(log, "utf8")).toContain(
+			"npx wrangler d1 time-travel restore DB --bookmark=00000085-0000024c-00004c6d-8e61117bf38d7adb71b934ebbf891683 --config wrangler.production.jsonc",
+		);
+	});
+
+	it("stops before the migrations when there is no bookmark", async () => {
+		const d = fakeDeploy(["https://checkend.acme.workers.dev"]);
+		const deps = {
+			...d.deps,
+			recordBookmark: (config?: string) => {
+				recordD1Bookmark({
+					...(config ? { config } : {}),
+					log: join(mkdtempSync(join(tmpdir(), "checkend-bookmark-")), "log.jsonl"),
+					run: () => "{}",
+				});
+			},
+		};
+		expect(await deploy([], {}, deps)).toBe(1);
+		expect(d.steps).toEqual([]);
+		expect(d.links).toEqual([]);
+		expect(d.lines.join("\n")).toContain("No Time Travel bookmark");
+	});
 
 	it("applies the migrations, deploys, then makes the setup link for the deployed URL", async () => {
 		const d = fakeDeploy(["https://checkend.acme.workers.dev"]);

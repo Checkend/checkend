@@ -21,7 +21,7 @@ The core is portable, so the same code can also run on Node with SQLite.
 | `npm run migrations:build` | Write `src/entry/migrations.generated.ts` (the migrations of the hosted install) again after you add a migration. A test fails when it is out of date. |
 | `npm run check` | Lint, typecheck, tests and the CPU budget. Run it before each commit. |
 | `npm run project -- create --name <name>` | Create a project and print its DSN (needs `CHECKEND_URL` and `CHECKEND_ADMIN_TOKEN`). `list` prints all projects. |
-| `npm run deploy:production` | People only (see rule 9). Deploys with `wrangler.production.jsonc`: a copy of `wrangler.jsonc` with your Worker name and `database_id`. Files named `wrangler.*.jsonc` are git-ignored and blocked by the pre-commit hook. Both deploy scripts (`scripts/deploy.ts`) apply the migrations, deploy, then run `setup-link` while setup is open. |
+| `npm run deploy:production` | People only (see rule 9). Deploys with `wrangler.production.jsonc`: a copy of `wrangler.jsonc` with your Worker name and `database_id`. Files named `wrangler.*.jsonc` are git-ignored and blocked by the pre-commit hook. Both deploy scripts (`scripts/deploy.ts`) record a D1 Time Travel bookmark (`scripts/d1-bookmark.ts`; no bookmark: no migrations), apply the migrations, deploy, then run `setup-link` while setup is open. |
 | `npm run setup-link -- --url <url> [--config <file>]` | People only. While the web UI has no member: store a new random `SETUP_CODE` secret (through stdin) and print the one-time setup link `https://<host>/setup#<code>`. |
 
 Requirements: Node 22.18 or later (built-in SQLite and TypeScript type stripping).

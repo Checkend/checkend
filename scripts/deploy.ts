@@ -1,5 +1,6 @@
-// Deploys Checkend: applies the D1 migrations, deploys the Worker, then makes the one-time
-// setup link of the web UI while setup is open (scripts/setup-link.ts).
+// Deploys Checkend: records a D1 Time Travel bookmark (scripts/d1-bookmark.ts), applies the D1
+// migrations, deploys the Worker, then makes the one-time setup link of the web UI while setup
+// is open (scripts/setup-link.ts).
 //
 //   npm run deploy                     (wrangler.jsonc)
 //   npm run deploy:production          (--config wrangler.production.jsonc)
@@ -11,6 +12,7 @@ import { readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { recordD1Bookmark } from "./d1-bookmark.ts";
 import { option, run as setupLink } from "./setup-link.ts";
 
 type Env = Record<string, string | undefined>;
@@ -71,16 +73,29 @@ export async function run(
 	deps: {
 		wrangler?: Wrangler;
 		setupLink?: (argv: string[]) => Promise<number>;
+		/** Throws when there is no bookmark. */
+		recordBookmark?: (config?: string) => void;
 		print?: (line: string) => void;
 	} = {},
 ): Promise<number> {
 	const {
 		wrangler = runWrangler,
+		recordBookmark = (config?: string) => {
+			recordD1Bookmark(config ? { config } : {});
+		},
 		setupLink: makeLink = (args: string[]) => setupLink(args, {}),
 		print = console.log,
 	} = deps;
 	const config = option(argv, "config");
 	const configArgs = config ? ["--config", config] : [];
+
+	// The point to restore if the deploy goes wrong. Without it, the migrations do not run.
+	try {
+		recordBookmark(config);
+	} catch (error) {
+		print(error instanceof Error ? error.message : String(error));
+		return 1;
+	}
 
 	const migrated = await wrangler(["d1", "migrations", "apply", "DB", "--remote", ...configArgs]);
 	if (migrated !== 0) return migrated;
