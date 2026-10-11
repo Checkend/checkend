@@ -20,7 +20,7 @@ export default defineConfig(async () => ({
 				queueConsumers: ["checkend-ingest-test"],
 				// Test-only bindings: the migration files, read here because workerd has no file system.
 				bindings: {
-					ADMIN_TOKEN: "workers-test-admin-token",
+					ADMIN_TOKEN: "workers-test-admin-token-0123456789",
 					TEST_MIGRATIONS: readMigrations("migrations"),
 					TEST_SOURCEMAP: readFileSync("test/fixtures/sourcemaps/app.min.js.map", "utf8"),
 					TEST_D1_MIGRATIONS: await readD1Migrations("migrations"),

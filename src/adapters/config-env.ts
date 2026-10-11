@@ -50,9 +50,26 @@ function encryptionKeys(value: string | undefined) {
 	return keys;
 }
 
+/** The admin bearer token compares without a rate limit on failed attempts: it must be long. */
+export const MIN_ADMIN_TOKEN_CHARS = 32;
+
+function adminToken(value: string | undefined): string | null {
+	const token = value?.trim() || null;
+	if (token && token.length < MIN_ADMIN_TOKEN_CHARS) {
+		// The logs. Never the token itself.
+		console.error(
+			JSON.stringify({
+				message: `checkend: ADMIN_TOKEN is ignored: it needs at least ${MIN_ADMIN_TOKEN_CHARS} characters (for example: openssl rand -base64 32)`,
+			}),
+		);
+		return null;
+	}
+	return token;
+}
+
 export function readConfig(env: ConfigEnv): Config {
 	return {
-		adminToken: env.ADMIN_TOKEN?.trim() || null,
+		adminToken: adminToken(env.ADMIN_TOKEN),
 		dailyRowLimit: positiveInt(env.D1_DAILY_ROW_LIMIT) ?? DEFAULT_CONFIG.dailyRowLimit,
 		eventsPerIssue: positiveInt(env.EVENTS_PER_ISSUE) ?? DEFAULT_CONFIG.eventsPerIssue,
 		newIssuesPerHour: positiveInt(env.NEW_ISSUES_PER_HOUR) ?? DEFAULT_CONFIG.newIssuesPerHour,

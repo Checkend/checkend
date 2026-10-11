@@ -1,5 +1,5 @@
 import { createExecutionContext, env, waitOnExecutionContext } from "cloudflare:test";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { cloudflarePorts, readConfig } from "../../src/adapters/cloudflare/ports.ts";
 import { DEFAULT_CONFIG } from "../../src/ports/config.ts";
 
@@ -11,7 +11,7 @@ describe("readConfig", () => {
 	it("reads the admin token and numeric settings", () => {
 		expect(
 			readConfig({
-				ADMIN_TOKEN: "  s3cret  ",
+				ADMIN_TOKEN: "  s3cret-admin-token-of-32-chars-x  ",
 				D1_DAILY_ROW_LIMIT: "100000",
 				EVENTS_PER_ISSUE: "20",
 				NEW_ISSUES_PER_HOUR: "5",
@@ -19,7 +19,7 @@ describe("readConfig", () => {
 				VERIFY_QUIET_HOURS: "6",
 			}),
 		).toEqual({
-			adminToken: "s3cret",
+			adminToken: "s3cret-admin-token-of-32-chars-x",
 			dailyRowLimit: 100000,
 			eventsPerIssue: 20,
 			newIssuesPerHour: 5,
@@ -43,6 +43,21 @@ describe("readConfig", () => {
 				AI_SIMILAR: "yes",
 			}).ai,
 		).toEqual({ gatewayId: "checkend", gatewayLogs: true, triage: true, similar: false });
+	});
+
+	it("refuses an ADMIN_TOKEN shorter than 32 characters, and logs why", () => {
+		const errors: string[] = [];
+		const spy = vi
+			.spyOn(console, "error")
+			.mockImplementation((line: string) => void errors.push(line));
+		try {
+			expect(readConfig({ ADMIN_TOKEN: "a".repeat(31) }).adminToken).toBeNull();
+			expect(errors.join("\n")).toContain("at least 32 characters");
+			expect(errors.join("\n")).not.toContain("a".repeat(31));
+			expect(readConfig({ ADMIN_TOKEN: "a".repeat(32) }).adminToken).toBe("a".repeat(32));
+		} finally {
+			spy.mockRestore();
+		}
 	});
 
 	it("reads REQUIRE_APPROVAL: only ignore and merge", () => {
