@@ -77,6 +77,11 @@ Node:
 Checkend reads `X-Forwarded-For` from the right, and only through trusted proxies, so a client
 cannot fake its address.
 
+## Web UI
+
+On Node and Docker, the setup link is not available yet. Until then, use development mode only
+on a local machine, or deploy on Cloudflare. See [Web UI](web-ui.md).
+
 ## What is different from Cloudflare
 
 | | Cloudflare | Node |
