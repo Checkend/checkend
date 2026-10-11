@@ -11,7 +11,7 @@ import {
 	type ProjectScrub,
 	ScrubKey,
 } from "./scrub-settings.ts";
-import type { Actor } from "./tokens.ts";
+import { type Actor, LimitReachedError } from "./tokens.ts";
 
 /** A GitHub repository: owner/name. Stored lowercase (GitHub names are case-insensitive). */
 export const RepositoryName = v.pipe(
@@ -127,6 +127,8 @@ export async function createProject(
 		demo?: boolean;
 		/** Registered by an agent with this setup key: the setup row is in the same batch. */
 		setupKeyId?: number;
+		/** At most this many apps for the setup key, checked inside the insert (atomic). */
+		setupKeyLimit?: number;
 	},
 	actor?: Actor,
 ): Promise<CreatedProject> {
@@ -148,12 +150,15 @@ export async function createProject(
 
 	const createdAt = clock.now().toISOString();
 	const publicKey = newPublicKey();
+	const limit = input.setupKeyId === undefined ? null : (input.setupKeyLimit ?? null);
 	for (let attempt = 1; ; attempt++) {
 		const publicId = newPublicProjectId();
 		try {
 			const [project] = await db.batch([
 				sql`INSERT INTO projects (name, slug, platform, created_at, public_id, demo)
-					VALUES (${name}, ${slug}, ${platform}, ${createdAt}, ${publicId}, ${input.demo ? 1 : 0})
+					SELECT ${name}, ${slug}, ${platform}, ${createdAt}, ${publicId}, ${input.demo ? 1 : 0}
+					WHERE ${limit} IS NULL
+						OR (SELECT count(*) FROM project_setup WHERE setup_key_id = ${input.setupKeyId ?? null}) < ${limit}
 					RETURNING id`,
 				sql`INSERT INTO project_keys (project_id, public_key, label, created_at)
 					SELECT id, ${publicKey}, ${"default"}, ${createdAt} FROM projects WHERE slug = ${slug}`,
@@ -164,19 +169,18 @@ export async function createProject(
 								SELECT id, ${input.setupKeyId}, ${createdAt} FROM projects WHERE slug = ${slug}`,
 						]),
 				// The activity target is the public ID: the row ID never leaves Checkend.
+				// Only for a project that the batch created (the limit can stop the insert).
 				...(actor
 					? [
-							activityStatement(
-								actor,
-								"project.create",
-								{ type: "project", id: publicId },
-								{ name, slug, platform },
-								new Date(createdAt),
-							),
+							sql`INSERT INTO activity (at, actor_type, actor_id, actor_name, action, target_type, target_id, data)
+								SELECT ${createdAt}, ${actor.type}, ${actor.id}, ${actor.name}, ${"project.create"},
+									${"project"}, public_id, ${JSON.stringify({ name, slug, platform })}
+								FROM projects WHERE public_id = ${publicId} AND created_at = ${createdAt}`,
 						]
 					: []),
 			]);
-			const internalId = Number(project?.rows[0]?.id);
+			if (!project?.rows[0]) throw new LimitReachedError();
+			const internalId = Number(project.rows[0].id);
 			return { id: publicId, internalId, name, slug, platform, publicKey, createdAt };
 		} catch (error) {
 			// A public ID collision (1 in 9 billion per project): try another one.

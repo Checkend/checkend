@@ -7,7 +7,13 @@ import type { IngestState } from "./ingest/state.ts";
 import { storeEvent } from "./ingest/store.ts";
 import { createProject } from "./projects.ts";
 import { MAX_APPS_PER_KEY, MAX_TOKENS_PER_KEY } from "./setup-keys.ts";
-import { type Actor, createToken, hasScope, type TokenRecord } from "./tokens.ts";
+import {
+	type Actor,
+	createToken,
+	hasScope,
+	LimitReachedError,
+	type TokenRecord,
+} from "./tokens.ts";
 
 /**
  * What an agent does with a setup key (onboarding): register apps, create agent tokens,
@@ -83,15 +89,21 @@ export async function registerApp(
 		);
 		if ((count?.n ?? 0) >= MAX_APPS_PER_KEY) return { ok: false, error: "limit" };
 	}
-	const created = await createProject(
-		ports,
-		{
-			name: input.name,
-			platform: input.platform ?? null,
-			...(keyId === null ? {} : { setupKeyId: keyId }),
-		},
-		actor,
-	);
+	let created: Awaited<ReturnType<typeof createProject>>;
+	try {
+		created = await createProject(
+			ports,
+			{
+				name: input.name,
+				platform: input.platform ?? null,
+				...(keyId === null ? {} : { setupKeyId: keyId, setupKeyLimit: MAX_APPS_PER_KEY }),
+			},
+			actor,
+		);
+	} catch (error) {
+		if (error instanceof LimitReachedError) return { ok: false, error: "limit" };
+		throw error;
+	}
 	if (keyId === null) {
 		// An admin: the setup row without a key, so that the app shows in the progress.
 		await ports.db.run(
@@ -120,19 +132,24 @@ export async function createAgentToken(
 	if (!canSetUp(actor)) return { ok: false, error: "forbidden" };
 	const app = await appOf(ports.db, actor, input.project);
 	if (!app) return { ok: false, error: "not_found" };
-	if (actor.type === "setup_key") {
-		const count = await ports.db.first<{ n: number }>(
-			sql`SELECT count(*) AS n FROM tokens WHERE setup_key_id = ${actor.id}`,
+	const key = actor.type === "setup_key" ? actor.id : null;
+	try {
+		const { token, record } = await createToken(
+			ports,
+			actor,
+			{ name: input.name, scopes: ["issues:read", "issues:write"] },
+			// The limit is checked inside the insert (parallel requests cannot pass it).
+			{
+				setupKeyId: key,
+				projectId: app.internalId,
+				...(key === null ? {} : { limit: MAX_TOKENS_PER_KEY }),
+			},
 		);
-		if ((count?.n ?? 0) >= MAX_TOKENS_PER_KEY) return { ok: false, error: "limit" };
+		return { ok: true, token, record };
+	} catch (error) {
+		if (error instanceof LimitReachedError) return { ok: false, error: "limit" };
+		throw error;
 	}
-	const { token, record } = await createToken(
-		ports,
-		actor,
-		{ name: input.name, scopes: ["issues:read", "issues:write"] },
-		{ setupKeyId: actor.type === "setup_key" ? actor.id : null, projectId: app.internalId },
-	);
-	return { ok: true, token, record };
 }
 
 export const TEST_EVENT_MESSAGE =

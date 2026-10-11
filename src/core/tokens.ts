@@ -59,13 +59,20 @@ export interface TokenRecord {
 	revoked_at: string | null;
 }
 
+/** A setup key limit (apps or tokens) stopped an insert. */
+export class LimitReachedError extends Error {
+	constructor() {
+		super("The limit of the setup key is reached.");
+	}
+}
+
 /** Creates a token. The token itself is returned once and never stored. */
 export async function createToken(
 	{ db, clock }: Pick<Ports, "db" | "clock">,
 	actor: Actor,
 	input: { name: string; scopes: readonly string[] },
 	/** An agent token made with a setup key, for one app (onboarding progress). */
-	link?: { setupKeyId: number | null; projectId: number },
+	link?: { setupKeyId: number | null; projectId: number; limit?: number },
 ): Promise<{ token: string; record: TokenRecord }> {
 	const name = input.name.trim();
 	if (name.length === 0 || name.length > 100)
@@ -83,16 +90,20 @@ export async function createToken(
 	const tokenHash = await sha256(token);
 	const prefix = token.slice(0, 10);
 	const [inserted] = await db.batch([
+		// A setup key limit is checked inside the insert, so parallel requests cannot pass it.
 		sql`INSERT INTO tokens (name, scopes, token_hash, prefix, created_at, created_by, setup_key_id, project_id)
-			VALUES (${name}, ${scopes.join(" ")}, ${tokenHash}, ${prefix}, ${createdAt}, ${actor.name},
-				${link?.setupKeyId ?? null}, ${link?.projectId ?? null})
+			SELECT ${name}, ${scopes.join(" ")}, ${tokenHash}, ${prefix}, ${createdAt}, ${actor.name},
+				${link?.setupKeyId ?? null}, ${link?.projectId ?? null}
+			WHERE ${link?.limit ?? null} IS NULL
+				OR (SELECT count(*) FROM tokens WHERE setup_key_id = ${link?.setupKeyId ?? null}) < ${link?.limit ?? null}
 			RETURNING id`,
 		sql`INSERT INTO activity (at, actor_type, actor_id, actor_name, action, target_type, target_id, data)
 			SELECT ${createdAt}, ${actor.type}, ${actor.id}, ${actor.name}, ${"token.create"}, ${"token"}, id,
 				${JSON.stringify({ name, scopes })}
 			FROM tokens WHERE token_hash = ${tokenHash}`,
 	]);
-	const id = Number(inserted?.rows[0]?.id);
+	if (!inserted?.rows[0]) throw new LimitReachedError();
+	const id = Number(inserted.rows[0].id);
 	return {
 		token,
 		record: {

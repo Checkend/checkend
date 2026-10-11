@@ -152,3 +152,35 @@ describe("sendTestEvent and reportSetupStep", () => {
 		expect(await reportSetupStep(ports, actor, "nope", "sdk_installed")).toBe("not_found");
 	});
 });
+
+describe("the setup key limits under parallel requests", () => {
+	it("stops at 10 apps and 5 tokens, also when the requests run at the same time", async () => {
+		const { ports, actor } = await withKey();
+		const apps = await Promise.all(
+			Array.from({ length: 15 }, (_, i) => registerApp(ports, actor, { name: `parallel ${i}` })),
+		);
+		expect(apps.filter((a) => a.ok)).toHaveLength(MAX_APPS_PER_KEY);
+		expect(apps.filter((a) => !a.ok)).toEqual(
+			Array.from({ length: 5 }, () => ({ ok: false, error: "limit" })),
+		);
+		expect(await ports.db.first(sql`SELECT count(*) AS n FROM projects`)).toEqual({
+			n: MAX_APPS_PER_KEY,
+		});
+		expect(
+			await ports.db.first(sql`SELECT count(*) AS n FROM activity WHERE action = 'project.create'`),
+		).toEqual({
+			n: MAX_APPS_PER_KEY,
+		});
+		const first = apps.find((a) => a.ok);
+		if (!first?.ok) throw new Error();
+		const tokens = await Promise.all(
+			Array.from({ length: 8 }, (_, i) =>
+				createAgentToken(ports, actor, { name: `t${i}`, project: first.project.slug }),
+			),
+		);
+		expect(tokens.filter((t) => t.ok)).toHaveLength(MAX_TOKENS_PER_KEY);
+		expect(await ports.db.first(sql`SELECT count(*) AS n FROM tokens`)).toEqual({
+			n: MAX_TOKENS_PER_KEY,
+		});
+	});
+});
