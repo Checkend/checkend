@@ -13,7 +13,7 @@ export interface WriteHealthSnapshot {
 }
 
 /**
- * The state of D1 writes, as this isolate sees it (H1). After 3 failed writes in a row, or
+ * The state of D1 writes, as this isolate sees it (back-pressure: SDKs slow down). After 3 failed writes in a row, or
  * one write slower than 5 s, ingest answers 429 with Retry-After for 30 s, so SDKs back off.
  */
 export class WriteHealth {
@@ -46,7 +46,7 @@ export type IngestMode = "full" | "counters_only";
 export const BUDGET_THRESHOLD = 0.8;
 
 /**
- * Rows written today (estimated), cached for 30 s (H3). Near the D1 daily write limit,
+ * Rows written today (estimated), cached for 30 s (the daily write budget). Near the D1 daily write limit,
  * ingest stores counters only, so that D1 does not stop all writes.
  */
 export class BudgetTracker {

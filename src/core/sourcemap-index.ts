@@ -1,5 +1,5 @@
 /**
- * Source maps, processed once into a compact binary line index (M3). At event time a lookup
+ * Source maps, processed once into a compact binary line index. At event time a lookup
  * is a binary search over the index bytes: no JSON parsing and no VLQ decoding, so that it fits
  * the CPU budget of a request. The index also holds the source contents, so that one stored
  * object per map is enough.

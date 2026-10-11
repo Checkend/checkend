@@ -72,7 +72,7 @@ describe("GET /health", () => {
 		expect(body.ingest).toBeNull();
 	});
 
-	it("shows budget mode and write failures (H1, H3)", async () => {
+	it("shows budget mode and write failures", async () => {
 		const db = openSqliteDb(":memory:");
 		await applyMigrations(db, migrations);
 		await db.run(

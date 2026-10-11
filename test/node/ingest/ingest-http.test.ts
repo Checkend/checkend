@@ -149,7 +149,7 @@ describe("ingest: authentication (layer 1)", () => {
 	});
 });
 
-describe("ingest: back-pressure (H1) and rate limits", () => {
+describe("ingest: back-pressure and rate limits", () => {
 	it("answers 429 with Retry-After and X-Sentry-Rate-Limits when the key is over its rate limit", async () => {
 		const { send, envelopePath, count, settle } = await setup({
 			rateLimiter: { allow: async () => false },

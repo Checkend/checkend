@@ -39,8 +39,8 @@ const tooManyRequests = (seconds: number, scope: "key" | "organization", reason?
 	);
 
 /**
- * The Sentry ingest endpoints. All untrusted-input checks are here, in this order (H2
- * layer 1): project ID, DSN key, rate limit, D1 state, then the body (type, encoding, size).
+ * The Sentry ingest endpoints. All untrusted-input checks are here, in this order (the first
+ * layer of the defence against hostile input): project ID, DSN key, rate limit, D1 state, then the body (type, encoding, size).
  * The write runs after the response, in `defer`.
  */
 export async function handleIngest(

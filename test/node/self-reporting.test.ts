@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * Rule (M6): Checkend never reports its own errors to the same instance, because a failure
+ * Rule: Checkend never reports its own errors to the same instance, because a failure
  * could then create more errors in a loop. Its own errors go to Workers Logs (console).
  */
 describe("no self-reporting", () => {

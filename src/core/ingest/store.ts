@@ -23,7 +23,8 @@ interface RawPayload {
 	blob: { key: string; bytes: Uint8Array } | null;
 }
 
-/** New fingerprints above the hourly cap of a project go to this one issue (H2 layer 3). */
+/** New fingerprints above the hourly cap of a project go to this one issue (a flood of new
+ * fingerprints cannot fill the database). */
 export const FLOOD_FINGERPRINT = "flood";
 const FLOOD_TITLE: IssueTitle = {
 	title: "Too many new issues: new errors above the hourly limit are grouped here",
@@ -76,7 +77,7 @@ async function gzip(text: string): Promise<Uint8Array> {
 /**
  * Writes one event in direct mode: one atomic `batch()` with the issue upsert, the event
  * insert (while the issue has fewer than N stored events), the new tag keys and the daily
- * counters. Runs inside `defer`. Retries transient failures with jitter (H1); upserts are
+ * counters. Runs inside `defer`. Retries transient failures with jitter; upserts are
  * idempotent per event_id, so a retry does not count an event twice.
  */
 export async function storeEvent(

@@ -7,7 +7,7 @@ import { sql } from "../../../src/ports/db.ts";
 import { testPorts } from "../../support/node-ports.ts";
 
 /**
- * Hostile input corpus (H2): every case goes through the full HTTP ingest path. The rule:
+ * Hostile input corpus: every case goes through the full HTTP ingest path. The rule:
  * reject cheaply with 4xx, or accept and store bounded, inert data. Never crash.
  */
 async function setup() {

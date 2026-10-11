@@ -257,7 +257,7 @@ describe("storeEvent: raw payload size", () => {
 	});
 });
 
-describe("storeEvent: D1 limits (M2)", () => {
+describe("storeEvent: D1 limits", () => {
 	it("never sends a statement with more than 100 bound parameters, also for a worst-case event", async () => {
 		const t = await testPorts();
 		const counts: number[] = [];

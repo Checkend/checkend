@@ -9,7 +9,7 @@ import { prepareEvent } from "../../../src/core/ingest/prepare.ts";
 import { FILTERED, isSensitiveKey, scrub } from "../../../src/core/ingest/scrub.ts";
 
 /**
- * Property-based fuzzing of the parser, scrubber, normalizer and fingerprint (H2).
+ * Property-based fuzzing of the parser, scrubber, normalizer and fingerprint.
  * A failure prints the smallest input that breaks the property.
  */
 const received = new Date("2026-10-10T12:00:00Z");
