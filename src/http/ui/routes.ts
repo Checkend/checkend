@@ -481,12 +481,25 @@ export function uiRoutes(app: Hono<AppEnv>, state: IngestState, onboarding: Onbo
 			),
 		]);
 		const session = c.get("session");
+		// A hosted install: an owner manages the members at the front Worker.
+		const spacesUrl = ports.config.trustedFront ? (ports.config.spacesUrl ?? null) : null;
+		const membersUrl =
+			spacesUrl && hasScope(c.get("actor"), "admin")
+				? `${spacesUrl}${basePathOf(c)}/members`
+				: null;
 		return render(
 			c,
 			"Settings",
 			"settings",
 			settingsView(
-				{ health, ingest, members, session, devMode: ports.config.devMode, ...front(c) },
+				{
+					health,
+					ingest,
+					members,
+					session,
+					devMode: ports.config.devMode,
+					...(ports.config.trustedFront ? { front: { spacesUrl, membersUrl } } : {}),
+				},
 				now(c),
 			),
 		);

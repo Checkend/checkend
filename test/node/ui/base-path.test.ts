@@ -16,6 +16,8 @@ const ORIGIN = "https://hosted.test";
 const BASE = "/k7q2x9";
 /** The page of the front Worker that lists the spaces of the account ("Switch space"). */
 const SPACES = `${ORIGIN}/spaces`;
+/** The front Worker's members page of this space (owners only). */
+const MEMBERS = `${SPACES}${BASE}/members`;
 /** Other hosts in responses: the docs on GitHub, the JSON Schema dialect of MCP tools. */
 const EXTERNAL_HOSTS = new Set(["github.com", "json-schema.org"]);
 /** The member identity that the front Worker passes with each request of a signed-in person. */
@@ -122,10 +124,11 @@ async function outside(response: Response): Promise<string[]> {
 		}
 		if (url.protocol === "mailto:") continue;
 		if (url.host === new URL(ORIGIN).host) {
-			// The one link out of the install: the spaces page of the front Worker.
-			// The install itself (for example `ce setup --url <it>`) or a path under it.
+			// The links out of the install: the spaces page of the front Worker and its members
+			// page of this space. The install itself (for example `ce setup --url <it>`) or a path
+			// under it.
 			const inside = url.pathname === BASE || url.pathname.startsWith(`${BASE}/`);
-			if (!inside && value !== SPACES) bad.push(value);
+			if (!inside && value !== SPACES && value !== MEMBERS) bad.push(value);
 		} else if (!EXTERNAL_HOSTS.has(url.hostname)) {
 			// A URL on another host. A DSN carries a key as user name: the host must still be ours.
 			bad.push(value);
@@ -227,6 +230,17 @@ describe("a base path: every URL stays under /<id>/", () => {
 			expect(response.status, path).toBe(404);
 			expect(await outside(response), path).toEqual([]);
 		}
+	});
+
+	it("links an owner, and only an owner, to the members page of the space at the front", async () => {
+		const t = await tenant();
+		const owner = await (await t.call("/settings", { as: ALICE })).text();
+		expect(owner).toContain(`href="${MEMBERS}"`);
+		expect(owner).toContain("Members of this space");
+		const member = await (
+			await t.call("/settings", { as: { accountId: "acc2bob", name: "Bob", role: "member" } })
+		).text();
+		expect(member).not.toContain(MEMBERS);
 	});
 
 	it("keeps form posts, their redirects and the JSON of the UI under the base path", async () => {

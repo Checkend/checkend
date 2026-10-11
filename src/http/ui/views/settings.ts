@@ -18,7 +18,7 @@ export interface SettingsData {
 	session: { memberName: string; expiresAt: string; csrfToken: string };
 	devMode: boolean;
 	/** A hosted install (trusted front identity): people sign in at the front Worker. */
-	front?: { spacesUrl: string | null } | null;
+	front?: { spacesUrl: string | null; membersUrl?: string | null } | null;
 }
 
 const fact = (label: string, value: Html | string) => h`<div><dt>${label}</dt>
@@ -26,7 +26,7 @@ const fact = (label: string, value: Html | string) => h`<div><dt>${label}</dt>
 
 export function settingsView(data: SettingsData, now: Date): Html {
 	const { health, ingest } = data;
-	if (data.front) return frontSettings(data, data.front.spacesUrl, now);
+	if (data.front) return frontSettings(data, data.front, now);
 	return h`${pageHead("Settings", "The state of this install, and who can sign in.")}
 <div class="stack">
 <section aria-labelledby="health-title">
@@ -63,8 +63,13 @@ ${data.devMode ? h`<p class="notice">Development mode is on (<code>CHECKEND_DEV<
 }
 
 /** A hosted install: the account and its sign-in belong to the front Worker. */
-function frontSettings(data: SettingsData, spacesUrl: string | null, now: Date): Html {
+function frontSettings(
+	data: SettingsData,
+	front: { spacesUrl: string | null; membersUrl?: string | null },
+	now: Date,
+): Html {
 	const { health } = data;
+	const { spacesUrl, membersUrl } = front;
 	return h`${pageHead("Settings", "The state of this space, and its members.")}
 <div class="stack">
 <section aria-labelledby="health-title">
@@ -83,6 +88,7 @@ ${fact("Migration", health.migrations ? (health.migrations.latest ?? "none") : "
 		(m) => h`<tr><td>${t(m.name, 100)}</td><td class="when">${time(m.created_at, now)}</td></tr>`,
 	)}</tbody>
 </table>
+${membersUrl ? h`<p><a class="btn btn-quiet" href="${membersUrl}">Members of this space</a></p>` : ""}
 </section>
 <section aria-labelledby="session-title">
 <h2 id="session-title">Your account</h2>
