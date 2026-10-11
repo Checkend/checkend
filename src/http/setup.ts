@@ -21,6 +21,7 @@ import { onboardingProgress } from "../core/setup-progress.ts";
 import { authenticate, hasScope } from "../core/tokens.ts";
 import { dsn } from "./api.ts";
 import type { AppEnv } from "./app.ts";
+import { authenticatedBodyCap } from "./body.ts";
 
 const invalid = (c: Context, issues: v.BaseIssue<unknown>[]) =>
 	c.json(
@@ -56,7 +57,7 @@ const needAdmin: MiddlewareHandler<AppEnv> = async (c, next) => {
 
 /** The onboarding routes. Registered before apiRoutes, so the /v1 auth does not run. */
 export function setupRoutes(app: Hono<AppEnv>, state: IngestState): void {
-	app.use("/v1/setup/*", requireSetupActor);
+	app.use("/v1/setup/*", requireSetupActor, authenticatedBodyCap);
 
 	app.post("/v1/setup/keys", needAdmin, async (c) =>
 		c.json({ data: await createSetupKey(c.env.ports, c.get("actor")) }, 201),

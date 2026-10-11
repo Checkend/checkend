@@ -71,6 +71,7 @@ import {
 } from "../core/webhooks.ts";
 import type { AppEnv } from "./app.ts";
 import { need, requireActor } from "./auth.ts";
+import { authenticatedBodyCap } from "./body.ts";
 
 const invalid = (c: Context, issues: v.BaseIssue<unknown>[]) =>
 	c.json(
@@ -91,7 +92,7 @@ export const dsn = (origin: string, key: string, projectId: number) => {
  * or the bootstrap ADMIN_TOKEN secret. Each route needs a scope.
  */
 export function apiRoutes(app: Hono<AppEnv>, state: IngestState): void {
-	app.use("/v1/*", requireActor);
+	app.use("/v1/*", requireActor, authenticatedBodyCap);
 
 	app.get("/v1/tokens", need("admin"), async (c) =>
 		c.json({ data: await listTokens(c.env.ports.db) }),

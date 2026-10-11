@@ -33,6 +33,7 @@ import { listAlerts } from "../core/webhooks.ts";
 import type { Ports } from "../ports/index.ts";
 import type { AppEnv } from "./app.ts";
 import { need, requireActor } from "./auth.ts";
+import { authenticatedBodyCap } from "./body.ts";
 
 /** An ID as a number or as a string of digits ("42"): agents often send strings. */
 const Id = v.union([
@@ -467,7 +468,7 @@ async function mcpClientName(request: Request): Promise<string | null> {
 export function mcpRoutes(app: Hono<AppEnv>): void {
 	// Auth runs before the MCP transport: no token, a wrong token, or a missing scope never
 	// reaches the server.
-	app.all("/mcp", requireActor, need("issues:read"), async (c) => {
+	app.all("/mcp", requireActor, need("issues:read"), authenticatedBodyCap, async (c) => {
 		const actor = c.get("actor");
 		if (actor.type === "token" && actor.id !== null) {
 			// Onboarding progress: the first MCP call of a token, and the client name.

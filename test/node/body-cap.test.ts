@@ -52,6 +52,33 @@ describe("body caps on authenticated routes", async () => {
 		},
 	);
 
+	it.each([
+		["/v1/sourcemaps?project=shop&release=1&name=~/a.js", null],
+		["/v1/sourcemaps?project=shop&release=1&name=~/a.js", "ck_wrong-token-for-the-test"],
+		["/v1/projects", null],
+		["/v1/setup/apps", null],
+		["/v1/setup/apps", "cks_wrong-setup-key-for-the-test"],
+		["/mcp", null],
+	])("reads nothing before auth: %s with token %s gives 401 at once", async (path, token) => {
+		const stream = chunked(25 * 1024 * 1024);
+		const response = await app.request(
+			new Request(`https://checkend.test${path}`, {
+				method: "POST",
+				headers: {
+					...(token ? { authorization: `Bearer ${token}` } : {}),
+					"content-type": "application/json",
+					accept: "application/json, text/event-stream",
+				},
+				body: stream.body,
+				duplex: "half",
+			} as RequestInit),
+			undefined,
+			{ ports },
+		);
+		expect(response.status).toBe(401);
+		expect(stream.pulled()).toBeLessThan(1024 * 1024);
+	});
+
 	it("a normal JSON body still works", async () => {
 		const response = await app.request(
 			"https://checkend.test/v1/projects",

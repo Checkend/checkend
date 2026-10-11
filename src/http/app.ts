@@ -1,11 +1,9 @@
 import { Hono } from "hono";
 import { checkHealth } from "../core/health.ts";
 import { IngestState } from "../core/ingest/state.ts";
-import { MAX_SOURCEMAP_BYTES } from "../core/sourcemaps.ts";
 import type { Actor } from "../core/tokens.ts";
 import type { Ports } from "../ports/index.ts";
 import { apiRoutes } from "./api.ts";
-import { bodyCap, MAX_JSON_BODY_BYTES } from "./body.ts";
 import { docsRoutes } from "./docs.ts";
 import { githubRoutes } from "./github.ts";
 import { ingestRoutes } from "./ingest.ts";
@@ -38,12 +36,6 @@ export function createApp(options: AppOptions = {}): Hono<AppEnv> {
 	githubRoutes(app);
 	// Before apiRoutes: /v1/openapi.json is public, so it must answer before the /v1 auth.
 	docsRoutes(app);
-	// Body caps of the routes below (ingest and the GitHub webhook have their own, above).
-	const cap = bodyCap((path) =>
-		path === "/v1/sourcemaps" ? MAX_SOURCEMAP_BYTES : MAX_JSON_BODY_BYTES,
-	);
-	app.use("/v1/*", cap);
-	app.use("/mcp", cap);
 	// Before apiRoutes: setup keys open only /v1/setup, with their own auth.
 	setupRoutes(app, state);
 	apiRoutes(app, state);

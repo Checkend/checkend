@@ -1,4 +1,5 @@
 import type { MiddlewareHandler } from "hono";
+import { MAX_SOURCEMAP_BYTES } from "../core/sourcemaps.ts";
 import type { AppEnv } from "./app.ts";
 
 /**
@@ -55,3 +56,11 @@ export function bodyCap(capFor: (path: string) => number): MiddlewareHandler<App
 		return next();
 	};
 }
+
+/**
+ * The cap of the authenticated routes: 30 MB for a source map upload, 1 MB for JSON. Each route
+ * group puts it AFTER its auth middleware, so a request without a valid token reads no body.
+ */
+export const authenticatedBodyCap = bodyCap((path) =>
+	path === "/v1/sourcemaps" ? MAX_SOURCEMAP_BYTES : MAX_JSON_BODY_BYTES,
+);
