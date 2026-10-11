@@ -94,6 +94,15 @@ Today, install \`ce\` with Go (Go 1.26 or later):
 go install github.com/Checkend/checkend-cli/cmd/ce@latest
 \`\`\`
 
+Then run \`ce --version\`. If the shell does not find \`ce\`, the Go bin folder is not on PATH
+(\`go install\` writes to \`$(go env GOBIN)\` when it is set, else to \`$(go env GOPATH)/bin\`). For
+this session, run \`"$(go env GOPATH)/bin/ce"\` in place of \`ce\`. Tell the person to add this line
+to \`~/.zshrc\` (zsh) or \`~/.bashrc\` (bash), then open a new terminal:
+
+\`\`\`sh
+export PATH="$PATH:$(go env GOPATH)/bin"
+\`\`\`
+
 Release builds (Homebrew, an install script, an npm package) are not available yet.
 
 Without Go, use the steps under "If ce is not available" in ${base}/agent/setup.md. They do the

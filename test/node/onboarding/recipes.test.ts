@@ -55,6 +55,16 @@ describe("the agent recipes", () => {
 		expect(text).toContain("go install github.com/Checkend/checkend-cli/cmd/ce@latest");
 	});
 
+	it("finds ce after go install when the Go bin folder is not on PATH", () => {
+		const text = installRecipe(BASE);
+		const after = text.slice(text.indexOf("go install"));
+		expect(after).toContain("ce --version");
+		expect(after).toContain('"$(go env GOPATH)/bin/ce"');
+		expect(after).toContain(`export PATH="$PATH:$(go env GOPATH)/bin"`);
+		expect(after).toContain("~/.zshrc");
+		expect(after).toContain("~/.bashrc");
+	});
+
 	it("contains no secrets: no keys, no tokens, no DSN with a key", () => {
 		for (const text of all()) {
 			expect(text).not.toMatch(/cks_[A-Za-z0-9_-]{8}|ck_[A-Za-z0-9_-]{8}|[0-9a-f]{32}@/);
