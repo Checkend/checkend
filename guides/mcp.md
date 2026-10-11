@@ -101,6 +101,14 @@ returns the new issue. See [split](api.md#post-v1issuesidsplit) for what a split
 Lists the alert rules and webhooks (see [Alerts](alerts.md)), without secrets, email addresses or
 URL query strings. It needs only `issues:read`.
 
+### `correct_triage` and `search_similar`
+
+- `correct_triage(issue_id, ...)` corrects the [AI triage](ai-triage.md#correct-the-triage) of an
+  issue. It needs `issues:write`.
+- `search_similar(issue_id or text, limit?)` finds [similar issues](ai-triage.md#similar-issues).
+  It needs `issues:read`, and it works when similar issues are on (see
+  [Similar issues](ai-triage.md#similar-issues)); else the answer is the error `similar_off`.
+
 ### `merge_issues`
 
 Merges 1 to 10 issues into a target issue. Inputs: `target_id` and `source_ids`. See
@@ -167,6 +175,13 @@ It contains:
   rounded to 0.01). They are untrusted, because tags come from the application.
 - one request (method, URL and headers, with secrets removed)
 - the release, environment, platform, culprit and tags
+- the [AI triage](ai-triage.md), when it is on: the likely category, the severity, and the
+  probabilities that the error is transient, fixable by an agent, or noise. It is model advice:
+  Checkend never acts on it. If an issue has no triage yet, `get_issue_brief` triages it first
+  (at most 5 seconds).
+- similar issues, when [AI_SIMILAR](ai-triage.md#similar-issues) is on: `similar_issues`, with
+  their IDs, projects, status, score and title (untrusted text)
+- for the test issue of a setup, a row "Test event from setup: not a real error" (`issue.test`)
 - the trust of the project: `| Trust | high |`, or
   `| Trust | low: the DSN can be public (browser), so anyone can send events |` (see
   [Trust and allowed origins](sending-errors.md#trust-and-allowed-origins))

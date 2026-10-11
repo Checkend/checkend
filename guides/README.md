@@ -12,9 +12,11 @@ D1 database, in your own Cloudflare account.
 | Guide | Read it when you want to |
 |---|---|
 | [Quick start](quick-start.md) | Run Checkend, connect an app, and read its errors. |
+| [Set up with an agent](agent-setup.md) | Let a coding agent add Checkend to your apps, with a short-lived setup key. |
 | [MCP server](mcp.md) | Connect a coding agent, and read issue briefs. |
 | [Webhooks](webhooks.md) | Call your agent runner when an issue is new, regressed or verified, or [start an agent from GitHub Actions](webhooks.md#start-an-agent-from-github-actions). |
 | [Alerts](alerts.md) | Tell people in Slack, Discord, a GitHub issue or email. |
+| [AI triage and similar issues](ai-triage.md) | Optional model advice on each issue: cause, severity, noise, and similar issues. |
 | [Verify fixes](fix-loop.md) | Link a fix, report deploys, and let Checkend verify the fix in production. |
 | [Send errors](sending-errors.md) | Know what the ingest endpoints accept, and what they return. |
 | [Source maps](source-maps.md) | Upload source maps, so that briefs show the original JavaScript. |
@@ -60,6 +62,11 @@ Contributors and coding agents: read [AGENTS.md](../AGENTS.md) and
   minified JavaScript.
 - **Self-hosting without Cloudflare**: one Docker container (or Node process) with one SQLite
   file, with backups.
+- **Agent setup**: a coding agent registers your apps, adds the SDK and connects itself, with a
+  setup key that lasts 1 hour.
+- **AI triage and similar issues** (optional, off by default): model advice on each issue, in the
+  brief.
+- **Project delete and DSN rotation**.
 - **Priority**: each issue has a priority score from the users affected, the events in the last
   24 hours, and how recent and how new the issue is. MCP lists the top priority first.
 - **Triage history**: each decision on an issue (resolve, ignore, merge, split, ...) and each

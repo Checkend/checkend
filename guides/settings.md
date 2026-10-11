@@ -7,7 +7,7 @@ All settings are optional. Set them as Workers secrets or variables (in your
 
 | Name | Default | What it does |
 |---|---|---|
-| `ADMIN_TOKEN` (secret) | none | The bootstrap admin token for `/v1`. It has all scopes. Use it to create [scoped tokens](api.md#tokens). |
+| `ADMIN_TOKEN` (secret) | none | The bootstrap admin token for `/v1`. It has all scopes. Use it to create [scoped tokens](api.md#tokens). It needs at least 32 characters, for example `openssl rand -hex 32`; a shorter one is ignored, and the logs say why. |
 | `D1_DAILY_ROW_LIMIT` | none | Turns on budget mode (see below). |
 | `EVENTS_PER_ISSUE` | 100 | Stored events per issue. |
 | `NEW_ISSUES_PER_HOUR` | 100 | New issues per project per hour. More go into one "flood" issue. |
@@ -22,7 +22,11 @@ All settings are optional. Set them as Workers secrets or variables (in your
 | `EMAIL_FROM` | none | The sender of email alerts: an address on a domain that is onboarded to the Email Service. Email alerts need it and `EMAIL`. |
 | `NOTIFY` (binding) | none | Optional Cloudflare Queue for webhook deliveries. Without it, deliveries work. |
 | `RETENTION_DAYS` | 90 | Days that Checkend keeps stored events and hourly counts (hourly counts at least 8 days). See [Data retention](#data-retention). |
-| `REQUIRE_APPROVAL` | none | Actions that need a person's approval: a comma-separated list of `ignore` and `merge`. See [Approvals](api.md#approvals). |
+| `REQUIRE_APPROVAL` | none | Actions that need a person's approval: a comma-separated list of `ignore`, `merge` and `delete_project`. See [Approvals](api.md#approvals). |
+| `AI_TRIAGE` | off | `on`: triage issues with a Workers AI model. See [AI triage](ai-triage.md). |
+| `AI_GATEWAY_ID` | `default` | The AI Gateway for all model calls. |
+| `AI_GATEWAY_LOGS` | off | `on`: the gateway stores the prompts and the responses. |
+| `AI_SIMILAR` | off | `on`: find [similar issues](ai-triage.md#similar-issues). On Cloudflare, it also needs the `VECTORIZE` binding. |
 | `INGEST_RATE_LIMITER` (binding) | none | Optional: a rate limit for each DSN key (1000 requests a minute in the block below). Without it, Cloudflare has no limit for each key, but quotas and budget mode still work. |
 
 Set the secret with Wrangler:
@@ -63,6 +67,19 @@ The overflow queue (see [Bursts and overload](sending-errors.md#bursts-and-overl
   "producers": [{ "binding": "INGEST_QUEUE", "queue": "checkend-ingest" }],
   "consumers": [{ "queue": "checkend-ingest" }]
 }
+```
+
+Workers AI for [AI triage](ai-triage.md):
+
+```jsonc
+"ai": { "binding": "AI" }
+```
+
+A Vectorize index for [similar issues](ai-triage.md#similar-issues) (make it with
+`npx wrangler vectorize create checkend-issues --dimensions=1024 --metric=cosine`):
+
+```jsonc
+"vectorize": [{ "binding": "VECTORIZE", "index_name": "checkend-issues" }]
 ```
 
 Email alerts (see [Alerts](alerts.md#email)), with the variable `EMAIL_FROM`:

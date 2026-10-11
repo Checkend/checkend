@@ -25,9 +25,9 @@ secret.
 
 | Scope | Gives access to |
 |---|---|
-| `issues:read` | `GET /v1/projects`, `/v1/issues`, `/v1/issues/:id`, `/v1/issues/:id/events`, `/v1/issues/:id/activity`, `/v1/events/:id`, `/v1/releases`, `/v1/releases/:version`, `/v1/sourcemaps`, `/v1/alerts` |
-| `issues:write` | `POST /v1/issues/:id/resolve`, `/ignore`, `/unresolve`, `/merge`, `/split`, `/fix`, `/claim`, `/release` and `/notes`, `DELETE /v1/issues/:id/claim`, and the MCP tools that change issues |
-| `admin` | All scopes, and also `POST /v1/projects`, `PATCH /v1/projects/:project`, `GET` and `POST /v1/tokens`, `DELETE /v1/tokens/:id`, `GET /v1/activity`, `GET /v1/labels`, `GET /v1/fix-outcomes`, `GET /v1/approvals`, `POST /v1/approvals/:id/approve` and `/reject`, and all `/v1/webhooks` endpoints |
+| `issues:read` | `GET /v1/projects`, `/v1/issues`, `/v1/issues/:id`, `/v1/issues/:id/events`, `/v1/issues/:id/activity`, `/v1/events/:id`, `/v1/releases`, `/v1/releases/:version`, `/v1/sourcemaps`, `/v1/alerts`, and `POST /v1/similar` |
+| `issues:write` | `POST /v1/issues/:id/resolve`, `/ignore`, `/unresolve`, `/merge`, `/split`, `/fix`, `/triage-correction`, `/claim`, `/release` and `/notes`, `DELETE /v1/issues/:id/claim`, and the MCP tools that change issues |
+| `admin` | All scopes, and also `POST /v1/projects`, `PATCH /v1/projects/:project`, `DELETE /v1/projects/:project`, `POST` and `DELETE /v1/projects/:project/keys`, `POST`, `GET` and `DELETE /v1/setup/keys`, `GET /v1/setup/progress`, `POST /v1/setup/apps`, `/v1/setup/tokens`, `/test-event` and `/report` (the setup routes also take a setup key), `GET` and `POST /v1/tokens`, `DELETE /v1/tokens/:id`, `GET /v1/activity`, `GET /v1/labels`, `GET /v1/fix-outcomes`, `GET /v1/approvals`, `POST /v1/approvals/:id/approve` and `/reject`, and all `/v1/webhooks` endpoints |
 | `releases:write` | `POST /v1/deploys`, `POST /v1/sourcemaps`, `DELETE /v1/sourcemaps/:id` |
 
 A coding agent that only reads errors needs `issues:read`. An agent that also resolves,
@@ -45,6 +45,7 @@ operation has `x-required-scope`.
 | `401` | `{"error": "unauthorized"}`, with the header `WWW-Authenticate: Bearer`. The token is missing, not valid, or revoked. |
 | `403` | `{"error": "forbidden", "required_scope": "<scope>"}`. The token does not have the scope that the endpoint needs. |
 | `404` | `{"error": "not_found"}`, or `{"error": "project_not_found"}` when the `?project=` value matches no project. |
+| `413` | `{"error": "payload_too_large", "max_bytes": N}`. A JSON body of `/v1`, `/v1/setup` or `/mcp` is at most 1 MB; a source map upload is at most 30 MB. The cap also holds for a chunked body without `Content-Length`. |
 
 ## Projects
 
@@ -62,6 +63,8 @@ Lists all projects, with their DSNs. Each project also has:
 - `allowed_origins`: a list of origins, or `null` (any origin)
 - `daily_quota`: the daily event quota, or `null` (no quota)
 - `scrub_keys` and `scrub_patterns`: the [scrub settings](what-checkend-stores.md#your-own-scrub-rules) of the project
+- `events_24h` and `last_event_at`: the events of the last 24 hours, and the time of the last event
+- `demo`: true for a demo project
 - `events_today`: the events of the project since 00:00 UTC (a repeated `event_id` counts once)
 
 ```json
@@ -102,6 +105,32 @@ or the slug. The body has one or more of these fields:
 Other fields or values give `400`. An unknown project gives `404`. Returns the project, as in
 `GET /v1/projects`. The activity row `project.update` has the changed fields.
 
+### `DELETE /v1/projects/:project`
+
+Deletes a project. Needs the `admin` scope. Returns `204`, or `404` for an unknown project.
+
+- The DSN keys of the project stop working within 60 seconds.
+- The project is hidden everywhere at once, and its name can be used again.
+- Pending alerts for its issues are not sent.
+- The cron deletes its issues, events, counts, releases, deploys, source maps (with their blobs)
+  and webhooks, in chunks.
+- The activity timeline stays.
+- Its fixes are not verified any more.
+
+When `REQUIRE_APPROVAL` includes `delete_project`, an API token gets `202`
+`{"status": "approval_required", ...}`, and another admin must complete the delete. There is no MCP tool to delete a project.
+
+### `POST /v1/projects/:project/keys`
+
+Adds a DSN key to a project, so that you can rotate the DSN. Needs the `admin` scope. Returns `201`
+with `public_key` and the new `dsn`.
+
+### `DELETE /v1/projects/:project/keys/:key`
+
+Revokes a DSN key. Needs the `admin` scope. Events with the key get `401` within 60 seconds, on
+every server. Returns `204`. The only active key of a project cannot be revoked (`409`
+`{"error": "last_key"}`): add a new key first.
+
 ## Issues
 
 ### `GET /v1/issues`
@@ -119,6 +148,7 @@ Lists issues. By default, the issue with the most recent event comes first.
 | `since` | Issues last seen at or after this time: a duration (for example `30m`, `24h` or `7d`) or an ISO date or time. |
 | `search` | Text in the title or the culprit, 200 characters at most. `%` and `_` are plain characters. |
 | `claimed` | `true`: only issues with an active claim. `false`: only issues without one. |
+| `test` | `true`: only [test issues](agent-setup.md#3-what-the-agent-does). Without it, the list leaves test issues out. |
 | `sort` | `last_seen` (the default: the most recently seen first) or `priority` (the highest [priority](#priority-score) first). The cursor works with both. |
 
 ```json
@@ -161,6 +191,7 @@ make the counts go up twice. A merge moves the hourly counts and the users to th
 Returns one issue, with two more fields:
 
 - `latest_event_id`: the ID of its most recent stored event.
+- `test`: `true` for the test issue of a setup (see [Set up with an agent](agent-setup.md#3-what-the-agent-does)).
 - `fix`: the linked fix (see [Verify fixes](fix-loop.md)), or `null`. It has `kind`, `commit`
   or `pr_url`, `linked_by`, `linked_at`, `release`, `environment`, `deployed_at`, `outcome`
   (`null`, `verified` or `regressed`), `verified_at`, `regressed_at` and `regressed_in`.
@@ -236,6 +267,13 @@ reported, the fix counts as deployed at once. Both fields, another host, or `htt
 When the project has a repository, a pull request in another repository also gives `400`: "The
 pull request must be in the repository of the project: owner/name."
 An unknown or merged issue gives `404`.
+
+### `POST /v1/issues/:id/triage-correction`
+
+Corrects the [AI triage](ai-triage.md#correct-the-triage) of an issue. Needs `issues:write`.
+Body: at least one of `category`, `severity` (0 to 3), `transient`, `agent_fixable` and `noise`,
+and an optional `note` (at most 500 characters). Returns `201` with
+`{"data": {"recorded": true}}`, or `404`. The correction is a triage label `triage_corrected`.
 
 ### `POST /v1/issues/:id/split`
 
@@ -351,6 +389,12 @@ version. The response has the release and its deploys, and also `new_issue_ids` 
 first seen in this release), `fixes_deployed` (each with `issue_id`, `kind`, `ref` and
 `outcome`) and `regressed_issue_ids`. An unknown release gives `404`.
 
+### `POST /v1/similar`
+
+Searches for [similar issues](ai-triage.md#similar-issues). Needs `issues:read`. Body: an
+`issue_id` or a `text`, and `limit` (1 to 20). When the feature is off, the response is `409`
+`{"error": "similar_off", ...}`.
+
 ### `GET /v1/fix-outcomes`
 
 The fixes that have an outcome (`verified` or `regressed`), the most recent first. Needs the
@@ -425,6 +469,50 @@ Lists the deliveries of a webhook, the most recent first. `limit` is 1 to 100 (t
 `attempts`, `last_status` (the HTTP status), `last_error`, `created_at`, `next_attempt_at` and
 `delivered_at`.
 
+## Setup
+
+The onboarding API, for a coding agent that sets up Checkend in your apps. See
+[Set up with an agent](agent-setup.md). These routes take a setup key (`cks_...`), or a token with
+the `admin` scope. The report route also takes the agent token of that app (its own app only).
+Other tokens get `403`. In the OpenAPI document, the setup key is the security scheme
+`setupKey`.
+
+### `POST /v1/setup/keys`
+
+Makes a setup key. Needs the `admin` scope (a setup key cannot make one). The key lasts 1 hour,
+and Checkend stores only its hash. `GET /v1/setup/keys` lists the keys, and
+`DELETE /v1/setup/keys/:id` revokes one.
+
+### `POST /v1/setup/apps`
+
+Registers an app: `{"name": "...", "platform": "..."}` (`platform` is optional). Returns `201`
+with `created`, `project` and `dsn`, or `200` on a retry with the same name. A setup key can
+register at most 10 apps (then `429`).
+
+### `POST /v1/setup/tokens`
+
+Makes an agent token for an app: `{"name": "...", "project": ...}`. The token has `issues:read`
+and `issues:write`. A setup key can make at most 5 tokens (then `429`).
+
+### `POST /v1/setup/apps/:project/test-event`
+
+Sends the one test event of the app (with the tag `checkend.test=true`). Returns `202`, or `409`
+when the app already has its test event. An app that is not one of the apps of the setup key
+gives `404`.
+
+### `POST /v1/setup/apps/:project/report`
+
+Reports a setup step: `{"step": "sdk_installed"}`. Returns `204`. The agent token that the setup
+made for this app can also report it. An app that is not one of the apps of the setup key gives
+`404`; with an agent token, another app gives `403`.
+
+### `GET /v1/setup/progress`
+
+The progress of each app: `connected_at`, `sdk_installed_at`, `test_event_at`, `first_event_at`,
+`agent` and `first_deploy_at` (see [Follow the progress](agent-setup.md#4-follow-the-progress)),
+and `setup_keys_active`. A setup key sees only its own apps. It needs a setup key or the `admin`
+scope.
+
 ## Claims and notes
 
 A claim tells other agents that one agent works on an issue. It is a lease: it ends when it
@@ -471,7 +559,9 @@ The timeline of one issue: its actions and notes, the most recent first. Needs `
 ## Approvals
 
 Approvals are off by default. To turn them on, set `REQUIRE_APPROVAL` (see
-[Settings and health](settings.md)) to `ignore`, `merge`, or `ignore,merge`.
+[Settings and health](settings.md)) to a list of `ignore`, `merge` and `delete_project`, for
+example `ignore,merge`. For `delete_project`, see
+[`DELETE /v1/projects/:project`](#delete-v1projectsproject).
 
 Then such an action is not done at once. The response is `202`:
 
@@ -598,11 +688,14 @@ corrections, the most recent first. Needs the `admin` scope.
 Each row has these fields: `id` (the activity ID), `at`, `issue_id`, `label`, `actor_type`,
 `actor_name`, `data` and `corrects`.
 
-- `label` is `resolved`, `ignored`, `unresolved`, `regressed`, `merged` or `split`.
+- `label` is `resolved`, `ignored`, `unresolved`, `regressed`, `merged`, `split` or
+  `triage_corrected`.
 - `corrects` is the earlier decision that this row reverses:
   - `unresolved` and `regressed` reverse `resolved` or `ignored`. `corrects` is then `resolved`
     or `ignored`, or `null` when there was nothing to reverse.
   - A split corrects the grouping: `corrects` is `grouping`.
+  - A triage correction corrects the AI triage: `corrects` is `triage`. Its `data` keeps the
+    model answer of that time.
   - On other rows, `corrects` is `null`.
 
 For example, an agent resolves an issue, and then a new event arrives. The row with the label

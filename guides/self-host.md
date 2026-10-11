@@ -6,7 +6,7 @@ same features and the same API as on Cloudflare.
 ## With Docker
 
 ```sh
-docker run -p 8787:8787 -v checkend-data:/data -e ADMIN_TOKEN=<a long random string> \
+docker run -p 8787:8787 -v checkend-data:/data -e ADMIN_TOKEN=<at least 32 characters> \
   ghcr.io/checkend/checkend:<version>
 ```
 
@@ -19,7 +19,7 @@ Or use Docker Compose with
 next to it, never in the image:
 
 ```sh
-ADMIN_TOKEN=<a long random string>
+ADMIN_TOKEN=<output of: openssl rand -hex 32>
 ENCRYPTION_KEYS=k1:<output of: openssl rand -base64 32>
 ```
 
@@ -38,7 +38,7 @@ You need Node 22.18 or later:
 
 ```sh
 npm ci --omit=dev
-ADMIN_TOKEN=<a long random string> node src/entry/server.ts
+ADMIN_TOKEN=$(openssl rand -hex 32) node src/entry/server.ts
 ```
 
 ## Settings
@@ -53,14 +53,21 @@ Node:
 | `PORT`, `HOST` | `8787`, `0.0.0.0` | Where the server listens. |
 | `BLOBS_DIR` | none (in the image: `/data/blobs`) | A folder for blobs: source maps and large raw payloads. |
 | `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` | none | S3-compatible storage for blobs (also R2), instead of `BLOBS_DIR`. |
-| `SMTP_URL`, `EMAIL_FROM` | none | Email alerts: `smtps://user:password@host:465`, or `smtp://` for a local relay. |
+| `SMTP_URL`, `EMAIL_FROM` | none | Email alerts: `smtps://user:password@host:465`. `smtp://` is only for a local relay without a user and password: with credentials, it must be `smtps://`, else the server does not start and names the reason. |
 | `TRUSTED_PROXIES` | none | The proxies whose `X-Forwarded-For` Checkend reads: addresses, CIDR ranges, `loopback` or `private`, separated by commas. |
 | `RATE_LIMIT_PER_MINUTE` | 1000 | The rate limit for each DSN key. `0` turns it off. |
+| `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN` | none | Workers AI for [AI triage and similar issues](ai-triage.md), through the REST API and AI Gateway. The token needs **Workers AI Read**. Without them, there is no AI. On Node, the vectors of similar issues stay in SQLite. |
 
 ## Behind a reverse proxy
 
-> **Caution:** behind a reverse proxy, set `TRUSTED_PROXIES` to the address of the proxy.
-> Without it, every client looks like the proxy, so all clients share one rate limit.
+> **Caution:** Checkend serves plain HTTP on port 8787, so tokens and DSN keys would travel in
+> clear text. Put a TLS reverse proxy in front of it (for example Caddy, nginx or Traefik), and
+> publish only the proxy.
+
+- The proxy must forward the `Host` header: the recipes, `llms.txt` and the DSNs that Checkend
+  shows use the host of the request.
+- Set `TRUSTED_PROXIES` to the proxy (for example `private`). Without it, every client looks like
+  the proxy, so all clients share one rate limit.
 
 Checkend reads `X-Forwarded-For` from the right, and only through trusted proxies, so a client
 cannot fake its address.
@@ -77,6 +84,9 @@ cannot fake its address.
 
 On Node, a webhook connects only to the address that passed the [URL check](webhooks.md#url-rules),
 so a DNS change after the check cannot send it to an internal address.
+
+The safety check of [scrub patterns](what-checkend-stores.md#your-own-scrub-rules) measures CPU
+time on Node, so a busy server does not reject a fast pattern.
 
 When Checkend gets `SIGTERM` (for example from `docker stop`), it stops taking requests, writes
 the events that it already accepted, closes the database, and exits. So after a clean stop, the
