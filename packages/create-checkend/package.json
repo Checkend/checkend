@@ -1,0 +1,22 @@
+{
+	"name": "create-checkend",
+	"version": "0.0.0",
+	"description": "Set up Checkend (error tracking for coding agents) on your own Cloudflare account.",
+	"license": "Apache-2.0",
+	"type": "module",
+	"bin": {
+		"create-checkend": "create-checkend.mjs"
+	},
+	"files": [
+		"create-checkend.mjs",
+		"README.md"
+	],
+	"engines": {
+		"node": ">=22.18"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/Checkend/checkend.git",
+		"directory": "packages/create-checkend"
+	}
+}

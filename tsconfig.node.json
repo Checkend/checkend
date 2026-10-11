@@ -2,7 +2,10 @@
 	// Node runtime: the portable layers, the Node adapter, Node tests and tool configs.
 	"extends": "./tsconfig.base.json",
 	"compilerOptions": {
-		"types": ["node"]
+		"types": ["node"],
+		// create-checkend is plain JavaScript (npx runs it from node_modules), typed with JSDoc.
+		"allowJs": true,
+		"checkJs": true
 	},
 	"exclude": ["test/fixtures/sentry/browser-app.ts"],
 	"include": [
@@ -19,6 +22,7 @@
 		"test/perf/**/*.ts",
 		"scripts/**/*.ts",
 		"bench/**/*.ts",
+		"packages/**/*.mjs",
 		"*.config.ts"
 	]
 }
