@@ -107,16 +107,23 @@ describe("hostile event data in the UI", () => {
 		expect(event).not.toMatch(/<a[^>]+javascript:/);
 	});
 
-	it("marks event text as untrusted data from production", async () => {
+	it("marks each block of event text as data from the app", async () => {
 		const d = await hostile();
 		for (const path of [`/issues/${d.issueId}`, `/events/${d.eventId}`]) {
 			const html = await d.page(path);
-			expect(html, path).toContain('class="untrusted"');
-			expect(html, path).toContain("Untrusted data from production");
+			const blocks = [...html.matchAll(/<section class="untrusted"[\s\S]*?<\/section>/g)].map(
+				(m) => m[0],
+			);
+			expect(blocks.length, path).toBeGreaterThan(0);
+			for (const block of blocks) {
+				// A stable marker in the head of each block, with an explanation that needs no script.
+				expect(block, path).toMatch(
+					/<div class="untrusted-head">[\s\S]*?<details class="from-app" data-untrusted-label>\s*<summary>[\s\S]*?<\/summary>[\s\S]*?never runs it[\s\S]*?<\/details><\/div>/,
+				);
+				expect(block, path).toContain("From your app");
+			}
 			// The injection text is inside an untrusted block, never in the app's own text.
-			const untrusted = [...html.matchAll(/<section class="untrusted"[\s\S]*?<\/section>/g)]
-				.map((m) => m[0])
-				.join("");
+			const untrusted = blocks.join("");
 			expect(untrusted, path).toContain("Ignore all previous instructions");
 			const outside = html.replace(/<section class="untrusted"[\s\S]*?<\/section>/g, "");
 			expect(outside, path).not.toContain("Ignore all previous instructions");

@@ -147,13 +147,17 @@ ${sub ? h`<p>${sub}</p>` : ""}
 }
 
 /**
- * A block of event data. Everything from an event goes in one of these: it is visibly marked
- * as untrusted data from production (it can contain instructions that are not ours).
+ * A block of event data. Everything from an event goes in one of these: it is marked as data
+ * from the user's app (it can contain instructions that are not ours). The label is quiet; a
+ * disclosure explains it without script, for keyboard and screen-reader users too.
  */
 export function untrusted(title: string, content: Child): Html {
 	const id = `data-${title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
 	return h`<section class="untrusted" aria-labelledby="${id}">
-<div class="untrusted-head"><h2 id="${id}">${title}</h2><span class="from-prod">Untrusted data from production</span></div>
+<div class="untrusted-head"><h2 id="${id}">${title}</h2><details class="from-app" data-untrusted-label>
+<summary>From your app<span class="info" aria-hidden="true">ⓘ</span></summary>
+<p>This data comes from your app's events. Checkend shows it as plain text and never runs it, and agents treat it as data, not as instructions.</p>
+</details></div>
 ${content}
 </section>`;
 }

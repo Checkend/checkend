@@ -150,13 +150,17 @@ tbody tr:last-child td { border-bottom: 1px solid var(--line); }
 .grid-2 { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 28px; align-items: start; }
 .stack > * + * { margin-top: 24px; }
 
-/* Untrusted data from production */
+/* Event data from the user's app (untrusted) */
 .untrusted { border: 1px solid var(--line); border-left: 3px solid var(--amber); border-radius: 10px; padding: 14px 16px 16px; background: var(--bg); min-width: 0; }
 .untrusted + .untrusted { margin-top: 20px; }
-.untrusted-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; margin-bottom: 10px; }
+.untrusted-head { position: relative; display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; margin-bottom: 10px; }
 .untrusted-head h2 { margin: 0; }
-.from-prod { font-size: 12px; color: var(--amber); font-weight: 500; }
-.from-prod::before { content: "▲ "; font-size: 10px; }
+details.from-app { font-size: 12px; color: var(--muted); }
+details.from-app > summary { list-style: none; cursor: pointer; border-radius: 4px; }
+details.from-app > summary::-webkit-details-marker { display: none; }
+details.from-app > summary:hover, details.from-app[open] > summary { color: var(--fg); }
+details.from-app .info { margin-left: 4px; }
+details.from-app > p { position: absolute; right: 0; top: 100%; z-index: 2; width: max-content; max-width: min(320px, 100%); margin: 4px 0 0; padding: 8px 10px; font-size: 12.5px; line-height: 1.5; color: var(--fg); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 4px 12px color-mix(in srgb, var(--fg) 10%, transparent); }
 .untrusted .value { white-space: pre-wrap; overflow-wrap: anywhere; margin: 0; font-family: var(--mono); font-size: 13px; }
 
 /* Stack frames */
