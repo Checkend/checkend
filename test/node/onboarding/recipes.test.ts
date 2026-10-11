@@ -32,6 +32,28 @@ describe("the agent recipes", () => {
 		expect(taskRecipe(BASE, "../etc/passwd")).toBeNull();
 	});
 
+	it("the fallback never puts a key or a token into a command: only environment variables", () => {
+		for (const text of all()) {
+			for (const [, value] of text.matchAll(/Bearer\s+(\S+)/g)) {
+				expect(value, text.slice(0, 60)).toMatch(
+					/^\$\{?CHECKEND_(SETUP_KEY|TOKEN|DEPLOY_TOKEN|ADMIN_TOKEN)\}?/,
+				);
+			}
+			expect(text).not.toMatch(/--key\s/);
+		}
+		expect(setupRecipe(BASE)).toContain("## If ce is not available (fallback)");
+		for (const task of AGENT_TASKS.filter((t) => t.command)) {
+			expect(taskRecipe(BASE, task.task), task.task).toContain("## If ce is not available");
+		}
+	});
+
+	it("is truthful about ce: not released, no npx line", () => {
+		const text = installRecipe(BASE);
+		expect(text).toContain("`ce` is not released yet");
+		expect(text).not.toContain("npx");
+		expect(text).toContain("go install github.com/Checkend/checkend-cli/cmd/ce@latest");
+	});
+
 	it("contains no secrets: no keys, no tokens, no DSN with a key", () => {
 		for (const text of all()) {
 			expect(text).not.toMatch(/cks_[A-Za-z0-9_-]{8}|ck_[A-Za-z0-9_-]{8}|[0-9a-f]{32}@/);
@@ -57,9 +79,11 @@ describe("the agent recipes", () => {
 		expect(text).toContain(`claude mcp add checkend -- ce mcp --url ${BASE}`);
 		expect(text).toContain(`codex mcp add checkend -- ce mcp --url ${BASE}`);
 		expect(text).toContain('"command": "ce"');
-		// The HTTP form with a bearer token is only the manual fallback.
-		expect(text.indexOf("Authorization: Bearer")).toBeGreaterThan(text.indexOf("Manual fallback"));
-		expect(text.indexOf("Manual fallback")).toBeGreaterThan(-1);
+		// The HTTP form with a bearer token is only the fallback, after the ce form.
+		expect(text.indexOf("Authorization: Bearer")).toBeGreaterThan(
+			text.indexOf("## If ce is not available"),
+		);
+		expect(text.indexOf("## If ce is not available")).toBeGreaterThan(text.indexOf("ce mcp --url"));
 	});
 
 	it("the setup recipe covers each step of the design", () => {

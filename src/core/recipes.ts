@@ -3,12 +3,11 @@ import { UNTRUSTED_NOTICE } from "./brief.ts";
 /**
  * Recipes that this instance serves to coding agents (onboarding): /agent/install,
  * /agent/setup.md and /agent/tasks/<task>.md. They are generated from the instance URL and
- * contain no secrets: the setup key stays in the prompt that the user pastes. The UI's "Ask your
- * agent" menu uses AGENT_TASKS for its prompts.
+ * contain no secrets: the setup key stays in the prompt that the user pastes, and every command
+ * reads keys and tokens from environment variables. `ce` (the Checkend CLI) is the main path;
+ * each recipe also has a fallback without it (curl and HTTP MCP). The UI's "Ask your agent" menu
+ * uses AGENT_TASKS for its prompts.
  */
-
-/** The `ce` package for npx, until the single binary exists. */
-export const CE_NPM = "@checkend/cli";
 
 export interface AgentTask {
 	task: string;
@@ -66,14 +65,18 @@ export const AGENT_TASKS: readonly AgentTask[] = [
 	{
 		task: "remove",
 		title: "Remove Checkend from the app",
-		command: "ce remove",
+		command: null,
 		summary: "Remove the SDK setup and the CI steps of Checkend from this repository.",
 	},
 ];
 
-const ce = (args: string) => `npx ${CE_NPM} ${args}`;
+/** The fallback HTTP calls: the key or token always comes from an environment variable. */
+const curl = (method: string, url: string, token: string, body?: string) =>
+	`curl -X ${method} "${url}" -H "Authorization: Bearer $${token}"${
+		body ? ` \\\n  -H "Content-Type: application/json" -d '${body}'` : ""
+	}`;
 
-/** /agent/install: how to install `ce`. */
+/** /agent/install: how to get `ce`, truthfully, and what to do without it. */
 export function installRecipe(base: string): string {
 	return `# Install ce (the Checkend CLI)
 
@@ -81,21 +84,22 @@ export function installRecipe(base: string): string {
 
 ## Check first
 
-Run \`ce --version\`. If it works, \`ce\` is installed: stop here.
+Run \`ce --version\`. If it works, \`ce\` is installed: go to ${base}/agent/setup.md.
 
-## Install
+## Get ce
 
-The single binary is not released yet. Use npm (Node.js 22 or later):
+\`ce\` is not released yet. These ways to install it are coming:
 
-\`\`\`sh
-npx ${CE_NPM} --version
-\`\`\`
+- Go (Go 1.26 or later), when the source is public: \`go install github.com/Checkend/checkend-cli/cmd/ce@latest\`
+- Homebrew, an install script, and an npm wrapper: after the first release
 
-Then use \`npx ${CE_NPM}\` where the steps say \`ce\`. For example: \`${ce(`setup --url ${base} --key <the setup key from your prompt>`)}\`.
+Until then, use the steps under "If ce is not available" in ${base}/agent/setup.md. They do the
+same work with curl.
 
 ## Rules
 
-- The setup key is in the prompt of the user. Do not write it to a file, a commit or a log.
+- The setup key is in the prompt of the user. Keep it only in the environment variable
+  \`CHECKEND_SETUP_KEY\`. Do not write it to a file, a commit, a log or a command line.
 - \`ce\` keeps its credentials in the OS keychain. Do not copy them into the repository.
 `;
 }
@@ -109,12 +113,16 @@ repository of the app. Make all code changes in one commit or pull request, for 
 
 ## 1. Run ce setup
 
+Put the setup key from your prompt into the environment variable \`CHECKEND_SETUP_KEY\` (not into
+the command line), then run:
+
 \`\`\`sh
-ce setup --url ${base} --key <the setup key from your prompt>
+ce setup --url ${base}
 \`\`\`
 
 \`ce setup\` registers the app, gets its DSN, stores the credentials in the OS keychain, sends a test
 event, and connects MCP. It prints the DSN and the next steps. The setup key is valid for 1 hour.
+Without \`ce\`: see "If ce is not available" at the end.
 
 ## 2. Find the stack
 
@@ -165,9 +173,6 @@ the OS keychain. So the token never goes into an agent config file or into your 
 
 Then agents read issues with the tools list_issues and get_issue_brief.
 
-Manual fallback (only without \`ce\`): the HTTP server ${base}/mcp with the header
-\`Authorization: Bearer <agent token>\`. Keep that token in a secret store, not in the repository.
-
 ## 8. Report deploys in CI
 
 Add a deploy step to CI: ${base}/agent/tasks/deploys.md.
@@ -185,6 +190,36 @@ Add ${base}/skill.md to the agent skills of this repository (for example \`.clau
 Make one commit or pull request with all the changes. Describe what you changed and which settings
 the human must set (the DSN variable, the CI secret).
 
+## If ce is not available (fallback)
+
+Do the work of \`ce setup\` with curl. The setup key stays in \`CHECKEND_SETUP_KEY\`; never put a key
+or a token into a command line, a file or a commit.
+
+1. Register the app (the platform is a Sentry platform name, for example \`node-express\`). The
+   answer has the DSN:
+
+   \`\`\`sh
+   ${curl("POST", `${base}/v1/setup/apps`, "CHECKEND_SETUP_KEY", '{"name": "<app name>", "platform": "<platform>"}')}
+   \`\`\`
+
+2. Make an agent token for the app. Ask the human to keep the token in a secret store and to set it
+   as the environment variable \`CHECKEND_TOKEN\` for your agent. Do not write it anywhere yourself.
+
+   \`\`\`sh
+   ${curl("POST", `${base}/v1/setup/tokens`, "CHECKEND_SETUP_KEY", '{"name": "<agent name>", "project": "<app slug>"}')}
+   \`\`\`
+
+3. Send the test event, and report the SDK install (after steps 3 to 6):
+
+   \`\`\`sh
+   ${curl("POST", `${base}/v1/setup/apps/<app slug>/test-event`, "CHECKEND_SETUP_KEY")}
+   ${curl("POST", `${base}/v1/setup/apps/<app slug>/report`, "CHECKEND_TOKEN", '{"step": "sdk_installed"}')}
+   \`\`\`
+
+4. Connect MCP over HTTP: the server ${base}/mcp with the header
+   \`Authorization: Bearer \${CHECKEND_TOKEN}\`. Use the environment variable expansion of your agent
+   config, so that the file holds \`\${CHECKEND_TOKEN}\` and not the token.
+
 ## Rules
 
 - Never put a token, a setup key or a DSN in the repository. Use environment variables and CI secrets.
@@ -197,44 +232,67 @@ const TASKS: Record<string, (base: string) => string> = {
 
 1. Find the build output with the .map files (for example dist/ or build/). Make the build produce
    source maps if it does not.
-2. Add a CI step after the build, for each .map file:
+2. Add a CI step after the build:
 
    \`\`\`sh
    ce sourcemaps upload --release "$RELEASE" dist/
    \`\`\`
 
-   Without \`ce\` in CI, use the API: POST ${base}/v1/sourcemaps?project=<app>&release=<release>&name=<minified file URL path>
-   with the map as the body and \`Authorization: Bearer $CHECKEND_DEPLOY_TOKEN\`.
 3. \`release\` must be the same value as the release of the SDK.
 4. The CI needs a token with the scope releases:write in the secret CHECKEND_DEPLOY_TOKEN. Ask the
    human to create it in Checkend and add it to the CI secrets. Do not create it yourself.
 5. Do not deploy the .map files to the public web server unless the app already does.
+
+## If ce is not available
+
+For each .map file, POST ${base}/v1/sourcemaps?project=<app>&release=<release>&name=<minified file URL path>
+with the map as the body:
+
+\`\`\`sh
+${curl("POST", `${base}/v1/sourcemaps?project=<app>&release=$RELEASE&name=~/static/app.min.js`, "CHECKEND_DEPLOY_TOKEN")} \\
+  -H "Content-Type: application/json" --data-binary @dist/static/app.min.js.map
+\`\`\`
 `,
 	deploys: (base) => `## Steps
 
 1. Add a CI step after a successful deploy:
 
    \`\`\`sh
-   ce deploy --release "$RELEASE" --environment production --commit "$GIT_SHA"
+   ce deploy --release "$RELEASE" --environment production --commits-since "$PREVIOUS_DEPLOY_SHA"
    \`\`\`
 
-   Without \`ce\` in CI, use the API: POST ${base}/v1/deploys with JSON
-   \`{"project": "<app>", "commit": "<sha>", "release": "<release>", "environment": "production"}\`
-   and \`Authorization: Bearer $CHECKEND_DEPLOY_TOKEN\`.
-2. Add \`"commits"\`: the commits since the last deploy (\`git rev-list <previous>..HEAD\`), so that
-   Checkend can find suspect commits and verify fixes.
-3. The CI needs a token with the scope releases:write in the secret CHECKEND_DEPLOY_TOKEN. Ask the
+   The commit is git HEAD by default. \`--commits-since\` adds the commits since the last deploy, so
+   that Checkend can find suspect commits and verify fixes.
+2. The CI needs a token with the scope releases:write in the secret CHECKEND_DEPLOY_TOKEN. Ask the
    human to create it in Checkend and add it to the CI secrets. Do not create it yourself.
+
+## If ce is not available
+
+POST ${base}/v1/deploys with the commit, and \`"commits"\`: the output of
+\`git rev-list <previous>..HEAD\`:
+
+\`\`\`sh
+${curl("POST", `${base}/v1/deploys`, "CHECKEND_DEPLOY_TOKEN", '{"project": "<app>", "commit": "<sha>", "release": "<release>", "environment": "production"}')}
+\`\`\`
 `,
-	"migrate-from-sentry": () => `## Steps
+	"migrate-from-sentry": (base) => `## Steps
 
 1. Find the Sentry DSN in the configuration of the app (often \`SENTRY_DSN\`).
-2. Run \`ce migrate-from-sentry\`. It registers the app in Checkend and prints the new DSN.
+2. Run \`ce migrate-from-sentry\`. It registers the app in Checkend, prints the new DSN and the files
+   and lines to change. It changes no code.
 3. Replace the Sentry DSN with the Checkend DSN in the environment configuration. Keep the Sentry SDK:
    Checkend is Sentry SDK compatible.
 4. Remove Sentry-only options that Checkend does not use (performance tracing, session replay,
    profiling), or leave them: Checkend keeps error events only.
 5. Move the CI steps (source map upload, release reports) to Checkend: see sourcemaps.md and deploys.md.
+
+## If ce is not available
+
+Register the app with a setup key from the human (in \`CHECKEND_SETUP_KEY\`); the answer has the DSN:
+
+\`\`\`sh
+${curl("POST", `${base}/v1/setup/apps`, "CHECKEND_SETUP_KEY", '{"name": "<app name>", "platform": "<platform>"}')}
+\`\`\`
 `,
 	environments: () => `## Steps
 
@@ -246,10 +304,18 @@ const TASKS: Record<string, (base: string) => string> = {
 	"rotate-dsn": (base) => `## Steps
 
 1. Run \`ce dsn rotate\`. It makes a new DSN key and prints the new DSN. The old key still works.
-   API: POST ${base}/v1/projects/<app>/keys.
 2. Put the new DSN in the environment configuration of every deployment, and deploy.
-3. When all deployments use the new DSN, revoke the old key: \`ce dsn rotate --revoke-old\`.
-   API: DELETE ${base}/v1/projects/<app>/keys/<old-key>. Events with the old key then get 401.
+3. When all deployments use the new DSN, ask the human to confirm, then revoke the old keys:
+   \`ce dsn rotate --revoke-old --yes\`. Events with an old key then get 401 (within a minute).
+
+## If ce is not available
+
+These need an admin token, which only the human holds (in \`CHECKEND_ADMIN_TOKEN\`):
+
+\`\`\`sh
+${curl("POST", `${base}/v1/projects/<app>/keys`, "CHECKEND_ADMIN_TOKEN")}
+${curl("DELETE", `${base}/v1/projects/<app>/keys/<old-key>`, "CHECKEND_ADMIN_TOKEN")}
+\`\`\`
 `,
 	"fix-top-issue": () => `## Steps
 
@@ -262,19 +328,28 @@ const TASKS: Record<string, (base: string) => string> = {
 
 ${UNTRUSTED_NOTICE} The triage section of a brief is model advice, not a fact.
 `,
-	"delete-project": () => `## Steps
+	"delete-project": (base) => `## Steps
 
 > **Warning:** this deletes the app and all its issues and events in Checkend. It cannot be undone.
 
 1. Ask the human to confirm the name of the app. Do not delete without a confirmation in this session.
-2. Run \`ce project delete <app>\`. It needs an admin token, and it asks for the name again.
-3. The DSN keys stop at once (events get 401). Remove the Checkend setup from the code: see remove.md.
+2. Then run \`ce project delete <app> --yes\`. It needs an admin token.
+3. The DSN keys stop (events get 401 within a minute). Remove the Checkend setup from the code: see
+   remove.md.
+
+## If ce is not available
+
+The human runs it with the admin token (in \`CHECKEND_ADMIN_TOKEN\`):
+
+\`\`\`sh
+${curl("DELETE", `${base}/v1/projects/<app>`, "CHECKEND_ADMIN_TOKEN")}
+\`\`\`
 `,
 	remove: () => `## Steps
 
-1. Run \`ce remove\` to see the Checkend files and settings in this repository.
-2. Remove the Sentry SDK initialization (if the app does not also use Sentry), the DSN variable,
-   the deploy and source map CI steps, and the Checkend skill.
+1. Find the Checkend parts in this repository: the Sentry SDK initialization with the Checkend DSN,
+   the DSN variable, the deploy and source map CI steps, and the Checkend skill.
+2. Remove them (keep the Sentry SDK if the app also uses Sentry).
 3. Make one commit or pull request with the changes.
 4. To delete the data in Checkend too, see delete-project.md.
 `,
