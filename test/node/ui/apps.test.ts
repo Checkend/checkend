@@ -89,7 +89,7 @@ async function signedIn() {
 }
 
 describe("onboarding texts", () => {
-	it("makes the setup prompt of D20", () => {
+	it("makes the setup prompt", () => {
 		expect(setupPrompt("https://errors.acme.com", "cks_abc")).toBe(
 			`Set up Checkend error tracking for this app.
 1. If \`ce\` is not installed, install it: https://errors.acme.com/agent/install

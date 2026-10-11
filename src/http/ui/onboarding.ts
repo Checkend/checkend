@@ -9,7 +9,7 @@ import { ago } from "./html.ts";
 import { displayText } from "./text.ts";
 
 /**
- * Agent-first onboarding (D20). The UI makes a setup key for each "Copy prompt", shows the
+ * Agent-first onboarding. The UI makes a setup key for each "Copy prompt", shows the
  * live progress of each app, and deletes apps. The core functions come from the server side;
  * `coreOnboarding` uses the core functions; tests pass a fake.
  */
@@ -42,7 +42,7 @@ export interface Onboarding {
 }
 
 /**
- * The core functions of D20. `state` is the ingest state of this isolate: a delete drops the
+ * The core functions of the onboarding. `state` is the ingest state of this isolate: a delete drops the
  * app's keys from its cache, so that ingest refuses them at once.
  */
 export function coreOnboarding(state: IngestState): Onboarding {
