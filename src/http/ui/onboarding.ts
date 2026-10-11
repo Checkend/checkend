@@ -81,6 +81,18 @@ export const coreOnboarding: Onboarding = {
 	deleteProject: async () => "unavailable",
 };
 
+export const PLATFORM_LABELS: Record<string, string> = {
+	node: "Node.js",
+	javascript: "Browser JavaScript",
+	python: "Python",
+	ruby: "Ruby",
+	php: "PHP",
+	go: "Go",
+	other: "Other",
+};
+export const platformLabel = (platform: string | null): string =>
+	platform ? (PLATFORM_LABELS[platform] ?? displayText(platform, 32)) : "Platform not set";
+
 export interface Step {
 	key: "connected" | "sdk" | "test_event" | "agent" | "deploys";
 	label: string;
@@ -91,7 +103,7 @@ export interface Step {
 /** The checklist of one app. The texts are plain strings: the client sets them as text. */
 export function stepsFor(app: AppProgress, now: Date): Step[] {
 	const errorAt = app.test_event_at ?? app.first_event_at;
-	const platform = app.project.platform ? ` · ${displayText(app.project.platform, 32)}` : "";
+	const platform = app.project.platform ? ` · ${platformLabel(app.project.platform)}` : "";
 	return [
 		{
 			key: "connected",

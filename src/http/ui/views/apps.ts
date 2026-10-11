@@ -6,7 +6,9 @@ import {
 	AGENT_TASKS,
 	type AppProgress,
 	KEY_PLACEHOLDER,
+	PLATFORM_LABELS,
 	type ProgressJson,
+	platformLabel,
 	setupPrompt,
 	stepsFor,
 	taskPrompt,
@@ -14,18 +16,6 @@ import {
 import { displayText as t } from "../text.ts";
 
 export const PLATFORMS = ["node", "javascript", "python", "ruby", "php", "go", "other"] as const;
-
-const PLATFORM_LABELS: Record<string, string> = {
-	node: "Node.js",
-	javascript: "Browser JavaScript",
-	python: "Python",
-	ruby: "Ruby",
-	php: "PHP",
-	go: "Go",
-	other: "Other",
-};
-export const platformLabel = (platform: string | null): string =>
-	platform ? (PLATFORM_LABELS[platform] ?? t(platform, 32)) : "Platform not set";
 
 /** The DSN of a project key: the public key and the public project ID, on this host. */
 export function dsnFor(origin: string, key: string, publicId: number): string {
