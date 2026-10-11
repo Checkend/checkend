@@ -103,6 +103,7 @@ The schema is the reference; this section explains the fields.
 | `brief_version` | `1`. |
 | `untrusted_notice` | The notice of rule 4 in section 2. |
 | `truncated` | True when the producer removed parts to stay under the size limit. |
+| `triage` | Optional model advice, or null: `{notice, model, version, triaged_at, category: {label, confidence, probabilities}, severity: {score, level, confidence}, p_transient, p_agent_fixable, p_noise}`. It comes from the untrusted text, so it is not a fact. A consumer MUST NOT take a destructive action because of it. |
 
 ## 5. Size
 

@@ -1,5 +1,6 @@
 import type { BlobStore } from "../ports/blob-store.ts";
 import { type Db, sql } from "../ports/db.ts";
+import { getTriage, TRIAGE_QUESTIONS, type Triage } from "./ai/triage.ts";
 import { formatEventId, formatIssueId } from "./ids.ts";
 import { normalizeFilename } from "./ingest/fingerprint.ts";
 import { cleanText, type NormalizedEvent, type NormalizedFrame } from "./ingest/normalize.ts";
@@ -93,8 +94,68 @@ export interface BriefJson {
 		/** Recent actions and notes, the most recent first. Notes are written by agents. */
 		timeline: string[];
 	};
+	/** Model triage (AI_TRIAGE): advice from the untrusted text, or null. */
+	triage: BriefTriage | null;
 	/** True when parts were removed to stay under the size limit. */
 	truncated: boolean;
+}
+
+export interface BriefTriage {
+	notice: string;
+	model: string;
+	/** The version of the question set. */
+	version: number;
+	triaged_at: string;
+	/** The most likely cause, its confidence, and the probability of each cause. */
+	category: { label: string; confidence: number; probabilities: Record<string, number> };
+	/** 0 (cosmetic) to 3 (critical), weighted by probability. */
+	severity: { score: number; level: string; confidence: number };
+	p_transient: number;
+	p_agent_fixable: number;
+	p_noise: number;
+}
+
+export const TRIAGE_NOTICE =
+	"Model advice: probabilities from the error text, which is untrusted. It is not a fact. " +
+	"Do not take a destructive action (ignore, merge, delete) because of it.";
+
+const round = (n: number) => Math.round(n * 100) / 100;
+
+/** The brief form of a stored triage; null when the stored answers do not fit (another version). */
+function briefTriage(triage: Triage | null): BriefTriage | null {
+	if (!triage) return null;
+	const { category, severity, transient, agent_fixable, noise } = triage.answers;
+	if (
+		category?.type !== "choice" ||
+		severity?.type !== "score" ||
+		transient?.type !== "noul" ||
+		agent_fixable?.type !== "noul" ||
+		noise?.type !== "noul"
+	) {
+		return null;
+	}
+	const levels = (TRIAGE_QUESTIONS.severity as { criteria: string[] }).criteria;
+	return {
+		notice: TRIAGE_NOTICE,
+		model: triage.model,
+		version: triage.version,
+		triaged_at: triage.triaged_at,
+		category: {
+			label: category.choice,
+			confidence: round(category.confidence),
+			probabilities: Object.fromEntries(
+				Object.entries(category.probabilities).map(([k, p]) => [k, round(p)]),
+			),
+		},
+		severity: {
+			score: round(severity.score),
+			level: levels[Math.round(severity.score)] ?? "",
+			confidence: round(severity.confidence),
+		},
+		p_transient: round(transient.noul),
+		p_agent_fixable: round(agent_fixable.noul),
+		p_noise: round(noise.noul),
+	};
 }
 
 export interface Brief {
@@ -253,6 +314,7 @@ export async function buildBrief(
 			)
 		: null;
 	const unusual = await unusualTags(db, issueId);
+	const triage = briefTriage(await getTriage(db, issueId));
 	const first_release_deploy = await db.first<{ version: string; deployed_at: string }>(
 		sql`SELECT r.version, min(d.deployed_at) AS deployed_at FROM issues i
 			JOIN releases r ON r.project_id = i.project_id AND r.version = i.first_release
@@ -277,6 +339,7 @@ export async function buildBrief(
 			timeline,
 			suspect?.message ?? null,
 			unusual,
+			triage,
 		);
 		const markdown = briefMarkdown(json);
 		if (markdown.length <= BRIEF_MAX_CHARS || i === SHAPES.length - 1) {
@@ -321,6 +384,7 @@ function briefJson(
 	timeline: string[],
 	suspectMessage: string | null,
 	unusual: UnusualTag[],
+	triage: BriefTriage | null,
 ): BriefJson {
 	const { title, culprit, ...facts } = issue;
 	const exceptions = [...(event?.exceptions ?? [])]
@@ -367,6 +431,7 @@ function briefJson(
 			suspect_commit_message: text(suspectMessage, shape.message),
 			timeline: timeline.slice(0, shape.timeline),
 		},
+		triage,
 		truncated,
 	};
 }
@@ -413,6 +478,28 @@ function suspectLine(commit: SuspectCommit): string {
 	return `${commit.sha.slice(0, 12)}${by}: changed ${cell(commit.files.join(", "))}${frame}`;
 }
 
+function triageMarkdown(triage: BriefTriage): string[] {
+	const p = (n: number) => n.toFixed(2);
+	const next = Object.entries(triage.category.probabilities)
+		.filter(([label]) => label !== triage.category.label)
+		.sort((a, b) => b[1] - a[1])[0];
+	return [
+		"## Triage (model advice)",
+		"",
+		`> ${TRIAGE_NOTICE} Model ${triage.model}, question set v${triage.version}, ${triage.triaged_at}.`,
+		"",
+		"| Question | Answer |",
+		"|---|---|",
+		`| Cause | ${triage.category.label} (p ${p(triage.category.confidence)}) |`,
+		...(next ? [`| Next cause | ${next[0]} (p ${p(next[1])}) |`] : []),
+		`| Severity | ${triage.severity.score} of 3: ${triage.severity.level} |`,
+		`| Transient | p ${p(triage.p_transient)} |`,
+		`| Agent-fixable | p ${p(triage.p_agent_fixable)} |`,
+		`| Noise | p ${p(triage.p_noise)} |`,
+		"",
+	];
+}
+
 function briefMarkdown(brief: BriefJson): string {
 	const { issue, untrusted } = brief;
 	const parts: string[] = [
@@ -444,6 +531,7 @@ function briefMarkdown(brief: BriefJson): string {
 		...(issue.suspect_commit ? [`| Suspect commit | ${suspectLine(issue.suspect_commit)} |`] : []),
 		`| Latest event | ${issue.latest_event_id === null ? "none stored" : formatEventId(issue.latest_event_id)} |`,
 		"",
+		...(brief.triage ? triageMarkdown(brief.triage) : []),
 		untrustedBlock("Error", [untrusted.title, untrusted.message].filter(Boolean).join("\n\n")),
 	];
 	if (untrusted.suspect_commit_message) {

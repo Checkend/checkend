@@ -149,3 +149,33 @@ export async function runTriage(ports: TriagePorts): Promise<number> {
 	}
 	return done;
 }
+
+/** A brief request waits this long for the triage; then the brief comes without it. */
+const BRIEF_WAIT_MS = 5000;
+
+/**
+ * Before a brief: triages the issue when it has no current triage (also below 3 events).
+ * Never fails the brief: a failed or slow call is recorded, and the brief comes without triage.
+ */
+export async function triageForBrief(ports: TriagePorts, issueId: number): Promise<void> {
+	if (!ports.config.ai.triage || !ports.models) return;
+	const row = await ports.db.first<{ version: number; error: string | null; triaged_at: string }>(
+		sql`SELECT version, error, triaged_at FROM issue_triage WHERE issue_id = ${issueId}`,
+	);
+	if (row && row.version >= TRIAGE_VERSION) return;
+	const retryBefore = new Date(ports.clock.now().getTime() - RETRY_AFTER_MS).toISOString();
+	if (row?.error && row.triaged_at >= retryBefore) return;
+	let timer: ReturnType<typeof setTimeout> | undefined;
+	try {
+		await Promise.race([
+			triageIssue(ports, issueId),
+			new Promise((_, fail) => {
+				timer = setTimeout(() => fail(new Error("triage timed out")), BRIEF_WAIT_MS);
+			}),
+		]);
+	} catch (error) {
+		await recordFailure(ports, issueId, error);
+	} finally {
+		if (timer !== undefined) clearTimeout(timer);
+	}
+}

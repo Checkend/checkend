@@ -3,6 +3,7 @@ import { toStandardJsonSchema } from "@valibot/to-json-schema";
 import type { Hono } from "hono";
 import * as v from "valibot";
 import { MCP_TOOLS } from "../core/agent-docs.ts";
+import { triageForBrief } from "../core/ai/triage.ts";
 import { ClaimBody, MergeBody, NoteBody, SplitBody } from "../core/api-spec.ts";
 import { buildBrief, UNTRUSTED_NOTICE } from "../core/brief.ts";
 import { addNote, claimIssue, releaseClaim } from "../core/claims.ts";
@@ -166,6 +167,7 @@ function createServer(ports: Ports, actor: Actor): McpServer {
 		},
 		async ({ issue_id, format }) => {
 			const id = parseIssueId(issue_id);
+			if (id !== null) await triageForBrief(ports, id);
 			const brief = id === null ? null : await buildBrief(db, id, now(), ports.blobs);
 			if (!brief) return errorResult(`Issue ${issue_id} not found.`);
 			return textResult(format === "json" ? JSON.stringify(brief.json) : brief.markdown);
