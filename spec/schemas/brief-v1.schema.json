@@ -114,6 +114,10 @@
 					],
 					"type": "string"
 				},
+				"test": {
+					"type": "boolean",
+					"description": "A test issue: the test event of the setup, not a real error."
+				},
 				"source_maps": {
 					"type": "object",
 					"properties": {
@@ -368,6 +372,7 @@
 				"latest_event_id",
 				"claim",
 				"trust",
+				"test",
 				"source_maps",
 				"first_release_deploy",
 				"suspect_commit",

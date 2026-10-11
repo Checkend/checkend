@@ -204,7 +204,8 @@ export async function listProjects(db: Db, now: Date = new Date()): Promise<Proj
 					WHERE i.project_id = projects.id AND c.hour >= ${today}) AS events_today,
 				(SELECT coalesce(sum(c.count), 0) FROM issue_counts c JOIN issues i ON i.id = c.issue_id
 					WHERE i.project_id = projects.id AND c.hour > ${hour24}) AS events_24h,
-				(SELECT max(i.last_seen) FROM issues i WHERE i.project_id = projects.id) AS last_event_at,
+				(SELECT max(i.last_seen) FROM issues i WHERE i.project_id = projects.id AND i.test = 0)
+					AS last_event_at,
 				demo,
 				created_at
 			FROM projects WHERE deleted_at IS NULL ORDER BY internal_id`,

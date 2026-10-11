@@ -58,7 +58,7 @@ export async function runEmbeddings(ports: SimilarPorts, now: Date): Promise<num
 	const due = await ports.db.all<{ id: number }>(
 		sql`SELECT i.id FROM issues i JOIN projects p ON p.id = i.project_id AND p.deleted_at IS NULL
 			LEFT JOIN issue_embeddings e ON e.issue_id = i.id
-			WHERE e.issue_id IS NULL AND i.status != 'merged'
+			WHERE e.issue_id IS NULL AND i.status != 'merged' AND i.test = 0
 			ORDER BY i.id LIMIT ${EMBED_PER_RUN}`,
 	);
 	const items: { id: number; text: string }[] = [];

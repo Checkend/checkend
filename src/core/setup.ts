@@ -164,6 +164,7 @@ export async function sendTestEvent(
 		state,
 		app.internalId,
 		await prepareEvent(new TextEncoder().encode(raw), now),
+		{ test: true },
 	);
 	await ports.db.run(
 		activityStatement(actor, "setup.test_event", { type: "project", id: app.publicId }, null, now),

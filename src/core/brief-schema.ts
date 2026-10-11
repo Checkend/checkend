@@ -80,6 +80,10 @@ export const BriefJsonSchema = v.pipe(
 				latest_event_id: nullable(v.number()),
 				claim: nullable(v.strictObject({ holder: v.string(), expires_at: Time })),
 				trust: v.picklist(["low", "high"]),
+				test: v.pipe(
+					v.boolean(),
+					v.description("A test issue: the test event of the setup, not a real error."),
+				),
 				source_maps: v.strictObject({ frames: v.number(), mapped: v.number() }),
 				first_release_deploy: nullable(v.strictObject({ version: v.string(), deployed_at: Time })),
 				suspect_commit: nullable(SuspectCommit),

@@ -91,6 +91,11 @@ export async function getTriage(db: Db, issueId: number): Promise<Triage | null>
 /** Triages one issue and stores the answers. Null: AI triage is off, or no issue. */
 export async function triageIssue(ports: TriagePorts, issueId: number): Promise<Triage | null> {
 	if (!ports.config.ai.triage || !ports.models) return null;
+	// A test issue (the setup test event) is not a real error: no model call.
+	const issue = await ports.db.first<{ test: number }>(
+		sql`SELECT test FROM issues WHERE id = ${issueId}`,
+	);
+	if (!issue || issue.test === 1) return null;
 	const input = await issueModelInput(ports.db, issueId);
 	if (!input) return null;
 	let provider = clefDecisions(ports.models, "clef-flash");
@@ -139,7 +144,7 @@ export async function runTriage(ports: TriagePorts): Promise<number> {
 		sql`SELECT i.id FROM issues i JOIN projects p ON p.id = i.project_id AND p.deleted_at IS NULL
 			LEFT JOIN issue_triage t ON t.issue_id = i.id
 			WHERE i.times_seen >= ${TRIAGE_MIN_SEEN} AND i.merged_into IS NULL
-				AND i.status IN ('unresolved', 'regressed')
+				AND i.status IN ('unresolved', 'regressed') AND i.test = 0
 				AND (t.issue_id IS NULL OR t.version < ${TRIAGE_VERSION})
 				AND (t.error IS NULL OR t.triaged_at < ${retryBefore})
 			ORDER BY i.last_seen DESC LIMIT ${TRIAGE_PER_RUN}`,

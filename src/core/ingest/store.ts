@@ -65,6 +65,11 @@ export interface StoreOptions {
 	sleep?: (ms: number) => Promise<void>;
 	/** The event came from a browser (Origin header): the DSN of the project is public. */
 	browser?: boolean;
+	/**
+	 * The setup test event: its issue is a test issue (resolved), and the write adds no
+	 * regression, fix change, webhook delivery, hourly count or user (so no alert, count or quota).
+	 */
+	test?: boolean;
 }
 
 const defaultSleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
@@ -260,61 +265,69 @@ async function planWrite(
 			sql`UPDATE projects SET browser_seen_at = ${nowIso} WHERE id = ${projectId} AND browser_seen_at IS NULL`,
 		);
 	}
-	statements.push(
-		// A new event reopens a resolved issue (a regression). Not for an event_id that is stored.
-		sql`INSERT INTO activity (at, actor_type, actor_id, actor_name, action, target_type, target_id, data)
+	const test = options.test === true;
+	if (!test) {
+		statements.push(
+			// A new event reopens a resolved issue (a regression). Not for an event_id that is stored.
+			sql`INSERT INTO activity (at, actor_type, actor_id, actor_name, action, target_type, target_id, data)
 			SELECT ${nowIso}, 'system', NULL, 'ingest', 'issue.regress', 'issue', id,
 				${JSON.stringify({ from: "resolved", to: "unresolved", event_id: event.event_id })}
 			FROM issues
-			WHERE project_id = ${projectId} AND fingerprint = ${fingerprint} AND status = 'resolved'
+			WHERE project_id = ${projectId} AND fingerprint = ${fingerprint} AND status = 'resolved' AND test = 0
 				AND NOT EXISTS (SELECT 1 FROM events WHERE project_id = ${projectId} AND event_id = ${event.event_id})`,
+		);
+	}
+	statements.push(
 		sql`INSERT INTO issues (project_id, fingerprint, fingerprint_version, title, culprit, type,
-				level, platform, first_seen, last_seen, first_release, last_release, times_seen)
+				level, platform, first_seen, last_seen, first_release, last_release, times_seen, test, status)
 			SELECT ${projectId}, ${fingerprint}, ${FINGERPRINT_VERSION}, ${title.title}, ${title.culprit},
 				${title.type}, ${event.level}, ${event.platform}, ${nowIso}, ${nowIso}, ${event.release},
-				${event.release}, 1
+				${event.release}, 1, ${test ? 1 : 0}, ${test ? "resolved" : "unresolved"}
 			WHERE NOT EXISTS (SELECT 1 FROM events WHERE project_id = ${projectId} AND event_id = ${event.event_id})
 			ON CONFLICT (project_id, fingerprint) DO UPDATE SET
 				times_seen = times_seen + 1,
 				last_seen = max(last_seen, excluded.last_seen),
 				last_release = coalesce(excluded.last_release, last_release),
-				status_changed_at = CASE WHEN status = 'resolved' THEN excluded.last_seen ELSE status_changed_at END,
-				status = CASE WHEN status = 'resolved' THEN 'unresolved' ELSE status END,
+				status_changed_at = CASE WHEN status = 'resolved' AND test = 0 THEN excluded.last_seen ELSE status_changed_at END,
+				status = CASE WHEN status = 'resolved' AND test = 0 THEN 'unresolved' ELSE status END,
 				level = excluded.level`,
 	);
 
-	// The fix loop: regressed (an event in a release with the fix), or the quiet period again.
-	statements.push(
-		...fixStatementsForEvent(projectId, fingerprint, event.event_id, event.release, nowIso),
-	);
-
-	// Webhook deliveries for a new issue or a regression (after the upsert and the regression).
-	const deliveries = ingestDeliveryStatements(projectId, fingerprint, event.event_id, nowIso);
-	const deliveryStatements = [statements.length, statements.length + 1];
-	statements.push(deliveries.newIssue, deliveries.regressed);
-
-	// Hourly count and users affected. Before the event insert: the duplicate check looks for
-	// the event_id in events, and the insert below adds it.
-	statements.push(
-		sql`INSERT INTO issue_counts (issue_id, hour, count)
-			SELECT id, ${nowIso.slice(0, 13)}, 1 FROM issues
-			WHERE project_id = ${projectId} AND fingerprint = ${fingerprint}
-				AND NOT EXISTS (SELECT 1 FROM events WHERE project_id = ${projectId} AND event_id = ${event.event_id})
-			ON CONFLICT (issue_id, hour) DO UPDATE SET count = count + 1`,
-	);
-	// Spike alerts: after the count, before the event insert (the duplicate check).
-	deliveryStatements.push(statements.length);
-	statements.push(spikeDeliveryStatement(projectId, fingerprint, event.event_id, nowIso));
-	if (prepared.userHash) {
+	const deliveryStatements: number[] = [];
+	if (!test) {
+		// The fix loop: regressed (an event in a release with the fix), or the quiet period again.
 		statements.push(
-			sql`INSERT INTO issue_users (issue_id, user_hash, first_seen)
-				SELECT id, ${prepared.userHash}, ${nowIso} FROM issues
-				WHERE project_id = ${projectId} AND fingerprint = ${fingerprint} AND users_affected < ${MAX_USERS_PER_ISSUE}
-					AND NOT EXISTS (SELECT 1 FROM events WHERE project_id = ${projectId} AND event_id = ${event.event_id})
-				ON CONFLICT (issue_id, user_hash) DO NOTHING`,
-			sql`UPDATE issues SET users_affected = (SELECT COUNT(*) FROM issue_users WHERE issue_users.issue_id = issues.id)
-				WHERE project_id = ${projectId} AND fingerprint = ${fingerprint}`,
+			...fixStatementsForEvent(projectId, fingerprint, event.event_id, event.release, nowIso),
 		);
+
+		// Webhook deliveries for a new issue or a regression (after the upsert and the regression).
+		const deliveries = ingestDeliveryStatements(projectId, fingerprint, event.event_id, nowIso);
+		deliveryStatements.push(statements.length, statements.length + 1);
+		statements.push(deliveries.newIssue, deliveries.regressed);
+
+		// Hourly count and users affected. Before the event insert: the duplicate check looks for
+		// the event_id in events, and the insert below adds it.
+		statements.push(
+			sql`INSERT INTO issue_counts (issue_id, hour, count)
+				SELECT id, ${nowIso.slice(0, 13)}, 1 FROM issues
+				WHERE project_id = ${projectId} AND fingerprint = ${fingerprint}
+					AND NOT EXISTS (SELECT 1 FROM events WHERE project_id = ${projectId} AND event_id = ${event.event_id})
+				ON CONFLICT (issue_id, hour) DO UPDATE SET count = count + 1`,
+		);
+		// Spike alerts: after the count, before the event insert (the duplicate check).
+		deliveryStatements.push(statements.length);
+		statements.push(spikeDeliveryStatement(projectId, fingerprint, event.event_id, nowIso));
+		if (prepared.userHash) {
+			statements.push(
+				sql`INSERT INTO issue_users (issue_id, user_hash, first_seen)
+					SELECT id, ${prepared.userHash}, ${nowIso} FROM issues
+					WHERE project_id = ${projectId} AND fingerprint = ${fingerprint} AND users_affected < ${MAX_USERS_PER_ISSUE}
+						AND NOT EXISTS (SELECT 1 FROM events WHERE project_id = ${projectId} AND event_id = ${event.event_id})
+					ON CONFLICT (issue_id, user_hash) DO NOTHING`,
+				sql`UPDATE issues SET users_affected = (SELECT COUNT(*) FROM issue_users WHERE issue_users.issue_id = issues.id)
+					WHERE project_id = ${projectId} AND fingerprint = ${fingerprint}`,
+			);
+		}
 	}
 
 	if (mode === "full") {

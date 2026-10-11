@@ -93,6 +93,7 @@ describe("OpenAPI 3.1 document", () => {
 			"since",
 			"sort",
 			"status",
+			"test",
 		]);
 		const status = list.parameters.find((p: { name: string }) => p.name === "status");
 		expect(status).toMatchObject({

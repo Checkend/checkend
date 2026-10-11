@@ -65,6 +65,8 @@ export interface BriefJson {
 		claim: Claim | null;
 		/** low: anyone can send events to this project (a public browser DSN); high: servers. */
 		trust: "low" | "high";
+		/** A test issue: the test event of the setup, not a real error. */
+		test: boolean;
 		/** Frames that a source map can map (with a line and a column), and frames it mapped. */
 		source_maps: { frames: number; mapped: number };
 		/**
@@ -295,6 +297,7 @@ export async function buildBrief(
 		last_release: pick("last_release"),
 		fingerprint_version: pick("fingerprint_version"),
 		trust: pick("trust"),
+		test: pick("test"),
 	};
 	const timeline = (
 		await db.all<{ at: string; actor_name: string; action: string; data: string | null }>(
@@ -532,6 +535,7 @@ function briefMarkdown(brief: BriefJson): string {
 			: []),
 		`| Last seen | ${issue.last_seen} |`,
 		`| Project | ${issue.project_id} |`,
+		...(issue.test ? ["| Test | Test event from setup: not a real error |"] : []),
 		`| Trust | ${issue.trust === "low" ? "low: the DSN can be public (browser), so anyone can send events" : "high"} |`,
 		...(issue.claim
 			? [`| Claimed by | ${cleanText(issue.claim.holder, 100)} until ${issue.claim.expires_at} |`]

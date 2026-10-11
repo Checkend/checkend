@@ -79,6 +79,7 @@ The schema is the reference; this section explains the fields.
 | `latest_event_id` | The latest stored event, or null. |
 | `claim` | `{holder, expires_at}` when an agent or a person works on the issue now; else null. |
 | `trust` | `low` or `high` (see 3). |
+| `test` | True for a test issue (the test event of a setup), not a real error. A consumer SHOULD NOT try to fix it. |
 | `source_maps` | `{frames, mapped}`: frames that a source map can map, and frames it mapped. |
 | `suspect_commit` | A commit of the first release that changed a file of an in-app frame: `{sha, author, committed_at, files, frame, url}`; else null. A hint, not proof. |
 | `fix` | The linked fix and its state in the fix loop; else null (see the fix verification protocol). |

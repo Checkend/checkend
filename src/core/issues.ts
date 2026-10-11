@@ -40,6 +40,8 @@ export const IssueListQuery = v.object({
 	search: v.optional(v.pipe(v.string(), v.minLength(1), v.maxLength(200))),
 	claimed: v.optional(v.picklist(["true", "false"])),
 	sort: v.optional(v.picklist(["last_seen", "priority"])),
+	/** true: only test issues (from the setup test event); default: only real issues. */
+	test: v.optional(v.picklist(["true", "false"])),
 });
 export type IssueListQuery = v.InferOutput<typeof IssueListQuery>;
 
@@ -124,7 +126,7 @@ const SCORED_ISSUES = `SELECT *,
 	FROM (SELECT i.id, p.public_id AS project_id, i.title, i.culprit, i.type, i.level, i.platform,
 			i.status, i.times_seen, i.stored_events, i.users_affected, i.first_seen, i.last_seen,
 			i.first_release, i.last_release, i.fingerprint, i.fingerprint_version, i.merged_into,
-			i.claimed_by, i.claim_expires_at, i.project_id AS project_row_id,
+			i.claimed_by, i.claim_expires_at, i.project_id AS project_row_id, i.test,
 			coalesce(p.trust, CASE WHEN p.browser_seen_at IS NULL THEN 'high' ELSE 'low' END) AS trust,
 			(SELECT coalesce(sum(c.count), 0) FROM issue_counts c WHERE c.issue_id = i.id AND c.hour > ?) AS events_24h,
 			(SELECT coalesce(sum(c.count), 0) FROM issue_counts c WHERE c.issue_id = i.id AND c.hour > ?) AS events_7d
@@ -141,6 +143,7 @@ const LIST_ISSUES_SQL = `${SCORED_ISSUES}
 					OR EXISTS (SELECT 1 FROM events e WHERE e.issue_id = scored.id AND e.release = ?))
 				AND (? IS NULL OR EXISTS (SELECT 1 FROM events e WHERE e.issue_id = scored.id AND e.environment = ?))
 				AND (? IS NULL OR title LIKE ? ESCAPE '\\' OR culprit LIKE ? ESCAPE '\\')
+				AND test = ?
 				AND (? = 1 OR last_seen < ? OR (last_seen = ? AND id < ?))
 			ORDER BY CASE WHEN ? = 1 THEN priority END DESC, last_seen DESC, id DESC
 			LIMIT ? OFFSET ?`;
@@ -155,7 +158,8 @@ const scoredParams = (now: Date) => [
 
 const forApi = (row: IssueRow, now: Date) => {
 	const { project_row_id: _internal, ...rest } = withClaim(row, now);
-	return rest as unknown as IssueRow;
+	// test: a test issue (the setup test event).
+	return { ...rest, test: rest.test === 1 } as unknown as IssueRow;
 };
 
 /**
@@ -204,6 +208,7 @@ export async function listIssues(
 			search,
 			search,
 			search,
+			query.test === "true" ? 1 : 0,
 			byPriority ? 1 : 0,
 			lastSeen,
 			lastSeen,

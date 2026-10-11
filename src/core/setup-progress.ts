@@ -1,6 +1,5 @@
 import { type Db, sql } from "../ports/db.ts";
 import type { Ports } from "../ports/index.ts";
-import { TEST_EVENT_MESSAGE } from "./setup.ts";
 
 /** The setup steps of one app, for the live checklist (UI) and `ce` (GET /v1/setup/progress). */
 export interface AppProgress {
@@ -51,7 +50,7 @@ export async function onboardingProgress(
 		sql`SELECT p.public_id AS id, p.slug, p.name, p.platform, p.demo,
 				coalesce(s.connected_at, p.created_at) AS connected_at,
 				s.sdk_installed_at, s.test_event_at,
-				(SELECT i.first_seen FROM issues i WHERE i.project_id = p.id AND i.title != ${TEST_EVENT_MESSAGE}
+				(SELECT i.first_seen FROM issues i WHERE i.project_id = p.id AND i.test = 0
 					ORDER BY i.first_seen LIMIT 1) AS first_event_at,
 				(SELECT t.mcp_client FROM tokens t WHERE t.project_id = p.id AND t.first_mcp_at IS NOT NULL
 					ORDER BY t.first_mcp_at LIMIT 1) AS agent_name,
