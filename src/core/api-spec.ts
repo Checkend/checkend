@@ -108,6 +108,20 @@ export const API_ROUTES: ApiRoute[] = [
 		body: UpdateProjectBody,
 	},
 	{
+		method: "POST",
+		path: "/v1/projects/:project/keys",
+		scope: "admin",
+		summary:
+			"Add a DSN key (rotation). Returns public_key and dsn. The old keys keep working until you revoke them.",
+	},
+	{
+		method: "DELETE",
+		path: "/v1/projects/:project/keys/:key",
+		scope: "admin",
+		summary:
+			"Revoke a DSN key: events with it get 401 (within 60 seconds on every server). 409 for the only active key.",
+	},
+	{
 		method: "GET",
 		path: "/v1/issues",
 		scope: "issues:read",

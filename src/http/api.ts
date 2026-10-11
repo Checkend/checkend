@@ -38,7 +38,14 @@ import {
 	ProjectRef,
 } from "../core/issues.ts";
 import { LabelQuery, listLabels } from "../core/labels.ts";
-import { createProject, listProjects, UpdateProjectBody, updateProject } from "../core/projects.ts";
+import {
+	createProject,
+	createProjectKey,
+	listProjects,
+	revokeProjectKey,
+	UpdateProjectBody,
+	updateProject,
+} from "../core/projects.ts";
 import {
 	deleteSourceMap,
 	INDEX_CONTENT_TYPE,
@@ -158,6 +165,34 @@ export function apiRoutes(app: Hono<AppEnv>, state: IngestState): void {
 		if (!project) return c.json({ error: "not_found" }, 404);
 		const { keys, ...rest } = project;
 		return c.json({ data: { ...rest, dsns: keys.map((k) => dsn(origin, k, rest.id)) } });
+	});
+
+	app.post("/v1/projects/:project/keys", need("admin"), async (c) => {
+		const created = await createProjectKey(c.env.ports, c.get("actor"), c.req.param("project"));
+		if (!created) return c.json({ error: "not_found" }, 404);
+		return c.json(
+			{
+				data: {
+					...created,
+					dsn: dsn(new URL(c.req.url).origin, created.public_key, created.project_id),
+				},
+			},
+			201,
+		);
+	});
+
+	app.delete("/v1/projects/:project/keys/:key", need("admin"), async (c) => {
+		const key = c.req.param("key").toLowerCase();
+		const result = await revokeProjectKey(c.env.ports, c.get("actor"), c.req.param("project"), key);
+		if (result === "not_found") return c.json({ error: "not_found" }, 404);
+		if (result === "last_key") {
+			return c.json(
+				{ error: "last_key", message: "Add a new key first; the only active key is not revoked." },
+				409,
+			);
+		}
+		state.keys.forget(key);
+		return c.body(null, 204);
 	});
 
 	app.get("/v1/issues", need("issues:read"), async (c) => {

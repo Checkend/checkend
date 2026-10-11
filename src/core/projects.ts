@@ -301,6 +301,15 @@ export class KeyCache {
 	private known = new Map<string, CacheEntry>();
 	private unknown = new Map<string, CacheEntry>();
 
+	/** Drops a revoked key from this isolate's cache (other isolates: within the TTL). */
+	forget(publicKey: string): void {
+		for (const map of [this.known, this.unknown]) {
+			for (const cacheKey of map.keys()) {
+				if (cacheKey.endsWith(`:${publicKey}`)) map.delete(cacheKey);
+			}
+		}
+	}
+
 	private readonly maxEntries: number;
 	private readonly ttlMs: number;
 
@@ -361,4 +370,61 @@ export class KeyCache {
 		map.set(cacheKey, { value, expires: now.getTime() + this.ttlMs });
 		return value;
 	}
+}
+
+/** A new DSN key for a project (rotation). The old keys keep working until they are revoked. */
+export async function createProjectKey(
+	{ db, clock }: Pick<Ports, "db" | "clock">,
+	actor: Actor,
+	ref: string,
+): Promise<{ public_key: string; project_id: number; created_at: string } | null> {
+	const project = await db.first<{ id: number; public_id: number }>(
+		sql`SELECT id, public_id FROM projects
+			WHERE (public_id = ${/^\d{10}$/.test(ref) ? Number(ref) : null} OR slug = ${ref}) AND deleted_at IS NULL`,
+	);
+	if (!project) return null;
+	const publicKey = newPublicKey();
+	const now = clock.now();
+	await db.batch([
+		sql`INSERT INTO project_keys (project_id, public_key, label, created_at)
+			VALUES (${project.id}, ${publicKey}, ${"rotated"}, ${now.toISOString()})`,
+		activityStatement(
+			actor,
+			"project.key_create",
+			{ type: "project", id: project.public_id },
+			{ public_key: publicKey },
+			now,
+		),
+	]);
+	return { public_key: publicKey, project_id: project.public_id, created_at: now.toISOString() };
+}
+
+/** Revokes a DSN key. "last_key": the only active key of the project is never revoked. */
+export async function revokeProjectKey(
+	{ db, clock }: Pick<Ports, "db" | "clock">,
+	actor: Actor,
+	ref: string,
+	publicKey: string,
+): Promise<"revoked" | "not_found" | "last_key"> {
+	const row = await db.first<{ key_id: number; public_id: number; active: number }>(
+		sql`SELECT k.id AS key_id, p.public_id,
+				(SELECT count(*) FROM project_keys o WHERE o.project_id = p.id AND o.revoked_at IS NULL) AS active
+			FROM project_keys k JOIN projects p ON p.id = k.project_id
+			WHERE (p.public_id = ${/^\d{10}$/.test(ref) ? Number(ref) : null} OR p.slug = ${ref})
+				AND p.deleted_at IS NULL AND k.public_key = ${publicKey} AND k.revoked_at IS NULL`,
+	);
+	if (!row) return "not_found";
+	if (row.active <= 1) return "last_key";
+	const now = clock.now();
+	await db.batch([
+		sql`UPDATE project_keys SET revoked_at = ${now.toISOString()} WHERE id = ${row.key_id}`,
+		activityStatement(
+			actor,
+			"project.key_revoke",
+			{ type: "project", id: row.public_id },
+			{ public_key: publicKey },
+			now,
+		),
+	]);
+	return "revoked";
 }
