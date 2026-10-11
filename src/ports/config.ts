@@ -37,6 +37,11 @@ export interface Config {
 	retentionDays: number;
 	/** AI features. Each is off by default; every model call goes through AI Gateway. */
 	ai: AiConfig;
+	/**
+	 * Development mode (`CHECKEND_DEV=1`, set only by `npm run dev`): the auto-login route and
+	 * the demo clock, both only for requests to localhost. Never on in production.
+	 */
+	devMode: boolean;
 }
 
 export interface AiConfig {
@@ -48,11 +53,6 @@ export interface AiConfig {
 	triage: boolean;
 	/** AI_SIMILAR=on: embeddings and similar issues. */
 	similar: boolean;
-	/**
-	 * Development mode (`CHECKEND_DEV=1`, set only by `npm run dev`): the auto-login route and
-	 * the demo clock, both only for requests to localhost. Never on in production.
-	 */
-	devMode: boolean;
 }
 
 export const DEFAULT_CONFIG: Config = {

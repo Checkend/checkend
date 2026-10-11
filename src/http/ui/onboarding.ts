@@ -1,3 +1,5 @@
+import { createSetupKey } from "../../core/setup-keys.ts";
+import { onboardingProgress } from "../../core/setup-progress.ts";
 import type { Actor } from "../../core/tokens.ts";
 import { sql } from "../../ports/db.ts";
 import type { Ports } from "../../ports/index.ts";
@@ -66,6 +68,16 @@ export const interimOnboarding: Onboarding = {
 			setup_keys_active: 0,
 		};
 	},
+	deleteProject: async () => "unavailable",
+};
+
+/** The server parts of D20. Delete comes with the core delete step. */
+export const coreOnboarding: Onboarding = {
+	createSetupKey: async (ports, actor) => {
+		const created = await createSetupKey(ports, actor);
+		return { key: created.key, expires_at: created.expires_at };
+	},
+	progress: (ports, now) => onboardingProgress(ports.db, now),
 	deleteProject: async () => "unavailable",
 };
 

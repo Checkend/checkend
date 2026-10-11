@@ -385,3 +385,39 @@ describe("delete an app", () => {
 		expect(ui.fake.calls.deleted).toEqual([ui.shop.id]);
 	});
 });
+
+describe("with the core onboarding (no fake)", () => {
+	it("makes a real setup key; an app that the agent registers with it shows in the progress", async () => {
+		const ui = await uiApp();
+		const session = await ui.signIn();
+		const copied = await ui.request("/apps/setup-key", {
+			method: "POST",
+			session: session.token,
+			headers: {
+				origin: UI_ORIGIN,
+				accept: "application/json",
+				"content-type": "application/x-www-form-urlencoded",
+			},
+			body: new URLSearchParams({ _csrf: session.csrf }).toString(),
+		});
+		expect(copied.status).toBe(200);
+		const { prompt } = (await copied.json()) as { prompt: string };
+		const key = /--key (cks_\S+)/.exec(prompt)?.[1] ?? "";
+		expect(key).not.toBe("");
+
+		// What `ce setup` does with the key.
+		const registered = await ui.request("/v1/setup/apps", {
+			method: "POST",
+			headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
+			body: JSON.stringify({ name: "Shop API", platform: "node" }),
+		});
+		expect(registered.status).toBeLessThan(300);
+
+		const progress = await ui.request("/apps/progress", {
+			session: session.token,
+			headers: { accept: "application/json" },
+		});
+		const body = (await progress.json()) as { apps: { name: string; done: number }[] };
+		expect(body.apps).toEqual([expect.objectContaining({ name: "Shop API", done: 1 })]);
+	});
+});
