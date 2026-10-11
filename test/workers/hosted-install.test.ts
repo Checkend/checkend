@@ -122,6 +122,22 @@ describe("a provisioned hosted install", () => {
 		await expect(decryptValue(keysA, storedB, "webhooks.secret:1")).rejects.toThrow();
 	});
 
+	it("deletes its blobs in the shared bucket with destroy(), in chunks, and no other install's", async () => {
+		const stub = await provisioned("hosted-blobs", "b1o2b3");
+		const other = await provisioned("hosted-blobs-other", "b4o5b6");
+		const prefix = await runInDurableObject(stub, async (instance) => instance.blobPrefix());
+		const otherPrefix = await runInDurableObject(other, async (instance) => instance.blobPrefix());
+		// More than one list page (R2 lists at most 1000 keys at a time).
+		const keys = Array.from({ length: 1003 }, (_, i) => `${prefix}maps/${i}`);
+		for (let i = 0; i < keys.length; i += 100) {
+			await Promise.all(keys.slice(i, i + 100).map((key) => env.BLOBS.put(key, "x")));
+		}
+		await env.BLOBS.put(`${otherPrefix}maps/keep`, "x");
+		await stub.destroy();
+		expect((await env.BLOBS.list({ prefix })).objects).toEqual([]);
+		expect(await env.BLOBS.get(`${otherPrefix}maps/keep`)).not.toBeNull();
+	});
+
 	it("deletes all its data and its alarm with destroy(), then refuses requests", async () => {
 		const stub = await provisioned("hosted-destroy", "d3s7r0");
 		const admin = await stub.createAdminToken("front worker");

@@ -34,7 +34,7 @@ const FRONT: Actor = { type: "system", id: null, name: "front worker", scopes: [
 
 export type InstallEnv = ConfigEnv & {
 	/** One bucket for all installs; each install keeps its keys under installs/<id>/. */
-	BLOBS?: Pick<R2Bucket, "put" | "get" | "delete">;
+	BLOBS?: Pick<R2Bucket, "put" | "get" | "delete" | "list">;
 	INGEST_RATE_LIMITER?: Pick<RateLimit, "limit">;
 	EMAIL?: EmailBinding;
 	AI?: AiBinding;
@@ -185,13 +185,27 @@ export class CheckendInstall extends DurableObject<InstallEnv> {
 	}
 
 	/**
-	 * RPC for the front Worker, when a space is deleted: all data of this install (its database and
-	 * its alarm). Its blobs in the shared bucket are not deleted here.
+	 * RPC for the front Worker, when a space is deleted: all data of this install (its blobs in the
+	 * shared bucket, its database and its alarm). The blobs go first, one list page (at most 1000
+	 * keys) at a time: when a call fails, the front Worker calls destroy() again, and it goes on.
 	 */
 	async destroy(): Promise<void> {
 		this.destroyed = true;
 		this.provisioned = null;
 		await this.ctx.storage.deleteAlarm();
+		const bucket = this.env.BLOBS;
+		if (bucket) {
+			const prefix = this.blobPrefix();
+			// Deleted keys leave the list, so each pass lists from the start until none is left.
+			for (;;) {
+				const page = await bucket.list({ prefix, limit: 1000 });
+				const keys = page.objects
+					.map((object) => object.key)
+					.filter((key) => key.startsWith(prefix));
+				if (keys.length === 0) break;
+				await bucket.delete(keys);
+			}
+		}
 		await this.ctx.storage.deleteAll();
 	}
 
