@@ -204,3 +204,38 @@ describe("the agent token of a setup key (ce setup report, after the key)", () =
 		).toBe(403);
 	});
 });
+
+describe("agent tokens end with their setup key or their project", () => {
+	const agentToken = async (
+		call: Awaited<ReturnType<typeof setupApi>>["call"],
+		key: string,
+		name: string,
+	) => {
+		const app = (await call("POST", "/v1/setup/apps", key, { name })).body?.data;
+		const token = (
+			await call("POST", "/v1/setup/tokens", key, { name: "agent", project: app.project.slug })
+		).body?.data.token as string;
+		return { app, token };
+	};
+
+	it("revoking a setup key revokes the agent tokens it made", async () => {
+		const { call } = await setupApi();
+		const created = (await call("POST", "/v1/setup/keys", ADMIN)).body?.data;
+		const { token } = await agentToken(call, created.key, "web");
+		expect((await call("GET", "/v1/issues", token)).status).toBe(200);
+		expect((await call("DELETE", `/v1/setup/keys/${created.id}`, ADMIN)).status).toBe(204);
+		expect((await call("GET", "/v1/issues", token)).status).toBe(401);
+		const activity = (await call("GET", "/v1/activity", ADMIN)).body?.data as { action: string }[];
+		expect(activity.filter((a) => a.action === "token.revoke")).toHaveLength(1);
+	});
+
+	it("deleting a project revokes the agent tokens bound to it, not others", async () => {
+		const { call, newKey } = await setupApi();
+		const key = await newKey();
+		const web = await agentToken(call, key, "web");
+		const api = await agentToken(call, key, "api");
+		expect((await call("DELETE", `/v1/projects/${web.app.project.slug}`, ADMIN)).status).toBe(204);
+		expect((await call("GET", "/v1/issues", web.token)).status).toBe(401);
+		expect((await call("GET", "/v1/issues", api.token)).status).toBe(200);
+	});
+});

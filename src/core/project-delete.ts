@@ -2,7 +2,7 @@ import { type Statement, sql } from "../ports/db.ts";
 import type { Ports } from "../ports/index.ts";
 import { activityStatement } from "./activity.ts";
 import type { KeyCache } from "./projects.ts";
-import type { Actor } from "./tokens.ts";
+import { type Actor, revokeTokensWhere } from "./tokens.ts";
 
 /**
 ^ * Project delete. The delete revokes the DSN keys, hides the project everywhere and frees
@@ -64,6 +64,8 @@ export async function deleteProject(
 			WHERE id = ${project.id} AND deleted_at IS NULL`,
 		sql`UPDATE project_keys SET revoked_at = ${now.toISOString()}
 			WHERE project_id = ${project.id} AND revoked_at IS NULL`,
+		// Agent tokens bound to the project (made with a setup key for it) end with it.
+		...revokeTokensWhere(actor, now, { projectId: project.id }),
 		activityStatement(
 			actor,
 			"project.delete",

@@ -1,6 +1,6 @@
 import { type Db, sql } from "../ports/db.ts";
 import type { Ports } from "../ports/index.ts";
-import { type Actor, newSecret, sha256 } from "./tokens.ts";
+import { type Actor, newSecret, revokeTokensWhere, sha256 } from "./tokens.ts";
 
 /**
  * Setup keys (cks_...): an agent connects apps with one (onboarding). A key is valid for one
@@ -67,6 +67,8 @@ export async function revokeSetupKey(
 				${"setup_key"}, id, NULL
 			FROM setup_keys WHERE id = ${id} AND revoked_at IS NULL`,
 		sql`UPDATE setup_keys SET revoked_at = ${now.toISOString()} WHERE id = ${id} AND revoked_at IS NULL`,
+		// The agent tokens that the key made end with it (activity first, while they are active).
+		...revokeTokensWhere(actor, now, { setupKeyId: id }),
 	]);
 	return (update?.changes ?? 0) > 0;
 }

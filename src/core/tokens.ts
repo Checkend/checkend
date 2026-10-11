@@ -1,5 +1,5 @@
 import * as v from "valibot";
-import { type Db, sql } from "../ports/db.ts";
+import { type Db, type Statement, sql } from "../ports/db.ts";
 import type { Ports } from "../ports/index.ts";
 
 /** API scopes. `admin` includes all the others. */
@@ -186,4 +186,27 @@ export async function revokeToken(
 		sql`UPDATE tokens SET revoked_at = ${now.toISOString()} WHERE id = ${id} AND revoked_at IS NULL`,
 	]);
 	return (update?.changes ?? 0) > 0;
+}
+
+/**
+ * Statements that revoke the agent tokens of a setup key or of a project (with a token.revoke
+ * activity row each), for the batch that revokes the key or deletes the project.
+ */
+export function revokeTokensWhere(
+	actor: Actor,
+	now: Date,
+	where: { setupKeyId: number } | { projectId: number },
+): Statement[] {
+	const at = now.toISOString();
+	const key = "setupKeyId" in where ? where.setupKeyId : null;
+	const project = "projectId" in where ? where.projectId : null;
+	return [
+		sql`INSERT INTO activity (at, actor_type, actor_id, actor_name, action, target_type, target_id, data)
+			SELECT ${at}, ${actor.type}, ${actor.id}, ${actor.name}, ${"token.revoke"}, ${"token"}, id, NULL
+			FROM tokens WHERE revoked_at IS NULL
+				AND ((${key} IS NOT NULL AND setup_key_id = ${key}) OR (${project} IS NOT NULL AND project_id = ${project}))`,
+		sql`UPDATE tokens SET revoked_at = ${at}
+			WHERE revoked_at IS NULL
+				AND ((${key} IS NOT NULL AND setup_key_id = ${key}) OR (${project} IS NOT NULL AND project_id = ${project}))`,
+	];
 }
