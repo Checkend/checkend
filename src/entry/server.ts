@@ -70,6 +70,12 @@ function mailer(env: NodeEnv): Mailer | null {
 	const secure = url.protocol === "smtps:";
 	if (!secure && url.protocol !== "smtp:")
 		throw new Error("SMTP_URL must start with smtps:// or smtp://");
+	// Without TLS, AUTH PLAIN would send the password in clear text: smtp:// is for a relay only.
+	if (!secure && (url.username || url.password)) {
+		throw new Error(
+			"SMTP_URL: a user and password need smtps:// (TLS); smtp:// is for a relay without them.",
+		);
+	}
 	return smtpMailer({
 		host: url.hostname,
 		port: Number(url.port || (secure ? 465 : 25)),
@@ -88,6 +94,8 @@ export interface RunningServer {
 }
 
 export async function startServer(env: NodeEnv): Promise<RunningServer> {
+	// Settings that can be wrong fail before the database opens.
+	const mail = mailer(env);
 	const path = env.DATABASE_PATH ?? "data/checkend.sqlite";
 	if (path !== ":memory:") mkdirSync(dirname(path), { recursive: true });
 	const db = openSqliteDb(path);
@@ -119,7 +127,7 @@ export async function startServer(env: NodeEnv): Promise<RunningServer> {
 		notifyQueue: null,
 		blobs: blobs(env),
 		ingestQueue: sqliteJobQueue(db, "ingest", systemClock),
-		mailer: mailer(env),
+		mailer: mail,
 		clientIp: () => "unknown",
 	};
 	const clientIp = clientIpResolver(env.TRUSTED_PROXIES);

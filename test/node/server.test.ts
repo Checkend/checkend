@@ -69,6 +69,21 @@ describe("Checkend on Node, without Cloudflare (the full flow)", () => {
 		await withAi.stop();
 	});
 
+	it("refuses SMTP credentials without TLS (smtp:// sends them in clear text)", async () => {
+		const start = (url: string) =>
+			startServer({
+				DATABASE_PATH: ":memory:",
+				PORT: "0",
+				HOST: "127.0.0.1",
+				SMTP_URL: url,
+				EMAIL_FROM: "a@example.com",
+			});
+		await expect(start("smtp://user:secret@mail.example.com:587")).rejects.toThrow(/smtps:\/\//);
+		const relay = await start("smtp://relay.example.com:25");
+		expect(relay.ports.mailer).not.toBeNull();
+		await relay.stop();
+	});
+
 	it("serves health with all migrations applied", async () => {
 		const health = (await (await fetch(`${server.url}/health`)).json()) as Record<string, any>;
 		expect(health).toMatchObject({
