@@ -60,7 +60,7 @@ export function createApp(options: AppOptions = {}): Hono<AppEnv> {
 	setupRoutes(app, state);
 	apiRoutes(app, state);
 	mcpRoutes(app);
-	uiRoutes(app, state, options.onboarding ?? coreOnboarding);
+	uiRoutes(app, state, options.onboarding ?? coreOnboarding(state));
 
 	app.notFound((c) => c.json({ error: "not_found" }, 404));
 

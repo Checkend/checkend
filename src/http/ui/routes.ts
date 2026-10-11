@@ -338,7 +338,7 @@ export function uiRoutes(app: Hono<AppEnv>, state: IngestState, onboarding: Onbo
 		]);
 		return projects.map((project) => {
 			const found = progress.apps.find((a) => a.project.id === project.id) ?? null;
-			const demo = (project as { demo?: boolean }).demo === true || found?.project.demo === true;
+			const demo = project.demo || found?.project.demo === true;
 			return { project, progress: found, demo };
 		});
 	};

@@ -179,7 +179,7 @@ function taskCards(origin: string, app: { id: number; slug: string }): Html {
 // --- the Apps list ---------------------------------------------------------------------
 
 export interface AppRow {
-	project: ProjectSummary & { events_24h?: number; last_event_at?: string | null };
+	project: ProjectSummary;
 	progress: AppProgress | null;
 	demo: boolean;
 }
@@ -208,7 +208,7 @@ ${
 <tbody>${rows.map(
 				(row) => h`<tr>
 <td class="app"><a class="app-name" href="${appPath(row.project.id)}">${t(row.project.name, 100)}</a><span class="app-sub">${platformLabel(row.project.platform)}</span></td>
-<td class="num" data-label="Errors, 24 h:">${row.project.events_24h === undefined ? "—" : count(row.project.events_24h)}</td>
+<td class="num" data-label="Errors, 24 h:">${count(row.project.events_24h)}</td>
 <td class="when" data-label="Last error:">${row.project.last_event_at ? time(row.project.last_event_at, now) : "none yet"}</td>
 <td class="status">${setupStatus(row, now)}</td>
 <td class="actions">${askMenu(origin, row.project)}</td>

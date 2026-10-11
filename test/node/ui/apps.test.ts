@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createProject } from "../../../src/core/projects.ts";
+import { AGENT_TASKS as CORE_TASKS } from "../../../src/core/recipes.ts";
 import type { Actor } from "../../../src/core/tokens.ts";
 import {
 	AGENT_TASKS,
@@ -98,17 +99,14 @@ describe("onboarding texts", () => {
 	});
 
 	it("names each task's recipe and command, and the app by slug and ID only", () => {
-		const tasks = AGENT_TASKS.map((t) => t.task);
-		expect(tasks).toEqual([
-			"sourcemaps",
-			"deploys",
-			"environments",
-			"migrate-from-sentry",
-			"fix-top-issue",
-			"rotate-dsn",
-			"remove",
-			"delete-project",
-		]);
+		// The tasks and commands come from the core table that also serves the recipes.
+		expect(AGENT_TASKS.map((t) => [t.task, t.command])).toEqual(
+			CORE_TASKS.map((t) => [t.task, t.command]),
+		);
+		// Each task has text for people, and that text does not use "DSN".
+		for (const task of AGENT_TASKS) {
+			expect(`${task.label} ${task.description}`, task.task).not.toContain("DSN");
+		}
 		const sourcemaps = AGENT_TASKS[0];
 		if (!sourcemaps) throw new Error("no task");
 		const prompt = taskPrompt(
@@ -419,5 +417,46 @@ describe("with the core onboarding (no fake)", () => {
 		});
 		const body = (await progress.json()) as { apps: { name: string; done: number }[] };
 		expect(body.apps).toEqual([expect.objectContaining({ name: "Shop API", done: 1 })]);
+	});
+});
+
+describe("delete with the core (no fake)", () => {
+	it("deletes the app: it leaves the list, and its key stops working at once", async () => {
+		const ui = await uiApp();
+		const session = await ui.signIn();
+		const shop = await createProject(ui.ports, { name: "Shop", platform: "node" });
+		await send(ui, shop, errorEvent({ type: "TypeError", fn: "f", value: "x" }));
+		const response = await ui.form(
+			`/apps/${shop.id}/delete`,
+			{ _csrf: session.csrf, confirm: "Shop" },
+			session.token,
+		);
+		expect(response.status).toBe(303);
+		const list = await ui.request("/apps", {
+			session: session.token,
+			headers: { accept: "text/html" },
+		});
+		expect(await list.text()).not.toContain(`/apps/${shop.id}"`);
+		await expect(
+			send(ui, shop, errorEvent({ type: "TypeError", fn: "f", value: "y" })),
+		).rejects.toThrow(/ingest: 4\d\d/);
+	});
+
+	it("shows the numbers of the last 24 hours and the demo label from the core list", async () => {
+		const ui = await uiApp();
+		const session = await ui.signIn();
+		const shop = await createProject(ui.ports, { name: "Shop", platform: "node" });
+		await createProject(ui.ports, { name: "Demo", platform: "node", demo: true });
+		await send(
+			ui,
+			shop,
+			errorEvent({ type: "TypeError", fn: "f", value: "x" }),
+			errorEvent({ type: "TypeError", fn: "f", value: "x" }),
+		);
+		const html = await (
+			await ui.request("/apps", { session: session.token, headers: { accept: "text/html" } })
+		).text();
+		expect(html).toMatch(/data-label="Errors, 24 h:">2</);
+		expect(html).toContain("Demo data");
 	});
 });

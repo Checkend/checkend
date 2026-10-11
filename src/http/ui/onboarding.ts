@@ -1,7 +1,9 @@
+import type { IngestState } from "../../core/ingest/state.ts";
+import { deleteProject } from "../../core/project-delete.ts";
+import { AGENT_TASKS as CORE_TASKS } from "../../core/recipes.ts";
 import { createSetupKey } from "../../core/setup-keys.ts";
 import { onboardingProgress } from "../../core/setup-progress.ts";
 import type { Actor } from "../../core/tokens.ts";
-import { sql } from "../../ports/db.ts";
 import type { Ports } from "../../ports/index.ts";
 import { ago } from "./html.ts";
 import { displayText } from "./text.ts";
@@ -9,7 +11,7 @@ import { displayText } from "./text.ts";
 /**
  * Agent-first onboarding (D20). The UI makes a setup key for each "Copy prompt", shows the
  * live progress of each app, and deletes apps. The core functions come from the server side;
- * `interimOnboarding` stands in until they exist, and tests pass a fake.
+ * `coreOnboarding` uses the core functions; tests pass a fake.
  */
 
 export interface AppProgress {
@@ -39,47 +41,21 @@ export interface Onboarding {
 	deleteProject(ports: Ports, actor: Actor, publicId: number): Promise<DeleteResult>;
 }
 
-/** Until the server parts exist: progress from the facts in the database; no keys, no delete. */
-export const interimOnboarding: Onboarding = {
-	createSetupKey: async () => null,
-	progress: async ({ db }) => {
-		const rows = await db.all<{
-			id: number;
-			slug: string;
-			name: string;
-			platform: string | null;
-			created_at: string;
-			first_event_at: string | null;
-		}>(
-			sql`SELECT p.public_id AS id, p.slug, p.name, p.platform, p.created_at,
-					(SELECT MIN(i.first_seen) FROM issues i WHERE i.project_id = p.id) AS first_event_at
-				FROM projects p ORDER BY p.id`,
-		);
-		return {
-			apps: rows.map((r) => ({
-				project: { id: r.id, slug: r.slug, name: r.name, platform: r.platform, demo: false },
-				connected_at: r.created_at,
-				sdk_installed_at: null,
-				test_event_at: null,
-				first_event_at: r.first_event_at,
-				agent: null,
-				first_deploy_at: null,
-			})),
-			setup_keys_active: 0,
-		};
-	},
-	deleteProject: async () => "unavailable",
-};
-
-/** The server parts of D20. Delete comes with the core delete step. */
-export const coreOnboarding: Onboarding = {
-	createSetupKey: async (ports, actor) => {
-		const created = await createSetupKey(ports, actor);
-		return { key: created.key, expires_at: created.expires_at };
-	},
-	progress: (ports, now) => onboardingProgress(ports.db, now),
-	deleteProject: async () => "unavailable",
-};
+/**
+ * The core functions of D20. `state` is the ingest state of this isolate: a delete drops the
+ * app's keys from its cache, so that ingest refuses them at once.
+ */
+export function coreOnboarding(state: IngestState): Onboarding {
+	return {
+		createSetupKey: async (ports, actor) => {
+			const created = await createSetupKey(ports, actor);
+			return { key: created.key, expires_at: created.expires_at };
+		},
+		progress: (ports, now) => onboardingProgress(ports.db, now),
+		deleteProject: (ports, actor, publicId) =>
+			deleteProject(ports, actor, String(publicId), { keyCache: state.keys }),
+	};
+}
 
 export const PLATFORM_LABELS: Record<string, string> = {
 	node: "Node.js",
@@ -186,65 +162,62 @@ export interface AgentTask {
 	command: string | null;
 }
 
-/** The "Ask your agent" tasks. Each names a recipe that this install serves. */
-export const AGENT_TASKS: AgentTask[] = [
-	{
-		task: "sourcemaps",
+/** The text for people, by task. The UI says "app key" where the recipes say "DSN". */
+const TASK_TEXT: Record<string, Pick<AgentTask, "label" | "description" | "action">> = {
+	sourcemaps: {
 		label: "Add source maps",
 		description: "Readable JavaScript stack traces, with the original file and line.",
 		action: "upload the source maps of each build",
-		command: "ce sourcemaps upload",
 	},
-	{
-		task: "deploys",
+	deploys: {
 		label: "Report deploys",
 		description: "See which deploy caused an error, and which one fixed it.",
 		action: "report each deploy from CI",
-		command: "ce deploy",
 	},
-	{
-		task: "environments",
-		label: "Add environments",
-		description: "Keep errors from staging apart from production.",
-		action: "set the environment in the SDK configuration",
-		command: null,
-	},
-	{
-		task: "migrate-from-sentry",
+	"migrate-from-sentry": {
 		label: "Move from Sentry",
 		description: "Replace the Sentry settings in the code with Checkend.",
 		action: "move the error tracking from Sentry to Checkend",
-		command: "ce migrate-from-sentry",
 	},
-	{
-		task: "fix-top-issue",
-		label: "Fix the top error",
-		description: "The agent reads the brief of the top error, fixes it, and links the fix.",
-		action: "fix the error with the highest priority",
-		command: null,
+	environments: {
+		label: "Add environments",
+		description: "Keep errors from staging apart from production.",
+		action: "set the environment in the SDK configuration",
 	},
-	{
-		task: "rotate-dsn",
+	"rotate-dsn": {
 		label: "Replace the app key",
 		description: "Make a new key for the app, for example after it was in a public place.",
 		action: "replace the app key (DSN) in the code and in the deploy settings",
-		command: "ce dsn rotate",
 	},
-	{
-		task: "remove",
-		label: "Remove Checkend from the code",
-		description: "Remove the SDK and the settings from this app.",
-		action: "remove the Checkend SDK and its settings from the code",
-		command: "ce remove",
+	"fix-top-issue": {
+		label: "Fix the top error",
+		description: "The agent reads the brief of the top error, fixes it, and links the fix.",
+		action: "fix the error with the highest priority",
 	},
-	{
-		task: "delete-project",
+	"delete-project": {
 		label: "Delete the app in Checkend",
 		description: "Delete the app and all its errors. You confirm it.",
 		action: "delete the app in Checkend, after you ask me to confirm",
-		command: "ce project delete",
 	},
-];
+	remove: {
+		label: "Remove Checkend from the code",
+		description: "Remove the SDK and the settings from this app.",
+		action: "remove the Checkend SDK and its settings from the code",
+	},
+};
+
+/**
+ * The "Ask your agent" tasks: the names, the order and the commands come from the core table
+ * that also serves the recipes (/agent/tasks/<task>.md).
+ */
+export const AGENT_TASKS: AgentTask[] = CORE_TASKS.map((t) => {
+	const text = TASK_TEXT[t.task] ?? {
+		label: t.title,
+		description: t.summary,
+		action: t.title.toLowerCase(),
+	};
+	return { task: t.task, command: t.command, ...text };
+});
 
 /**
  * The prompt of one task. The app is named by its slug and public ID only: the name is free
