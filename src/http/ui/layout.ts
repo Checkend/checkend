@@ -18,6 +18,11 @@ export interface Member {
 	setup: string | null;
 	/** Unresolved issues first seen in the last 24 hours. */
 	newIssues: number;
+	/**
+	 * A hosted install (trusted front identity): no sign-out here; a link to the spaces page of
+	 * the front Worker instead (null: no link).
+	 */
+	front?: { spacesUrl: string | null } | null;
 }
 
 export interface PageOptions {
@@ -82,11 +87,18 @@ ${navLink(section, "apps", "/apps", "Apps")}
 <div class="side-foot">
 ${navLink(section, "settings", "/settings", "Settings")}
 <a href="${DOCS_URL}" rel="noopener">${ICONS.docs}<span class="side-label">Docs</span></a>
-<form class="side-account" method="post" action="/logout">
+${
+	member.front
+		? h`<div class="side-account">
+<span class="who" title="${member.name}">${member.name}</span>
+${member.front.spacesUrl ? h`<a class="link-button" href="${member.front.spacesUrl}">Switch space</a>` : ""}
+</div>`
+		: h`<form class="side-account" method="post" action="/logout">
 <input type="hidden" name="_csrf" value="${member.csrf}">
 <span class="who" title="${member.name}">${member.name}</span>
 <button class="link-button" type="submit">Sign out</button>
-</form>
+</form>`
+}
 </div>
 </div>
 </aside>`;

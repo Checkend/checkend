@@ -6,7 +6,7 @@ const CODE = "Zm9vYmFyLXNldHVwLWNvZGUtMDEyMzQ1Njc4OWFiY2RlZg";
 const bytes = (text: string) => new TextEncoder().encode(text).buffer;
 
 /** Runs the client script on a fake setup page and returns what it did. */
-function setupPage(hash: string) {
+function setupPage(hash: string, scriptSrc = "https://checkend.test/assets/app.0.js") {
 	class HTMLFormElement {}
 	class Element {}
 	const listeners: Record<string, (event: unknown) => void> = {};
@@ -31,6 +31,8 @@ function setupPage(hash: string) {
 		},
 		"/setup/verify": { redirect: "/" },
 	};
+	// Under a base path, the same answers.
+	for (const [url, answer] of Object.entries(answers)) answers[`/k7q2x9${url}`] = answer;
 	const context = {
 		location,
 		history: {
@@ -48,6 +50,7 @@ function setupPage(hash: string) {
 						? [notice]
 						: [],
 			getElementById: () => status,
+			currentScript: { src: scriptSrc },
 		},
 		navigator: {
 			credentials: {
@@ -95,6 +98,23 @@ function setupPage(hash: string) {
 	};
 	return { form, notice, replaced, requests, submit, openLink };
 }
+
+describe("client script: a base path", () => {
+	it("sends its requests under the base path of its own script URL", async () => {
+		const page = setupPage(`#${CODE}`, "https://hosted.test/k7q2x9/assets/app.0.js");
+		await page.submit();
+		expect(page.requests.map((r) => r.url)).toEqual([
+			"/k7q2x9/setup/options",
+			"/k7q2x9/setup/verify",
+		]);
+	});
+
+	it("builds every path from the base path", () => {
+		const paths = [...CLIENT_SCRIPT.matchAll(/(.{0,7})["'](\/[a-z][^"']*)["']/g)];
+		expect(paths.length).toBeGreaterThan(5);
+		expect(paths.filter((m) => m[1] !== "BASE + ").map((m) => m[2])).toEqual([]);
+	});
+});
 
 describe("client script: the setup link", () => {
 	it("removes the code from the address bar, and sends it in the body only", async () => {

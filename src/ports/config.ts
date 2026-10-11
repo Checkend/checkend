@@ -48,6 +48,20 @@ export interface Config {
 	 * or returns (recipes, llms.txt, DSNs) use it, never the request Host. Null: the request URL.
 	 */
 	publicUrl: string | null;
+	/**
+	 * The path under PUBLIC_URL where this install lives, for example `/k7q2x9` (a hosted
+	 * install at https://hosted.example/k7q2x9/). Empty: the root, as on self-host (unset).
+	 * Only the hosted entry sets it. Every URL that Checkend makes goes through `src/http/base-path.ts`.
+	 */
+	basePath?: string;
+	/**
+	 * Trusted front identity mode (hosted installs only; the Durable Object entry sets it): the
+	 * member comes only from the front Worker's call. The install ignores browser cookies and has
+	 * no setup, sign-in or passkeys of its own. Off: self-host, unchanged.
+	 */
+	trustedFront?: boolean;
+	/** The page of the front Worker that lists the spaces of the account ("Switch space"). */
+	spacesUrl?: string | null;
 }
 
 export interface AiConfig {

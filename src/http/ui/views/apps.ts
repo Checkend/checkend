@@ -17,10 +17,13 @@ import { displayText as t } from "../text.ts";
 
 export const PLATFORMS = ["node", "javascript", "python", "ruby", "php", "go", "other"] as const;
 
-/** The DSN of a project key: the public key and the public project ID, on this host. */
-export function dsnFor(origin: string, key: string, publicId: number): string {
-	const url = new URL(origin);
-	return `${url.protocol}//${key}@${url.host}/${publicId}`;
+/**
+ * The DSN of a project key: the public key and the public project ID, on this host. `base` is the
+ * public URL of the install, with its base path.
+ */
+export function dsnFor(base: string, key: string, publicId: number): string {
+	const url = new URL(base);
+	return `${url.protocol}//${key}@${url.host}${url.pathname.replace(/\/$/, "")}/${publicId}`;
 }
 
 // --- the prompt box and the live checklist ---------------------------------------------

@@ -19,6 +19,14 @@ export const CLIENT_SCRIPT = `"use strict";
     network: "Checkend did not answer. Check the connection and try again."
   };
 
+  // The base path of this install (a hosted install lives under /<id>/): the path of this script
+  // without /assets/<file>. Every request and link below starts with it; on self-host it is "".
+  var BASE = (function () {
+    var script = document.currentScript;
+    var match = script && /^[a-z]+:\\/\\/[^/]+((?:\\/[a-z0-9-]+)*)\\/assets\\/[^/]+$/.exec(script.src);
+    return match ? match[1] : "";
+  })();
+
   function toBuffer(text) {
     var base64 = text.replace(/-/g, "+").replace(/_/g, "/");
     var binary = atob(base64);
@@ -75,7 +83,7 @@ export const CLIENT_SCRIPT = `"use strict";
     if (!supported()) return say(statusEl, "unsupported");
     button.disabled = true;
     say(statusEl, "", "Waiting for your passkey…");
-    post("/login/options", {})
+    post(BASE + "/login/options", {})
       .then(function (o) {
         return navigator.credentials.get({
           publicKey: {
@@ -88,7 +96,7 @@ export const CLIENT_SCRIPT = `"use strict";
         });
       })
       .then(function (cred) {
-        return post("/login/verify", {
+        return post(BASE + "/login/verify", {
           response: {
             id: cred.id,
             rawId: toText(cred.rawId),
@@ -140,7 +148,7 @@ export const CLIENT_SCRIPT = `"use strict";
     var name = form.elements.namedItem("name").value;
     button.disabled = true;
     say(statusEl, "", "Waiting for your passkey…");
-    post("/setup/options", { code: setupCode, name: name })
+    post(BASE + "/setup/options", { code: setupCode, name: name })
       .then(function (o) {
         return navigator.credentials.create({
           publicKey: {
@@ -157,7 +165,7 @@ export const CLIENT_SCRIPT = `"use strict";
         });
       })
       .then(function (cred) {
-        return post("/setup/verify", {
+        return post(BASE + "/setup/verify", {
           code: setupCode,
           response: {
             id: cred.id,
@@ -277,7 +285,7 @@ export const CLIENT_SCRIPT = `"use strict";
       if (!row) return;
       var name = row.querySelector("[data-app-name]");
       name.textContent = String(app.name);
-      name.setAttribute("href", "/apps/" + id);
+      name.setAttribute("href", BASE + "/apps/" + id);
       row.querySelector("[data-app-count]").textContent = Number(app.done) + " of 5";
       (app.steps || []).forEach(function (step) {
         if (!/^[a-z_]+$/.test(step.key)) return;
@@ -297,7 +305,7 @@ export const CLIENT_SCRIPT = `"use strict";
     var stopped = false;
     function tick() {
       if (stopped || document.visibilityState !== "visible") return;
-      fetch("/apps/progress", { credentials: "same-origin", headers: { accept: "application/json" } })
+      fetch(BASE + "/apps/progress", { credentials: "same-origin", headers: { accept: "application/json" } })
         .then(function (response) { return response.ok ? response.json() : null; })
         .then(function (data) { if (data && updateProgress(section, data)) stopped = true; })
         .catch(function () {});

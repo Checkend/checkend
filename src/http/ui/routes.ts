@@ -33,6 +33,7 @@ import {
 import { createProject, listProjects } from "../../core/projects.ts";
 import { sql } from "../../ports/db.ts";
 import type { AppEnv } from "../app.ts";
+import { basePathOf, publicBase, withBase } from "../base-path.ts";
 import { publicOrigin } from "../origin.ts";
 import { assetRoutes } from "./assets/index.ts";
 import { type Html, h } from "./html.ts";
@@ -45,6 +46,7 @@ import {
 	clearedSessionCookie,
 	clientIp,
 	isDevRequest,
+	ownSignIn,
 	requireMember,
 	securityHeaders,
 	sessionCookie,
@@ -114,16 +116,22 @@ export function uiRoutes(app: Hono<AppEnv>, state: IngestState, onboarding: Onbo
 					devMode: c.env.ports.config.devMode,
 					csrf: session.csrfToken,
 					...(await sidebarFacts(c)),
+					...front(c),
 				}
 			: null;
 		return c.html(page({ title, member, ...(section ? { section } : {}), body }), status);
 	};
+	/** A hosted install: people sign in and switch spaces at the front Worker. */
+	const front = (c: Context<AppEnv>) =>
+		c.env.ports.config.trustedFront
+			? { front: { spacesUrl: c.env.ports.config.spacesUrl ?? null } }
+			: {};
 	const notFound = (c: Context<AppEnv>) => render(c, "Not found", undefined, notFoundView(), 404);
 	const member = [securityHeaders, requireMember] as const;
 
 	// --- sign-in, setup, sign-out -------------------------------------------------------
 
-	app.get("/login", securityHeaders, async (c) => {
+	app.get("/login", ownSignIn, securityHeaders, async (c) => {
 		if (await isSetupOpen(c.env.ports.db)) return c.redirect("/setup", 303);
 		return c.html(page({ title: "Sign in", body: loginView({ devLogin: isDevRequest(c) }) }));
 	});
@@ -142,16 +150,16 @@ export function uiRoutes(app: Hono<AppEnv>, state: IngestState, onboarding: Onbo
 	};
 	const signedIn = (c: Context<AppEnv>, token: string, redirect: string) => {
 		c.header("Set-Cookie", sessionCookie(token, SESSION_MAX_AGE));
-		return c.json({ redirect });
+		return c.json({ redirect: withBase(basePathOf(c), redirect) });
 	};
 
-	app.post("/login/options", securityHeaders, checkJsonCsrf, async (c) => {
+	app.post("/login/options", ownSignIn, securityHeaders, checkJsonCsrf, async (c) => {
 		const blocked = await limited(c);
 		if (blocked) return blocked;
 		return c.json(await signInOptions(c.env.ports, relyingPartyFor(publicOrigin(c))));
 	});
 
-	app.post("/login/verify", securityHeaders, checkJsonCsrf, async (c) => {
+	app.post("/login/verify", ownSignIn, securityHeaders, checkJsonCsrf, async (c) => {
 		const blocked = await limited(c);
 		if (blocked) return blocked;
 		const input = await body(c);
@@ -164,7 +172,7 @@ export function uiRoutes(app: Hono<AppEnv>, state: IngestState, onboarding: Onbo
 		return signedIn(c, result.value.token, "/issues");
 	});
 
-	app.get("/setup", securityHeaders, async (c) => {
+	app.get("/setup", ownSignIn, securityHeaders, async (c) => {
 		if (!(await isSetupOpen(c.env.ports.db))) {
 			return c.html(page({ title: "Setup is closed", body: setupClosedView() }), 404);
 		}
@@ -182,7 +190,7 @@ export function uiRoutes(app: Hono<AppEnv>, state: IngestState, onboarding: Onbo
 		invalid_credential: 401,
 	} as const;
 
-	app.post("/setup/options", securityHeaders, checkJsonCsrf, async (c) => {
+	app.post("/setup/options", ownSignIn, securityHeaders, checkJsonCsrf, async (c) => {
 		const blocked = await limited(c);
 		if (blocked) return blocked;
 		const input = await body(c);
@@ -195,7 +203,7 @@ export function uiRoutes(app: Hono<AppEnv>, state: IngestState, onboarding: Onbo
 		return c.json(result.value);
 	});
 
-	app.post("/setup/verify", securityHeaders, checkJsonCsrf, async (c) => {
+	app.post("/setup/verify", ownSignIn, securityHeaders, checkJsonCsrf, async (c) => {
 		const blocked = await limited(c);
 		if (blocked) return blocked;
 		const input = await body(c);
@@ -208,7 +216,7 @@ export function uiRoutes(app: Hono<AppEnv>, state: IngestState, onboarding: Onbo
 		return signedIn(c, result.value.token, "/");
 	});
 
-	app.post("/logout", ...member, checkFormCsrf, async (c) => {
+	app.post("/logout", ownSignIn, ...member, checkFormCsrf, async (c) => {
 		const token = sessionToken(c);
 		if (token) await deleteSession(c.env.ports, token);
 		c.header("Set-Cookie", clearedSessionCookie());
@@ -216,7 +224,7 @@ export function uiRoutes(app: Hono<AppEnv>, state: IngestState, onboarding: Onbo
 	});
 
 	// Development only: the flag (CHECKEND_DEV, set by `npm run dev`) AND a localhost request.
-	app.get("/dev/login", securityHeaders, async (c) => {
+	app.get("/dev/login", ownSignIn, securityHeaders, async (c) => {
 		if (!isDevRequest(c)) return notFound(c);
 		const session = await createDevSession(c.env.ports);
 		c.header("Set-Cookie", sessionCookie(session.token, SESSION_MAX_AGE));
@@ -300,7 +308,8 @@ export function uiRoutes(app: Hono<AppEnv>, state: IngestState, onboarding: Onbo
 
 	// --- home, apps ----------------------------------------------------------------------
 
-	const origin = publicOrigin;
+	/** The public URL of this install, with its base path: for prompts and DSNs. */
+	const origin = publicBase;
 	const loadProgress = async (c: Context<AppEnv>) =>
 		progressJson(await onboarding.progress(c.env.ports, now(c)), now(c));
 	const csrf = (c: Context<AppEnv>) => c.get("session").csrfToken;
@@ -465,7 +474,10 @@ export function uiRoutes(app: Hono<AppEnv>, state: IngestState, onboarding: Onbo
 			c,
 			"Settings",
 			"settings",
-			settingsView({ health, ingest, members, session, devMode: ports.config.devMode }, now(c)),
+			settingsView(
+				{ health, ingest, members, session, devMode: ports.config.devMode, ...front(c) },
+				now(c),
+			),
 		);
 	});
 

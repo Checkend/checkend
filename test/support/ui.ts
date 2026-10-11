@@ -1,3 +1,4 @@
+import type { FrontIdentity } from "../../src/core/auth/front-identity.ts";
 import { storedSetupCode } from "../../src/core/auth/passkeys.ts";
 import { createDevSession, getSession } from "../../src/core/auth/sessions.ts";
 import { IngestState } from "../../src/core/ingest/state.ts";
@@ -30,11 +31,16 @@ export async function uiApp(
 	});
 	const app = createApp({ state: new IngestState(), ...options });
 
-	const request = (path: string, init: RequestInit & { session?: string } = {}) => {
-		const { session, ...rest } = init;
+	/** `identity`: the member identity that a front Worker passes with its call (hosted installs). */
+	const request = (
+		path: string,
+		init: RequestInit & { session?: string; identity?: FrontIdentity } = {},
+	) => {
+		const { session, identity, ...rest } = init;
 		const headers = new Headers(rest.headers);
 		if (session) headers.set("cookie", `${SESSION_COOKIE}=${session}`);
-		return app.request(new URL(path, origin).toString(), { ...rest, headers }, { ports: t.ports });
+		const env = identity ? { ports: t.ports, identity } : { ports: t.ports };
+		return app.request(new URL(path, origin).toString(), { ...rest, headers }, env);
 	};
 
 	/** A signed-in browser (development session; the passkey flow has its own tests). */

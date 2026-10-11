@@ -1,4 +1,5 @@
 import type { Context, MiddlewareHandler } from "hono";
+import { frontSession, parseFrontIdentity } from "../../core/auth/front-identity.ts";
 import { isSetupOpen } from "../../core/auth/passkeys.ts";
 import { getSession, type Session } from "../../core/auth/sessions.ts";
 import type { AppEnv } from "../app.ts";
@@ -65,8 +66,16 @@ export function sessionToken(c: Context): string | null {
  * to /login. Sets `session` and `actor` (activity rows show the member).
  */
 export const requireMember: MiddlewareHandler<AppEnv> = async (c, next) => {
-	const token = sessionToken(c);
-	const session = token ? await getSession(c.env.ports, token) : null;
+	let session: Session | null;
+	if (c.env.ports.config.trustedFront) {
+		// A hosted install: the member comes only from the front Worker's call; cookies are ignored.
+		const identity = parseFrontIdentity(c.env.identity);
+		if (!identity) return c.json({ error: "not_found" }, 404);
+		session = await frontSession(c.env.ports, identity);
+	} else {
+		const token = sessionToken(c);
+		session = token ? await getSession(c.env.ports, token) : null;
+	}
 	if (!session) {
 		return c.redirect((await isSetupOpen(c.env.ports.db)) ? "/setup" : "/login", 303);
 	}
@@ -77,6 +86,15 @@ export const requireMember: MiddlewareHandler<AppEnv> = async (c, next) => {
 		name: session.memberName,
 		scopes: ["admin"],
 	});
+	await next();
+};
+
+/**
+ * For the install's own setup, sign-in and sign-out: a 404 in a hosted install (trusted front
+ * identity), where the front Worker does all of it.
+ */
+export const ownSignIn: MiddlewareHandler<AppEnv> = async (c, next) => {
+	if (c.env.ports.config.trustedFront) return c.json({ error: "not_found" }, 404);
 	await next();
 };
 

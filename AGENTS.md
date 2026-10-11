@@ -103,6 +103,13 @@ Checkend runs on Cloudflare first, and it must also run off Cloudflare. These ru
   no `raw()` and no `innerHTML` (a test checks). Put event data in `untrusted()` blocks and
   through `displayText()`. Strict CSP: no inline script or style. Format issue, event and
   project IDs in URLs only with `src/http/ui/ids.ts`; never show the internal project row ID.
+- **Hosted installs** (`src/entry/durable-object.ts`): the front Worker provisions each install
+  with a base path (`/<id>` under one shared origin) and calls `serve(request, identity)`. Every
+  URL that the app makes goes through `src/http/base-path.ts` (a crawler test fails on any URL
+  outside the base path). In the trusted front identity mode (`config.trustedFront`), members come
+  only from that call: no cookies, setup, sign-in or passkeys in the install; bearer tokens and
+  ingest work as before. A cross-tenant guard refuses script requests from another install's
+  pages. Self-host has neither (no base path, mode off).
 - **Development mode** (`CHECKEND_DEV=1`, only from `npm run dev`; never in `wrangler.jsonc`):
   `/dev/login` signs in without a passkey, `/setup` needs no code, and ingest accepts
   `X-Checkend-Demo-Time`. All three work only for requests to localhost. Tests check that they

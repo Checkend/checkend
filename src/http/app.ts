@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import type { FrontIdentity } from "../core/auth/front-identity.ts";
 import type { Session } from "../core/auth/sessions.ts";
 import { fixedClock } from "../core/clock.ts";
 import { checkHealth } from "../core/health.ts";
@@ -6,6 +7,7 @@ import { IngestState } from "../core/ingest/state.ts";
 import type { Actor } from "../core/tokens.ts";
 import type { Ports } from "../ports/index.ts";
 import { apiRoutes } from "./api.ts";
+import { baseUrls, crossTenantGuard, isOutsideBase, routePath } from "./base-path.ts";
 import { docsRoutes } from "./docs.ts";
 import { githubRoutes } from "./github.ts";
 import { ingestRoutes } from "./ingest.ts";
@@ -15,9 +17,13 @@ import { coreOnboarding, type Onboarding } from "./ui/onboarding.ts";
 import { uiRoutes } from "./ui/routes.ts";
 import { isDevRequest } from "./ui/security.ts";
 
-/** Each entry passes its ports as the Hono environment: `app.fetch(request, { ports })`. */
+/**
+ * Each entry passes its ports as the Hono environment: `app.fetch(request, { ports })`. A hosted
+ * install (config.trustedFront) also gets `identity`: the member that the front Worker signed in,
+ * an argument of its call (never a header). It is unchecked input until `requireMember` parses it.
+ */
 export type AppEnv = {
-	Bindings: { ports: Ports };
+	Bindings: { ports: Ports; identity?: FrontIdentity | null };
 	/**
 	 * `actor`: who calls /v1 (bearer token) or the UI (a member), set by the auth middleware.
 	 * `session` and `form`: UI only, set by `requireMember` and `checkFormCsrf`.
@@ -34,7 +40,19 @@ export interface AppOptions {
 
 export function createApp(options: AppOptions = {}): Hono<AppEnv> {
 	const state = options.state ?? new IngestState();
-	const app = new Hono<AppEnv>();
+	// Under a base path (hosted installs), routes match the path without it.
+	const app = new Hono<AppEnv>({ getPath: routePath });
+
+	// A request outside the base path is not for this install: 404 before any route runs.
+	const dispatch = app.fetch;
+	app.fetch = (request, env, ctx) =>
+		isOutsideBase(request, env as AppEnv["Bindings"] | undefined)
+			? Response.json({ error: "not_found" }, { status: 404 })
+			: dispatch(request, env, ctx);
+
+	// Both do nothing without a base path (self-host).
+	app.use("*", crossTenantGuard);
+	app.use("*", baseUrls);
 
 	app.get("/health", async (c) => {
 		const health = await checkHealth(c.env.ports, state);

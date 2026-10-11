@@ -17,6 +17,8 @@ export interface SettingsData {
 	members: MemberRow[];
 	session: { memberName: string; expiresAt: string; csrfToken: string };
 	devMode: boolean;
+	/** A hosted install (trusted front identity): people sign in at the front Worker. */
+	front?: { spacesUrl: string | null } | null;
 }
 
 const fact = (label: string, value: Html | string) => h`<div><dt>${label}</dt>
@@ -24,6 +26,7 @@ const fact = (label: string, value: Html | string) => h`<div><dt>${label}</dt>
 
 export function settingsView(data: SettingsData, now: Date): Html {
 	const { health, ingest } = data;
+	if (data.front) return frontSettings(data, data.front.spacesUrl, now);
 	return h`${pageHead("Settings", "The state of this install, and who can sign in.")}
 <div class="stack">
 <section aria-labelledby="health-title">
@@ -55,6 +58,36 @@ ${fact("Retry after", ingest && ingest.retry_after_seconds > 0 ? `${ingest.retry
 <p>Signed in as <strong>${t(data.session.memberName, 100)}</strong>. The session ends ${data.session.expiresAt.slice(0, 10)}.</p>
 ${data.devMode ? h`<p class="notice">Development mode is on (<code>CHECKEND_DEV</code>). <code>/dev/login</code> signs in without a passkey on localhost.</p>` : ""}
 <form method="post" action="/logout"><input type="hidden" name="_csrf" value="${data.session.csrfToken}"><button class="btn btn-quiet" type="submit">Sign out</button></form>
+</section>
+</div>`;
+}
+
+/** A hosted install: the account and its sign-in belong to the front Worker. */
+function frontSettings(data: SettingsData, spacesUrl: string | null, now: Date): Html {
+	const { health } = data;
+	return h`${pageHead("Settings", "The state of this space, and its members.")}
+<div class="stack">
+<section aria-labelledby="health-title">
+<h2 id="health-title">Health</h2>
+<dl class="facts">
+${fact("Status", health.status)}
+${fact("Version", health.version)}
+${fact("Migration", health.migrations ? (health.migrations.latest ?? "none") : "unknown")}
+</dl>
+</section>
+<section aria-labelledby="members-title">
+<h2 id="members-title">Members</h2>
+<table>
+<thead><tr><th scope="col">Name</th><th scope="col">Added</th></tr></thead>
+<tbody>${data.members.map(
+		(m) => h`<tr><td>${t(m.name, 100)}</td><td class="when">${time(m.created_at, now)}</td></tr>`,
+	)}</tbody>
+</table>
+</section>
+<section aria-labelledby="session-title">
+<h2 id="session-title">Your account</h2>
+<p>Signed in as <strong>${t(data.session.memberName, 100)}</strong> with your Checkend account.</p>
+${spacesUrl ? h`<p><a class="btn btn-quiet" href="${spacesUrl}">Switch space</a></p>` : ""}
 </section>
 </div>`;
 }
