@@ -93,9 +93,16 @@ describe("onboarding texts", () => {
 		expect(setupPrompt("https://errors.acme.com", "cks_abc")).toBe(
 			`Set up Checkend error tracking for this app.
 1. If \`ce\` is not installed, install it: https://errors.acme.com/agent/install
-2. Run: ce setup --url https://errors.acme.com --key cks_abc   (the key is valid for 1 hour)
+2. Run: CHECKEND_SETUP_KEY=cks_abc ce setup --url https://errors.acme.com
+   The key is valid for 1 hour. Keep it only in CHECKEND_SETUP_KEY: never in a file or a commit.
 3. Follow the steps that \`ce setup\` prints.`,
 		);
+	});
+
+	it("never puts the setup key into a command-line argument", () => {
+		const prompt = setupPrompt("https://errors.acme.com", "cks_abc");
+		expect(prompt).not.toContain("--key");
+		expect(prompt).not.toMatch(/ce setup[^\n]*cks_abc/);
 	});
 
 	it("names each task's recipe and command, and the app by slug and ID only", () => {
@@ -196,7 +203,12 @@ describe("setup key", () => {
 		const ui = await signedIn();
 		const response = await ui.form("/apps/setup-key", { _csrf: ui.session.csrf }, ui.session.token);
 		expect(response.status).toBe(200);
-		expect(await response.text()).toContain("cks_fake1");
+		const text = await response.text();
+		expect(text).toContain("CHECKEND_SETUP_KEY=cks_fake1 ce setup --url");
+		expect(text).not.toContain("--key");
+		// A setup key makes agent tokens that read and change issues: the page must not say less.
+		expect(text).not.toContain("cannot read your errors");
+		expect(text).toContain("agent tokens that read and change issues");
 	});
 
 	it("needs the CSRF token", async () => {
@@ -400,7 +412,7 @@ describe("with the core onboarding (no fake)", () => {
 		});
 		expect(copied.status).toBe(200);
 		const { prompt } = (await copied.json()) as { prompt: string };
-		const key = /--key (cks_\S+)/.exec(prompt)?.[1] ?? "";
+		const key = /CHECKEND_SETUP_KEY=(cks_\S+)/.exec(prompt)?.[1] ?? "";
 		expect(key).not.toBe("");
 
 		// What `ce setup` does with the key.

@@ -145,7 +145,8 @@ export type ProgressJson = ReturnType<typeof progressJson>;
 export function setupPrompt(origin: string, key: string): string {
 	return `Set up Checkend error tracking for this app.
 1. If \`ce\` is not installed, install it: ${origin}/agent/install
-2. Run: ce setup --url ${origin} --key ${key}   (the key is valid for 1 hour)
+2. Run: CHECKEND_SETUP_KEY=${key} ce setup --url ${origin}
+   The key is valid for 1 hour. Keep it only in CHECKEND_SETUP_KEY: never in a file or a commit.
 3. Follow the steps that \`ce setup\` prints.`;
 }
 

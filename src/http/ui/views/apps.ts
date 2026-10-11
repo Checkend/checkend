@@ -48,7 +48,7 @@ function promptBox(
 				: ""
 	}</p>
 </form>
-<p class="hint">Each copy makes a new setup key. It is valid for 1 hour. It can only add apps and send a test error: it cannot read your errors or change settings.</p>
+<p class="hint">Each copy makes a new setup key. It is valid for 1 hour. It can add apps, send a test error, and make agent tokens that read and change issues. Treat the prompt as a secret.</p>
 </section>`;
 }
 

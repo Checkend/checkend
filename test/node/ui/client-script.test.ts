@@ -204,14 +204,17 @@ describe("client script: the prompt box", () => {
 	it("asks for a new key, shows the prompt, and copies it", async () => {
 		const page = homePage({
 			status: 200,
-			body: { prompt: "Set up Checkend … --key cks_new", expires_at: "2026-10-10T13:00:00Z" },
+			body: {
+				prompt: "Set up Checkend … CHECKEND_SETUP_KEY=cks_new",
+				expires_at: "2026-10-10T13:00:00Z",
+			},
 		});
 		await page.submit();
 		expect(page.requests).toEqual([
 			{ url: "/apps/setup-key", body: "_csrf=csrf-token", accept: "application/json" },
 		]);
-		expect(page.code.textContent).toBe("Set up Checkend … --key cks_new");
-		expect(page.copied).toEqual(["Set up Checkend … --key cks_new"]);
+		expect(page.code.textContent).toBe("Set up Checkend … CHECKEND_SETUP_KEY=cks_new");
+		expect(page.copied).toEqual(["Set up Checkend … CHECKEND_SETUP_KEY=cks_new"]);
 		expect(page.status.textContent).toContain("Copied");
 		expect(page.button.disabled).toBe(false);
 	});
