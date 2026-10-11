@@ -193,3 +193,32 @@ describe("project repository", () => {
 		);
 	});
 });
+
+describe("the GitHub webhook body cap", () => {
+	it("stops reading a chunked body (no Content-Length) at the cap, before the signature check", async () => {
+		const t = await testPorts({ config: { githubWebhookSecret: SECRET } });
+		const app = createApp({ state: new IngestState() });
+		let pulled = 0;
+		const chunk = new Uint8Array(256 * 1024);
+		const body = new ReadableStream<Uint8Array>({
+			pull(controller) {
+				pulled += chunk.byteLength;
+				if (pulled > 64 * 1024 * 1024) controller.close();
+				else controller.enqueue(chunk);
+			},
+		});
+		const response = await app.request(
+			new Request("https://checkend.test/hooks/github", {
+				method: "POST",
+				headers: { "x-github-event": "push", "x-hub-signature-256": "sha256=00" },
+				body,
+				duplex: "half",
+			} as RequestInit),
+			undefined,
+			{ ports: t.ports },
+		);
+		expect(response.status).toBe(413);
+		// It stopped soon after 2 MB, not at the end of the 64 MB stream.
+		expect(pulled).toBeLessThan(4 * 1024 * 1024);
+	});
+});
