@@ -81,6 +81,12 @@ export interface ProjectSummary {
 	/** Events per day that ingest accepts (null: no quota), and the events of today (UTC). */
 	daily_quota: number | null;
 	events_today: number;
+	/** Events in the last 24 full hours. */
+	events_24h: number;
+	/** The last time an issue of the project was seen; null: no events yet. */
+	last_event_at: string | null;
+	/** The demo project (the UI offers "Delete demo"). */
+	demo: boolean;
 	created_at: string;
 	keys: string[];
 }
@@ -181,8 +187,10 @@ export async function createProject(
 
 export async function listProjects(db: Db, now: Date = new Date()): Promise<ProjectSummary[]> {
 	const today = `${now.toISOString().slice(0, 10)}T00`;
+	const hour24 = new Date(now.getTime() - 24 * 3_600_000).toISOString().slice(0, 13);
 	const projects = await db.all<
-		Omit<ProjectSummary, "keys" | "allowed_origins" | "scrub_keys" | "scrub_patterns"> & {
+		Omit<ProjectSummary, "keys" | "allowed_origins" | "scrub_keys" | "scrub_patterns" | "demo"> & {
+			demo: number;
 			internal_id: number;
 			allowed_origins: string | null;
 			scrub_keys: string | null;
@@ -194,19 +202,26 @@ export async function listProjects(db: Db, now: Date = new Date()): Promise<Proj
 				trust AS trust_setting, allowed_origins, daily_quota, scrub_keys, scrub_patterns,
 				(SELECT coalesce(sum(c.count), 0) FROM issue_counts c JOIN issues i ON i.id = c.issue_id
 					WHERE i.project_id = projects.id AND c.hour >= ${today}) AS events_today,
+				(SELECT coalesce(sum(c.count), 0) FROM issue_counts c JOIN issues i ON i.id = c.issue_id
+					WHERE i.project_id = projects.id AND c.hour > ${hour24}) AS events_24h,
+				(SELECT max(i.last_seen) FROM issues i WHERE i.project_id = projects.id) AS last_event_at,
+				demo,
 				created_at
 			FROM projects WHERE deleted_at IS NULL ORDER BY internal_id`,
 	);
 	const keys = await db.all<{ project_id: number; public_key: string }>(
 		sql`SELECT project_id, public_key FROM project_keys WHERE revoked_at IS NULL ORDER BY id`,
 	);
-	return projects.map(({ internal_id, allowed_origins, scrub_keys, scrub_patterns, ...p }) => ({
-		...p,
-		allowed_origins: allowed_origins ? (JSON.parse(allowed_origins) as string[]) : null,
-		scrub_keys: scrub_keys ? (JSON.parse(scrub_keys) as string[]) : [],
-		scrub_patterns: scrub_patterns ? (JSON.parse(scrub_patterns) as string[]) : [],
-		keys: keys.filter((k) => k.project_id === internal_id).map((k) => k.public_key),
-	}));
+	return projects.map(
+		({ internal_id, allowed_origins, scrub_keys, scrub_patterns, demo, ...p }) => ({
+			...p,
+			demo: demo === 1,
+			allowed_origins: allowed_origins ? (JSON.parse(allowed_origins) as string[]) : null,
+			scrub_keys: scrub_keys ? (JSON.parse(scrub_keys) as string[]) : [],
+			scrub_patterns: scrub_patterns ? (JSON.parse(scrub_patterns) as string[]) : [],
+			keys: keys.filter((k) => k.project_id === internal_id).map((k) => k.public_key),
+		}),
+	);
 }
 
 /** Changes project settings. Returns false when there is no such project. */
