@@ -49,3 +49,21 @@ export function memoryBlobStore(): BlobStore {
 		},
 	};
 }
+
+/**
+ * A BlobStore that keeps every key under a prefix ("installs/<id>/"): one bucket shared by many
+ * hosted installs, each in its own part. The keys of the callers stay unchanged.
+ */
+export function prefixedBlobStore(store: BlobStore, prefix: string): BlobStore {
+	checkBlobKey(`${prefix}x`);
+	const key = (k: string) => {
+		checkBlobKey(k);
+		return `${prefix}${k}`;
+	};
+	return {
+		put: async (k, value) => store.put(key(k), value),
+		get: async (k) => store.get(key(k)),
+		delete: async (k) => store.delete(key(k)),
+		deleteMany: async (keys) => store.deleteMany(keys.map(key)),
+	};
+}

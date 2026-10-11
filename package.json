@@ -23,7 +23,8 @@
 		"project": "node scripts/project.ts",
 		"types:check": "wrangler types --check --env-file /dev/null",
 		"skill:build": "node scripts/build-skill.ts",
-		"spec:build": "node scripts/build-spec.ts"
+		"spec:build": "node scripts/build-spec.ts",
+		"migrations:build": "node scripts/build-migrations.ts"
 	},
 	"dependencies": {
 		"@hono/node-server": "2.1.1",

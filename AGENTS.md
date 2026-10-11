@@ -17,6 +17,7 @@ The core is portable, so the same code can also run on Node with SQLite.
 | `npm run typecheck` | TypeScript for the Workers runtime and for Node. |
 | `npm run types` | Generate `worker-configuration.d.ts` again after you change `wrangler.jsonc`. It ignores `.dev.vars`, so local secrets do not change the types. |
 | `npm run dev` | Run the Worker locally. First run `npx wrangler d1 migrations apply DB --local`. |
+| `npm run migrations:build` | Write `src/entry/migrations.generated.ts` (the migrations of the hosted install) again after you add a migration. A test fails when it is out of date. |
 | `npm run check` | Lint, typecheck, tests and the CPU budget. Run it before each commit. |
 | `npm run project -- create --name <name>` | Create a project and print its DSN (needs `CHECKEND_URL` and `CHECKEND_ADMIN_TOKEN`). `list` prints all projects. |
 | `npm run deploy:production` | People only (see rule 9). Deploys with `wrangler.production.jsonc`: a copy of `wrangler.jsonc` with your Worker name and `database_id`. Files named `wrangler.*.jsonc` are git-ignored and blocked by the pre-commit hook. |
@@ -33,6 +34,7 @@ src/
   adapters/cloudflare/  Cloudflare implementations of the ports (D1, ...).
   adapters/node/        Node implementations of the ports (SQLite, ...).
   entry/worker.ts       The Worker entry. Builds the ports from `env` and serves the app.
+  entry/durable-object.ts  The hosted install: one Durable Object = one install (its own SQLite).
 migrations/             Plain SQL migrations for D1 and SQLite.
 test/contract/          Tests that every adapter of a port must pass.
 test/node/              Node tests (core, SQLite adapter, tools).
@@ -120,7 +122,9 @@ For local development, put `ADMIN_TOKEN=...` in `.dev.vars` (git-ignored).
 - Add a file `migrations/NNNN_description.sql` (four digits, then a name). Use
   `npx wrangler d1 migrations create DB description` to make one.
 - On Cloudflare, `wrangler d1 migrations apply` runs them (the `deploy` script does this).
-  On Node and in tests, `applyMigrations()` runs the same files. Both record them in the
+  On Node and in tests, `applyMigrations()` runs the same files. A hosted install (a Durable Object)
+  runs them on its first start after a deploy, from `src/entry/migrations.generated.ts`: after you
+  add a migration, run `npm run migrations:build`. Both record them in the
   `d1_migrations` table.
 - Each migration runs as one atomic batch. Do not use `CREATE TRIGGER` (the statement splitter
   does not support it), and do not use `BEGIN`/`COMMIT`.
