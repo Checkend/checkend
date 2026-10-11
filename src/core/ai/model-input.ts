@@ -65,6 +65,27 @@ function topFrames(frames: NormalizedFrame[]): NormalizedFrame[] {
 	return (inApp.length > 0 ? inApp : frames).slice(-MAX_FRAMES).reverse();
 }
 
+/**
+ * The largest model state, as JSON characters. Clef-flash has a context of 24,576 tokens; with
+ * at most 1 token per character (CJK text), this leaves room for the questions.
+ */
+export const MAX_STATE_CHARS = 12_000;
+
+interface Shape {
+	exceptions: number;
+	frames: number;
+	text: number;
+	source: boolean;
+}
+
+// From the full input down to the smallest one. The first shape that fits is used.
+const SHAPES: Shape[] = [
+	{ exceptions: MAX_EXCEPTIONS, frames: MAX_FRAMES, text: 500, source: true },
+	{ exceptions: 2, frames: 5, text: 400, source: true },
+	{ exceptions: 1, frames: 3, text: 300, source: false },
+	{ exceptions: 1, frames: 2, text: 150, source: false },
+];
+
 export function buildModelInput(
 	issue: { title: string; level: string },
 	event: NormalizedEvent | null,
@@ -74,34 +95,40 @@ export function buildModelInput(
 		value === null || value === undefined
 			? null
 			: normalizeForModel(cleanText(value, max), project);
-	const exceptions = (event?.exceptions ?? [])
-		.slice(-MAX_EXCEPTIONS)
-		.reverse()
-		.map((exception) => ({
-			type: norm(exception.type, 120),
-			value: norm(exception.value, 500) ?? "",
-			frames: topFrames(exception.frames).map((frame, i) => {
-				const file = frame.filename ?? frame.abs_path;
-				const source = i === 0 ? norm(frame.context_line?.trim(), 160) : null;
-				return {
-					function: norm(frame.function, 120),
-					location: norm(frame.module ?? (file ? normalizeFilename(file) : null), 160),
-					line: frame.lineno,
-					...(source ? { source } : {}),
-				};
-			}),
-		}));
-	const state: ModelState = {
-		title: norm(issue.title, 300) ?? "",
+	const build = (shape: Shape): ModelState => ({
+		title: norm(issue.title, Math.min(300, shape.text)) ?? "",
 		level: issue.level,
 		platform: norm(event?.platform, 40),
 		environment: norm(event?.environment, 60),
-		message: norm(event?.message, 500),
-		exceptions,
-	};
+		message: norm(event?.message, shape.text),
+		exceptions: (event?.exceptions ?? [])
+			.slice(-shape.exceptions)
+			.reverse()
+			.map((exception) => ({
+				type: norm(exception.type, 120),
+				value: norm(exception.value, shape.text) ?? "",
+				frames: topFrames(exception.frames)
+					.slice(0, shape.frames)
+					.map((frame, i) => {
+						const file = frame.filename ?? frame.abs_path;
+						const source = i === 0 && shape.source ? norm(frame.context_line?.trim(), 160) : null;
+						return {
+							function: norm(frame.function, 120),
+							location: norm(frame.module ?? (file ? normalizeFilename(file) : null), 160),
+							line: frame.lineno,
+							...(source ? { source } : {}),
+						};
+					}),
+			})),
+	});
+	let state = build(SHAPES[0] as Shape);
+	for (const shape of SHAPES.slice(1)) {
+		if (JSON.stringify(state).length <= MAX_STATE_CHARS) break;
+		state = build(shape);
+	}
 	const text = [
 		state.title,
-		...exceptions.flatMap((e) => [
+		...state.exceptions.flatMap((e) => [
 			`${e.type ? `${e.type}: ` : ""}${e.value}`,
 			...e.frames.map(
 				(f) =>

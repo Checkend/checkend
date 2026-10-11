@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
 	buildModelInput,
 	issueModelInput,
+	MAX_STATE_CHARS,
 	normalizeForModel,
 } from "../../../src/core/ai/model-input.ts";
 import type { NormalizedEvent, NormalizedFrame } from "../../../src/core/ingest/normalize.ts";
@@ -154,6 +155,34 @@ describe("buildModelInput", () => {
 		expect(input.text).toBe(
 			"TypeError: Cannot read properties of undefined (reading 'id')\nTypeError: Cannot read properties of undefined (reading 'id') for <email>\n  at total (app/src/cart.js:12)",
 		);
+	});
+
+	it("stays inside the Clef-flash context even with 1 token per character (CJK text)", () => {
+		const cjk = "错误".repeat(400);
+		const big = buildModelInput(
+			{ title: cjk, level: "error" },
+			event({
+				message: cjk,
+				exceptions: Array.from({ length: 3 }, () => ({
+					type: "错误类型",
+					value: cjk,
+					module: null,
+					mechanism: null,
+					frames: Array.from({ length: 8 }, (_, i) =>
+						frame({
+							function: `函数${cjk.slice(0, 100)}${i}`,
+							filename: `/srv/${cjk.slice(0, 150)}.js`,
+							in_app: true,
+							context_line: cjk,
+						}),
+					),
+				})),
+			}),
+			null,
+		);
+		expect(JSON.stringify(big.state).length).toBeLessThanOrEqual(MAX_STATE_CHARS);
+		expect(MAX_STATE_CHARS + 2000).toBeLessThan(24_576); // the questions need about 600 tokens
+		expect(big.state.exceptions[0]?.frames.length).toBeGreaterThan(0);
 	});
 
 	it("caps the size of the input", () => {
