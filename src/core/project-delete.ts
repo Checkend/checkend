@@ -85,7 +85,7 @@ const PURGE_SETTLE_MS = 10 * 60_000;
  * row, its revoked keys and the activity stay (the audit record).
  */
 export async function runProjectPurge(
-	ports: Pick<Ports, "db"> & Partial<Pick<Ports, "blobs">>,
+	ports: Pick<Ports, "db"> & Partial<Pick<Ports, "blobs" | "vectors">>,
 	now: Date,
 	options: { chunkSize?: number; maxChunks?: number } = {},
 ): Promise<number> {
@@ -122,6 +122,23 @@ export async function runProjectPurge(
 		simple(
 			sql`DELETE FROM issue_triage WHERE issue_id IN (SELECT issue_id FROM issue_triage
 				WHERE issue_id IN (SELECT id FROM issues WHERE project_id = ${p}) LIMIT ${size})`,
+		),
+		{
+			// Embeddings: the vectors in the index go with them.
+			run: async () => {
+				const rows = await db.all<{ issue_id: number }>(
+					sql`DELETE FROM issue_embeddings WHERE issue_id IN (SELECT issue_id FROM issue_embeddings
+						WHERE issue_id IN (SELECT id FROM issues WHERE project_id = ${p}) LIMIT ${size})
+						RETURNING issue_id`,
+				);
+				if (rows.length > 0) await ports.vectors?.deleteByIds(rows.map((r) => String(r.issue_id)));
+				return rows.length;
+			},
+		},
+		simple(
+			sql`DELETE FROM issue_similar WHERE rowid IN (SELECT rowid FROM issue_similar
+				WHERE issue_id IN (SELECT id FROM issues WHERE project_id = ${p})
+					OR similar_id IN (SELECT id FROM issues WHERE project_id = ${p}) LIMIT ${size})`,
 		),
 		simple(
 			sql`DELETE FROM fixes WHERE id IN (SELECT id FROM fixes

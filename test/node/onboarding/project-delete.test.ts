@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { sqliteVectorIndex } from "../../../src/adapters/node/vector-index.ts";
 import { verifyFixes } from "../../../src/core/fixes.ts";
 import { prepareEvent } from "../../../src/core/ingest/prepare.ts";
 import { IngestState } from "../../../src/core/ingest/state.ts";
@@ -110,10 +111,35 @@ describe("runProjectPurge", () => {
 		const { ports, clock, project, other } = await projectWithData();
 		await ports.db.run(sql`UPDATE issues SET merged_into = (SELECT min(id) FROM issues WHERE project_id = ${project.internalId}), status = 'merged'
 			WHERE id = (SELECT max(id) FROM issues WHERE project_id = ${project.internalId})`);
+		const vectors = sqliteVectorIndex(ports.db);
+		const ids = (
+			await ports.db.all<{ id: number }>(
+				sql`SELECT id FROM issues WHERE project_id = ${project.internalId}`,
+			)
+		).map((r) => r.id);
+		const keep =
+			(
+				await ports.db.first<{ id: number }>(
+					sql`SELECT id FROM issues WHERE project_id = ${other.internalId}`,
+				)
+			)?.id ?? 0;
+		for (const id of ids) {
+			await ports.db.run(
+				sql`INSERT INTO issue_embeddings (issue_id, model, text, embedded_at) VALUES (${id}, 'm', 't', 'now')`,
+			);
+			await vectors.upsert([{ id: String(id), values: [1, 0] }]);
+		}
+		await ports.db.run(
+			sql`INSERT INTO issue_similar (issue_id, similar_id, score, computed_at) VALUES (${keep}, ${ids[0] ?? 0}, 0.9, 'now')`,
+		);
+		await vectors.upsert([{ id: String(keep), values: [0, 1] }]);
 		await deleteProject(ports, BOOTSTRAP_ADMIN, project.slug);
 		let total = 0;
 		for (let i = 0; i < 10; i++)
-			total += await runProjectPurge(ports, clock.now(), { chunkSize: 1, maxChunks: 2 });
+			total += await runProjectPurge({ ...ports, vectors }, clock.now(), {
+				chunkSize: 1,
+				maxChunks: 2,
+			});
 		expect(total).toBeGreaterThan(0);
 		const id = project.internalId;
 		expect(
@@ -123,6 +149,8 @@ describe("runProjectPurge", () => {
 				(SELECT count(*) FROM tag_keys WHERE project_id = ${id}) AS n`),
 		).toEqual({ n: 0 });
 		expect(await ports.db.first(sql`SELECT count(*) AS n FROM issue_counts`)).toEqual({ n: 1 });
+		expect(await ports.db.all(sql`SELECT id FROM vectors`)).toEqual([{ id: String(keep) }]);
+		expect(await ports.db.first(sql`SELECT count(*) AS n FROM issue_similar`)).toEqual({ n: 0 });
 		expect(
 			await ports.db.first(
 				sql`SELECT count(*) AS n FROM issues WHERE project_id = ${other.internalId}`,

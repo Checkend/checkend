@@ -9,6 +9,7 @@ import type { Mailer } from "./mailer.ts";
 import type { ModelRunner } from "./model-runner.ts";
 import type { RateLimiter } from "./rate-limiter.ts";
 import type { Resolver } from "./resolver.ts";
+import type { VectorIndex } from "./vector-index.ts";
 
 export type { BlobStore } from "./blob-store.ts";
 export type { Clock } from "./clock.ts";
@@ -21,6 +22,7 @@ export type { Mailer } from "./mailer.ts";
 export type { ModelRunner } from "./model-runner.ts";
 export type { RateLimiter } from "./rate-limiter.ts";
 export type { Resolver } from "./resolver.ts";
+export type { VectorIndex } from "./vector-index.ts";
 
 /**
  * Everything the app needs from its runtime. Each entry builds one from its environment:
@@ -46,6 +48,8 @@ export interface Ports {
 	mailer: Mailer | null;
 	/** Workers AI models, always through AI Gateway; null: no AI (the AI features are off). */
 	models: ModelRunner | null;
+	/** Vectors of issues for similar issues; null: similar issues are off. */
+	vectors: VectorIndex | null;
 	/**
 	 * The address of the client, for per-client rate limits. Workers: cf-connecting-ip. Node: the
 	 * socket address, or X-Forwarded-For from trusted proxies only (TRUSTED_PROXIES).

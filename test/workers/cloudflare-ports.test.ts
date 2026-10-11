@@ -99,4 +99,16 @@ describe("cloudflarePorts", () => {
 		expect(await ports.models?.run("@cf/cloudflare/clef-flash", {})).toEqual({ ok: true });
 		expect(seen).toEqual([{ gateway: { id: "gw1", collectLog: false } }]);
 	});
+
+	it("uses the Vectorize binding when it exists", () => {
+		const ctx = createExecutionContext();
+		expect(cloudflarePorts(env, ctx).vectors).toBeNull();
+		const VECTORIZE = {
+			upsert: async () => ({}),
+			query: async () => ({ matches: [] }),
+			queryById: async () => ({ matches: [] }),
+			deleteByIds: async () => ({}),
+		};
+		expect(cloudflarePorts({ ...env, VECTORIZE }, ctx).vectors).not.toBeNull();
+	});
 });

@@ -40,6 +40,7 @@ export async function testPorts(
 		ingestQueue: null,
 		mailer: null,
 		models: null,
+		vectors: null,
 		clientIp: (request: Request) => request.headers.get("cf-connecting-ip") ?? "unknown",
 		...overrides,
 		config: { ...DEFAULT_CONFIG, ...overrides.config },

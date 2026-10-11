@@ -27,6 +27,7 @@ import { systemResolver } from "../adapters/node/resolver.ts";
 import { s3BlobStore } from "../adapters/node/s3-blob-store.ts";
 import { smtpMailer } from "../adapters/node/smtp-mailer.ts";
 import { openSqliteDb } from "../adapters/node/sqlite-db.ts";
+import { sqliteVectorIndex } from "../adapters/node/vector-index.ts";
 import { systemClock } from "../core/clock.ts";
 import { consumeIngest } from "../core/ingest/overflow.ts";
 import { IngestState } from "../core/ingest/state.ts";
@@ -101,6 +102,7 @@ export async function startServer(env: NodeEnv): Promise<RunningServer> {
 		rateLimiter:
 			perMinute > 0 ? tokenBucketLimiter({ limit: perMinute, periodMs: 60_000 }) : noRateLimit,
 		config,
+		vectors: sqliteVectorIndex(db),
 		resolver: systemResolver,
 		http: pinnedHttpClient(),
 		models:

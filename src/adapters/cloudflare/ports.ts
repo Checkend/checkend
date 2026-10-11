@@ -9,6 +9,7 @@ import { cloudflareIngestQueue } from "./ingest-queue.ts";
 import { type AiBinding, cloudflareModelRunner } from "./model-runner.ts";
 import { r2BlobStore } from "./r2-blob-store.ts";
 import { dohResolver } from "./resolver.ts";
+import { type VectorizeBinding, vectorizeIndex } from "./vector-index.ts";
 
 export { type ConfigEnv, readConfig };
 
@@ -27,6 +28,8 @@ type WorkerEnv = Omit<Env, "INGEST_RATE_LIMITER"> &
 		EMAIL?: EmailBinding;
 		// Optional binding: Workers AI. The AI features need it (and their flags).
 		AI?: AiBinding;
+		// Optional binding: a Vectorize index (1024 dimensions, cosine) for similar issues.
+		VECTORIZE?: VectorizeBinding;
 	};
 
 function rateLimiter(binding: WorkerEnv["INGEST_RATE_LIMITER"]): RateLimiter {
@@ -49,6 +52,7 @@ export function cloudflarePorts(env: WorkerEnv, ctx: Pick<ExecutionContext, "wai
 		ingestQueue: env.INGEST_QUEUE ? cloudflareIngestQueue(env.INGEST_QUEUE) : null,
 		mailer: env.EMAIL && env.EMAIL_FROM ? cloudflareMailer(env.EMAIL, env.EMAIL_FROM) : null,
 		http: fetchClient,
+		vectors: env.VECTORIZE ? vectorizeIndex(env.VECTORIZE) : null,
 		models: env.AI
 			? cloudflareModelRunner(env.AI, {
 					id: config.ai.gatewayId,
