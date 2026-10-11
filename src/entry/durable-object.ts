@@ -51,9 +51,19 @@ export interface Provision {
 }
 
 /** The base path and public origin of a request (see serve). */
-export type InstallLocation = Pick<Provision, "basePath" | "publicUrl">;
+export type InstallLocation = Pick<Provision, "basePath" | "publicUrl"> & { standIn?: boolean };
 
 const PROVISION_KEY = "provision";
+/** Written by destroy() after all data is deleted: the install stays deleted. */
+const TOMBSTONE_KEY = "tombstone";
+
+/**
+ * The key of the ingest rate limit (per DSN key): by the base path when the install has one, so
+ * that a stand-in install (see serve) and the real install of a path count alike.
+ */
+export function ingestLimitKey(basePath: string, objectId: string, key: string): string {
+	return `${basePath || objectId}:${key}`;
+}
 
 /** An http(s) URL without user info, query or fragment; `originOnly`: also without a path. */
 function checkedUrl(value: unknown, originOnly: boolean): string {
@@ -87,15 +97,25 @@ export class CheckendInstall extends DurableObject<InstallEnv> {
 		this.db = durableObjectDb(ctx.storage);
 		// The first start after a deploy applies new migrations before any request runs.
 		ctx.blockConcurrencyWhile(async () => {
+			// A deleted install stays deleted after a restart: no migrations, no alarm, no answers.
+			if ((await ctx.storage.get<boolean>(TOMBSTONE_KEY)) === true) {
+				this.destroyed = true;
+				return;
+			}
 			await applyMigrations(this.db, MIGRATIONS);
 			this.provisioned = (await ctx.storage.get<Provision>(PROVISION_KEY)) ?? null;
 			this.encryptionKeys = await deriveInstallKeys(
 				readConfig(env).encryptionKeys,
 				ctx.id.toString(),
 			);
-			if ((await ctx.storage.getAlarm()) === null)
-				await ctx.storage.setAlarm(Date.now() + ALARM_MS);
+			if (this.provisioned) await this.startAlarm();
 		});
+	}
+
+	private async startAlarm(): Promise<void> {
+		if ((await this.ctx.storage.getAlarm()) === null) {
+			await this.ctx.storage.setAlarm(Date.now() + ALARM_MS);
+		}
 	}
 
 	/** The key prefix of this install in the shared bucket. */
@@ -140,7 +160,14 @@ export class CheckendInstall extends DurableObject<InstallEnv> {
 		const config = this.config(at);
 		const limiter = this.env.INGEST_RATE_LIMITER;
 		const rateLimiter: RateLimiter = limiter
-			? { allow: async (key) => (await limiter.limit({ key: `${this.ctx.id}:${key}` })).success }
+			? {
+					allow: async (key) =>
+						(
+							await limiter.limit({
+								key: ingestLimitKey(config.basePath ?? "", this.ctx.id.toString(), key),
+							})
+						).success,
+				}
 			: noRateLimit;
 		return {
 			db: this.db,
@@ -182,9 +209,10 @@ export class CheckendInstall extends DurableObject<InstallEnv> {
 	 * The identity is an argument of this call, which only the front Worker can make.
 	 *
 	 * `at`: where the request is for. A provisioned install refuses another base path. An install
-	 * that is not provisioned answers under the base path of the call, for this request only: a
-	 * front Worker sends requests for unknown paths to one empty install, so that they get the same
-	 * answers as a real install that gets no valid credentials.
+	 * that is not provisioned refuses every request, except in the stand-in mode that the call asks
+	 * for (`at.standIn`, never with an identity): it answers under the base path of the call, for
+	 * this request only. A front Worker sends requests for unknown paths to empty stand-in installs,
+	 * so that they get the same answers as a real install that gets no valid credentials.
 	 */
 	serve(
 		request: Request,
@@ -193,6 +221,8 @@ export class CheckendInstall extends DurableObject<InstallEnv> {
 	): Promise<Response> {
 		const refused = () => Promise.resolve(Response.json({ error: "not_found" }, { status: 404 }));
 		if (this.destroyed) return refused();
+		const standIn = at?.standIn === true;
+		if (this.provisioned ? standIn : !standIn || identity !== null) return refused();
 		let location: InstallLocation | null = null;
 		if (at !== null) {
 			try {
@@ -233,6 +263,7 @@ export class CheckendInstall extends DurableObject<InstallEnv> {
 			}
 		}
 		await this.ctx.storage.deleteAll();
+		await this.ctx.storage.put(TOMBSTONE_KEY, true);
 	}
 
 	/**
@@ -250,18 +281,24 @@ export class CheckendInstall extends DurableObject<InstallEnv> {
 		} catch (error) {
 			return { ok: false, error: (error as Error).message };
 		}
+		if (this.destroyed) return { ok: false, error: "this install is deleted" };
 		if (next.basePath === "") return { ok: false, error: "a hosted install needs a base path" };
 		if (this.provisioned && this.provisioned.basePath !== next.basePath) {
 			return { ok: false, error: "this install is provisioned under another base path" };
 		}
 		await this.ctx.storage.put(PROVISION_KEY, next);
 		this.provisioned = next;
+		await this.startAlarm();
 		return { ok: true };
 	}
 
 	/** One alarm for all scheduled jobs (fix verification, retries, retention, ...). Idempotent. */
 	override async alarm(): Promise<void> {
-		if (this.destroyed) return;
+		// A deleted or a stand-in install has no jobs: its alarm ends here.
+		if (this.destroyed || !this.provisioned) {
+			await this.ctx.storage.deleteAlarm();
+			return;
+		}
 		// The next alarm first: a failed run is retried by the platform, and the chain goes on.
 		await this.ctx.storage.setAlarm(Date.now() + ALARM_MS);
 		await runScheduled(this.ports(), new Date());

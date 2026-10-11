@@ -1,8 +1,9 @@
-import { env, runInDurableObject } from "cloudflare:test";
+import { env, runDurableObjectAlarm, runInDurableObject } from "cloudflare:test";
 import { describe, expect, it } from "vitest";
 import { readConfig } from "../../src/adapters/config-env.ts";
 import type { FrontIdentity } from "../../src/core/auth/front-identity.ts";
 import { decryptValue, encryptValue } from "../../src/core/crypto.ts";
+import { ingestLimitKey } from "../../src/entry/durable-object.ts";
 
 /**
  * A hosted install as the front Worker uses it: provisioned once with its base path, then called
@@ -16,7 +17,7 @@ const install = (name: string) => env.INSTALL.get(env.INSTALL.idFromName(name));
 const stub = (
 	target: ReturnType<typeof install>,
 	url: string,
-	at: { basePath: string; publicUrl: string },
+	at: { basePath: string; publicUrl: string; standIn?: boolean },
 ) => target.serve(new Request(url), null, at);
 
 async function provisioned(name: string, id: string) {
@@ -191,12 +192,12 @@ describe("a provisioned hosted install", () => {
 		expect((await stub.serve(new Request(`${ORIGIN}/a7b8c9/health`), null, own)).status).toBe(200);
 	});
 
-	it("answers under the base path of the call when it is not provisioned", async () => {
-		// A front Worker sends requests for unknown paths to one empty install, so that they get
-		// the same answers as a real install without credentials.
+	it("answers under the base path of the call in the stand-in mode only", async () => {
+		// A front Worker sends requests for unknown paths to empty stand-in installs, so that they
+		// get the same answers as a real install without credentials.
 		const empty = install("hosted-empty");
 		for (const id of ["e1e2e3", "f4f5f6"]) {
-			const at = { basePath: `/${id}`, publicUrl: ORIGIN };
+			const at = { basePath: `/${id}`, publicUrl: ORIGIN, standIn: true };
 			const llms = await stub(empty, `${ORIGIN}/${id}/llms.txt`, at);
 			expect(llms.status).toBe(200);
 			expect(await llms.text()).toContain(`${ORIGIN}/${id}/mcp`);
@@ -204,13 +205,70 @@ describe("a provisioned hosted install", () => {
 			expect((await stub(empty, `${ORIGIN}/other/v1/projects`, at)).status).toBe(404);
 			const health = (await (await stub(empty, `${ORIGIN}/${id}/health`, at)).json()) as object;
 			expect(Object.keys(health).sort()).toEqual(["status", "version"]);
+			// Never for a member.
+			const member = await empty.serve(new Request(`${ORIGIN}/${id}/issues`), ALICE, at);
+			expect(member.status).toBe(404);
 		}
 		for (const at of [
-			{ basePath: "/../x", publicUrl: ORIGIN },
-			{ basePath: "/ok1234", publicUrl: "javascript:x" },
+			{ basePath: "/../x", publicUrl: ORIGIN, standIn: true },
+			{ basePath: "/ok1234", publicUrl: "javascript:x", standIn: true },
+			// Without the stand-in mode, an install that is not provisioned refuses.
+			{ basePath: "/ok1234", publicUrl: ORIGIN },
 		]) {
 			expect((await stub(empty, `${ORIGIN}/ok1234/health`, at)).status).toBe(404);
 		}
+		expect((await empty.fetch(`${ORIGIN}/health`)).status).toBe(404);
+		expect((await empty.serve(new Request(`${ORIGIN}/health`), null)).status).toBe(404);
+	});
+
+	it("sets no alarm while not provisioned, and an alarm that runs then removes itself", async () => {
+		const empty = install("hosted-no-alarm");
+		await stub(empty, `${ORIGIN}/n0a1a2/health`, {
+			basePath: "/n0a1a2",
+			publicUrl: ORIGIN,
+			standIn: true,
+		});
+		await runInDurableObject(empty, async (_instance, state) => {
+			expect(await state.storage.getAlarm()).toBeNull();
+			await state.storage.setAlarm(Date.now() + 60_000);
+		});
+		expect(await runDurableObjectAlarm(empty)).toBe(true);
+		await runInDurableObject(empty, async (_instance, state) => {
+			expect(await state.storage.getAlarm()).toBeNull();
+		});
+	});
+
+	it("stays deleted after a restart: no migrations, no alarm, no data, no answers", async () => {
+		const deleted = await provisioned("hosted-tombstone", "t0m6b5");
+		expect((await deleted.serve(new Request(`${ORIGIN}/t0m6b5/issues`), ALICE)).status).toBe(200);
+		await deleted.destroy();
+		// A restart (a deploy, an eviction): the object is built again from its storage.
+		await runInDurableObject(deleted, (_instance, state) => state.abort("restart")).catch(() => {});
+		const again = install("hosted-tombstone");
+		for (const at of [
+			null,
+			{ basePath: "/t0m6b5", publicUrl: ORIGIN },
+			{ basePath: "/t0m6b5", publicUrl: ORIGIN, standIn: true },
+		]) {
+			const page = await again.serve(new Request(`${ORIGIN}/t0m6b5/issues`), ALICE, at);
+			expect(page.status).toBe(404);
+		}
+		expect(
+			await again.provision({ basePath: "/t0m6b5", publicUrl: ORIGIN, spacesUrl: null }),
+		).toMatchObject({ ok: false });
+		await runInDurableObject(again, async (_instance, state) => {
+			expect(await state.storage.getAlarm()).toBeNull();
+			const tables = state.storage.sql
+				.exec("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'members'")
+				.toArray();
+			expect(tables).toEqual([]);
+		});
+	});
+
+	it("keys the ingest limit by its base path, not by the object", () => {
+		expect(ingestLimitKey("/k7q2x9", "object-a", "dsnkey")).toBe("/k7q2x9:dsnkey");
+		expect(ingestLimitKey("/k7q2x9", "object-b", "dsnkey")).toBe("/k7q2x9:dsnkey");
+		expect(ingestLimitKey("", "object-a", "dsnkey")).toBe("object-a:dsnkey");
 	});
 
 	it("serves bearer API calls and ingest without an identity", async () => {
