@@ -37,6 +37,38 @@ jobs:
       - name: Worker bundle builds
         run: npx wrangler deploy --dry-run --outdir dist
 
+  node-runtime:
+    name: Node runtime (no Cloudflare), Node ${{ matrix.node }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      matrix:
+        node: [22, 24]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - name: Node tests (core, SQLite, Node adapters, the server)
+        run: npx vitest run --project node
+      - name: The server starts and answers
+        env:
+          DATABASE_PATH: ${{ runner.temp }}/checkend.sqlite
+          PORT: "8790"
+          HOST: 127.0.0.1
+          ADMIN_TOKEN: ci-admin-token-0123456789
+        run: |
+          node src/entry/server.ts &
+          PID=$!
+          for i in $(seq 1 30); do curl -sf http://127.0.0.1:8790/health && break; sleep 1; done
+          curl -sf http://127.0.0.1:8790/health | grep -q '"status":"ok"'
+          kill -TERM "$PID"
+          wait "$PID"
+
   dco:
     name: DCO sign-off
     runs-on: ubuntu-latest

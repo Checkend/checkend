@@ -138,7 +138,18 @@ export async function startServer(env: NodeEnv): Promise<RunningServer> {
 		port: Number(env.PORT ?? 8787),
 		hostname: env.HOST ?? "0.0.0.0",
 	});
-	await new Promise<void>((done) => server.once("listening", done));
+	// A port in use (EADDRINUSE) must fail the start, not wait for ever.
+	try {
+		await new Promise<void>((done, fail) => {
+			server.once("listening", done);
+			server.once("error", fail);
+		});
+	} catch (error) {
+		stopping = true;
+		for (const timer of timers) clearInterval(timer);
+		await drain();
+		throw error;
+	}
 	const address = server.address();
 	const port = typeof address === "object" && address ? address.port : Number(env.PORT ?? 8787);
 	return {

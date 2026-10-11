@@ -49,6 +49,13 @@ describe("Checkend on Node, without Cloudflare (the full flow)", () => {
 		await server.stop();
 	});
 
+	it("fails at start when the port is in use, and does not hang", async () => {
+		const port = new URL(server.url).port;
+		await expect(
+			startServer({ DATABASE_PATH: ":memory:", PORT: port, HOST: "127.0.0.1", ADMIN_TOKEN: ADMIN }),
+		).rejects.toThrow(/EADDRINUSE/);
+	});
+
 	it("serves health with all migrations applied", async () => {
 		const health = (await (await fetch(`${server.url}/health`)).json()) as Record<string, any>;
 		expect(health).toMatchObject({
