@@ -1,4 +1,5 @@
 import type { Ports } from "../ports/index.ts";
+import { runTriage } from "./ai/triage.ts";
 import { verifyFixes } from "./fixes.ts";
 import { pruneDeliveries } from "./github.ts";
 import { fetchDeployCommits } from "./github-commits.ts";
@@ -15,13 +16,15 @@ export interface ScheduledRun {
 	fixes_checked: number;
 	/** Webhook delivery attempts in this run. */
 	deliveries: number;
+	/** Issues triaged by a model in this run (AI_TRIAGE). */
+	triaged: number;
 	errors: string[];
 }
 
 type Job = (ports: Ports, now: Date) => Promise<void>;
 
 export async function runScheduled(ports: Ports, now: Date): Promise<ScheduledRun> {
-	const run: ScheduledRun = { fixes_checked: 0, deliveries: 0, errors: [] };
+	const run: ScheduledRun = { fixes_checked: 0, deliveries: 0, triaged: 0, errors: [] };
 	const jobs: [string, Job][] = [
 		// Every run: the quiet period is in hours, so 5 minutes late is fine.
 		[
@@ -41,6 +44,13 @@ export async function runScheduled(ports: Ports, now: Date): Promise<ScheduledRu
 		["fetch_deploy_commits", async (p) => void (await fetchDeployCommits(p))],
 		// Rotation: secrets of an older key, encrypted again with the current key.
 		["reencrypt_secrets", async (p) => void (await reencryptSecrets(p))],
+		// Model triage of issues seen 3 times or more (off unless AI_TRIAGE=on).
+		[
+			"triage",
+			async (p) => {
+				run.triaged = await runTriage(p);
+			},
+		],
 		// Retention: a few chunks per run, so that a backlog goes away over several runs.
 		["retention", async (p, at) => void (await runRetention(p, at))],
 		// Once a day (the run between 03:00 and 03:05 UTC).
