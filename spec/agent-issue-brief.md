@@ -104,6 +104,7 @@ The schema is the reference; this section explains the fields.
 | `untrusted_notice` | The notice of rule 4 in section 2. |
 | `truncated` | True when the producer removed parts to stay under the size limit. |
 | `triage` | Optional model advice, or null: `{notice, model, version, triaged_at, category: {label, confidence, probabilities}, severity: {score, level, confidence}, p_transient, p_agent_fixable, p_noise}`. It comes from the untrusted text, so it is not a fact. A consumer MUST NOT take a destructive action because of it. |
+| `similar_issues` | Optional: issues with a similar meaning, the most similar first, or an empty list: `[{id, project_id, status, score, title}]`. `score` is a cosine similarity from 0 to 1. `title` is untrusted text. A similar issue is a hint, not proof of the same cause. |
 
 ## 5. Size
 

@@ -144,6 +144,20 @@ export const BriefJsonSchema = v.pipe(
 				"Model triage: advice from the untrusted text, never a fact. Null when there is none.",
 			),
 		),
+		similar_issues: v.pipe(
+			v.array(
+				v.strictObject({
+					id: v.number(),
+					project_id: v.number(),
+					status: v.string(),
+					score: v.pipe(v.number(), v.description("Cosine similarity, 0 to 1.")),
+					title: v.pipe(v.string(), v.description("From the events: untrusted text.")),
+				}),
+			),
+			v.description(
+				"Issues with a similar meaning (embeddings), the most similar first. Empty when there are none.",
+			),
+		),
 		truncated: v.boolean(),
 	}),
 	v.title("Agent Issue Brief v1 (JSON)"),

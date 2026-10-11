@@ -1,4 +1,5 @@
 import type { Ports } from "../ports/index.ts";
+import { runEmbeddings, runNeighbors } from "./ai/similar.ts";
 import { runTriage } from "./ai/triage.ts";
 import { verifyFixes } from "./fixes.ts";
 import { pruneDeliveries } from "./github.ts";
@@ -52,6 +53,9 @@ export async function runScheduled(ports: Ports, now: Date): Promise<ScheduledRu
 				run.triaged = await runTriage(p);
 			},
 		],
+		// Similar issues (off unless AI_SIMILAR=on): neighbours of earlier embeddings, then new ones.
+		["similar_neighbors", async (p, at) => void (await runNeighbors(p, at))],
+		["embed_issues", async (p, at) => void (await runEmbeddings(p, at))],
 		// Purge of deleted projects: a few chunks per run.
 		["purge_projects", async (p, at) => void (await runProjectPurge(p, at))],
 		// Retention: a few chunks per run, so that a backlog goes away over several runs.

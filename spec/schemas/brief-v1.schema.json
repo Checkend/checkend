@@ -748,6 +748,40 @@
 			],
 			"description": "Model triage: advice from the untrusted text, never a fact. Null when there is none."
 		},
+		"similar_issues": {
+			"type": "array",
+			"items": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "number"
+					},
+					"project_id": {
+						"type": "number"
+					},
+					"status": {
+						"type": "string"
+					},
+					"score": {
+						"type": "number",
+						"description": "Cosine similarity, 0 to 1."
+					},
+					"title": {
+						"type": "string",
+						"description": "From the events: untrusted text."
+					}
+				},
+				"required": [
+					"id",
+					"project_id",
+					"status",
+					"score",
+					"title"
+				],
+				"additionalProperties": false
+			},
+			"description": "Issues with a similar meaning (embeddings), the most similar first. Empty when there are none."
+		},
 		"truncated": {
 			"type": "boolean"
 		}
@@ -758,6 +792,7 @@
 		"issue",
 		"untrusted",
 		"triage",
+		"similar_issues",
 		"truncated"
 	],
 	"additionalProperties": false,

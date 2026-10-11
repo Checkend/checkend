@@ -1,5 +1,6 @@
 import type { BlobStore } from "../ports/blob-store.ts";
 import { type Db, sql } from "../ports/db.ts";
+import { type SimilarIssue, similarIssues } from "./ai/similar.ts";
 import { getTriage, TRIAGE_QUESTIONS, type Triage } from "./ai/triage.ts";
 import { formatEventId, formatIssueId } from "./ids.ts";
 import { normalizeFilename } from "./ingest/fingerprint.ts";
@@ -96,6 +97,8 @@ export interface BriefJson {
 	};
 	/** Model triage (AI_TRIAGE): advice from the untrusted text, or null. */
 	triage: BriefTriage | null;
+	/** Similar issues (AI_SIMILAR), the most similar first. The titles are untrusted text. */
+	similar_issues: SimilarIssue[];
 	/** True when parts were removed to stay under the size limit. */
 	truncated: boolean;
 }
@@ -315,6 +318,7 @@ export async function buildBrief(
 		: null;
 	const unusual = await unusualTags(db, issueId);
 	const triage = briefTriage(await getTriage(db, issueId));
+	const similar = await similarIssues(db, issueId);
 	const first_release_deploy = await db.first<{ version: string; deployed_at: string }>(
 		sql`SELECT r.version, min(d.deployed_at) AS deployed_at FROM issues i
 			JOIN releases r ON r.project_id = i.project_id AND r.version = i.first_release
@@ -340,6 +344,7 @@ export async function buildBrief(
 			suspect?.message ?? null,
 			unusual,
 			triage,
+			similar,
 		);
 		const markdown = briefMarkdown(json);
 		if (markdown.length <= BRIEF_MAX_CHARS || i === SHAPES.length - 1) {
@@ -385,6 +390,7 @@ function briefJson(
 	suspectMessage: string | null,
 	unusual: UnusualTag[],
 	triage: BriefTriage | null,
+	similar: SimilarIssue[],
 ): BriefJson {
 	const { title, culprit, ...facts } = issue;
 	const exceptions = [...(event?.exceptions ?? [])]
@@ -432,6 +438,9 @@ function briefJson(
 			timeline: timeline.slice(0, shape.timeline),
 		},
 		triage,
+		similar_issues: similar
+			.slice(0, shape.timeline > 0 ? 5 : 3)
+			.map((s) => ({ ...s, title: cleanText(s.title, 200) })),
 		truncated,
 	};
 }
@@ -575,6 +584,19 @@ function briefMarkdown(brief: BriefJson): string {
 			...untrusted.request.headers.map(([k, v]) => `${k}: ${v}`),
 		];
 		parts.push(untrustedBlock("Request (secrets removed)", request.join("\n")));
+	}
+	if (brief.similar_issues.length > 0) {
+		parts.push(
+			untrustedBlock(
+				"Similar issues (by meaning; check before you act)",
+				brief.similar_issues
+					.map(
+						(s) =>
+							`${formatIssueId(s.id)} (project ${s.project_id}, ${s.status}, similarity ${s.score}): ${s.title}`,
+					)
+					.join("\n"),
+			),
+		);
 	}
 	if (untrusted.timeline.length > 0) {
 		parts.push(untrustedBlock("Timeline", untrusted.timeline.join("\n")));
