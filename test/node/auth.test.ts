@@ -220,6 +220,26 @@ describe("sign-in", () => {
 		);
 	});
 
+	it("writes the new counter only when no other sign-in changed it (compare-and-set)", async () => {
+		const { ports, device } = await setUp();
+		const response = await device.get(await signInOptions(ports, rp));
+		// Another sign-in with the same old counter wins between the read and the write.
+		const db = {
+			...ports.db,
+			run: async (statement: Parameters<typeof ports.db.run>[0]) => {
+				if (statement.sql.includes("UPDATE passkeys SET sign_count")) {
+					await ports.db.run(sql`UPDATE passkeys SET sign_count = ${1}`);
+				}
+				return ports.db.run(statement);
+			},
+		};
+		expect(await finishSignIn({ ...ports, db }, rp, response)).toEqual({
+			ok: false,
+			error: "invalid_credential",
+		});
+		expect(await ports.db.all(sql`SELECT created_at FROM sessions`)).toHaveLength(1); // setup only
+	});
+
 	it("records the new counter and the last use", async () => {
 		const { ports, device } = await setUp();
 		await finishSignIn(ports, rp, await device.get(await signInOptions(ports, rp)));

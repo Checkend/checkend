@@ -304,11 +304,13 @@ export async function finishSignIn(
 	} catch {
 		return fail("invalid_credential");
 	}
-	const { session, statements } = await sessionStatements(passkey.user_handle, now);
-	await db.batch([
+	// Compare-and-set: a parallel sign-in with the same old counter changes no row, and fails.
+	const updated = await db.run(
 		sql`UPDATE passkeys SET sign_count = ${newCounter}, last_used_at = ${now.toISOString()}
-			WHERE id = ${passkey.id}`,
-		...statements,
-	]);
+			WHERE id = ${passkey.id} AND sign_count = ${passkey.sign_count}`,
+	);
+	if (updated.changes !== 1) return fail("invalid_credential");
+	const { session, statements } = await sessionStatements(passkey.user_handle, now);
+	await db.batch(statements);
 	return { ok: true, value: session };
 }
