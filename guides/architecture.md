@@ -1,8 +1,8 @@
 # Architecture
 
 Checkend is one Cloudflare Worker, written in TypeScript with [Hono](https://hono.dev), and one
-D1 database. The core does not depend on Cloudflare, so the same code can also run on Node with
-SQLite.
+D1 database. The core does not depend on Cloudflare, so the same code also runs on Node with
+SQLite (see [Run without Cloudflare](self-host.md)).
 
 This guide gives an overview. The full rules for contributors are in
 [AGENTS.md](../AGENTS.md).
@@ -13,13 +13,15 @@ The code has three layers:
 
 - **Core** (`src/core/`) and **HTTP routes** (`src/http/`) contain the logic. They use Web
   Standard APIs only.
-- **Ports** (`src/ports/`) are interfaces: the database, the clock, the rate limiter, the
-  settings, and background work.
-- **Adapters** implement the ports for one runtime: `src/adapters/cloudflare/` (D1) and
-  `src/adapters/node/` (SQLite, with the built-in `node:sqlite`).
+- **Ports** (`src/ports/`) are interfaces: the database, the clock, background work, the rate
+  limit, the settings, DNS, outgoing requests, blob storage, the queues, email, and the client
+  address.
+- **Adapters** implement the ports for one runtime: `src/adapters/cloudflare/` (D1, R2, Queues,
+  Email Service) and `src/adapters/node/` (SQLite with the built-in `node:sqlite`, a jobs table,
+  a folder or S3, SMTP).
 
-The Worker entry (`src/entry/worker.ts`) makes the Cloudflare ports and serves the app. There is
-no Node entry yet: the Node adapter is used in tests now.
+Two entries build the ports and serve the same app: the Worker entry (`src/entry/worker.ts`) on
+Cloudflare, and the Node entry (`src/entry/server.ts`) on Node and in Docker.
 
 The linter (Biome) enforces the layers. Only the Cloudflare adapter and the Worker entry can
 import `cloudflare:*`. Core, ports and HTTP routes cannot import `node:*`.
@@ -73,5 +75,7 @@ The CPU budget test does not check absolute times. It compares each event with a
 calibration task on the same machine, so the result is stable on slower CI runners.
 
 CI on GitHub Actions runs the lint, a check of the generated Worker types, the type check, the
-tests, the CPU budget test, a bundle build, and a DCO sign-off check. Run the same checks locally
-with `npm run check`.
+tests, the CPU budget test, a bundle build, and a DCO sign-off check. Two more jobs check Checkend
+without Cloudflare: the Node tests and a start of the Node server, and a build of the Docker
+image that starts it, makes a backup and stops it with `SIGTERM`. Run the lint, the type check,
+the tests and the CPU budget test locally with `npm run check`.

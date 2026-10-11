@@ -125,8 +125,10 @@ and `application/octet-stream`. Sentry SDKs use these types.
 Checkend answers `429` with the `Retry-After` and `X-Sentry-Rate-Limits` headers in these cases:
 
 - **A DSN key sends too much.** The limit is 1000 requests a minute for each DSN key. It needs the
-  `INGEST_RATE_LIMITER` binding, which `wrangler.jsonc` includes. Without the binding, there is no
-  rate limit.
+  `INGEST_RATE_LIMITER` binding on Cloudflare (an optional block, see
+  [Optional Cloudflare bindings](settings.md#optional-cloudflare-bindings)), or
+  `RATE_LIMIT_PER_MINUTE` on Node. Without the binding, Cloudflare has no limit for each key, but
+  quotas and budget mode still work.
 - **One client IP causes too many key lookups in the database.** The same binding sets this limit.
 - **The project used its daily quota.** A project can have a daily event quota (see
   [`PATCH /v1/projects/:project`](api.md#patch-v1projectsproject)). At the quota, Checkend answers

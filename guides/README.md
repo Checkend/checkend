@@ -21,6 +21,8 @@ D1 database, in your own Cloudflare account.
 | [What Checkend stores](what-checkend-stores.md) | Know how events are cleaned, limited and grouped into issues. |
 | [API](api.md) | Read projects, issues and events with HTTP and JSON. |
 | [Settings and health](settings.md) | Change limits, use the Workers Free plan, and check `/health`. |
+| [Run without Cloudflare](self-host.md) | Run Checkend in Docker or on Node, with one SQLite file. |
+| [Backup and upgrade](operations.md) | Back up the database, and upgrade safely. |
 | [Architecture](architecture.md) | Understand how the code is built, and how it can run off Cloudflare. |
 
 Open specs: the [Agent Issue Brief](../spec/agent-issue-brief.md) and the
@@ -56,6 +58,8 @@ Contributors and coding agents: read [AGENTS.md](../AGENTS.md) and
   the stack trace (a hint, not proof).
 - **Source maps**: upload them in CI, and the brief shows the original file and lines of
   minified JavaScript.
+- **Self-hosting without Cloudflare**: one Docker container (or Node process) with one SQLite
+  file, with backups.
 - **Priority**: each issue has a priority score from the users affected, the events in the last
   24 hours, and how recent and how new the issue is. MCP lists the top priority first.
 - **Triage history**: each decision on an issue (resolve, ignore, merge, split, ...) and each
@@ -70,4 +74,3 @@ Contributors and coding agents: read [AGENTS.md](../AGENTS.md) and
 These features are planned. They are **not** available now:
 
 - a web UI
-- a Node or Docker entry (the core can run on Node, but there is no Node server yet)

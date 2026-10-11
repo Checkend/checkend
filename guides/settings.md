@@ -23,7 +23,7 @@ All settings are optional. Set them as Workers secrets or variables (in your
 | `NOTIFY` (binding) | none | Optional Cloudflare Queue for webhook deliveries. Without it, deliveries work. |
 | `RETENTION_DAYS` | 90 | Days that Checkend keeps stored events and hourly counts (hourly counts at least 8 days). See [Data retention](#data-retention). |
 | `REQUIRE_APPROVAL` | none | Actions that need a person's approval: a comma-separated list of `ignore` and `merge`. See [Approvals](api.md#approvals). |
-| `INGEST_RATE_LIMITER` (binding) | 1000 requests a minute per DSN key | A Rate Limiting binding. `wrangler.jsonc` includes it. Without it, ingest has no rate limit. |
+| `INGEST_RATE_LIMITER` (binding) | none | Optional: a rate limit for each DSN key (1000 requests a minute in the block below). Without it, Cloudflare has no limit for each key, but quotas and budget mode still work. |
 
 Set the secret with Wrangler:
 
@@ -32,6 +32,44 @@ npx wrangler secret put ADMIN_TOKEN --config wrangler.<name>.jsonc
 ```
 
 For local development, put `ADMIN_TOKEN=...` in `.dev.vars`. This file is git-ignored.
+
+On Node (Docker), there are more settings, for example `DATABASE_PATH`. See
+[Run without Cloudflare](self-host.md#settings).
+
+## Optional Cloudflare bindings
+
+The root `wrangler.jsonc` has only what a new Workers Free account can deploy: D1 and one Cron
+Trigger. Checkend finds the other bindings at runtime and works without them. To add one, add its
+block to your Worker config (`wrangler.<name>.jsonc`), then deploy.
+
+A rate limit for each DSN key:
+
+```jsonc
+"ratelimits": [
+  { "name": "INGEST_RATE_LIMITER", "namespace_id": "1001", "simple": { "limit": 1000, "period": 60 } }
+]
+```
+
+R2 for source maps and large raw payloads (see [Source maps](source-maps.md#set-up-storage)):
+
+```jsonc
+"r2_buckets": [{ "binding": "BLOBS", "bucket_name": "checkend-blobs" }]
+```
+
+The overflow queue (see [Bursts and overload](sending-errors.md#bursts-and-overload)):
+
+```jsonc
+"queues": {
+  "producers": [{ "binding": "INGEST_QUEUE", "queue": "checkend-ingest" }],
+  "consumers": [{ "queue": "checkend-ingest" }]
+}
+```
+
+Email alerts (see [Alerts](alerts.md#email)), with the variable `EMAIL_FROM`:
+
+```jsonc
+"send_email": [{ "name": "EMAIL" }]
+```
 
 ## Budget mode (Workers Free plan)
 

@@ -79,6 +79,9 @@ On Cloudflare, email alerts use the Email Service:
 Without both, email alerts are off: creating one gives `400` `email_not_configured`. One message
 goes to at most 50 recipients.
 
+On Node (Docker), set `SMTP_URL` (`smtps://user:password@host:465`, or `smtp://` for a local
+relay) and `EMAIL_FROM` instead. See [Run without Cloudflare](self-host.md#settings).
+
 ## See the alerts
 
 `GET /v1/alerts` (with `issues:read`) and the MCP tool `list_alerts` list the alert rules. They do

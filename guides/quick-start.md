@@ -39,6 +39,9 @@ You need:
 
 ## 2. Or deploy it to your Cloudflare account
 
+To run Checkend without Cloudflare, in Docker or on Node, see
+[Run without Cloudflare](self-host.md).
+
 > **Caution:** a deploy uses resources in your Cloudflare account. On the Workers Free plan, also
 > set `D1_DAILY_ROW_LIMIT` (see [Budget mode](settings.md#budget-mode-workers-free-plan)).
 
