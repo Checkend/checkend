@@ -5,6 +5,7 @@ import { count, type Html, h, time } from "../html.ts";
 import { eventPath, issuePath } from "../ids.ts";
 import { pageHead, untrusted } from "../layout.ts";
 import { displayText as t } from "../text.ts";
+import { type TrustView, trustLabel } from "../trust.ts";
 import { exceptions, keyValues, requestBlock } from "./event-parts.ts";
 
 const statusPill = (status: unknown) =>
@@ -139,6 +140,8 @@ export function issueView(detail: IssueDetail, now: Date): Html {
 		["Last seen", time(issue.last_seen as string, now)],
 		["First release", t(issue.first_release ?? "—", 100)],
 		["Last release", t(issue.last_release ?? "—", 100)],
+		// The source trust of the app (core/trust.ts): fixed text, never the SDK name.
+		["Source", trustLabel(issue as unknown as TrustView, true)],
 	];
 	return h`${pageHead(
 		t(issue.title, 500),

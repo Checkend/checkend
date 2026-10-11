@@ -268,6 +268,12 @@ table.apps th:nth-child(n+2), table.apps td:nth-child(n+2) { padding-left: 24px;
 .app-sub { display: block; font-size: 12.5px; color: var(--muted); }
 td.actions { text-align: right; padding-right: 0; }
 .pill-progress { color: var(--amber); text-decoration: none; }
+.trust { font-size: 12.5px; color: var(--muted); white-space: nowrap; }
+.trust-low { color: var(--amber); }
+.trust-note { margin: 0 0 20px; padding: 12px 16px; border: 1px solid var(--line); border-left: 3px solid var(--amber); border-radius: 10px; background: var(--panel); font-size: 14px; max-width: 72ch; }
+.trust-note h2 { margin: 0 0 6px; font-size: 15px; }
+.trust-note p, .trust-note ul { margin: 6px 0; }
+.trust-note ul { padding-left: 20px; }
 .pill-demo { color: var(--violet); font-size: 12px; vertical-align: middle; }
 h1 .pill-demo { margin-left: 6px; }
 
@@ -345,7 +351,7 @@ abbr[title] { text-decoration: underline dotted; cursor: help; }
   table.apps td, table.apps tbody tr:last-child td { display: block; border: 0; padding: 0 !important; text-align: left; }
   table.apps td.app { grid-column: 1; }
   table.apps td.actions { grid-column: 2; grid-row: 1; }
-  table.apps td.num, table.apps td.when, table.apps td.status { grid-column: 1 / -1; font-size: 12.5px; color: var(--muted); }
+  table.apps td.num, table.apps td.when, table.apps td.source, table.apps td.status { grid-column: 1 / -1; font-size: 12.5px; color: var(--muted); }
   table.apps td[data-label]::before { content: attr(data-label) " "; }
 }
 `;

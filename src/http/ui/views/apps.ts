@@ -14,6 +14,7 @@ import {
 	taskPrompt,
 } from "../onboarding.ts";
 import { displayText as t } from "../text.ts";
+import { lowTrustNote, trustBadge } from "../trust.ts";
 
 export const PLATFORMS = ["node", "javascript", "python", "ruby", "php", "go", "other"] as const;
 
@@ -207,12 +208,13 @@ ${
 	rows.length === 0
 		? h`<div class="empty"><h2>No apps yet</h2><p>Add an app: your coding agent does the setup.</p><p><a class="btn" href="/apps/new">Add app</a></p></div>`
 		: h`<table class="apps">
-<thead><tr><th scope="col">App</th><th scope="col" class="num">Errors, 24 h</th><th scope="col">Last error</th><th scope="col">Setup</th><th scope="col"><span class="sr">Actions</span></th></tr></thead>
+<thead><tr><th scope="col">App</th><th scope="col" class="num">Errors, 24 h</th><th scope="col">Last error</th><th scope="col">Source</th><th scope="col">Setup</th><th scope="col"><span class="sr">Actions</span></th></tr></thead>
 <tbody>${rows.map(
 				(row) => h`<tr>
 <td class="app"><a class="app-name" href="${appPath(row.project.id)}">${t(row.project.name, 100)}</a><span class="app-sub">${platformLabel(row.project.platform)}</span></td>
 <td class="num" data-label="Errors, 24 h:">${count(row.project.events_24h)}</td>
 <td class="when" data-label="Last error:">${row.project.last_event_at ? time(row.project.last_event_at, now) : "none yet"}</td>
+<td class="source">${trustBadge(row.project, row.project.last_event_at !== null)}</td>
 <td class="status">${setupStatus(row, now)}</td>
 <td class="actions">${askMenu(origin, row.project)}</td>
 </tr>`,
@@ -391,12 +393,13 @@ ${data.deleteError ? h`<p class="error" role="alert">${data.deleteError}</p>` : 
 
 export function appView(data: AppPageData, origin: string, now: Date): Html {
 	const { project } = data;
-	const sub: Child = h`${platformLabel(project.platform)} · added ${time(project.created_at, now)} · <a href="/issues?project=${project.id}">Errors</a>`;
+	const sub: Child = h`${platformLabel(project.platform)} · added ${time(project.created_at, now)} · <a href="/issues?project=${project.id}">Errors</a> · ${trustBadge(project, project.last_event_at !== null)}`;
 	return h`<div class="page-head">
 <div class="crumbs"><a href="/apps">Apps</a></div>
 <h1>${t(project.name, 100)}${data.demo ? h` <span class="pill pill-demo">Demo data</span>` : ""}</h1>
 <p>${sub}</p>
 </div>
+${project.trust === "low" ? lowTrustNote() : ""}
 ${tabs(project.id, data.tab)}
 ${
 	data.tab === "manual"
