@@ -7,6 +7,7 @@ import { createProject } from "../../src/core/projects.ts";
 import { buildSourceMapIndex } from "../../src/core/sourcemap-index.ts";
 import { BOOTSTRAP_ADMIN, createToken } from "../../src/core/tokens.ts";
 import { createApp } from "../../src/http/app.ts";
+import { memoryBlobStore, prefixedBlobStore } from "../../src/ports/blob-store.ts";
 import { sql } from "../../src/ports/db.ts";
 import type { Ports } from "../../src/ports/index.ts";
 import { expectSpecBrief } from "../support/brief-check.ts";
@@ -213,5 +214,23 @@ describe("source maps: readable frames in the brief", () => {
 		const none = await setup({ blobs: null });
 		const plain = await none.brief(await none.storeError());
 		expect(plain?.json.untrusted.exceptions[0]?.frames[0]).toMatchObject({ line: 1 });
+	});
+});
+
+describe("source maps: the index cache is per install", () => {
+	it("two installs with the same blob key and upload time get their own source lines", async () => {
+		const a = await setup({ blobs: prefixedBlobStore(memoryBlobStore(), "installs/a/") });
+		const b = await setup({ blobs: prefixedBlobStore(memoryBlobStore(), "installs/b/") });
+		const map = JSON.parse(mapText) as { sourcesContent: string[] };
+		const other = JSON.stringify({
+			...map,
+			sourcesContent: map.sourcesContent.map((s) => s.replaceAll("lines", "OTHERS")),
+		});
+		expect((await a.upload({ name: "~/static/app.min.js" })).status).toBe(201);
+		expect((await b.upload({ name: "~/static/app.min.js" }, other)).status).toBe(201);
+		const briefA = await a.brief(await a.storeError());
+		const briefB = await b.brief(await b.storeError());
+		expect(briefA?.markdown).not.toContain("OTHERS");
+		expect(briefB?.markdown).toContain("OTHERS");
 	});
 });

@@ -160,13 +160,17 @@ export async function deleteSourceMap(
 	return true;
 }
 
-/** Index objects per isolate, the most recently used last; at most MAX_CACHE_BYTES. */
+/**
+ * Index objects per isolate, the most recently used last; at most MAX_CACHE_BYTES. The key has
+ * the scope of the blob store: installs that share an isolate (Durable Objects) have the same
+ * blob keys (row IDs start at 1 in each database), but never share an index.
+ */
 const MAX_CACHE_BYTES = 32 * 1024 * 1024;
 const cache = new Map<string, SourceMapIndex>();
 let cachedBytes = 0;
 
 async function loadIndex(blobs: BlobStore, key: string, version: string) {
-	const cacheKey = `${key}@${version}`;
+	const cacheKey = `${blobs.scope ?? ""}|${key}@${version}`;
 	const hit = cache.get(cacheKey);
 	if (hit) {
 		cache.delete(cacheKey);

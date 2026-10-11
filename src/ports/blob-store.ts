@@ -12,6 +12,11 @@ export interface BlobStore {
 	delete(key: string): Promise<void>;
 	/** Deletes up to 1000 values in one call (R2 counts it as one operation). */
 	deleteMany(keys: string[]): Promise<void>;
+	/**
+	 * The part of a shared storage that this store uses (a prefixed store: its prefix). Caches of
+	 * stored values key by it, so that two installs in one isolate never share a cached value.
+	 */
+	readonly scope?: string;
 }
 
 const SEGMENT = /^[A-Za-z0-9._@=+-]{1,200}$/;
@@ -61,6 +66,7 @@ export function prefixedBlobStore(store: BlobStore, prefix: string): BlobStore {
 		return `${prefix}${k}`;
 	};
 	return {
+		scope: `${store.scope ?? ""}${prefix}`,
 		put: async (k, value) => store.put(key(k), value),
 		get: async (k) => store.get(key(k)),
 		delete: async (k) => store.delete(key(k)),
