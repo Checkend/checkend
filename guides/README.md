@@ -5,13 +5,14 @@ D1 database, in your own Cloudflare account.
 
 > **Status: early development.** Checkend can receive errors from Sentry SDKs, group them into
 > issues, give them to coding agents through an MCP server and a JSON API, and send alerts. It
-> has no web UI yet. Expect changes.
+> has a small web UI for people. Expect changes.
 
 ## Guides
 
 | Guide | Read it when you want to |
 |---|---|
 | [Quick start](quick-start.md) | Run Checkend, connect an app, and read its errors. |
+| [Web UI](web-ui.md) | Sign in with a passkey, connect your apps, and read the errors in a browser. |
 | [Set up with an agent](agent-setup.md) | Let a coding agent add Checkend to your apps, with a short-lived setup key. |
 | [MCP server](mcp.md) | Connect a coding agent, and read issue briefs. |
 | [Webhooks](webhooks.md) | Call your agent runner when an issue is new, regressed or verified, or [start an agent from GitHub Actions](webhooks.md#start-an-agent-from-github-actions). |
@@ -75,9 +76,11 @@ Contributors and coding agents: read [AGENTS.md](../AGENTS.md) and
   writes notes to the timeline of the issue.
 - **A JSON API** (`/v1`) with scoped tokens, and an audit timeline of token and project changes.
 - **A project CLI** (`npm run project`) to create projects and print their DSNs.
+- **A web UI** with passkey sign-in: connect apps with a prompt for your coding agent, and read
+  the issues and events.
 
 ## Not built yet
 
 These features are planned. They are **not** available now:
 
-- a web UI
+- more members, API tokens and releases in the web UI

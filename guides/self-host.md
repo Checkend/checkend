@@ -64,10 +64,15 @@ Node:
 > clear text. Put a TLS reverse proxy in front of it (for example Caddy, nginx or Traefik), and
 > publish only the proxy.
 
-- The proxy must forward the `Host` header: the recipes, `llms.txt` and the DSNs that Checkend
-  shows use the host of the request.
+- Set [`PUBLIC_URL`](settings.md#public_url) to the public address, for example
+  `https://errors.example.com`. Without it, the proxy must forward the real `Host` header: the
+  passkeys, the CSRF check of the web UI, the recipes, `llms.txt` and the DSNs use the host of the
+  request. A wrong `Host` makes passkeys work only on that host, and makes the CSRF check trust
+  that host.
 - Set `TRUSTED_PROXIES` to the proxy (for example `private`). Without it, every client looks like
-  the proxy, so all clients share one rate limit.
+  the proxy, so all clients share one rate limit. All browsers also share one sign-in limit of the
+  [web UI](web-ui.md#2-sign-in) (20 tries in 15 minutes), so one client can stop sign-in for
+  everyone.
 
 Checkend reads `X-Forwarded-For` from the right, and only through trusted proxies, so a client
 cannot fake its address.

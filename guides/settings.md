@@ -23,6 +23,8 @@ All settings are optional. Set them as Workers secrets or variables (in your
 | `NOTIFY` (binding) | none | Optional Cloudflare Queue for webhook deliveries. Without it, deliveries work. |
 | `RETENTION_DAYS` | 90 | Days that Checkend keeps stored events and hourly counts (hourly counts at least 8 days). See [Data retention](#data-retention). |
 | `REQUIRE_APPROVAL` | none | Actions that need the approval of another actor (never the requester, the `ADMIN_TOKEN` included): a comma-separated list of `ignore`, `merge` and `delete_project`. See [Approvals](api.md#approvals). |
+| `PUBLIC_URL` | none | The public origin of Checkend, for example `https://errors.example.com`. See [PUBLIC_URL](#public_url). |
+| `SETUP_CODE` (secret) | none | The code of the one-time setup link of the [web UI](web-ui.md#1-set-up-the-first-member). `npm run setup-link` sets it. Do not set it by hand. |
 | `AI_TRIAGE` | off | `on`: triage issues with a Workers AI model. See [AI triage](ai-triage.md). |
 | `AI_GATEWAY_ID` | `default` | The AI Gateway for all model calls. |
 | `AI_GATEWAY_LOGS` | off | `on`: the gateway stores the prompts and the responses. |
@@ -39,6 +41,30 @@ For local development, put `ADMIN_TOKEN=...` in `.dev.vars`. This file is git-ig
 
 On Node (Docker), there are more settings, for example `DATABASE_PATH`. See
 [Run without Cloudflare](self-host.md#settings).
+
+### PUBLIC_URL
+
+When `PUBLIC_URL` is set, Checkend uses it, and never the `Host` of the request, for:
+
+- the passkey relying party (its ID is the host name of `PUBLIC_URL`)
+- the CSRF origin check of the web UI
+- each URL that the web UI shows (the setup prompt, the DSN)
+- `/llms.txt`, `/skill.md`, `/v1/openapi.json`, `/agent/install`, `/agent/setup.md` and
+  `/agent/tasks/*.md`
+- the DSNs of `/v1/projects` and of `POST /v1/setup/apps`
+
+When it is not set, Checkend uses the origin of the request.
+
+The value must be an `http` or `https` origin. A `/` at the end is accepted. Checkend keeps only
+the scheme, the host and the port, in lower case. Checkend ignores a value with no scheme,
+another scheme, a path (`https://x/checkend`), a query, a fragment, or a user and password. Then
+it writes one `console.error` line that names `PUBLIC_URL`. Checkend cannot run under a path.
+
+> **Caution:** passkeys are bound to the host name. When you change `PUBLIC_URL` to another host
+> name, the passkeys that exist stop working.
+
+On Workers, the host name is fixed, so `PUBLIC_URL` is optional. On Node behind a proxy, set it
+(see [Behind a reverse proxy](self-host.md#behind-a-reverse-proxy)).
 
 ## Optional Cloudflare bindings
 
@@ -136,6 +162,7 @@ runs. After it deletes events, Checkend updates the stored-event counts of the i
   "version": "0.0.0",
   "migrations": { "level": 3, "latest": "0003_tokens_activity_public_ids.sql", "applied": 3 },
   "ingest": { "mode": "full", "write_failures_today": 0, "retry_after_seconds": 0 },
+  "setup_open": false,
   "time": "2026-10-10T12:00:00.000Z"
 }
 ```
@@ -149,6 +176,7 @@ runs. After it deletes events, Checkend updates the stored-event counts of the i
 | `ingest.mode` | `full`, or `counters_only` in budget mode. |
 | `ingest.write_failures_today` | Writes that failed today, after all tries. |
 | `ingest.retry_after_seconds` | More than 0 when the database is overloaded and ingest answers `429`. Each Worker instance keeps this value in memory, so another instance can show 0. |
+| `setup_open` | `true` until the [web UI](web-ui.md#1-set-up-the-first-member) has its first member. `null` when the database cannot be read. |
 | `time` | The time on the server. |
 
 When the database cannot be read, `/health` returns `503`. The response has no error details,

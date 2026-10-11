@@ -6,6 +6,9 @@ follow its progress.
 
 ## 1. Make a setup key
 
+In the [web UI](web-ui.md#3-connect-your-apps), **Copy prompt** makes a setup key and a prompt
+for the agent. Or use the API:
+
 ```sh
 curl -X POST "$CHECKEND_URL/v1/setup/keys" \
   -H "Authorization: Bearer $CHECKEND_ADMIN_TOKEN"
