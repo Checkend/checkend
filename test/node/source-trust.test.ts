@@ -121,7 +121,7 @@ describe("classifySource", () => {
 		expect(classifySource(null, { origin: true, native: true })).toBe("client");
 	});
 
-	it("framework SDKs with a browser and a server part: Origin decides", () => {
+	it("framework SDKs with a browser and a server part: the platform or runtime decides", () => {
 		for (const name of [
 			"sentry.javascript.nextjs",
 			"sentry.javascript.sveltekit",
@@ -129,8 +129,18 @@ describe("classifySource", () => {
 			"sentry.javascript.nuxt",
 			"sentry.javascript.astro",
 		]) {
-			expect(classifySource(name, { origin: false, native: false }), name).toBe("server");
-			expect(classifySource(name, { origin: true, native: false }), name).toBe("client");
+			const as = (platform: string | null, runtime: string | null = null, origin = false) =>
+				classifySource(name, { origin, native: false, platform, runtime });
+			// The server part.
+			expect(as("node"), name).toBe("server");
+			expect(as("javascript", "vercel-edge"), name).toBe("server");
+			expect(as("javascript", "bun"), name).toBe("server");
+			// The browser part, also through a tunnel route (no Origin header): fail closed.
+			expect(as("javascript"), name).toBe("client");
+			expect(as(null), name).toBe("client");
+			expect(as("Node"), name).toBe("client");
+			expect(as("javascript", "chrome"), name).toBe("client");
+			expect(as("node", "node", true), name).toBe("client");
 		}
 	});
 
@@ -312,26 +322,38 @@ describe("one effective trust everywhere", () => {
 });
 
 describe("migration 0032", () => {
-	it("copies browser_seen_at into client_seen_at, with no scan of the events", async () => {
+	it("keeps an app with an old browser event low, with no scan of the events", async () => {
 		const db = openSqliteDb(":memory:");
 		const all = readMigrations("migrations");
 		await applyMigrations(
 			db,
 			all.filter((m) => m.name < "0032"),
 		);
-		const seen = "2026-10-01T08:00:00.000Z";
+		const seen = "2025-01-01T08:00:00.000Z"; // the first browser event, long ago
 		await db.run(
 			sql`INSERT INTO projects (name, slug, created_at, public_id, browser_seen_at)
 				VALUES (${"Web"}, ${"web"}, ${seen}, ${1234567890}, ${seen}),
 					(${"Api"}, ${"api"}, ${seen}, ${1234567891}, ${null})`,
 		);
+		const before = new Date();
 		await applyMigrations(db, all);
-		const rows = await db.all<{ slug: string; client_seen_at: string | null }>(
-			sql`SELECT slug, client_seen_at, server_seen_at FROM projects ORDER BY id`,
-		);
-		expect(rows).toEqual([
-			{ slug: "web", client_seen_at: seen, server_seen_at: null },
-			{ slug: "api", client_seen_at: null, server_seen_at: null },
-		]);
+		const after = new Date();
+		const rows = await db.all<{
+			slug: string;
+			trust: string | null;
+			client_seen_at: string | null;
+			server_seen_at: string | null;
+		}>(sql`SELECT slug, trust, client_seen_at, server_seen_at FROM projects ORDER BY id`);
+		// The first browser event was long ago: the app stays low for 30 days from the migration
+		// (the migration time, in the format of toISOString()), then follows the window.
+		const web = rows[0];
+		expect(web?.client_seen_at).toMatch(/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/);
+		expect(Date.parse(web?.client_seen_at ?? "")).toBeGreaterThanOrEqual(before.getTime() - 1000);
+		expect(Date.parse(web?.client_seen_at ?? "")).toBeLessThanOrEqual(after.getTime() + 1000);
+		expect(web?.server_seen_at).toBeNull();
+		if (!web) throw new Error("no row");
+		expect(effectiveTrust(web, after)).toBe("low");
+		expect(effectiveTrust(web, new Date(after.getTime() + TRUST_WINDOW_MS - 60_000))).toBe("low");
+		expect(rows[1]).toMatchObject({ slug: "api", client_seen_at: null, server_seen_at: null });
 	});
 });

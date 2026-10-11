@@ -271,9 +271,12 @@ async function planWrite(
 	// The source class of the event sets the trust of the project (core/trust.ts). First in the
 	// batch: the webhook deliveries below must see the new trust. At most once an hour per class;
 	// a retry or a second isolate writes nothing more (idempotent).
+	const runtime = (event.contexts?.runtime as { name?: unknown } | undefined)?.name;
 	const source = classifySource(event.sdk?.name ?? null, {
 		origin: options.browser === true,
 		native: options.native === true,
+		platform: event.platform,
+		runtime: typeof runtime === "string" ? runtime : null,
 	});
 	const sourceMark = state.sources.due(projectId, source, now) ? source : null;
 	if (sourceMark) {

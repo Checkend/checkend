@@ -228,6 +228,27 @@ describe("hostile input corpus", () => {
 		).toBeNull();
 	});
 
+	it("a framework SDK name through a tunnel (no Origin) with a browser platform: low trust", async () => {
+		for (const event of [
+			{ message: "x", platform: "javascript", sdk: { name: "sentry.javascript.nextjs" } },
+			{ message: "x", sdk: { name: "sentry.javascript.nextjs" } },
+			{
+				message: "x",
+				platform: "javascript",
+				contexts: { runtime: { name: "chrome" } },
+				sdk: { name: "sentry.javascript.sveltekit" },
+			},
+		]) {
+			const { post, ports } = await setup();
+			expect((await post(envelope(JSON.stringify(event)))).status).toBe(200);
+			const row = await ports.db.first<{ s: string | null; c: string | null }>(
+				sql`SELECT server_seen_at AS s, client_seen_at AS c FROM projects`,
+			);
+			expect(row?.s, JSON.stringify(event)).toBeNull();
+			expect(row?.c, JSON.stringify(event)).not.toBeNull();
+		}
+	});
+
 	it("a JSON array or string as the event: 400", async () => {
 		const { post } = await setup();
 		expect((await post(envelope("[1,2,3]"))).status).toBe(400);

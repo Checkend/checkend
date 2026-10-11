@@ -62,7 +62,8 @@ const SERVER_NAMES = new Set([
 	"sentry.rust",
 	"sentry.perl",
 ]);
-// One SDK name for the browser and the server part: the Origin header decides.
+// One SDK name for the browser and the server part. A tunnel route sends browser events from
+// the app's server with no Origin header, so the platform or the runtime of the event decides.
 const SPLIT_NAMES = new Set([
 	"sentry.javascript.nextjs",
 	"sentry.javascript.sveltekit",
@@ -74,18 +75,31 @@ const SPLIT_NAMES = new Set([
 	"sentry.javascript.react-router",
 ]);
 
+// The server runtimes of the split SDKs (contexts.runtime.name).
+const SERVER_RUNTIMES = new Set(["node", "bun", "deno", "vercel-edge", "edge"]);
+
 /**
  * The source class of one event. `origin`: the request had an Origin header (a browser).
  * `native`: POST /v1/ingest with X-Checkend-Key (scripts and servers; it has no SDK name).
+ * `platform` and `runtime` (contexts.runtime.name) of the event: only for the split SDKs.
  */
 export function classifySource(
 	sdkName: string | null,
-	{ origin, native }: { origin: boolean; native: boolean },
+	{
+		origin,
+		native,
+		platform = null,
+		runtime = null,
+	}: { origin: boolean; native: boolean; platform?: string | null; runtime?: string | null },
 ): SourceClass {
 	if (origin) return "client";
 	if (native) return "server";
 	if (sdkName === null) return "client";
-	if (SERVER_NAMES.has(sdkName) || SPLIT_NAMES.has(sdkName)) return "server";
+	if (SPLIT_NAMES.has(sdkName)) {
+		const server = platform === "node" || (runtime !== null && SERVER_RUNTIMES.has(runtime));
+		return server ? "server" : "client";
+	}
+	if (SERVER_NAMES.has(sdkName)) return "server";
 	for (const family of SERVER_FAMILIES) {
 		if (sdkName === family) return "server";
 		// An integration of the family, for example sentry.python.django.
