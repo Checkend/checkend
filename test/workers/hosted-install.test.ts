@@ -12,6 +12,13 @@ const ORIGIN = "https://hosted.test";
 const ALICE: FrontIdentity = { accountId: "acc1alice", name: "Alice", role: "owner" };
 const install = (name: string) => env.INSTALL.get(env.INSTALL.idFromName(name));
 
+/** A request through serve() with a base path in the call. */
+const stub = (
+	target: ReturnType<typeof install>,
+	url: string,
+	at: { basePath: string; publicUrl: string },
+) => target.serve(new Request(url), null, at);
+
 async function provisioned(name: string, id: string) {
 	const stub = install(name);
 	expect(
@@ -165,6 +172,44 @@ describe("a provisioned hosted install", () => {
 				ALICE,
 			);
 			expect(response.status, path).toBe(404);
+		}
+	});
+
+	it("shows only its status and version on /health under a base path", async () => {
+		const stub = await provisioned("hosted-health", "h3a1t7");
+		const health = await stub.fetch(`${ORIGIN}/h3a1t7/health`);
+		expect(health.status).toBe(200);
+		expect(Object.keys((await health.json()) as object).sort()).toEqual(["status", "version"]);
+	});
+
+	it("refuses another base path in the call when it is provisioned", async () => {
+		const stub = await provisioned("hosted-at", "a7b8c9");
+		const at = { basePath: "/z9y8x7", publicUrl: ORIGIN };
+		expect((await stub.serve(new Request(`${ORIGIN}/z9y8x7/health`), null, at)).status).toBe(404);
+		expect((await stub.serve(new Request(`${ORIGIN}/a7b8c9/health`), null, at)).status).toBe(404);
+		const own = { basePath: "/a7b8c9", publicUrl: ORIGIN };
+		expect((await stub.serve(new Request(`${ORIGIN}/a7b8c9/health`), null, own)).status).toBe(200);
+	});
+
+	it("answers under the base path of the call when it is not provisioned", async () => {
+		// A front Worker sends requests for unknown paths to one empty install, so that they get
+		// the same answers as a real install without credentials.
+		const empty = install("hosted-empty");
+		for (const id of ["e1e2e3", "f4f5f6"]) {
+			const at = { basePath: `/${id}`, publicUrl: ORIGIN };
+			const llms = await stub(empty, `${ORIGIN}/${id}/llms.txt`, at);
+			expect(llms.status).toBe(200);
+			expect(await llms.text()).toContain(`${ORIGIN}/${id}/mcp`);
+			expect((await stub(empty, `${ORIGIN}/${id}/v1/projects`, at)).status).toBe(401);
+			expect((await stub(empty, `${ORIGIN}/other/v1/projects`, at)).status).toBe(404);
+			const health = (await (await stub(empty, `${ORIGIN}/${id}/health`, at)).json()) as object;
+			expect(Object.keys(health).sort()).toEqual(["status", "version"]);
+		}
+		for (const at of [
+			{ basePath: "/../x", publicUrl: ORIGIN },
+			{ basePath: "/ok1234", publicUrl: "javascript:x" },
+		]) {
+			expect((await stub(empty, `${ORIGIN}/ok1234/health`, at)).status).toBe(404);
 		}
 	});
 

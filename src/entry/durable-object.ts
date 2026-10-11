@@ -50,6 +50,9 @@ export interface Provision {
 	spacesUrl: string | null;
 }
 
+/** The base path and public origin of a request (see serve). */
+export type InstallLocation = Pick<Provision, "basePath" | "publicUrl">;
+
 const PROVISION_KEY = "provision";
 
 /** An http(s) URL without user info, query or fragment; `originOnly`: also without a path. */
@@ -112,7 +115,7 @@ export class CheckendInstall extends DurableObject<InstallEnv> {
 	 * development mode; the encryption keys are derived per install. Members come only from the
 	 * front Worker (trusted front identity).
 	 */
-	config(): Config {
+	config(at: InstallLocation | null = null): Config {
 		const config = readConfig(this.env);
 		return {
 			...config,
@@ -127,14 +130,14 @@ export class CheckendInstall extends DurableObject<InstallEnv> {
 			encryptionKeys: this.encryptionKeys,
 			devMode: false,
 			trustedFront: true,
-			publicUrl: this.provisioned?.publicUrl ?? null,
-			basePath: this.provisioned?.basePath ?? "",
+			publicUrl: this.provisioned?.publicUrl ?? at?.publicUrl ?? null,
+			basePath: this.provisioned?.basePath ?? at?.basePath ?? "",
 			spacesUrl: this.provisioned?.spacesUrl ?? null,
 		};
 	}
 
-	private ports(): Ports {
-		const config = this.config();
+	private ports(at: InstallLocation | null = null): Ports {
+		const config = this.config(at);
 		const limiter = this.env.INGEST_RATE_LIMITER;
 		const rateLimiter: RateLimiter = limiter
 			? { allow: async (key) => (await limiter.limit({ key: `${this.ctx.id}:${key}` })).success }
@@ -177,11 +180,34 @@ export class CheckendInstall extends DurableObject<InstallEnv> {
 	/**
 	 * RPC for the front Worker: a request with the member identity that it signed in (null: none).
 	 * The identity is an argument of this call, which only the front Worker can make.
+	 *
+	 * `at`: where the request is for. A provisioned install refuses another base path. An install
+	 * that is not provisioned answers under the base path of the call, for this request only: a
+	 * front Worker sends requests for unknown paths to one empty install, so that they get the same
+	 * answers as a real install that gets no valid credentials.
 	 */
-	serve(request: Request, identity: FrontIdentity | null): Promise<Response> {
-		if (this.destroyed)
-			return Promise.resolve(Response.json({ error: "not_found" }, { status: 404 }));
-		return Promise.resolve(this.app.fetch(request, { ports: this.ports(), identity }));
+	serve(
+		request: Request,
+		identity: FrontIdentity | null,
+		at: InstallLocation | null = null,
+	): Promise<Response> {
+		const refused = () => Promise.resolve(Response.json({ error: "not_found" }, { status: 404 }));
+		if (this.destroyed) return refused();
+		let location: InstallLocation | null = null;
+		if (at !== null) {
+			try {
+				location = {
+					basePath: parseBasePath(at.basePath),
+					publicUrl: checkedUrl(at.publicUrl, true),
+				};
+			} catch {
+				return refused();
+			}
+			if (location.basePath === "") return refused();
+			if (this.provisioned && this.provisioned.basePath !== location.basePath) return refused();
+		}
+		const ports = this.ports(this.provisioned ? null : location);
+		return Promise.resolve(this.app.fetch(request, { ports, identity }));
 	}
 
 	/**

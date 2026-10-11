@@ -57,7 +57,13 @@ export function createApp(options: AppOptions = {}): Hono<AppEnv> {
 	app.get("/health", async (c) => {
 		const health = await checkHealth(c.env.ports, state);
 		c.header("Cache-Control", "no-store");
-		return c.json(health, health.status === "ok" ? 200 : 503);
+		const status = health.status === "ok" ? 200 : 503;
+		// Under a base path (hosted installs on a shared origin): no detail that tells one install
+		// from another; members see the full state in Settings.
+		if (c.env.ports.config.basePath) {
+			return c.json({ status: health.status, version: health.version }, status);
+		}
+		return c.json(health, status);
 	});
 
 	// Development only (CHECKEND_DEV and a localhost request): `npm run demo` sends events
