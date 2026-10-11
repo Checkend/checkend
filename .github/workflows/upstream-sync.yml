@@ -1,0 +1,60 @@
+# For a copy of Checkend (a clone, or a repository from the Deploy to Cloudflare button): once a
+# week, it opens a pull request with the changes of the newest upstream release. It never merges.
+# It does nothing in the upstream repository itself.
+#
+# It needs, in the repository settings: Actions > General > Workflow permissions > "Allow GitHub
+# Actions to create and approve pull requests". The release of this copy is the version in
+# package.json; a manual run can give another one (input "base", for example v0.8).
+name: Upstream sync
+
+on:
+  schedule:
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+    inputs:
+      base:
+        description: "The release of this copy (for example v0.8). Empty: the version in package.json."
+        required: false
+
+permissions: {}
+
+jobs:
+  sync:
+    name: Propose the newest upstream release
+    if: github.repository != 'Checkend/checkend'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+      - name: Apply the newest release on a branch
+        id: sync
+        env:
+          UPSTREAM_URL: https://github.com/Checkend/checkend.git
+          BASE: ${{ inputs.base }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [ -n "$BASE" ]; then
+            node scripts/upstream-sync.ts --base "$BASE"
+          else
+            node scripts/upstream-sync.ts
+          fi
+      - name: Push the branch and open the pull request
+        if: steps.sync.outputs.branch != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ steps.sync.outputs.branch }}
+          FROM: ${{ steps.sync.outputs.from }}
+          TO: ${{ steps.sync.outputs.to }}
+        run: |
+          git push origin "refs/heads/$BRANCH"
+          gh pr create --head "$BRANCH" --title "Update Checkend from $FROM to $TO" \
+            --body "The changes of the upstream release $TO (https://github.com/Checkend/checkend/releases/tag/$TO). Review them, then merge; the deploy runs the migrations."
