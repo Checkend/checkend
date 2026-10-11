@@ -8,7 +8,14 @@ export default defineConfig(async () => ({
 	plugins: [
 		cloudflareTest({
 			wrangler: { configPath: "./wrangler.jsonc" },
+			// The self-host Worker plus the test-only Durable Object classes (not in wrangler.jsonc).
+			main: "./test/workers/test-entry.ts",
 			miniflare: {
+				// The hosted install (one object = one install) and an empty object for the Db contract.
+				durableObjects: {
+					INSTALL: { className: "CheckendInstall", useSQLite: true },
+					TEST_SQL: { className: "TestSqlObject", useSQLite: true },
+				},
 				// The optional R2 bucket (BlobStore). Not in wrangler.jsonc: an install without it works.
 				r2Buckets: ["BLOBS"],
 				// The optional per-key rate limit (not in wrangler.jsonc: see the docs).

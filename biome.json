@@ -30,7 +30,7 @@
 						"patterns": [
 							{
 								"group": ["cloudflare:*", "cloudflare:*/**"],
-								"message": "cloudflare:* imports are allowed only in src/adapters/cloudflare/ and src/entry/worker.ts. Use a port (see AGENTS.md)."
+								"message": "cloudflare:* imports are allowed only in src/adapters/cloudflare/ and the Cloudflare entries (src/entry/worker.ts, src/entry/durable-object.ts). Use a port (see AGENTS.md)."
 							}
 						]
 					}
@@ -50,7 +50,7 @@
 								"patterns": [
 									{
 										"group": ["cloudflare:*", "cloudflare:*/**"],
-										"message": "cloudflare:* imports are allowed only in src/adapters/cloudflare/ and src/entry/worker.ts. Use a port (see AGENTS.md)."
+										"message": "cloudflare:* imports are allowed only in src/adapters/cloudflare/ and the Cloudflare entries (src/entry/worker.ts, src/entry/durable-object.ts). Use a port (see AGENTS.md)."
 									},
 									{
 										"group": ["node:*", "node:*/**"],
@@ -64,7 +64,12 @@
 			}
 		},
 		{
-			"includes": ["src/adapters/cloudflare/**", "src/entry/worker.ts", "test/workers/**"],
+			"includes": [
+				"src/adapters/cloudflare/**",
+				"src/entry/worker.ts",
+				"src/entry/durable-object.ts",
+				"test/workers/**"
+			],
 			"linter": { "rules": { "style": { "noRestrictedImports": "off" } } }
 		}
 	]

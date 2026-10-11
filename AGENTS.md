@@ -44,7 +44,8 @@ scripts/                Repository tools (DCO check).
 
 Checkend runs on Cloudflare first, and it must also run off Cloudflare. These rules keep that possible.
 
-1. **No `cloudflare:*` imports** outside `src/adapters/cloudflare/` and `src/entry/worker.ts`.
+1. **No `cloudflare:*` imports** outside `src/adapters/cloudflare/` and the Cloudflare entries
+   (`src/entry/worker.ts`, `src/entry/durable-object.ts`).
    Biome enforces this rule.
 2. **Web Standard APIs only** in `core/`, `ports/` and `http/`. No `node:*` imports there (Biome
    enforces this), and no bindings. Code that needs the runtime goes behind a port.
