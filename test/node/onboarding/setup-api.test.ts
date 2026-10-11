@@ -133,3 +133,74 @@ describe("GET /v1/setup/progress", () => {
 		expect(all.body?.data).toMatchObject({ setup_keys_active: 1, apps: [expect.any(Object)] });
 	});
 });
+
+describe("the agent token of a setup key (ce setup report, after the key)", () => {
+	it("reports for its own app only, also after the key expires, and cannot set up more", async () => {
+		const { call, newKey, clock } = await setupApi();
+		const key = await newKey();
+		const mine = (
+			await call("POST", "/v1/setup/apps", key, { name: "web", platform: "javascript-nextjs" })
+		).body?.data;
+		expect(mine.project.platform).toBe("javascript-nextjs");
+		const other = (
+			await call("POST", "/v1/setup/apps", key, { name: "other", platform: "node-express" })
+		).body?.data;
+		const token = (
+			await call("POST", "/v1/setup/tokens", key, {
+				name: "Claude Code",
+				project: mine.project.slug,
+			})
+		).body?.data.token;
+		clock.advance(2 * 3_600_000); // the setup key expired
+		expect(
+			(
+				await call("POST", `/v1/setup/apps/${mine.project.slug}/report`, token, {
+					step: "sdk_installed",
+				})
+			).status,
+		).toBe(204);
+		expect(
+			(
+				await call("POST", `/v1/setup/apps/${mine.project.id}/report`, token, {
+					step: "sdk_installed",
+				})
+			).status,
+		).toBe(204);
+		expect(
+			(
+				await call("POST", `/v1/setup/apps/${other.project.slug}/report`, token, {
+					step: "sdk_installed",
+				})
+			).status,
+		).toBe(403);
+		expect(
+			(await call("POST", "/v1/setup/apps/nope/report", token, { step: "sdk_installed" })).status,
+		).toBe(403);
+		expect((await call("POST", "/v1/setup/apps", token, { name: "more" })).status).toBe(403);
+		expect(
+			(await call("POST", "/v1/setup/tokens", token, { name: "t", project: mine.project.slug }))
+				.status,
+		).toBe(403);
+		expect(
+			(await call("POST", `/v1/setup/apps/${mine.project.slug}/test-event`, token)).status,
+		).toBe(404);
+		expect((await call("GET", "/v1/setup/progress", token)).status).toBe(403);
+	});
+
+	it("a normal issues:write token (not from a setup key) cannot report", async () => {
+		const { call, ports, newKey } = await setupApi();
+		const key = await newKey();
+		const app = (await call("POST", "/v1/setup/apps", key, { name: "web" })).body?.data;
+		const { token } = await createToken(ports, BOOTSTRAP_ADMIN, {
+			name: "w",
+			scopes: ["issues:write"],
+		});
+		expect(
+			(
+				await call("POST", `/v1/setup/apps/${app.project.slug}/report`, token, {
+					step: "sdk_installed",
+				})
+			).status,
+		).toBe(403);
+	});
+});

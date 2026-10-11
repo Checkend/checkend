@@ -176,14 +176,39 @@ export type SetupStep = (typeof SETUP_STEPS)[number];
 export const ReportBody = v.strictObject({ step: v.picklist(SETUP_STEPS) });
 
 /** A step that the agent reports. The first report counts. */
+/**
+ * The app of an agent token that a setup key made (tokens.project_id): `ce setup report` runs
+ * with that token, also after the key expired. Only its own app; nothing else changes for it.
+ */
+async function appOfAgentToken(
+	db: SetupPorts["db"],
+	actor: Actor,
+	ref: string,
+): Promise<{ internalId: number; publicId: number } | null> {
+	const row = await db.first<{ id: number; public_id: number }>(
+		sql`SELECT p.id, p.public_id FROM tokens t JOIN projects p ON p.id = t.project_id
+			WHERE t.id = ${actor.id} AND t.setup_key_id IS NOT NULL AND t.revoked_at IS NULL
+				AND (p.public_id = ${/^\d{10}$/.test(ref) ? Number(ref) : null} OR p.slug = ${ref})
+				AND p.deleted_at IS NULL`,
+	);
+	return row ? { internalId: row.id, publicId: row.public_id } : null;
+}
+
+/**
+ * A step that the agent reports. The first report counts. A setup key or an admin: their apps;
+ * an agent token of a setup key: its own app ("forbidden" for any other).
+ */
 export async function reportSetupStep(
 	ports: SetupPorts,
 	actor: Actor,
 	project: string,
 	step: SetupStep,
-): Promise<"ok" | "not_found"> {
-	const app = await appOf(ports.db, actor, project);
-	if (!app) return "not_found";
+): Promise<"ok" | "not_found" | "forbidden"> {
+	const agentToken = actor.type === "token" && !hasScope(actor, "admin");
+	const app = agentToken
+		? await appOfAgentToken(ports.db, actor, project)
+		: await appOf(ports.db, actor, project);
+	if (!app) return agentToken ? "forbidden" : "not_found";
 	const now = ports.clock.now();
 	await ports.db.batch([
 		sql`UPDATE project_setup SET sdk_installed_at = coalesce(sdk_installed_at, ${now.toISOString()})

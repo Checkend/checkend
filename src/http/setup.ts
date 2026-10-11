@@ -118,6 +118,7 @@ export function setupRoutes(app: Hono<AppEnv>, state: IngestState): void {
 			c.req.param("project"),
 			body.output.step,
 		);
+		if (result === "forbidden") return c.json({ error: "forbidden" }, 403);
 		return result === "ok" ? c.body(null, 204) : c.json({ error: "not_found" }, 404);
 	});
 

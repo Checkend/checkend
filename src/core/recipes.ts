@@ -151,8 +151,22 @@ ce setup report sdk_installed
 
 ## 7. Connect MCP
 
-\`ce setup\` connected MCP for you. The server is ${base}/mcp. Agents read issues with the tools
-list_issues and get_issue_brief.
+Connect your agent through \`ce mcp\`: a local MCP server (stdio) that reads the agent token from
+the OS keychain. So the token never goes into an agent config file or into your context.
+\`ce setup\` prints the command for your agent:
+
+- Claude Code: \`claude mcp add checkend -- ce mcp --url ${base}\`
+- Codex: \`codex mcp add checkend -- ce mcp --url ${base}\`
+- Cursor: in \`.cursor/mcp.json\`:
+
+  \`\`\`json
+  { "mcpServers": { "checkend": { "command": "ce", "args": ["mcp", "--url", "${base}"] } } }
+  \`\`\`
+
+Then agents read issues with the tools list_issues and get_issue_brief.
+
+Manual fallback (only without \`ce\`): the HTTP server ${base}/mcp with the header
+\`Authorization: Bearer <agent token>\`. Keep that token in a secret store, not in the repository.
 
 ## 8. Report deploys in CI
 

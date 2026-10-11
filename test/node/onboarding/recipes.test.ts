@@ -52,6 +52,16 @@ describe("the agent recipes", () => {
 		}
 	});
 
+	it("connects MCP through ce mcp, so the token stays in the keychain", () => {
+		const text = setupRecipe(BASE);
+		expect(text).toContain(`claude mcp add checkend -- ce mcp --url ${BASE}`);
+		expect(text).toContain(`codex mcp add checkend -- ce mcp --url ${BASE}`);
+		expect(text).toContain('"command": "ce"');
+		// The HTTP form with a bearer token is only the manual fallback.
+		expect(text.indexOf("Authorization: Bearer")).toBeGreaterThan(text.indexOf("Manual fallback"));
+		expect(text.indexOf("Manual fallback")).toBeGreaterThan(-1);
+	});
+
 	it("the setup recipe covers each step of the design", () => {
 		const text = setupRecipe(BASE);
 		for (const step of [
@@ -61,7 +71,7 @@ describe("the agent recipes", () => {
 			"release",
 			"environment",
 			"test error",
-			"/mcp",
+			"ce mcp",
 			"deploys.md",
 			"sourcemaps.md",
 			"skill.md",

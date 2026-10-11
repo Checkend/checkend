@@ -417,7 +417,8 @@ export const API_ROUTES: ApiRoute[] = [
 		path: "/v1/setup/apps/:project/report",
 		scope: "admin",
 		setupKey: true,
-		summary: "Report a setup step that only the agent knows: sdk_installed.",
+		summary:
+			"Report a setup step that only the agent knows: sdk_installed. Also open to the agent token that a setup key made, for its own app only (also after the key expired).",
 		body: ReportBody,
 	},
 	{
