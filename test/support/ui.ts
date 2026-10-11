@@ -1,3 +1,4 @@
+import { storedSetupCode } from "../../src/core/auth/passkeys.ts";
 import { createDevSession, getSession } from "../../src/core/auth/sessions.ts";
 import { IngestState } from "../../src/core/ingest/state.ts";
 import { createApp } from "../../src/http/app.ts";
@@ -20,7 +21,12 @@ export async function uiApp(
 ) {
 	const t = await testPorts({
 		...overrides,
-		config: { adminToken: UI_ADMIN_TOKEN, setupCode: UI_SETUP_CODE, ...config },
+		config: {
+			adminToken: UI_ADMIN_TOKEN,
+			// Made at the start of the test clock: valid for 24 hours.
+			setupCode: storedSetupCode(UI_SETUP_CODE, new Date("2026-10-10T12:00:00Z")),
+			...config,
+		},
 	});
 	const app = createApp({ state: new IngestState(), ...options });
 

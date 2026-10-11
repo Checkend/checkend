@@ -9,6 +9,7 @@
 // Runs on Node 22.18+ (type stripping).
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { storedSetupCode } from "../src/core/auth/passkeys.ts";
 
 type Fetch = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 type Env = Record<string, string | undefined>;
@@ -80,6 +81,7 @@ export async function run(
 		wrangler?: Wrangler;
 		print?: (line: string) => void;
 		sleep?: (ms: number) => Promise<void>;
+		now?: () => Date;
 	} = {},
 ): Promise<number> {
 	const {
@@ -87,6 +89,7 @@ export async function run(
 		wrangler = runWrangler,
 		print = console.log,
 		sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms)),
+		now = () => new Date(),
 	} = deps;
 	const given = option(argv, "url") ?? env.CHECKEND_URL;
 	if (!given) {
@@ -114,14 +117,16 @@ export async function run(
 	}
 
 	const code = newSetupCode();
-	if ((await wrangler(["secret", "put", "SETUP_CODE", ...configArgs], code)) !== 0) {
+	// The secret holds the creation time too: the link expires after 24 hours.
+	const stored = storedSetupCode(code, now());
+	if ((await wrangler(["secret", "put", "SETUP_CODE", ...configArgs], stored)) !== 0) {
 		print("wrangler secret put SETUP_CODE failed. No setup link was made.");
 		return 1;
 	}
 	print("");
 	print(`Finish setup: ${origin}/setup#${code}`);
 	print("");
-	print("Open the link to create the first member and its passkey. It works once.");
+	print("Open the link to create the first member and its passkey. It works once, for 24 hours.");
 	print("Keep it private until then. Run npm run setup-link again for a new link.");
 	return 0;
 }

@@ -7,6 +7,7 @@ import {
 	finishSignIn,
 	isSetupOpen,
 	relyingPartyFor,
+	setupCodeState,
 	setupOptions,
 	signInOptions,
 } from "../../core/auth/passkeys.ts";
@@ -163,13 +164,15 @@ export function uiRoutes(app: Hono<AppEnv>, state: IngestState, onboarding: Onbo
 			return c.html(page({ title: "Setup is closed", body: setupClosedView() }), 404);
 		}
 		const devRequest = isDevRequest(c);
-		const mode = devRequest ? "dev" : c.env.ports.config.setupCode ? "code" : "missing";
+		const code = setupCodeState(c.env.ports.config.setupCode, now(c)).state;
+		const mode = devRequest ? "dev" : code === "valid" ? "code" : code;
 		return c.html(page({ title: "Set up", body: setupView(mode) }));
 	});
 
 	const setupStatus = {
 		setup_closed: 403,
 		invalid_code: 403,
+		setup_expired: 403,
 		invalid_name: 400,
 		invalid_credential: 401,
 	} as const;

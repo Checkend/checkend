@@ -6,6 +6,7 @@
 export const CLIENT_SCRIPT = `"use strict";
 (function () {
   var MESSAGES = {
+    setup_expired: "This setup link has expired. Run npm run setup-link for a new one.",
     invalid_code: "This setup link is not valid. Use the newest link, or run npm run setup-link again.",
     invalid_name: "Enter your name (1 to 100 characters).",
     setup_closed: "Setup is closed. Sign in with your passkey.",

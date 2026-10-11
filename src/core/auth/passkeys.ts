@@ -27,7 +27,12 @@ export const CHALLENGE_TTL_MS = 5 * 60_000;
 /** ES256, EdDSA, RS256. */
 const ALGORITHMS = [-7, -8, -257];
 
-export type AuthError = "setup_closed" | "invalid_code" | "invalid_name" | "invalid_credential";
+export type AuthError =
+	| "setup_closed"
+	| "invalid_code"
+	| "setup_expired"
+	| "invalid_name"
+	| "invalid_credential";
 export type AuthResult<T> = { ok: true; value: T } | { ok: false; error: AuthError };
 
 const fail = (error: AuthError): { ok: false; error: AuthError } => ({ ok: false, error });
@@ -59,14 +64,45 @@ interface SetupInput {
 	devRequest?: boolean;
 }
 
-async function codeMatches(setupCode: string | null, input: SetupInput): Promise<boolean> {
-	if (input.devRequest === true) return true;
+/**
+ * A setup link works for 24 hours: it is in deploy and build logs. The SETUP_CODE secret is
+ * "<unix seconds>.<code>"; the link carries only the code.
+ */
+export const SETUP_CODE_TTL_MS = 24 * 3_600_000;
+
+/** The value of the SETUP_CODE secret for a code made at `now`. */
+export const storedSetupCode = (code: string, now: Date): string =>
+	`${Math.floor(now.getTime() / 1000)}.${code}`;
+
+/** The state of the SETUP_CODE secret. A value without a creation time (the old format) is expired. */
+export function setupCodeState(
+	stored: string | null,
+	now: Date,
+): { state: "missing" } | { state: "expired" } | { state: "valid"; code: string } {
+	if (!stored) return { state: "missing" };
+	const match = /^(\d{1,12})\.(.+)$/.exec(stored);
+	if (!match?.[1] || !match[2]) return { state: "expired" };
+	const age = now.getTime() - Number(match[1]) * 1000;
+	// A creation time in the future (more than a clock skew) is not a code that setup-link made.
+	if (age > SETUP_CODE_TTL_MS || age < -5 * 60_000) return { state: "expired" };
+	return { state: "valid", code: match[2] };
+}
+
+async function checkCode(
+	stored: string | null,
+	input: SetupInput,
+	now: Date,
+): Promise<"ok" | "invalid_code" | "setup_expired"> {
+	if (input.devRequest === true) return "ok";
 	const given = input.code;
-	if (!setupCode || typeof given !== "string" || given.length > 1024) return false;
-	const [a, b] = await Promise.all([sha256Hex(given), sha256Hex(setupCode)]);
+	const setup = setupCodeState(stored, now);
+	if (setup.state === "missing") return "invalid_code";
+	if (setup.state === "expired") return "setup_expired";
+	if (typeof given !== "string" || given.length > 1024) return "invalid_code";
+	const [a, b] = await Promise.all([sha256Hex(given), sha256Hex(setup.code)]);
 	let difference = 0;
 	for (let i = 0; i < b.length; i++) difference |= a.charCodeAt(i) ^ b.charCodeAt(i);
-	return difference === 0;
+	return difference === 0 ? "ok" : "invalid_code";
 }
 
 async function storeChallenge(
@@ -116,7 +152,8 @@ export async function setupOptions(
 	input: SetupInput & { name: unknown },
 ): Promise<AuthResult<PublicKeyCredentialCreationOptionsJSON>> {
 	if (!(await isSetupOpen(db))) return fail("setup_closed");
-	if (!(await codeMatches(config.setupCode, input))) return fail("invalid_code");
+	const code = await checkCode(config.setupCode, input, clock.now());
+	if (code !== "ok") return fail(code);
 	const name = memberName(input.name);
 	if (!name) return fail("invalid_name");
 	const options = await generateRegistrationOptions({
@@ -161,7 +198,8 @@ export async function finishSetup(
 	rp: RelyingParty,
 	input: SetupInput & { response: unknown },
 ): Promise<AuthResult<NewSession>> {
-	if (!(await codeMatches(config.setupCode, input))) return fail("invalid_code");
+	const code = await checkCode(config.setupCode, input, clock.now());
+	if (code !== "ok") return fail(code);
 	if (!(await isSetupOpen(db))) return fail("setup_closed");
 	if (!credentialShape(input.response)) return fail("invalid_credential");
 	const now = clock.now();

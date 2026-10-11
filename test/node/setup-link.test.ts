@@ -11,6 +11,7 @@ import { sql } from "../../src/ports/db.ts";
 import { testPorts } from "../support/node-ports.ts";
 
 const URL_ = "https://errors.example.com";
+const NOW = new Date("2026-10-10T12:00:00Z");
 
 async function setup() {
 	const t = await testPorts();
@@ -32,6 +33,7 @@ async function setup() {
 			lines.push(line);
 		},
 		sleep: async () => {},
+		now: () => NOW,
 	};
 	return {
 		...t,
@@ -62,8 +64,12 @@ describe("scripts/setup-link.ts", () => {
 			"--config",
 			"wrangler.production.jsonc",
 		]);
-		const secret = call?.stdin ?? "";
-		expect(secret).toMatch(/^[A-Za-z0-9_-]{43}$/);
+		// The secret holds the creation time (for the 24-hour expiry), then the code.
+		const stored = call?.stdin ?? "";
+		const match = /^(\d+)\.([A-Za-z0-9_-]{43})$/.exec(stored);
+		expect(match).not.toBeNull();
+		expect(Number(match?.[1])).toBe(Math.floor(NOW.getTime() / 1000));
+		const secret = match?.[2] ?? "";
 		const withCode = s.lines.filter((line) => line.includes(secret));
 		expect(withCode).toEqual([`Finish setup: ${URL_}/setup#${secret}`]);
 	});

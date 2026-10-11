@@ -9,6 +9,8 @@ declare global {
 			INGEST_RATE_LIMITER: RateLimit;
 			INGEST_QUEUE: Queue<object>;
 			SETUP_CODE: string;
+			/** The code part of SETUP_CODE: what the setup link carries. */
+			TEST_SETUP_CODE: string;
 			TEST_MIGRATIONS: Migration[];
 			INSTALL: DurableObjectNamespace<import("../../src/entry/durable-object.ts").CheckendInstall>;
 			TEST_SQL: DurableObjectNamespace;

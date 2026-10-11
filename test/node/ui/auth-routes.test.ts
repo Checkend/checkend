@@ -101,6 +101,19 @@ describe("setup over HTTP", () => {
 		expect(html).toContain("https://github.com/Checkend/checkend/blob/main/guides/web-ui.md");
 	});
 
+	it("says that the setup link expired after 24 hours", async () => {
+		const ui = await uiApp();
+		ui.clock.advance(24 * 3_600_000 + 1000);
+		const html = await (await ui.request("/setup")).text();
+		expect(html).not.toContain("data-passkey-setup");
+		expect(html).toContain(
+			"This setup link has expired. Run <code>npm run setup-link</code> for a new one.",
+		);
+		const response = await ui.json("/setup/options", { code: UI_SETUP_CODE, name: "A" });
+		expect(response.status).toBe(403);
+		expect(await response.json()).toEqual({ error: "setup_expired" });
+	});
+
 	it("shows only the notice when SETUP_CODE is not set", async () => {
 		const ui = await uiApp({ setupCode: null });
 		const html = await (await ui.request("/setup")).text();

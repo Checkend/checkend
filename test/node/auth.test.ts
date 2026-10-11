@@ -10,8 +10,10 @@ import {
 	finishSignIn,
 	isSetupOpen,
 	relyingPartyFor,
+	SETUP_CODE_TTL_MS,
 	setupOptions,
 	signInOptions,
+	storedSetupCode,
 } from "../../src/core/auth/passkeys.ts";
 import {
 	createDevSession,
@@ -26,7 +28,8 @@ import { testPorts } from "../support/node-ports.ts";
 
 const ADMIN = "setup-admin-token-0123456789";
 const CODE = "setup-code-0123456789abcdefghijklmnopqrstu";
-const config = { adminToken: ADMIN, setupCode: CODE };
+const CREATED = new Date("2026-10-10T12:00:00Z"); // the start of the test clock
+const config = { adminToken: ADMIN, setupCode: storedSetupCode(CODE, CREATED) };
 const rp = relyingPartyFor("https://checkend.example/setup");
 
 passkeyContract("SQLite (Node)", async () => (await testPorts({ config })).ports, CODE);
@@ -88,6 +91,49 @@ describe("setup (first member)", () => {
 			devRequest: true,
 		});
 		expect(created.ok).toBe(true);
+	});
+
+	it("refuses a code older than 24 hours, with its own error", async () => {
+		const { ports, clock } = await testPorts({ config });
+		clock.advance(SETUP_CODE_TTL_MS + 1000);
+		expect(await setupOptions(ports, rp, { code: CODE, name: "A" })).toEqual({
+			ok: false,
+			error: "setup_expired",
+		});
+	});
+
+	it("treats a code in the old format (no creation time) as expired", async () => {
+		const { ports } = await testPorts({ config: { setupCode: CODE } });
+		expect(await setupOptions(ports, rp, { code: CODE, name: "A" })).toEqual({
+			ok: false,
+			error: "setup_expired",
+		});
+	});
+
+	it("refuses a creation time in the future", async () => {
+		const future = new Date(CREATED.getTime() + 3_600_000);
+		const { ports } = await testPorts({ config: { setupCode: storedSetupCode(CODE, future) } });
+		expect(await setupOptions(ports, rp, { code: CODE, name: "A" })).toEqual({
+			ok: false,
+			error: "setup_expired",
+		});
+	});
+
+	it("checks the expiry again when it finishes", async () => {
+		const { ports, clock } = await testPorts({ config });
+		const device = new VirtualAuthenticator(rp.origin);
+		const options = await setupOptions(ports, rp, { code: CODE, name: "A" });
+		if (!options.ok) throw new Error(options.error);
+		clock.advance(SETUP_CODE_TTL_MS + 1000);
+		expect(
+			await finishSetup(ports, rp, { code: CODE, response: await device.create(options.value) }),
+		).toEqual({ ok: false, error: "setup_expired" });
+	});
+
+	it("still needs no code in development mode", async () => {
+		const { ports } = await testPorts({ config: { setupCode: CODE } });
+		const options = await setupOptions(ports, rp, { code: undefined, name: "A", devRequest: true });
+		expect(options.ok).toBe(true);
 	});
 
 	it("checks the code again when it finishes", async () => {

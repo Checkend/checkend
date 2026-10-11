@@ -28,7 +28,9 @@ export default defineConfig(async () => ({
 				// Test-only bindings: the migration files, read here because workerd has no file system.
 				bindings: {
 					ADMIN_TOKEN: "workers-test-admin-token-0123456789",
-					SETUP_CODE: "workers-test-setup-code-0123456789abcdef",
+					// "<unix seconds>.<code>", made now: the setup link is valid for 24 hours.
+					SETUP_CODE: `${Math.floor(Date.now() / 1000)}.workers-test-setup-code-0123456789abcdef`,
+					TEST_SETUP_CODE: "workers-test-setup-code-0123456789abcdef",
 					TEST_MIGRATIONS: readMigrations("migrations"),
 					TEST_SOURCEMAP: readFileSync("test/fixtures/sourcemaps/app.min.js.map", "utf8"),
 					TEST_D1_MIGRATIONS: await readD1Migrations("migrations"),

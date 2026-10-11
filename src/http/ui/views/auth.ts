@@ -28,8 +28,17 @@ const setupMissing = (hidden: boolean) =>
 /**
  * "code": the setup link carries the code in the URL fragment; the client script reads it.
  * "dev": development mode on localhost, no code. "missing": SETUP_CODE is not set.
+ * "expired": the code is older than 24 hours.
  */
-export function setupView(mode: "code" | "dev" | "missing"): Html {
+export function setupView(mode: "code" | "dev" | "missing" | "expired"): Html {
+	if (mode === "expired") {
+		return h`<div class="auth">
+${logo("/setup")}
+<h1>Set up Checkend</h1>
+<div class="notice"><p>This setup link has expired. Run <code>npm run setup-link</code> for a new one.</p>
+<p><a href="${GUIDE_URL}">Read the web UI guide</a></p></div>
+</div>`;
+	}
 	if (mode === "missing") {
 		return h`<div class="auth">
 ${logo("/setup")}

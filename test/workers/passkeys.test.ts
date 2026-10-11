@@ -8,5 +8,5 @@ passkeyContract(
 		await applyD1Migrations(env.DB, env.TEST_D1_MIGRATIONS);
 		return cloudflarePorts(env, createExecutionContext());
 	},
-	env.SETUP_CODE,
+	env.TEST_SETUP_CODE,
 );

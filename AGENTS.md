@@ -123,7 +123,7 @@ Settings (Workers secrets and vars; all optional):
 | Name | Default | Purpose |
 |---|---|---|
 | `ADMIN_TOKEN` (secret) | none | Bearer token for `/v1`. Without it, the API rejects all requests. |
-| `SETUP_CODE` (secret) | none | The one-time code of the setup link. `npm run setup-link` sets it; do not set it by hand. |
+| `SETUP_CODE` (secret) | none | The one-time code of the setup link, as `<unix seconds>.<code>`: the link expires after 24 hours (deploy logs show it). `npm run setup-link` sets it; do not set it by hand. |
 | `D1_DAILY_ROW_LIMIT` | none | Set `100000` on the Workers Free plan: from 80% of it, ingest stores counters only until 00:00 UTC. |
 | `EVENTS_PER_ISSUE` | 100 | Stored events per issue. |
 | `NEW_ISSUES_PER_HOUR` | 100 | New issues per project per hour; more go to one "flood" issue. |
