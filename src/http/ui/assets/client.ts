@@ -186,20 +186,163 @@ export const CLIENT_SCRIPT = `"use strict";
     });
   }
 
+  function announce(text) {
+    var region = document.getElementById("copy-status");
+    if (region) region.textContent = text;
+  }
+
+  function copyText(text) {
+    if (!navigator.clipboard) return Promise.reject(new Error("no clipboard"));
+    return navigator.clipboard.writeText(text);
+  }
+
+  // An "Ask your agent" prompt: the text is in the button.
+  function copyPrompt(button) {
+    copyText(button.getAttribute("data-copy-text") || "").then(function () {
+      button.setAttribute("data-copied", "");
+      announce("Copied. Paste it into your coding agent.");
+      setTimeout(function () { button.removeAttribute("data-copied"); }, 2000);
+    }, function () {
+      announce("The browser did not allow the copy.");
+    });
+  }
+
+  // "Copy prompt": each click makes a new setup key, so the prompt in the box changes.
+  function copySetupPrompt(form) {
+    var button = form.querySelector("button[type=submit]");
+    var statusEl = document.getElementById("prompt-status");
+    var promptEl = document.getElementById("setup-prompt");
+    var csrf = form.querySelector("input[name=_csrf]");
+    button.disabled = true;
+    statusEl.textContent = "Making a new setup key…";
+    var request = fetch(form.getAttribute("action"), {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { accept: "application/json", "content-type": "application/x-www-form-urlencoded" },
+      body: "_csrf=" + encodeURIComponent(csrf ? csrf.value : "")
+    }).then(function (response) {
+      return response.json().catch(function () { return {}; }).then(function (data) {
+        if (!response.ok || !data.prompt) throw { code: data.error || "network" };
+        return data;
+      });
+    }, function () { throw { code: "network" }; });
+    var text = request.then(function (data) { return data.prompt; });
+    // Safari allows a copy only inside the click: a ClipboardItem can wait for the text.
+    var copied = window.ClipboardItem && navigator.clipboard && navigator.clipboard.write
+      ? navigator.clipboard.write([new window.ClipboardItem({
+          "text/plain": text.then(function (t) { return new Blob([t], { type: "text/plain" }); })
+        })]).catch(function () { return text.then(copyText); })
+      : text.then(copyText);
+    copied.catch(function () {}); // Handled below; when the request fails, nothing was copied.
+    request.then(function (data) {
+      var code = promptEl && promptEl.querySelector("code");
+      if (code) code.textContent = data.prompt;
+      if (promptEl) promptEl.removeAttribute("data-placeholder");
+      var until = new Date(data.expires_at);
+      var hhmm = isNaN(until.getTime()) ? "" : " until " + until.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      return copied.then(function () {
+        statusEl.textContent = "Copied. Paste it into your coding agent. The key is valid" + hhmm + ".";
+      }, function () {
+        statusEl.textContent = "The prompt is ready above: select it and copy it. The key is valid" + hhmm + ".";
+      });
+    }).catch(function (error) {
+      statusEl.textContent = error && error.code === "unavailable"
+        ? "This install cannot make setup keys yet. Update Checkend, or add the app by hand."
+        : "Checkend did not answer. Try again.";
+    }).then(function () { button.disabled = false; });
+  }
+
+  // The live checklist: poll every 2 seconds while the tab is visible, and set text only.
+  function updateProgress(section, data) {
+    var only = section.getAttribute("data-progress-only");
+    var apps = (data.apps || []).filter(function (app) { return !only || String(app.id) === only; });
+    var list = section.querySelector("[data-progress-apps]");
+    var waiting = section.querySelector("[data-progress-waiting]");
+    var template = section.querySelector("[data-progress-template]");
+    if (waiting) {
+      waiting.hidden = apps.length > 0;
+      waiting.textContent = data.waiting
+        ? "Your agent has a key. Waiting for it to connect the app…"
+        : "Waiting for your agent. Copy the prompt, then paste it into your agent.";
+    }
+    apps.forEach(function (app) {
+      var id = String(Number(app.id));
+      var row = list.querySelector('[data-app="' + id + '"]');
+      if (!row && template) {
+        row = template.content.firstElementChild.cloneNode(true);
+        row.setAttribute("data-app", id);
+        list.appendChild(row);
+      }
+      if (!row) return;
+      var name = row.querySelector("[data-app-name]");
+      name.textContent = String(app.name);
+      name.setAttribute("href", "/apps/" + id);
+      row.querySelector("[data-app-count]").textContent = Number(app.done) + " of 5";
+      (app.steps || []).forEach(function (step) {
+        if (!/^[a-z_]+$/.test(step.key)) return;
+        var item = row.querySelector('[data-step="' + step.key + '"]');
+        if (!item) return;
+        item.setAttribute("data-done", step.done ? "true" : "false");
+        item.querySelector(".step-detail").textContent = String(step.detail);
+        item.querySelector("[data-step-state]").textContent = step.done ? " (done)" : " (not yet)";
+      });
+    });
+    var done = section.querySelector("[data-progress-done]");
+    if (done) done.hidden = !data.all_complete;
+    return only ? apps.length > 0 && apps.every(function (a) { return a.complete; }) : data.all_complete;
+  }
+
+  function pollProgress(section) {
+    var stopped = false;
+    function tick() {
+      if (stopped || document.visibilityState !== "visible") return;
+      fetch("/apps/progress", { credentials: "same-origin", headers: { accept: "application/json" } })
+        .then(function (response) { return response.ok ? response.json() : null; })
+        .then(function (data) { if (data && updateProgress(section, data)) stopped = true; })
+        .catch(function () {});
+    }
+    setInterval(tick, 2000);
+    document.addEventListener("visibilitychange", tick);
+  }
+
   document.addEventListener("click", function (event) {
     var target = event.target instanceof Element ? event.target.closest("button") : null;
+    // A click outside an open menu closes it.
+    if (document.querySelectorAll) {
+      document.querySelectorAll("details.menu[open]").forEach(function (menu) {
+        if (!(event.target instanceof Element) || !menu.contains(event.target)) menu.removeAttribute("open");
+      });
+    }
     if (!target) return;
     if (target.hasAttribute("data-passkey-signin")) signIn(target);
     if (target.hasAttribute("data-copy")) copy(target);
+    if (target.hasAttribute("data-copy-text")) copyPrompt(target);
+  });
+
+  document.addEventListener("keydown", function (event) {
+    if (event.key !== "Escape") return;
+    document.querySelectorAll("details.menu[open]").forEach(function (menu) {
+      menu.removeAttribute("open");
+      var summary = menu.querySelector("summary");
+      if (summary) summary.focus();
+    });
   });
 
   document.addEventListener("submit", function (event) {
     var form = event.target;
-    if (form instanceof HTMLFormElement && form.hasAttribute("data-passkey-setup")) {
+    if (!(form instanceof HTMLFormElement)) return;
+    if (form.hasAttribute("data-passkey-setup")) {
       event.preventDefault();
       setUp(form);
     }
+    if (form.hasAttribute("data-setup-prompt")) {
+      event.preventDefault();
+      copySetupPrompt(form);
+    }
   });
+
+  var progressSection = document.querySelector("[data-progress]");
+  if (progressSection) pollProgress(progressSection);
 
   document.querySelectorAll("[data-js-only]").forEach(function (el) { el.hidden = false; });
   document.querySelectorAll("[data-no-js]").forEach(function (el) { el.hidden = true; });

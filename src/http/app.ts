@@ -11,6 +11,7 @@ import { githubRoutes } from "./github.ts";
 import { ingestRoutes } from "./ingest.ts";
 import { mcpRoutes } from "./mcp.ts";
 import { setupRoutes } from "./setup.ts";
+import { interimOnboarding, type Onboarding } from "./ui/onboarding.ts";
 import { uiRoutes } from "./ui/routes.ts";
 import { isDevRequest } from "./ui/security.ts";
 
@@ -27,6 +28,8 @@ export type AppEnv = {
 export interface AppOptions {
 	/** In-memory ingest state (caches, D1 write state). One per isolate. */
 	state?: IngestState;
+	/** The onboarding parts that the web UI calls (setup keys, progress, delete). */
+	onboarding?: Onboarding;
 }
 
 export function createApp(options: AppOptions = {}): Hono<AppEnv> {
@@ -57,7 +60,7 @@ export function createApp(options: AppOptions = {}): Hono<AppEnv> {
 	setupRoutes(app, state);
 	apiRoutes(app, state);
 	mcpRoutes(app);
-	uiRoutes(app, state);
+	uiRoutes(app, state, options.onboarding ?? interimOnboarding);
 
 	app.notFound((c) => c.json({ error: "not_found" }, 404));
 

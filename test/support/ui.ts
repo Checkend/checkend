@@ -1,6 +1,7 @@
 import { createDevSession, getSession } from "../../src/core/auth/sessions.ts";
 import { IngestState } from "../../src/core/ingest/state.ts";
 import { createApp } from "../../src/http/app.ts";
+import type { Onboarding } from "../../src/http/ui/onboarding.ts";
 import type { Config } from "../../src/ports/config.ts";
 import type { Ports } from "../../src/ports/index.ts";
 import { testPorts } from "./node-ports.ts";
@@ -15,12 +16,13 @@ export async function uiApp(
 	config: Partial<Config> = {},
 	origin = UI_ORIGIN,
 	overrides: Partial<Omit<Ports, "config">> = {},
+	options: { onboarding?: Onboarding } = {},
 ) {
 	const t = await testPorts({
 		...overrides,
 		config: { adminToken: UI_ADMIN_TOKEN, setupCode: UI_SETUP_CODE, ...config },
 	});
-	const app = createApp({ state: new IngestState() });
+	const app = createApp({ state: new IngestState(), ...options });
 
 	const request = (path: string, init: RequestInit & { session?: string } = {}) => {
 		const { session, ...rest } = init;

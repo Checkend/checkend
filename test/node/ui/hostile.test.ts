@@ -63,14 +63,17 @@ async function hostile() {
 	const issue = await ui.ports.db.first<{ id: number }>(sql`SELECT id FROM issues`);
 	const event = await ui.ports.db.first<{ id: number }>(sql`SELECT id FROM events`);
 	const page = async (path: string) => (await ui.request(path, { session: session.token })).text();
-	return { ...ui, issueId: issue?.id ?? 0, eventId: event?.id ?? 0, page };
+	return { ...ui, projectId: project.id, issueId: issue?.id ?? 0, eventId: event?.id ?? 0, page };
 }
 
 const pages = (d: Awaited<ReturnType<typeof hostile>>) => [
 	"/issues",
 	`/issues/${d.issueId}`,
 	`/events/${d.eventId}`,
-	"/projects",
+	"/",
+	"/apps",
+	`/apps/${d.projectId}`,
+	`/apps/${d.projectId}?tab=manual`,
 	"/settings",
 ];
 

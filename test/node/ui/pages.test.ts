@@ -50,8 +50,11 @@ const pagesOf = (d: Awaited<ReturnType<typeof withData>>) => [
 	"/issues?status=unresolved&environment=staging",
 	`/issues/${d.issues[0]?.id}`,
 	`/events/${d.events[0]?.id}`,
-	"/projects",
-	`/projects/${d.shop.id}`,
+	"/",
+	"/apps",
+	"/apps/new",
+	`/apps/${d.shop.id}`,
+	`/apps/${d.shop.id}?tab=manual`,
 	"/settings",
 ];
 
@@ -104,11 +107,11 @@ describe("every page", () => {
 		for (const path of pagesOf(d)) {
 			const { html } = await d.page(path);
 			for (const p of projects) {
-				expect(html, path).not.toMatch(new RegExp(`project=${p.id}\\b|/projects/${p.id}\\b`));
+				expect(html, path).not.toMatch(new RegExp(`project=${p.id}\\b|/apps/${p.id}\\b`));
 			}
 		}
-		const { html } = await d.page("/projects");
-		expect(html).toContain(`/projects/${d.shop.id}`);
+		const { html } = await d.page("/apps");
+		expect(html).toContain(`/apps/${d.shop.id}`);
 	});
 });
 
@@ -146,7 +149,7 @@ describe("inbox", () => {
 		expect((await d.page("/issues?cursor=%%%")).response.status).toBe(400);
 		expect((await d.page("/issues?since=forever")).response.status).toBe(400);
 		const unknown = await d.page("/issues?project=no-such-project");
-		expect(unknown.html).toContain("No project no-such-project");
+		expect(unknown.html).toContain("No app no-such-project");
 	});
 });
 
@@ -191,46 +194,34 @@ describe("event", () => {
 	});
 });
 
-describe("projects", () => {
-	it("lists projects with their DSN", async () => {
-		const d = await withData();
-		const { html } = await d.page("/projects");
-		expect(html).toContain("Shop");
-		expect(html).toContain(`https://${d.shop.publicKey}@checkend.test/${d.shop.id}`);
-	});
-
-	it("creates a project and shows its DSN and Sentry.init snippets for Node and the browser", async () => {
+describe("apps (more in apps.test.ts)", () => {
+	it("creates an app by hand and shows its DSN and setup code", async () => {
 		const d = await withData();
 		const created = await d.form(
-			"/projects",
+			"/apps",
 			{ name: "Billing <svc>", platform: "node", _csrf: d.session.csrf },
 			d.session.token,
 		);
 		expect(created.status).toBe(303);
 		const location = created.headers.get("location") ?? "";
-		expect(location).toMatch(/^\/projects\/[1-9]\d{9}$/);
+		expect(location).toMatch(/^\/apps\/[1-9]\d{9}\?tab=manual$/);
 		const { html } = await d.page(location);
 		expect(html).toContain("Billing &lt;svc&gt;");
 		expect(html).toMatch(/https:\/\/[0-9a-f]{32}@checkend\.test\/[1-9]\d{9}/);
 		expect(html).toContain("@sentry/node");
-		expect(html).toContain("@sentry/browser");
 		expect(html).toContain("Sentry.init({");
 	});
 
 	it("rejects an empty name and keeps the form", async () => {
 		const d = await withData();
-		const response = await d.form(
-			"/projects",
-			{ name: "  ", _csrf: d.session.csrf },
-			d.session.token,
-		);
+		const response = await d.form("/apps", { name: "  ", _csrf: d.session.csrf }, d.session.token);
 		expect(response.status).toBe(400);
-		expect(await response.text()).toContain("A project needs a name");
+		expect(await response.text()).toContain("An app needs a name");
 	});
 
-	it("answers 404 for an unknown project", async () => {
+	it("answers 404 for an unknown app", async () => {
 		const d = await withData();
-		expect((await d.page("/projects/1234567890")).response.status).toBe(404);
+		expect((await d.page("/apps/1234567890")).response.status).toBe(404);
 	});
 });
 
@@ -251,11 +242,11 @@ describe("settings", () => {
 });
 
 describe("other paths", () => {
-	it("sends / to the inbox", async () => {
+	it("shows the onboarding on / while an app is not set up", async () => {
 		const d = await withData();
-		const { response } = await d.page("/");
-		expect(response.status).toBe(303);
-		expect(response.headers.get("location")).toBe("/issues");
+		const { response, html } = await d.page("/");
+		expect(response.status).toBe(200);
+		expect(html).toContain("Copy prompt");
 	});
 
 	it("serves the stylesheet and the script with long caching", async () => {

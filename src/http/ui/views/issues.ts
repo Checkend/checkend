@@ -59,10 +59,10 @@ export function inboxView(
   <div class="search"><label for="f-q">Search</label><input id="f-q" type="search" name="q" value="${query.q ?? ""}" placeholder="Error type, message or function" maxlength="200"></div>
   ${select(
 		"project",
-		"Project",
+		"App",
 		facets.projects.map((p) => ({ value: String(p.id), label: p.name })),
 		query.project,
-		"All projects",
+		"All apps",
 	)}
   ${select("status", "Status", plain([...ISSUE_STATUSES]), query.status, "Any status")}
   ${select("environment", "Environment", plain(facets.environments), query.environment, "All environments")}
@@ -80,10 +80,10 @@ ${
 	page.data.length === 0
 		? h`<div class="empty">${
 				result === "project_not_found"
-					? h`<h2>No project ${t(query.project, 60)}</h2><p><a href="/projects">Show the projects</a></p>`
+					? h`<h2>No app ${t(query.project, 60)}</h2><p><a href="/apps">Show the apps</a></p>`
 					: filtered
 						? h`<h2>No issues match these filters</h2><p><a href="/issues">Show all issues</a></p>`
-						: h`<h2>No issues yet</h2><p>Connect an app: create a project, then add its DSN to your Sentry SDK.</p><p><a class="btn" href="/projects">Go to projects</a></p>`
+						: h`<h2>No errors yet</h2><p>Connect an app: your coding agent does the setup.</p><p><a class="btn" href="/apps/new">Add app</a></p>`
 			}</div>`
 		: h`<table class="issues">
 <caption class="sr">Issues, most recently seen first</caption>

@@ -9,8 +9,9 @@ const PROJECT_ID = /^[1-9]\d{9}$/;
 
 export const issuePath = (id: number | string | null | undefined): string => `/issues/${id}`;
 export const eventPath = (id: number | string | null | undefined): string => `/events/${id}`;
-export const projectPath = (publicId: number | string | null | undefined): string =>
-	`/projects/${publicId}`;
+/** An app (a project in the API) by its public ID. The UI says "app". */
+export const appPath = (publicId: number | string | null | undefined): string =>
+	`/apps/${publicId}`;
 
 /** The issue ID of a URL segment, or null when it is not one. */
 export function parseIssueId(segment: string | undefined): number | null {

@@ -60,7 +60,7 @@ describe("web UI in the Worker (D1)", () => {
 		const cookie = cookieOf(signIn);
 		expect(cookie).toMatch(/^__Host-checkend_session=/);
 
-		for (const path of ["/issues", "/projects", "/settings"]) {
+		for (const path of ["/issues", "/apps", "/settings"]) {
 			const page = await get(path, cookie);
 			expect(page.status, path).toBe(200);
 			expect(page.headers.get("content-security-policy"), path).toBe(CSP);

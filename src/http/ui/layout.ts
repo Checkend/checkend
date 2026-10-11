@@ -3,10 +3,10 @@ import { type Child, type Html, h } from "./html.ts";
 
 const LOGO = h`<svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#7c3aed"/><path d="M24 16A8 8 0 1 1 21.66 10.34" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/><circle cx="22" cy="10" r="2.5" fill="#fff"/></svg>`;
 
-export const logo = (href = "/issues"): Html =>
+export const logo = (href = "/"): Html =>
 	h`<a class="logo" href="${href}" aria-label="Checkend home">${LOGO} checkend</a>`;
 
-export type Section = "issues" | "projects" | "settings";
+export type Section = "issues" | "apps" | "settings";
 
 export interface PageOptions {
 	title: string;
@@ -18,7 +18,7 @@ export interface PageOptions {
 
 const NAV: [Section, string, string][] = [
 	["issues", "/issues", "Issues"],
-	["projects", "/projects", "Projects"],
+	["apps", "/apps", "Apps"],
 	["settings", "/settings", "Settings"],
 ];
 
@@ -56,6 +56,7 @@ ${
 <main id="main" class="wrap">
 ${body}
 </main>
+${member ? h`<p class="sr" id="copy-status" role="status" aria-live="polite"></p>` : ""}
 ${member ? h`<footer class="wrap foot">Checkend · open-source error tracking for coding agents</footer>` : ""}
 </body>
 </html>`;

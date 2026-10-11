@@ -33,9 +33,10 @@ import { createProject, listProjects } from "../../core/projects.ts";
 import { sql } from "../../ports/db.ts";
 import type { AppEnv } from "../app.ts";
 import { assetRoutes } from "./assets/index.ts";
-import type { Html } from "./html.ts";
-import { parseEventId, parseIssueId, parseProjectId, projectPath } from "./ids.ts";
+import { type Html, h } from "./html.ts";
+import { appPath, parseEventId, parseIssueId, parseProjectId } from "./ids.ts";
 import { page, type Section } from "./layout.ts";
+import { type Onboarding, progressJson, setupPrompt } from "./onboarding.ts";
 import {
 	checkFormCsrf,
 	checkJsonCsrf,
@@ -48,16 +49,26 @@ import {
 	sessionToken,
 } from "./security.ts";
 import { displayText } from "./text.ts";
+import {
+	type AppPageData,
+	type AppRow,
+	type AppTab,
+	appsView,
+	appView,
+	homeView,
+	newAppView,
+	PLATFORMS,
+	SDKS,
+} from "./views/apps.ts";
 import { loginView, notFoundView, setupClosedView, setupView } from "./views/auth.ts";
 import { type EventDetail, eventView } from "./views/event.ts";
 import { inboxView, issueView, SINCE_CHOICES } from "./views/issues.ts";
-import { PLATFORMS, projectsView, projectView } from "./views/projects.ts";
 import { type MemberRow, settingsView } from "./views/settings.ts";
 
 const SESSION_MAX_AGE = Math.floor(SESSION_TTL_MS / 1000);
 
 /** The web UI: server-rendered HTML, cookie sessions, passkeys. The API stays bearer-only. */
-export function uiRoutes(app: Hono<AppEnv>, state: IngestState): void {
+export function uiRoutes(app: Hono<AppEnv>, state: IngestState, onboarding: Onboarding): void {
 	assetRoutes(app);
 
 	const render = (
@@ -83,8 +94,6 @@ export function uiRoutes(app: Hono<AppEnv>, state: IngestState): void {
 	const member = [securityHeaders, requireMember] as const;
 
 	// --- sign-in, setup, sign-out -------------------------------------------------------
-
-	app.get("/", securityHeaders, (c) => c.redirect("/issues", 303));
 
 	app.get("/login", securityHeaders, async (c) => {
 		if (await isSetupOpen(c.env.ports.db)) return c.redirect("/setup", 303);
@@ -162,7 +171,7 @@ export function uiRoutes(app: Hono<AppEnv>, state: IngestState): void {
 			response: input.response,
 		});
 		if (!result.ok) return c.json({ error: result.error }, setupStatus[result.error]);
-		return signedIn(c, result.value.token, "/projects");
+		return signedIn(c, result.value.token, "/");
 	});
 
 	app.post("/logout", ...member, checkFormCsrf, async (c) => {
@@ -255,21 +264,72 @@ export function uiRoutes(app: Hono<AppEnv>, state: IngestState): void {
 		return render(c, "Event", "issues", eventView(detail, now(c)));
 	});
 
-	// --- projects ------------------------------------------------------------------------
+	// --- home, apps ----------------------------------------------------------------------
 
 	const origin = (c: Context) => new URL(c.req.url).origin;
+	const loadProgress = async (c: Context<AppEnv>) =>
+		progressJson(await onboarding.progress(c.env.ports, now(c)), now(c));
+	const csrf = (c: Context<AppEnv>) => c.get("session").csrfToken;
 
-	app.get("/projects", ...member, async (c) => {
-		const projects = await listProjects(c.env.ports.db);
+	// Home: the prompt box and the live checklist until every app is set up; then the errors.
+	app.get("/", ...member, async (c) => {
+		const progress = await loadProgress(c);
+		if (progress.all_complete) return c.redirect("/issues", 303);
 		return render(
 			c,
-			"Projects",
-			"projects",
-			projectsView(projects, origin(c), c.get("session").csrfToken, now(c)),
+			"Connect your app",
+			undefined,
+			homeView(origin(c), csrf(c), progress, null, false),
 		);
 	});
 
-	app.post("/projects", ...member, checkFormCsrf, async (c) => {
+	// "Copy prompt": a new setup key each time. JSON for the script; a page without JavaScript.
+	app.post("/apps/setup-key", ...member, checkFormCsrf, async (c) => {
+		const key = await onboarding.createSetupKey(c.env.ports, c.get("actor"));
+		const prompt = key ? setupPrompt(origin(c), key.key) : null;
+		if ((c.req.header("accept") ?? "").includes("application/json")) {
+			c.header("Cache-Control", "no-store");
+			if (!key || !prompt) return c.json({ error: "unavailable" }, 503);
+			return c.json({ prompt, expires_at: key.expires_at });
+		}
+		const view = newAppView(origin(c), csrf(c), await loadProgress(c), prompt, key === null);
+		c.header("Cache-Control", "no-store");
+		return render(c, "Add an app", "apps", view);
+	});
+
+	app.get("/apps/progress", ...member, async (c) => {
+		c.header("Cache-Control", "no-store");
+		return c.json(await loadProgress(c));
+	});
+
+	const appRows = async (c: Context<AppEnv>): Promise<AppRow[]> => {
+		const [projects, progress] = await Promise.all([
+			listProjects(c.env.ports.db, now(c)),
+			onboarding.progress(c.env.ports, now(c)),
+		]);
+		return projects.map((project) => {
+			const found = progress.apps.find((a) => a.project.id === project.id) ?? null;
+			const demo = (project as { demo?: boolean }).demo === true || found?.project.demo === true;
+			return { project, progress: found, demo };
+		});
+	};
+
+	app.get("/apps", ...member, async (c) => {
+		const notice = c.req.query("deleted") === "1" ? "The app was deleted." : null;
+		return render(c, "Apps", "apps", appsView(await appRows(c), origin(c), now(c), notice));
+	});
+
+	app.get("/apps/new", ...member, async (c) =>
+		render(
+			c,
+			"Add an app",
+			"apps",
+			newAppView(origin(c), csrf(c), await loadProgress(c), null, false),
+		),
+	);
+
+	// An app by hand, for people without a coding agent: then its manual setup tab.
+	app.post("/apps", ...member, checkFormCsrf, async (c) => {
 		const form = c.get("form");
 		const name = typeof form.name === "string" ? form.name.trim() : "";
 		const platform =
@@ -277,23 +337,80 @@ export function uiRoutes(app: Hono<AppEnv>, state: IngestState): void {
 				? form.platform
 				: null;
 		if (name.length === 0 || name.length > 100) {
-			const projects = await listProjects(c.env.ports.db);
-			const view = projectsView(projects, origin(c), c.get("session").csrfToken, now(c), {
+			const view = newAppView(origin(c), csrf(c), await loadProgress(c), null, false, {
 				name: name.slice(0, 100),
 				...(platform ? { platform } : {}),
-				error: "A project needs a name (1 to 100 characters).",
+				error: "An app needs a name (1 to 100 characters).",
 			});
-			return render(c, "Projects", "projects", view, 400);
+			return render(c, "Add an app", "apps", view, 400);
 		}
-		const project = await createProject(c.env.ports, { name, platform });
-		return c.redirect(projectPath(project.id), 303);
+		const project = await createProject(c.env.ports, { name, platform }, c.get("actor"));
+		return c.redirect(`${appPath(project.id)}?tab=manual`, 303);
 	});
 
-	app.get("/projects/:id", ...member, async (c) => {
+	const findApp = async (c: Context<AppEnv>) => {
 		const publicId = parseProjectId(c.req.param("id"));
-		const project = (await listProjects(c.env.ports.db)).find((p) => p.id === publicId);
-		if (!project) return notFound(c);
-		return render(c, project.name, "projects", projectView(project, origin(c), now(c)));
+		return (await appRows(c)).find((row) => row.project.id === publicId) ?? null;
+	};
+
+	const appPage = async (
+		c: Context<AppEnv>,
+		row: AppRow,
+		extra: { tab?: AppTab; deleteError?: string } = {},
+		status: ContentfulStatusCode = 200,
+	) => {
+		const sdk = c.req.query("sdk");
+		const data: AppPageData = {
+			project: row.project,
+			progress: await loadProgress(c),
+			demo: row.demo,
+			tab: extra.tab ?? (c.req.query("tab") === "manual" ? "manual" : "agent"),
+			sdk: SDKS.some((s) => s.id === sdk) ? sdk : undefined,
+			csrf: csrf(c),
+			...(extra.deleteError ? { deleteError: extra.deleteError } : {}),
+		};
+		return render(c, row.project.name, "apps", appView(data, origin(c), now(c)), status);
+	};
+
+	app.get("/apps/:id", ...member, async (c) => {
+		const row = await findApp(c);
+		return row ? appPage(c, row) : notFound(c);
+	});
+
+	// Delete: the name typed to confirm (not for the demo app), then the core delete.
+	app.post("/apps/:id/delete", ...member, checkFormCsrf, async (c) => {
+		const row = await findApp(c);
+		if (!row) return notFound(c);
+		const typed = c.get("form").confirm;
+		if (!row.demo && (typeof typed !== "string" || typed.trim() !== row.project.name)) {
+			return appPage(
+				c,
+				row,
+				{ deleteError: "Type the name of the app exactly as it is shown, to confirm." },
+				400,
+			);
+		}
+		const result = await onboarding.deleteProject(c.env.ports, c.get("actor"), row.project.id);
+		if (result === "deleted") return c.redirect("/apps?deleted=1", 303);
+		if (result === "not_found") return notFound(c);
+		const message =
+			result === "approval_required"
+				? "The delete waits for an approval, because this install needs approvals for deletes (REQUIRE_APPROVAL)."
+				: "This install cannot delete apps yet. Update Checkend.";
+		return render(
+			c,
+			row.project.name,
+			"apps",
+			h`<p class="notice" role="status">${message}</p><p><a href="${appPath(row.project.id)}">Back to the app</a></p>`,
+			result === "approval_required" ? 202 : 503,
+		);
+	});
+
+	// The old addresses (before "apps").
+	app.get("/projects", securityHeaders, (c) => c.redirect("/apps", 301));
+	app.get("/projects/:id", securityHeaders, (c) => {
+		const publicId = parseProjectId(c.req.param("id"));
+		return publicId === null ? notFound(c) : c.redirect(appPath(publicId), 301);
 	});
 
 	// --- settings ------------------------------------------------------------------------

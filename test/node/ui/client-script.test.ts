@@ -29,7 +29,7 @@ function setupPage(hash: string) {
 			challenge: "Y2hhbGxlbmdl",
 			pubKeyCredParams: [{ type: "public-key", alg: -7 }],
 		},
-		"/setup/verify": { redirect: "/projects" },
+		"/setup/verify": { redirect: "/" },
 	};
 	const context = {
 		location,
@@ -125,5 +125,107 @@ describe("client script: the setup link", () => {
 		expect(page.notice.hidden).toBe(true);
 		await page.submit();
 		expect(page.requests[0]?.body.code).toBe(CODE);
+	});
+});
+
+/** Runs the client script on a fake home page: the prompt box and a copy button. */
+function homePage(answer: { status: number; body: Record<string, unknown> }) {
+	class HTMLFormElement {}
+	class Element {}
+	const listeners: Record<string, (event: unknown) => void> = {};
+	const requests: { url: string; body: string; accept: string }[] = [];
+	const copied: string[] = [];
+	const status = { textContent: "" };
+	const code = { textContent: "placeholder" };
+	const pre = { querySelector: () => code, removeAttribute: () => {} };
+	const button = { disabled: false };
+	const form = Object.assign(Object.create(HTMLFormElement.prototype), {
+		hasAttribute: (name: string) => name === "data-setup-prompt",
+		getAttribute: (name: string) => (name === "action" ? "/apps/setup-key" : null),
+		querySelector: (selector: string) =>
+			selector.includes("_csrf") ? { value: "csrf-token" } : button,
+	});
+	const copyButton = Object.assign(Object.create(Element.prototype), {
+		closest: () => copyButton,
+		hasAttribute: (name: string) => name === "data-copy-text",
+		getAttribute: (name: string) => (name === "data-copy-text" ? "Prompt for the agent" : null),
+		setAttribute: () => {},
+		removeAttribute: () => {},
+	});
+	const context = {
+		location: { hash: "", pathname: "/", search: "" },
+		history: { replaceState: () => {} },
+		document: {
+			addEventListener: (type: string, listener: (event: unknown) => void) => {
+				listeners[type] = listener;
+			},
+			querySelector: () => null,
+			querySelectorAll: () => [],
+			getElementById: (id: string) =>
+				id === "prompt-status" ? status : id === "setup-prompt" ? pre : { textContent: "" },
+		},
+		navigator: {
+			clipboard: {
+				writeText: async (text: string) => {
+					copied.push(text);
+				},
+			},
+		},
+		fetch: async (url: string, init: { body: string; headers: Record<string, string> }) => {
+			requests.push({ url, body: init.body, accept: init.headers.accept ?? "" });
+			return { ok: answer.status === 200, status: answer.status, json: async () => answer.body };
+		},
+		HTMLFormElement,
+		Element,
+		URLSearchParams,
+		Date,
+		setTimeout,
+		clearTimeout,
+	};
+	runInNewContext(CLIENT_SCRIPT, {
+		...context,
+		window: { ...context, addEventListener: () => {} },
+	});
+	const settle = async () => {
+		for (let i = 0; i < 20; i++) await new Promise((resolve) => setImmediate(resolve));
+	};
+	const submit = async () => {
+		listeners.submit?.({ target: form, preventDefault: () => {} });
+		await settle();
+	};
+	const click = async () => {
+		listeners.click?.({ target: copyButton });
+		await settle();
+	};
+	return { requests, copied, status, code, button, submit, click };
+}
+
+describe("client script: the prompt box", () => {
+	it("asks for a new key, shows the prompt, and copies it", async () => {
+		const page = homePage({
+			status: 200,
+			body: { prompt: "Set up Checkend … --key cks_new", expires_at: "2026-10-10T13:00:00Z" },
+		});
+		await page.submit();
+		expect(page.requests).toEqual([
+			{ url: "/apps/setup-key", body: "_csrf=csrf-token", accept: "application/json" },
+		]);
+		expect(page.code.textContent).toBe("Set up Checkend … --key cks_new");
+		expect(page.copied).toEqual(["Set up Checkend … --key cks_new"]);
+		expect(page.status.textContent).toContain("Copied");
+		expect(page.button.disabled).toBe(false);
+	});
+
+	it("says so when this install cannot make keys", async () => {
+		const page = homePage({ status: 503, body: { error: "unavailable" } });
+		await page.submit();
+		expect(page.copied).toEqual([]);
+		expect(page.status.textContent).toContain("cannot make setup keys");
+	});
+
+	it("copies the prompt of an Ask your agent item", async () => {
+		const page = homePage({ status: 200, body: {} });
+		await page.click();
+		expect(page.copied).toEqual(["Prompt for the agent"]);
 	});
 });

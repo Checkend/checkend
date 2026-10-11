@@ -30,7 +30,7 @@ async function setUpWithPasskey(
 		response: await device.create((await options.json()) as CreationOptions),
 	});
 	expect(verify.status).toBe(200);
-	expect(await verify.json()).toEqual({ redirect: "/projects" });
+	expect(await verify.json()).toEqual({ redirect: "/" });
 	return { ...app, device, setupSession: sessionFrom(verify) };
 }
 
@@ -253,18 +253,18 @@ describe("CSRF", () => {
 		const { token } = await ui.signIn();
 		expect((await ui.form("/logout", {}, token)).status).toBe(403);
 		expect((await ui.form("/logout", { _csrf: "x".repeat(43) }, token)).status).toBe(403);
-		expect((await ui.form("/projects", { name: "New" }, token)).status).toBe(403);
+		expect((await ui.form("/apps", { name: "New" }, token)).status).toBe(403);
 		expect(await ui.ports.db.all(sql`SELECT id FROM projects`)).toEqual([]);
 	});
 
 	it("rejects a form post from another origin, even with the right token", async () => {
 		const ui = await uiApp();
 		const { token, csrf } = await ui.signIn();
-		const crossSite = await ui.form("/projects", { name: "New", _csrf: csrf }, token, {
+		const crossSite = await ui.form("/apps", { name: "New", _csrf: csrf }, token, {
 			origin: "https://evil.example",
 		});
 		expect(crossSite.status).toBe(403);
-		const fetchSite = await ui.form("/projects", { name: "New", _csrf: csrf }, token, {
+		const fetchSite = await ui.form("/apps", { name: "New", _csrf: csrf }, token, {
 			origin: ui.origin,
 			"sec-fetch-site": "cross-site",
 		});
@@ -275,7 +275,7 @@ describe("CSRF", () => {
 	it("rejects a form post without a session", async () => {
 		const ui = await uiApp();
 		await ui.signIn();
-		const response = await ui.form("/projects", { name: "New", _csrf: "x" });
+		const response = await ui.form("/apps", { name: "New", _csrf: "x" });
 		expect(response.status).toBe(303);
 		expect(response.headers.get("location")).toBe("/login");
 	});
