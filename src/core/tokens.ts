@@ -64,6 +64,8 @@ export async function createToken(
 	{ db, clock }: Pick<Ports, "db" | "clock">,
 	actor: Actor,
 	input: { name: string; scopes: readonly string[] },
+	/** An agent token made with a setup key, for one app (onboarding progress). */
+	link?: { setupKeyId: number | null; projectId: number },
 ): Promise<{ token: string; record: TokenRecord }> {
 	const name = input.name.trim();
 	if (name.length === 0 || name.length > 100)
@@ -81,8 +83,9 @@ export async function createToken(
 	const tokenHash = await sha256(token);
 	const prefix = token.slice(0, 10);
 	const [inserted] = await db.batch([
-		sql`INSERT INTO tokens (name, scopes, token_hash, prefix, created_at, created_by)
-			VALUES (${name}, ${scopes.join(" ")}, ${tokenHash}, ${prefix}, ${createdAt}, ${actor.name})
+		sql`INSERT INTO tokens (name, scopes, token_hash, prefix, created_at, created_by, setup_key_id, project_id)
+			VALUES (${name}, ${scopes.join(" ")}, ${tokenHash}, ${prefix}, ${createdAt}, ${actor.name},
+				${link?.setupKeyId ?? null}, ${link?.projectId ?? null})
 			RETURNING id`,
 		sql`INSERT INTO activity (at, actor_type, actor_id, actor_name, action, target_type, target_id, data)
 			SELECT ${createdAt}, ${actor.type}, ${actor.id}, ${actor.name}, ${"token.create"}, ${"token"}, id,

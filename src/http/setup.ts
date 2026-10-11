@@ -1,6 +1,16 @@
 import type { Context, Hono, MiddlewareHandler } from "hono";
 import * as v from "valibot";
+import type { IngestState } from "../core/ingest/state.ts";
 import { IdParam } from "../core/issues.ts";
+import {
+	AgentTokenBody,
+	createAgentToken,
+	RegisterAppBody,
+	ReportBody,
+	registerApp,
+	reportSetupStep,
+	sendTestEvent,
+} from "../core/setup.ts";
 import {
 	authenticateSetupKey,
 	createSetupKey,
@@ -8,6 +18,7 @@ import {
 	revokeSetupKey,
 } from "../core/setup-keys.ts";
 import { authenticate, hasScope } from "../core/tokens.ts";
+import { dsn } from "./api.ts";
 import type { AppEnv } from "./app.ts";
 
 const invalid = (c: Context, issues: v.BaseIssue<unknown>[]) =>
@@ -43,7 +54,7 @@ const needAdmin: MiddlewareHandler<AppEnv> = async (c, next) => {
 };
 
 /** The onboarding routes (D20). Registered before apiRoutes, so the /v1 auth does not run. */
-export function setupRoutes(app: Hono<AppEnv>): void {
+export function setupRoutes(app: Hono<AppEnv>, state: IngestState): void {
 	app.use("/v1/setup/*", requireSetupActor);
 
 	app.post("/v1/setup/keys", needAdmin, async (c) =>
@@ -59,5 +70,53 @@ export function setupRoutes(app: Hono<AppEnv>): void {
 		if (!params.success) return invalid(c, params.issues);
 		const revoked = await revokeSetupKey(c.env.ports, c.get("actor"), params.output.id);
 		return revoked ? c.body(null, 204) : c.json({ error: "not_found" }, 404);
+	});
+
+	app.post("/v1/setup/apps", async (c) => {
+		const body = v.safeParse(RegisterAppBody, await c.req.json().catch(() => null));
+		if (!body.success) return invalid(c, body.issues);
+		const result = await registerApp(c.env.ports, c.get("actor"), body.output);
+		if (!result.ok) {
+			return result.error === "limit"
+				? c.json({ error: "limit", message: "This setup key registered its maximum of apps." }, 429)
+				: c.json({ error: "forbidden", required_scope: "admin" }, 403);
+		}
+		const { public_key, ...data } = result;
+		return c.json(
+			{ data: { ...data, dsn: dsn(c.req.url, public_key, result.project.id) } },
+			result.created ? 201 : 200,
+		);
+	});
+
+	app.post("/v1/setup/tokens", async (c) => {
+		const body = v.safeParse(AgentTokenBody, await c.req.json().catch(() => null));
+		if (!body.success) return invalid(c, body.issues);
+		const result = await createAgentToken(c.env.ports, c.get("actor"), body.output);
+		if (result.ok) return c.json({ data: { ...result.record, token: result.token } }, 201);
+		if (result.error === "limit")
+			return c.json({ error: "limit", message: "This setup key made its maximum of tokens." }, 429);
+		return result.error === "forbidden"
+			? c.json({ error: "forbidden", required_scope: "admin" }, 403)
+			: c.json({ error: "not_found" }, 404);
+	});
+
+	app.post("/v1/setup/apps/:project/test-event", async (c) => {
+		const result = await sendTestEvent(c.env.ports, state, c.get("actor"), c.req.param("project"));
+		if (result.ok) return c.json({ data: { sent: true } }, 202);
+		return result.error === "already_sent"
+			? c.json({ error: "already_sent", message: "This app already has its test event." }, 409)
+			: c.json({ error: "not_found" }, 404);
+	});
+
+	app.post("/v1/setup/apps/:project/report", async (c) => {
+		const body = v.safeParse(ReportBody, await c.req.json().catch(() => null));
+		if (!body.success) return invalid(c, body.issues);
+		const result = await reportSetupStep(
+			c.env.ports,
+			c.get("actor"),
+			c.req.param("project"),
+			body.output.step,
+		);
+		return result === "ok" ? c.body(null, 204) : c.json({ error: "not_found" }, 404);
 	});
 }

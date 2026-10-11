@@ -47,3 +47,47 @@ describe("/v1/setup/keys", () => {
 		}
 	});
 });
+
+describe("the agent steps with a setup key", () => {
+	it("registers an app, makes a token, sends the test event and reports the SDK", async () => {
+		const { call, newKey } = await setupApi();
+		const key = await newKey();
+		const app = await call("POST", "/v1/setup/apps", key, { name: "shop-api", platform: "node" });
+		expect(app.status).toBe(201);
+		expect(app.body?.data).toMatchObject({
+			project: { name: "shop-api", slug: "shop-api", platform: "node" },
+			dsn: expect.stringMatching(/^http:\/\/[0-9a-f]{32}@localhost\/\d{10}$/),
+		});
+		expect((await call("POST", "/v1/setup/apps", key, { name: "shop-api" })).status).toBe(200);
+		const project = app.body?.data.project.slug;
+		const token = await call("POST", "/v1/setup/tokens", key, { name: "Claude Code", project });
+		expect(token.status).toBe(201);
+		expect(token.body?.data).toMatchObject({
+			token: expect.stringMatching(/^ck_/),
+			scopes: ["issues:read", "issues:write"],
+		});
+		expect((await call("GET", "/v1/issues", token.body?.data.token)).status).toBe(200);
+		expect((await call("POST", `/v1/setup/apps/${project}/test-event`, key)).status).toBe(202);
+		expect((await call("POST", `/v1/setup/apps/${project}/test-event`, key)).status).toBe(409);
+		expect(
+			(await call("POST", `/v1/setup/apps/${project}/report`, key, { step: "sdk_installed" }))
+				.status,
+		).toBe(204);
+		expect(
+			(await call("POST", `/v1/setup/apps/${project}/report`, key, { step: "deleted_all" })).status,
+		).toBe(400);
+		expect((await call("POST", "/v1/setup/apps/nope/test-event", key)).status).toBe(404);
+	});
+
+	it("rejects a scoped token without admin, and bad bodies", async () => {
+		const { call, ports, newKey } = await setupApi();
+		const { token } = await createToken(ports, BOOTSTRAP_ADMIN, {
+			name: "r",
+			scopes: ["issues:read"],
+		});
+		expect((await call("POST", "/v1/setup/apps", token, { name: "x" })).status).toBe(403);
+		const key = await newKey();
+		expect((await call("POST", "/v1/setup/apps", key, { name: "" })).status).toBe(400);
+		expect((await call("POST", "/v1/setup/tokens", key, { name: "t" })).status).toBe(400);
+	});
+});

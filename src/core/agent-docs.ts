@@ -94,7 +94,7 @@ Workflow: list_issues, then get_issue_brief for the issue to fix, then get_event
 - Auth: \`Authorization: Bearer <token>\`. Each route needs a scope; admin includes all scopes.
 - GET /v1/openapi.json (no token): the OpenAPI 3.1 document, ${base}/v1/openapi.json
 
-${API_ROUTES.map((r) => `- ${r.method} ${r.path} (${r.scope ?? "DSN key in X-Checkend-Key"}): ${r.summary}`).join("\n")}
+${API_ROUTES.map((r) => `- ${r.method} ${r.path} (${r.setupKey ? `setup key, or ${r.scope}` : (r.scope ?? "DSN key in X-Checkend-Key")}): ${r.summary}`).join("\n")}
 
 ## Agent skill
 

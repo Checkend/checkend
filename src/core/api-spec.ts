@@ -12,6 +12,7 @@ import { MAX_MERGE_SOURCES, MAX_SPLIT_EVENTS } from "./issue-actions.ts";
 import { CreateProjectBody, EventListQuery, IssueListQuery } from "./issues.ts";
 import { LabelQuery } from "./labels.ts";
 import { UpdateProjectBody } from "./projects.ts";
+import { AgentTokenBody, RegisterAppBody, ReportBody } from "./setup.ts";
 import { SourceMapListQuery, SourceMapUploadQuery } from "./sourcemaps.ts";
 import { CreateTokenBody, type Scope } from "./tokens.ts";
 import { CreateWebhookBody } from "./webhooks.ts";
@@ -56,6 +57,8 @@ export interface ApiRoute {
 	path: string;
 	/** The bearer-token scope; null for routes that use the DSN key (X-Checkend-Key). */
 	scope: Scope | null;
+	/** Also open to a setup key (cks_...): the onboarding routes. */
+	setupKey?: true;
 	summary: string;
 	query?: v.GenericSchema;
 	body?: v.GenericSchema;
@@ -353,6 +356,40 @@ export const API_ROUTES: ApiRoute[] = [
 		summary: "List setup keys (never the keys themselves), the newest first.",
 	},
 	{ method: "DELETE", path: "/v1/setup/keys/:id", scope: "admin", summary: "Revoke a setup key." },
+	{
+		method: "POST",
+		path: "/v1/setup/apps",
+		scope: "admin",
+		setupKey: true,
+		summary:
+			"Register an app (a project) and get its DSN. 201 when new; 200 when this setup key already registered an app with this name. A setup key registers at most 10 apps.",
+		body: RegisterAppBody,
+	},
+	{
+		method: "POST",
+		path: "/v1/setup/tokens",
+		scope: "admin",
+		setupKey: true,
+		summary:
+			"Create an agent token (issues:read, issues:write) for an app. The token is in this response only. A setup key makes at most 5.",
+		body: AgentTokenBody,
+	},
+	{
+		method: "POST",
+		path: "/v1/setup/apps/:project/test-event",
+		scope: "admin",
+		setupKey: true,
+		summary:
+			"Send the one test event of an app (tag checkend.test=true). 409 when it was already sent.",
+	},
+	{
+		method: "POST",
+		path: "/v1/setup/apps/:project/report",
+		scope: "admin",
+		setupKey: true,
+		summary: "Report a setup step that only the agent knows: sdk_installed.",
+		body: ReportBody,
+	},
 	{
 		method: "GET",
 		path: "/v1/activity",

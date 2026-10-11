@@ -43,7 +43,13 @@ describe("OpenAPI 3.1 document", () => {
 			expect(operation["x-required-scope"], `${route.method} ${route.path}`).toMatch(
 				/^(issues:read|issues:write|releases:write|admin)$/,
 			);
-			expect(operation.security).toEqual([{ bearer: [] }]);
+			expect(operation.security).toEqual(
+				route.path.startsWith("/v1/setup/") &&
+					route.path !== "/v1/setup/keys" &&
+					route.path !== "/v1/setup/keys/:id"
+					? [{ setupKey: [] }, { bearer: [] }]
+					: [{ bearer: [] }],
+			);
 		}
 	});
 

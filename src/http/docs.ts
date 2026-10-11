@@ -43,7 +43,9 @@ export function openApiDocument(base: string): Record<string, unknown> {
 		paths[path][route.method.toLowerCase()] = {
 			summary: route.summary,
 			...(route.scope ? { "x-required-scope": route.scope } : {}),
-			security: [route.scope ? { bearer: [] } : { dsnKey: [] }],
+			security: route.setupKey
+				? [{ setupKey: [] }, { bearer: [] }]
+				: [route.scope ? { bearer: [] } : { dsnKey: [] }],
 			...(parameters.length > 0 ? { parameters } : {}),
 			...(route.body
 				? {
@@ -74,6 +76,11 @@ export function openApiDocument(base: string): Record<string, unknown> {
 			securitySchemes: {
 				bearer: { type: "http", scheme: "bearer" },
 				dsnKey: { type: "apiKey", in: "header", name: "X-Checkend-Key" },
+				setupKey: {
+					type: "http",
+					scheme: "bearer",
+					description: "A setup key (cks_...). It opens only the /v1/setup routes.",
+				},
 			},
 		},
 		paths,

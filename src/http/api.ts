@@ -71,7 +71,7 @@ const invalid = (c: Context, issues: v.BaseIssue<unknown>[]) =>
 		400,
 	);
 
-const dsn = (origin: string, key: string, projectId: number) => {
+export const dsn = (origin: string, key: string, projectId: number) => {
 	const url = new URL(origin);
 	return `${url.protocol}//${key}@${url.host}/${projectId}`;
 };

@@ -37,7 +37,7 @@ export function createApp(options: AppOptions = {}): Hono<AppEnv> {
 	// Before apiRoutes: /v1/openapi.json is public, so it must answer before the /v1 auth.
 	docsRoutes(app);
 	// Before apiRoutes: setup keys open only /v1/setup, with their own auth.
-	setupRoutes(app);
+	setupRoutes(app, state);
 	apiRoutes(app, state);
 	mcpRoutes(app);
 

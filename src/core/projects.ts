@@ -114,7 +114,14 @@ export function newPublicKey(): string {
 /** Creates a project and its first DSN key in one atomic batch. */
 export async function createProject(
 	{ db, clock }: Pick<Ports, "db" | "clock">,
-	input: { name: string; platform?: string | null | undefined },
+	input: {
+		name: string;
+		platform?: string | null | undefined;
+		/** The demo project (the UI offers "Delete demo"). */
+		demo?: boolean;
+		/** Registered by an agent with this setup key: the setup row is in the same batch. */
+		setupKeyId?: number;
+	},
 	actor?: Actor,
 ): Promise<CreatedProject> {
 	const name = input.name.trim();
@@ -139,10 +146,17 @@ export async function createProject(
 		const publicId = newPublicProjectId();
 		try {
 			const [project] = await db.batch([
-				sql`INSERT INTO projects (name, slug, platform, created_at, public_id)
-					VALUES (${name}, ${slug}, ${platform}, ${createdAt}, ${publicId}) RETURNING id`,
+				sql`INSERT INTO projects (name, slug, platform, created_at, public_id, demo)
+					VALUES (${name}, ${slug}, ${platform}, ${createdAt}, ${publicId}, ${input.demo ? 1 : 0})
+					RETURNING id`,
 				sql`INSERT INTO project_keys (project_id, public_key, label, created_at)
 					SELECT id, ${publicKey}, ${"default"}, ${createdAt} FROM projects WHERE slug = ${slug}`,
+				...(input.setupKeyId === undefined
+					? []
+					: [
+							sql`INSERT INTO project_setup (project_id, setup_key_id, connected_at)
+								SELECT id, ${input.setupKeyId}, ${createdAt} FROM projects WHERE slug = ${slug}`,
+						]),
 				// The activity target is the public ID: the row ID never leaves Checkend.
 				...(actor
 					? [
