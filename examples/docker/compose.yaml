@@ -1,0 +1,25 @@
+# Checkend with Docker Compose: one container and one volume.
+#   docker compose up -d
+# Put the secrets in a .env file next to this file (never in the image):
+#   ADMIN_TOKEN=<a long random string>
+#   ENCRYPTION_KEYS=k1:<output of: openssl rand -base64 32>
+# Backup (while it runs): docker compose exec checkend node scripts/backup.ts /data/backup.sqlite
+# Upgrade: back up, set a newer image tag, docker compose up -d (migrations run at start).
+services:
+  checkend:
+    image: ghcr.io/checkend/checkend:latest
+    restart: unless-stopped
+    ports:
+      - "8787:8787"
+    volumes:
+      - checkend-data:/data
+    environment:
+      ADMIN_TOKEN: ${ADMIN_TOKEN:?set ADMIN_TOKEN in .env}
+      ENCRYPTION_KEYS: ${ENCRYPTION_KEYS:-}
+      # Behind a reverse proxy on the same host or network, so that rate limits see the client:
+      # TRUSTED_PROXIES: private
+      # Email alerts: SMTP_URL: smtps://user:password@smtp.example.com:465 and EMAIL_FROM
+      # S3 for blobs instead of the volume: S3_ENDPOINT, S3_REGION, S3_BUCKET,
+      #   S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY
+volumes:
+  checkend-data:

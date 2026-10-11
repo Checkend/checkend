@@ -1,0 +1,8 @@
+# An allowlist: only what the image needs. Local secrets (.dev.vars), the database, planning
+# files and tests stay out.
+*
+!package.json
+!package-lock.json
+!migrations/
+!src/
+!scripts/backup.ts

@@ -69,6 +69,26 @@ jobs:
           kill -TERM "$PID"
           wait "$PID"
 
+  docker-image:
+    name: Docker image builds and starts
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Build (no push)
+        run: docker build -t checkend:ci .
+      - name: Start, answer, back up, and stop with SIGTERM
+        run: |
+          docker run -d --name checkend -p 8791:8787 -e ADMIN_TOKEN=ci-admin-token-0123456789 checkend:ci
+          for i in $(seq 1 30); do curl -sf http://127.0.0.1:8791/health && break; sleep 1; done
+          curl -sf http://127.0.0.1:8791/health | grep -q '"status":"ok"'
+          docker exec checkend node scripts/backup.ts /data/backup.sqlite
+          docker exec checkend id -u | grep -vq '^0$'
+          docker stop --time 20 checkend
+          test "$(docker inspect -f '{{.State.ExitCode}}' checkend)" = "0"
+
   dco:
     name: DCO sign-off
     runs-on: ubuntu-latest
