@@ -1,7 +1,7 @@
 # Checkend with Docker Compose: one container and one volume.
 #   docker compose up -d
 # Put the secrets in a .env file next to this file (never in the image):
-#   ADMIN_TOKEN=<a long random string>
+#   ADMIN_TOKEN=<at least 32 characters: openssl rand -hex 32>
 #   ENCRYPTION_KEYS=k1:<output of: openssl rand -base64 32>
 # Backup (while it runs): docker compose exec checkend node scripts/backup.ts /data/backup.sqlite
 # Upgrade: back up, set a newer image tag, docker compose up -d (migrations run at start).

@@ -1,6 +1,6 @@
 # Checkend on Node, without Cloudflare: one container, one SQLite file on a volume.
 #   docker build -t checkend .
-#   docker run -p 8787:8787 -v checkend-data:/data -e ADMIN_TOKEN=... checkend
+#   docker run -p 8787:8787 -v checkend-data:/data -e ADMIN_TOKEN=<32+ characters> checkend
 # See examples/docker/compose.yaml. Settings: the same environment variables as the Worker,
 # plus the Node ones listed in src/entry/server.ts.
 # Node 22.18 or later runs the TypeScript sources directly (type stripping); no build step.
