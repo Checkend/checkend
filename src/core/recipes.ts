@@ -88,12 +88,15 @@ Run \`ce --version\`. If it works, \`ce\` is installed: go to ${base}/agent/setu
 
 ## Get ce
 
-\`ce\` is not released yet. These ways to install it are coming:
+Today, install \`ce\` with Go (Go 1.26 or later):
 
-- Go (Go 1.26 or later), when the source is public: \`go install github.com/Checkend/checkend-cli/cmd/ce@latest\`
-- Homebrew, an install script, and an npm wrapper: after the first release
+\`\`\`sh
+go install github.com/Checkend/checkend-cli/cmd/ce@latest
+\`\`\`
 
-Until then, use the steps under "If ce is not available" in ${base}/agent/setup.md. They do the
+Release builds (Homebrew, an install script, an npm package) are not available yet.
+
+Without Go, use the steps under "If ce is not available" in ${base}/agent/setup.md. They do the
 same work with curl.
 
 ## Rules

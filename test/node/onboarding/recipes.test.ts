@@ -47,9 +47,10 @@ describe("the agent recipes", () => {
 		}
 	});
 
-	it("is truthful about ce: not released, no npx line", () => {
+	it("is truthful about ce: go install today, no release channels yet, no npx line", () => {
 		const text = installRecipe(BASE);
-		expect(text).toContain("`ce` is not released yet");
+		expect(text).toContain("Go 1.26 or later");
+		expect(text).toContain("not available yet");
 		expect(text).not.toContain("npx");
 		expect(text).toContain("go install github.com/Checkend/checkend-cli/cmd/ce@latest");
 	});
