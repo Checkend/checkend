@@ -22,6 +22,7 @@ import { authenticate, hasScope } from "../core/tokens.ts";
 import { dsn } from "./api.ts";
 import type { AppEnv } from "./app.ts";
 import { authenticatedBodyCap } from "./body.ts";
+import { publicOrigin } from "./origin.ts";
 
 const invalid = (c: Context, issues: v.BaseIssue<unknown>[]) =>
 	c.json(
@@ -85,7 +86,7 @@ export function setupRoutes(app: Hono<AppEnv>, state: IngestState): void {
 		}
 		const { public_key, ...data } = result;
 		return c.json(
-			{ data: { ...data, dsn: dsn(c.req.url, public_key, result.project.id) } },
+			{ data: { ...data, dsn: dsn(publicOrigin(c), public_key, result.project.id) } },
 			result.created ? 201 : 200,
 		);
 	});

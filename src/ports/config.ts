@@ -42,6 +42,12 @@ export interface Config {
 	 * the demo clock, both only for requests to localhost. Never on in production.
 	 */
 	devMode: boolean;
+	/**
+	 * The public origin of this install (PUBLIC_URL), for example `https://errors.example.com`.
+	 * Set: the passkey relying party, the CSRF origin check, and every URL that Checkend shows
+	 * or returns (recipes, llms.txt, DSNs) use it, never the request Host. Null: the request URL.
+	 */
+	publicUrl: string | null;
 }
 
 export interface AiConfig {
@@ -70,4 +76,5 @@ export const DEFAULT_CONFIG: Config = {
 	retentionDays: 90,
 	ai: { gatewayId: "default", gatewayLogs: false, triage: false, similar: false },
 	devMode: false,
+	publicUrl: null,
 };

@@ -25,6 +25,8 @@ export interface ConfigEnv {
 	RETENTION_DAYS?: string;
 	/** "1" or "true": development mode. `npm run dev` passes it; never set it in production. */
 	CHECKEND_DEV?: string;
+	/** The public origin, for example https://errors.example.com (Node behind a proxy). */
+	PUBLIC_URL?: string;
 	/** The sender of email alerts; a domain onboarded to Email Service. */
 	EMAIL_FROM?: string;
 	AI_GATEWAY_ID?: string;
@@ -71,6 +73,34 @@ function adminToken(value: string | undefined): string | null {
 	return token;
 }
 
+/** PUBLIC_URL as an origin (scheme, host, port), or null when it is not set or not valid. */
+function publicUrl(value: string | undefined): string | null {
+	const text = value?.trim();
+	if (!text) return null;
+	let url: URL | null = null;
+	try {
+		url = new URL(text);
+	} catch {}
+	if (
+		url &&
+		(url.protocol === "https:" || url.protocol === "http:") &&
+		!url.username &&
+		!url.password &&
+		url.pathname === "/" &&
+		!url.search &&
+		!url.hash
+	) {
+		return url.origin;
+	}
+	console.error(
+		JSON.stringify({
+			message:
+				"checkend: PUBLIC_URL is ignored: it must be an http(s) origin without a path, for example https://errors.example.com",
+		}),
+	);
+	return null;
+}
+
 export function readConfig(env: ConfigEnv): Config {
 	return {
 		adminToken: adminToken(env.ADMIN_TOKEN),
@@ -95,5 +125,6 @@ export function readConfig(env: ConfigEnv): Config {
 			similar: on(env.AI_SIMILAR),
 		},
 		devMode: env.CHECKEND_DEV === "1" || env.CHECKEND_DEV === "true",
+		publicUrl: publicUrl(env.PUBLIC_URL),
 	};
 }

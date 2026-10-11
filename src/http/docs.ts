@@ -6,6 +6,7 @@ import { API_ROUTES } from "../core/api-spec.ts";
 import { installRecipe, setupRecipe, taskRecipe } from "../core/recipes.ts";
 import { VERSION } from "../core/version.ts";
 import type { AppEnv } from "./app.ts";
+import { publicOrigin } from "./origin.ts";
 
 type JsonSchema = {
 	properties?: Record<string, unknown>;
@@ -90,19 +91,18 @@ export function openApiDocument(base: string): Record<string, unknown> {
 
 /** Public docs for agents and tools: no token needed, no data in them. */
 export function docsRoutes(app: Hono<AppEnv>): void {
-	const base = (url: string) => new URL(url).origin;
-	app.get("/llms.txt", (c) => c.text(llmsTxt(base(c.req.url))));
+	app.get("/llms.txt", (c) => c.text(llmsTxt(publicOrigin(c))));
 	app.get("/skill.md", (c) =>
-		c.body(skillFile(base(c.req.url)), 200, { "content-type": "text/markdown; charset=utf-8" }),
+		c.body(skillFile(publicOrigin(c)), 200, { "content-type": "text/markdown; charset=utf-8" }),
 	);
-	app.get("/v1/openapi.json", (c) => c.json(openApiDocument(base(c.req.url))));
+	app.get("/v1/openapi.json", (c) => c.json(openApiDocument(publicOrigin(c))));
 	// Onboarding recipes: no secrets in them; the setup key stays in the user's prompt.
 	const markdown = { "content-type": "text/markdown; charset=utf-8" };
-	app.get("/agent/install", (c) => c.body(installRecipe(base(c.req.url)), 200, markdown));
-	app.get("/agent/setup.md", (c) => c.body(setupRecipe(base(c.req.url)), 200, markdown));
+	app.get("/agent/install", (c) => c.body(installRecipe(publicOrigin(c)), 200, markdown));
+	app.get("/agent/setup.md", (c) => c.body(setupRecipe(publicOrigin(c)), 200, markdown));
 	app.get("/agent/tasks/:file", (c) => {
 		const task = /^([a-z-]{1,40})\.md$/.exec(c.req.param("file"))?.[1];
-		const text = task ? taskRecipe(base(c.req.url), task) : null;
+		const text = task ? taskRecipe(publicOrigin(c), task) : null;
 		return text ? c.body(text, 200, markdown) : c.json({ error: "not_found" }, 404);
 	});
 }

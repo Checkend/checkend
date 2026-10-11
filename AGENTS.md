@@ -129,6 +129,7 @@ Settings (Workers secrets and vars; all optional):
 | `NEW_ISSUES_PER_HOUR` | 100 | New issues per project per hour; more go to one "flood" issue. |
 | `TAG_KEYS_PER_PROJECT` | 200 | Distinct tag keys per project. |
 | `INGEST_RATE_LIMITER` (binding) | 1000/min per DSN key | Optional Rate Limiting binding. Without it, there is no rate limit. |
+| `PUBLIC_URL` | none | The public origin, for example `https://errors.example.com`. Set: the passkey relying party, the CSRF origin check, the recipes, `llms.txt` and the DSNs use it, never the request `Host`. Set it on Node behind a proxy. |
 
 For local development, put `ADMIN_TOKEN=...` in `.dev.vars` (git-ignored).
 

@@ -3,6 +3,7 @@ import { isSetupOpen } from "../../core/auth/passkeys.ts";
 import { getSession, type Session } from "../../core/auth/sessions.ts";
 import type { AppEnv } from "../app.ts";
 import { bodyCap, MAX_JSON_BODY_BYTES } from "../body.ts";
+import { publicOrigin } from "../origin.ts";
 
 /**
  * Security for the web UI: response headers, the session cookie, CSRF checks and the
@@ -91,11 +92,11 @@ const uiBodyCap = bodyCap(() => MAX_JSON_BODY_BYTES);
  * A state-changing request must come from this origin: the Origin header (all current
  * browsers send it on POST) must match, and Sec-Fetch-Site, when sent, must be same-origin.
  */
-function sameOrigin(c: Context): boolean {
+function sameOrigin(c: Context<AppEnv>): boolean {
 	const origin = c.req.header("origin");
 	const site = c.req.header("sec-fetch-site");
 	if (site !== undefined && site !== "same-origin") return false;
-	return origin === new URL(c.req.url).origin;
+	return origin === publicOrigin(c);
 }
 
 function constantTimeEqual(a: string, b: string): boolean {

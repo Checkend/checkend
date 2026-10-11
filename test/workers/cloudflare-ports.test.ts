@@ -33,6 +33,7 @@ describe("readConfig", () => {
 			retentionDays: 90,
 			ai: { gatewayId: "default", gatewayLogs: false, triage: false, similar: false },
 			devMode: false,
+			publicUrl: null,
 		});
 	});
 

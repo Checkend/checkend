@@ -33,6 +33,7 @@ import {
 import { createProject, listProjects } from "../../core/projects.ts";
 import { sql } from "../../ports/db.ts";
 import type { AppEnv } from "../app.ts";
+import { publicOrigin } from "../origin.ts";
 import { assetRoutes } from "./assets/index.ts";
 import { type Html, h } from "./html.ts";
 import { appPath, parseEventId, parseIssueId, parseProjectId } from "./ids.ts";
@@ -147,14 +148,18 @@ export function uiRoutes(app: Hono<AppEnv>, state: IngestState, onboarding: Onbo
 	app.post("/login/options", securityHeaders, checkJsonCsrf, async (c) => {
 		const blocked = await limited(c);
 		if (blocked) return blocked;
-		return c.json(await signInOptions(c.env.ports, relyingPartyFor(c.req.url)));
+		return c.json(await signInOptions(c.env.ports, relyingPartyFor(publicOrigin(c))));
 	});
 
 	app.post("/login/verify", securityHeaders, checkJsonCsrf, async (c) => {
 		const blocked = await limited(c);
 		if (blocked) return blocked;
 		const input = await body(c);
-		const result = await finishSignIn(c.env.ports, relyingPartyFor(c.req.url), input.response);
+		const result = await finishSignIn(
+			c.env.ports,
+			relyingPartyFor(publicOrigin(c)),
+			input.response,
+		);
 		if (!result.ok) return c.json({ error: result.error }, 401);
 		return signedIn(c, result.value.token, "/issues");
 	});
@@ -181,7 +186,7 @@ export function uiRoutes(app: Hono<AppEnv>, state: IngestState, onboarding: Onbo
 		const blocked = await limited(c);
 		if (blocked) return blocked;
 		const input = await body(c);
-		const result = await setupOptions(c.env.ports, relyingPartyFor(c.req.url), {
+		const result = await setupOptions(c.env.ports, relyingPartyFor(publicOrigin(c)), {
 			code: input.code,
 			devRequest: isDevRequest(c),
 			name: input.name,
@@ -194,7 +199,7 @@ export function uiRoutes(app: Hono<AppEnv>, state: IngestState, onboarding: Onbo
 		const blocked = await limited(c);
 		if (blocked) return blocked;
 		const input = await body(c);
-		const result = await finishSetup(c.env.ports, relyingPartyFor(c.req.url), {
+		const result = await finishSetup(c.env.ports, relyingPartyFor(publicOrigin(c)), {
 			code: input.code,
 			devRequest: isDevRequest(c),
 			response: input.response,
@@ -295,7 +300,7 @@ export function uiRoutes(app: Hono<AppEnv>, state: IngestState, onboarding: Onbo
 
 	// --- home, apps ----------------------------------------------------------------------
 
-	const origin = (c: Context) => new URL(c.req.url).origin;
+	const origin = publicOrigin;
 	const loadProgress = async (c: Context<AppEnv>) =>
 		progressJson(await onboarding.progress(c.env.ports, now(c)), now(c));
 	const csrf = (c: Context<AppEnv>) => c.get("session").csrfToken;

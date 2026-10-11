@@ -72,6 +72,7 @@ import {
 import type { AppEnv } from "./app.ts";
 import { need, requireActor } from "./auth.ts";
 import { authenticatedBodyCap } from "./body.ts";
+import { publicOrigin } from "./origin.ts";
 
 const invalid = (c: Context, issues: v.BaseIssue<unknown>[]) =>
 	c.json(
@@ -125,7 +126,7 @@ export function apiRoutes(app: Hono<AppEnv>, state: IngestState): void {
 	});
 
 	app.get("/v1/projects", need("issues:read"), async (c) => {
-		const origin = new URL(c.req.url).origin;
+		const origin = publicOrigin(c);
 		const projects = await listProjects(c.env.ports.db, c.env.ports.clock.now());
 		return c.json({
 			data: projects.map(({ keys, ...p }) => ({
@@ -145,7 +146,7 @@ export function apiRoutes(app: Hono<AppEnv>, state: IngestState): void {
 				data: {
 					...rest,
 					created_at: createdAt,
-					dsn: dsn(new URL(c.req.url).origin, publicKey, project.id),
+					dsn: dsn(publicOrigin(c), publicKey, project.id),
 				},
 			},
 			201,
@@ -162,7 +163,7 @@ export function apiRoutes(app: Hono<AppEnv>, state: IngestState): void {
 			return c.json({ error: "invalid_request", details: [found.invalid] }, 400);
 		}
 		if (!found) return c.json({ error: "not_found" }, 404);
-		const origin = new URL(c.req.url).origin;
+		const origin = publicOrigin(c);
 		const project = (await listProjects(c.env.ports.db, c.env.ports.clock.now())).find(
 			(p) => p.slug === ref.output || String(p.id) === ref.output,
 		);
@@ -196,7 +197,7 @@ export function apiRoutes(app: Hono<AppEnv>, state: IngestState): void {
 			{
 				data: {
 					...created,
-					dsn: dsn(new URL(c.req.url).origin, created.public_key, created.project_id),
+					dsn: dsn(publicOrigin(c), created.public_key, created.project_id),
 				},
 			},
 			201,
