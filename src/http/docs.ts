@@ -96,7 +96,7 @@ export function docsRoutes(app: Hono<AppEnv>): void {
 		c.body(skillFile(base(c.req.url)), 200, { "content-type": "text/markdown; charset=utf-8" }),
 	);
 	app.get("/v1/openapi.json", (c) => c.json(openApiDocument(base(c.req.url))));
-	// Onboarding recipes (D20): no secrets in them; the setup key stays in the user's prompt.
+	// Onboarding recipes: no secrets in them; the setup key stays in the user's prompt.
 	const markdown = { "content-type": "text/markdown; charset=utf-8" };
 	app.get("/agent/install", (c) => c.body(installRecipe(base(c.req.url)), 200, markdown));
 	app.get("/agent/setup.md", (c) => c.body(setupRecipe(base(c.req.url)), 200, markdown));

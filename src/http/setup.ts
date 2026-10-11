@@ -54,7 +54,7 @@ const needAdmin: MiddlewareHandler<AppEnv> = async (c, next) => {
 	await next();
 };
 
-/** The onboarding routes (D20). Registered before apiRoutes, so the /v1 auth does not run. */
+/** The onboarding routes. Registered before apiRoutes, so the /v1 auth does not run. */
 export function setupRoutes(app: Hono<AppEnv>, state: IngestState): void {
 	app.use("/v1/setup/*", requireSetupActor);
 

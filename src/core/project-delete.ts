@@ -5,7 +5,7 @@ import type { KeyCache } from "./projects.ts";
 import type { Actor } from "./tokens.ts";
 
 /**
- * Project delete (D20). The delete revokes the DSN keys, hides the project everywhere and frees
+^ * Project delete. The delete revokes the DSN keys, hides the project everywhere and frees
  * its slug in one batch; the cron then purges its data in chunks (runProjectPurge). There is
  * no MCP tool for it. With REQUIRE_APPROVAL=delete_project, an API token (or ADMIN_TOKEN) only
  * asks: another actor completes the delete (a human in the UI, or a second admin).

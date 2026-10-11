@@ -1,7 +1,7 @@
 import { UNTRUSTED_NOTICE } from "./brief.ts";
 
 /**
- * Recipes that this instance serves to coding agents (onboarding, D20): /agent/install,
+ * Recipes that this instance serves to coding agents (onboarding): /agent/install,
  * /agent/setup.md and /agent/tasks/<task>.md. They are generated from the instance URL and
  * contain no secrets: the setup key stays in the prompt that the user pastes. The UI's "Ask your
  * agent" menu uses AGENT_TASKS for its prompts.

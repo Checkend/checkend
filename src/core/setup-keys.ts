@@ -3,7 +3,7 @@ import type { Ports } from "../ports/index.ts";
 import { type Actor, newSecret, sha256 } from "./tokens.ts";
 
 /**
- * Setup keys (cks_...): an agent connects apps with one (onboarding, D20). A key is valid for one
+ * Setup keys (cks_...): an agent connects apps with one (onboarding). A key is valid for one
  * hour and can be revoked. It can only register apps, create agent tokens (issues:read and
  * issues:write), send one test event per app and report progress: never settings, other tokens
  * or deletes. Only its hash is stored, and each use writes activity.

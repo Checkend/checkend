@@ -15,7 +15,7 @@ export { type ConfigEnv, readConfig };
 
 type WorkerEnv = Omit<Env, "INGEST_RATE_LIMITER"> &
 	ConfigEnv & {
-		// Optional binding: an install without it has no rate limit (H4: optional bindings).
+		// Optional binding: an install without it has no rate limit.
 		INGEST_RATE_LIMITER?: Pick<RateLimit, "limit">;
 		// Optional binding: a queue that starts webhook deliveries. Without it, deliveries run
 		// after the response (waitUntil), and the cron retries them.

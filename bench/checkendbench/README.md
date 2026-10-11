@@ -1,12 +1,12 @@
 # CheckendBench v0
 
-CheckendBench measures the model triage of Checkend (`AI_TRIAGE`): how often the stock Clef
-answers agree with labels. v0 has the harness, the case format and the scores; the datasets come
+CheckendBench measures the model triage of Checkend (`AI_TRIAGE`): how often the answers of the
+triage model (a Cloudflare Workers AI model) agree with labels. v0 has the harness, the case format and the scores; the datasets come
 separately.
 
 ## Two modes
 
-1. **A dataset through Clef** (each model call costs money on your Cloudflare account; the calls go
+1. **A dataset through the triage model** (each model call costs money on your Cloudflare account; the calls go
    through AI Gateway, without stored logs):
 
    ```sh

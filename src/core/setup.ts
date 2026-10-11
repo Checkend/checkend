@@ -10,7 +10,7 @@ import { MAX_APPS_PER_KEY, MAX_TOKENS_PER_KEY } from "./setup-keys.ts";
 import { type Actor, createToken, hasScope, type TokenRecord } from "./tokens.ts";
 
 /**
- * What an agent does with a setup key (onboarding, D20): register apps, create agent tokens,
+ * What an agent does with a setup key (onboarding): register apps, create agent tokens,
  * send one test event per app, and report steps. An admin token can do the same for any app.
  */
 type SetupPorts = Pick<Ports, "db" | "clock">;
