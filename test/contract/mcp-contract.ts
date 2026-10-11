@@ -86,6 +86,7 @@ export function mcpContract(
 				expect(tools.map((t) => t.name).sort()).toEqual([
 					"add_note",
 					"claim_issue",
+					"correct_triage",
 					"get_event",
 					"get_issue_brief",
 					"ignore_issue",

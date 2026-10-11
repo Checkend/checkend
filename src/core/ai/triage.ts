@@ -1,6 +1,10 @@
+import * as v from "valibot";
 import type { Db } from "../../ports/db.ts";
 import { sql } from "../../ports/db.ts";
 import type { Ports } from "../../ports/index.ts";
+import { activityStatement } from "../activity.ts";
+import { cleanText } from "../ingest/normalize.ts";
+import type { Actor } from "../tokens.ts";
 import { type Answer, clefDecisions, type Question } from "./decisions.ts";
 import { issueModelInput } from "./model-input.ts";
 
@@ -179,4 +183,76 @@ export async function triageForBrief(ports: TriagePorts, issueId: number): Promi
 	} finally {
 		if (timer !== undefined) clearTimeout(timer);
 	}
+}
+
+/** A correction of the triage: at least one answer, in the terms of the questions. */
+export const TriageCorrectionBody = v.pipe(
+	v.strictObject({
+		category: v.optional(
+			v.picklist(
+				Object.keys(
+					(TRIAGE_QUESTIONS.category as { criteria: Record<string, string> }).criteria,
+				) as [string, ...string[]],
+			),
+		),
+		severity: v.optional(v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(3))),
+		transient: v.optional(v.boolean()),
+		agent_fixable: v.optional(v.boolean()),
+		noise: v.optional(v.boolean()),
+		/** Why, in a few words. */
+		note: v.optional(v.pipe(v.string(), v.maxLength(500))),
+	}),
+	v.check(
+		(body) => Object.keys(body).some((key) => key !== "note"),
+		"Correct at least one answer: category, severity, transient, agent_fixable or noise.",
+	),
+);
+export type TriageCorrection = v.InferOutput<typeof TriageCorrectionBody>;
+
+/** The model answer in the terms of a correction: the label or the probability. */
+function modelAnswer(triage: Triage, keys: string[]): Record<string, unknown> {
+	const out: Record<string, unknown> = {};
+	for (const key of keys) {
+		const answer = triage.answers[key];
+		if (answer?.type === "choice") out[key] = answer.choice;
+		else if (answer?.type === "score") out[key] = answer.score;
+		else if (answer?.type === "noul") out[key] = answer.noul;
+	}
+	return out;
+}
+
+/**
+ * Records a correction of the triage (a label: activity issue.triage_correct). The stored model
+ * answers do not change; CheckendBench compares them with the corrections.
+ */
+export async function correctTriage(
+	ports: Pick<Ports, "db" | "clock">,
+	actor: Actor,
+	issueId: number,
+	correction: TriageCorrection,
+): Promise<"ok" | "not_found"> {
+	const issue = await ports.db.first(
+		sql`SELECT i.id FROM issues i JOIN projects p ON p.id = i.project_id
+			WHERE i.id = ${issueId} AND p.deleted_at IS NULL`,
+	);
+	if (!issue) return "not_found";
+	const { note, ...corrected } = correction;
+	const triage = await getTriage(ports.db, issueId);
+	const data = {
+		corrected,
+		...(note ? { note: cleanText(note, 500) } : {}),
+		model: triage?.model ?? null,
+		version: triage?.version ?? null,
+		model_answer: triage ? modelAnswer(triage, Object.keys(corrected)) : null,
+	};
+	await ports.db.run(
+		activityStatement(
+			actor,
+			"issue.triage_correct",
+			{ type: "issue", id: issueId },
+			data,
+			ports.clock.now(),
+		),
+	);
+	return "ok";
 }

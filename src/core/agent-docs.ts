@@ -43,6 +43,11 @@ export const MCP_TOOLS = [
 			"Add a note to the issue timeline: your findings, the cause, a link to the fix. Needs issues:write. Inputs: issue_id, text (up to 4000 characters).",
 	},
 	{
+		name: "correct_triage",
+		summary:
+			"Correct the model triage of an issue when it is wrong (a label for better triage). Needs issues:write. Inputs: issue_id, and at least one of category, severity (0-3), transient, agent_fixable, noise; optional note.",
+	},
+	{
 		name: "split_issue",
 		summary:
 			"Move stored events of an issue that have another cause to a new issue. Needs issues:write. Inputs: issue_id, event_ids (1-100, from the brief or get_event). New events keep going to the original issue.",

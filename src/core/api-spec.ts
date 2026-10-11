@@ -1,4 +1,5 @@
 import * as v from "valibot";
+import { TriageCorrectionBody } from "./ai/triage.ts";
 import { CLAIM_MAX_MINUTES, NOTE_MAX_CHARS } from "./claims.ts";
 import {
 	DeployBody,
@@ -206,6 +207,14 @@ export const API_ROUTES: ApiRoute[] = [
 		scope: "issues:write",
 		summary: "Add a note to the issue timeline.",
 		body: NoteBody,
+	},
+	{
+		method: "POST",
+		path: "/v1/issues/:id/triage-correction",
+		scope: "issues:write",
+		summary:
+			"Correct the model triage of an issue: category, severity (0-3), transient, agent_fixable, noise, and an optional note. It is a label (GET /v1/labels): the model answers stay.",
+		body: TriageCorrectionBody,
 	},
 	{
 		method: "GET",

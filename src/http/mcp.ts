@@ -3,7 +3,7 @@ import { toStandardJsonSchema } from "@valibot/to-json-schema";
 import type { Hono } from "hono";
 import * as v from "valibot";
 import { MCP_TOOLS } from "../core/agent-docs.ts";
-import { triageForBrief } from "../core/ai/triage.ts";
+import { correctTriage, TriageCorrectionBody, triageForBrief } from "../core/ai/triage.ts";
 import { ClaimBody, MergeBody, NoteBody, SplitBody } from "../core/api-spec.ts";
 import { buildBrief, UNTRUSTED_NOTICE } from "../core/brief.ts";
 import { addNote, claimIssue, releaseClaim } from "../core/claims.ts";
@@ -345,6 +345,30 @@ function createServer(ports: Ports, actor: Actor): McpServer {
 			const noteId = id === null ? null : await addNote(ports, actor, id, text);
 			if (noteId === null) return errorResult(`Issue ${issue_id} not found.`);
 			return textResult(JSON.stringify({ note_id: noteId, issue_id }));
+		},
+	);
+
+	server.registerTool(
+		"correct_triage",
+		{
+			description: `${tool("correct_triage")} ${UNTRUSTED_HINT}`,
+			inputSchema: toStandardJsonSchema(
+				v.object({
+					issue_id: IssueIdInput.entries.issue_id,
+					...TriageCorrectionBody.pipe[0].entries,
+				}),
+			),
+		},
+		async ({ issue_id, ...input }) => {
+			if (!hasScope(actor, "issues:write")) return errorResult(NEEDS_WRITE);
+			const correction = v.safeParse(TriageCorrectionBody, input);
+			if (!correction.success)
+				return errorResult(correction.issues[0]?.message ?? "Invalid input.");
+			const id = parseIssueId(issue_id);
+			const result =
+				id === null ? "not_found" : await correctTriage(ports, actor, id, correction.output);
+			if (result === "not_found") return errorResult(`Issue ${issue_id} not found.`);
+			return textResult(JSON.stringify({ recorded: true, issue_id }));
 		},
 	);
 

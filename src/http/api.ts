@@ -1,6 +1,7 @@
 import type { Context, Hono } from "hono";
 import * as v from "valibot";
 import { listActivity } from "../core/activity.ts";
+import { correctTriage, TriageCorrectionBody } from "../core/ai/triage.ts";
 import { ClaimBody, LimitQuery, MergeBody, NoteBody, SplitBody } from "../core/api-spec.ts";
 import { addNote, claimIssue, issueTimeline, releaseClaim } from "../core/claims.ts";
 import {
@@ -331,6 +332,16 @@ export function apiRoutes(app: Hono<AppEnv>, state: IngestState): void {
 		const id = await addNote(c.env.ports, c.get("actor"), params.output.id, body.output.text);
 		if (id === null) return c.json({ error: "not_found" }, 404);
 		return c.json({ data: { id } }, 201);
+	});
+
+	app.post("/v1/issues/:id/triage-correction", need("issues:write"), async (c) => {
+		const params = v.safeParse(IdParam, c.req.param());
+		if (!params.success) return invalid(c, params.issues);
+		const body = v.safeParse(TriageCorrectionBody, await c.req.json().catch(() => null));
+		if (!body.success) return invalid(c, body.issues);
+		const result = await correctTriage(c.env.ports, c.get("actor"), params.output.id, body.output);
+		if (result === "not_found") return c.json({ error: "not_found" }, 404);
+		return c.json({ data: { recorded: true } }, 201);
 	});
 
 	app.get("/v1/issues/:id/activity", need("issues:read"), async (c) => {
