@@ -1,0 +1,41 @@
+# Secret scanning for this public repository (gitleaks).
+# The pre-commit hook scans staged changes; CI scans the full history.
+# The built-in gitleaks rules apply, plus the rules for Checkend's own secrets below.
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "checkend-api-token"
+description = "Checkend API token (ck_)"
+regex = '''\bck_[A-Za-z0-9_-]{20,}'''
+keywords = ["ck_"]
+
+[[rules]]
+id = "checkend-setup-key"
+description = "Checkend setup key (cks_)"
+regex = '''\bcks_[A-Za-z0-9_-]{20,}'''
+keywords = ["cks_"]
+
+[[rules]]
+id = "checkend-secret-setting"
+description = "A Checkend secret setting with a value"
+regex = '''(?i)\b(ADMIN_TOKEN|SETUP_CODE|CHECKEND_TOKEN|CHECKEND_ADMIN_TOKEN|GITHUB_WEBHOOK_SECRET|GITHUB_TOKEN|ENCRYPTION_KEYS)\s*[=:]\s*["']?([A-Za-z0-9+/_:,=-]{16,})'''
+secretGroup = 2
+keywords = ["admin_token", "setup_code", "checkend_token", "checkend_admin_token", "github_webhook_secret", "github_token", "encryption_keys"]
+
+# Tests and CI use clearly fake values (for example "ci-admin-token-0123456789").
+[[rules.allowlists]]
+stopwords = ["test", "example", "0123456789", "placeholder", "changeme", "your-", "dummy"]
+
+# Fake values that tests use on purpose. Only these exact values are allowed; a real secret in a
+# test file is still found.
+[[allowlists]]
+description = "Fake secrets in tests and SDK fixtures"
+regexTarget = "match"
+regexes = [
+  '''sentry_key=0123456789abcdef0123456789abcdef''',
+  '''sk_live_51Habcdefghijklmnop''',
+  '''-----BEGIN PRIVATE KEY-----\\nMIIabc''',
+  '''-----BEGIN PRIVATE KEY-----"\.repeat''',
+]

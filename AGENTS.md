@@ -136,5 +136,7 @@ For local development, put `ADMIN_TOKEN=...` in `.dev.vars` (git-ignored).
 - Small commits. Each commit passes `npm run check`.
 - Sign off every commit (Developer Certificate of Origin): `git commit -s`. CI checks it.
 - Run `git config core.hooksPath .githooks` once per clone. The pre-commit hook blocks private
-  planning files that some maintainers keep in the working tree.
+  planning files that some maintainers keep in the working tree, and it scans staged changes for
+  secrets with gitleaks (rules in `.gitleaks.toml`; install gitleaks first). Fake secrets in tests
+  must contain `test` or `example`. CI scans the full history.
 - Security problems: see [SECURITY.md](SECURITY.md). Do not open a public issue.

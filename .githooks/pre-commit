@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Block private planning files from the public repo.
+# Block private planning files and secrets from the public repo.
 # Enable once per clone: git config core.hooksPath .githooks
 
 status=0
@@ -25,7 +25,20 @@ git diff --cached --name-only --diff-filter=ACMR -z |
     esac
   done || status=1
 
+# 3. Secrets in the staged changes (gitleaks, with the rules in .gitleaks.toml).
+if command -v gitleaks >/dev/null 2>&1; then
+  if ! gitleaks git --staged --pre-commit --redact --no-banner --log-level warn -c .gitleaks.toml .; then
+    echo "pre-commit: gitleaks found a possible secret in the staged changes (see above)." >&2
+    echo "Remove it, and rotate it if it is real. A fake test value must contain 'test' or 'example'." >&2
+    status=1
+  fi
+else
+  echo "pre-commit: gitleaks is not installed, so the secret scan cannot run." >&2
+  echo "Install it (for example: brew install gitleaks), then commit again." >&2
+  status=1
+fi
+
 if [ "$status" -ne 0 ]; then
-  echo "Unstage them with: git restore --staged <path>" >&2
+  echo "Unstage files with: git restore --staged <path>" >&2
 fi
 exit $status

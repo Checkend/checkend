@@ -18,6 +18,9 @@ Thank you for your help. This guide tells you how to make a change that we can m
    git config core.hooksPath .githooks
    ```
 
+   The pre-commit hook scans each commit for secrets with [gitleaks](https://github.com/gitleaks/gitleaks).
+   Install it first (for example `brew install gitleaks`). CI scans the full history too.
+
 3. Run the checks:
 
    ```sh
