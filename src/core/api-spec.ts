@@ -392,6 +392,14 @@ export const API_ROUTES: ApiRoute[] = [
 	},
 	{
 		method: "GET",
+		path: "/v1/setup/progress",
+		scope: "admin",
+		setupKey: true,
+		summary:
+			"The setup progress of each app (a setup key: its own apps): connected, SDK installed, test event, first event, first agent MCP call, first deploy.",
+	},
+	{
+		method: "GET",
 		path: "/v1/activity",
 		scope: "admin",
 		summary: "The audit timeline: every write by every actor, the most recent first.",

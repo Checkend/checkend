@@ -91,3 +91,45 @@ describe("the agent steps with a setup key", () => {
 		expect((await call("POST", "/v1/setup/tokens", key, { name: "t" })).status).toBe(400);
 	});
 });
+
+describe("GET /v1/setup/progress", () => {
+	it("shows the agent after its first MCP call, for the key and for an admin", async () => {
+		const { call, newKey, app, ports, settle } = await setupApi();
+		const key = await newKey();
+		const registered = await call("POST", "/v1/setup/apps", key, { name: "shop-api" });
+		const project = registered.body?.data.project.slug;
+		const token = (await call("POST", "/v1/setup/tokens", key, { name: "Claude Code", project }))
+			.body?.data.token;
+		const mcp = await app.request(
+			"/mcp",
+			{
+				method: "POST",
+				headers: {
+					authorization: `Bearer ${token}`,
+					"content-type": "application/json",
+					accept: "application/json, text/event-stream",
+				},
+				body: JSON.stringify({
+					jsonrpc: "2.0",
+					id: 1,
+					method: "initialize",
+					params: {
+						protocolVersion: "2025-06-18",
+						capabilities: {},
+						clientInfo: { name: "claude-code", version: "2" },
+					},
+				}),
+			},
+			{ ports },
+		);
+		expect(mcp.status).toBe(200);
+		await settle();
+		const mine = await call("GET", "/v1/setup/progress", key);
+		expect(mine.status).toBe(200);
+		expect(mine.body?.data.apps).toEqual([
+			expect.objectContaining({ agent: { name: "claude-code", at: "2026-10-10T12:00:00.000Z" } }),
+		]);
+		const all = await call("GET", "/v1/setup/progress", ADMIN);
+		expect(all.body?.data).toMatchObject({ setup_keys_active: 1, apps: [expect.any(Object)] });
+	});
+});

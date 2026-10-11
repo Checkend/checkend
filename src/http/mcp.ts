@@ -25,6 +25,7 @@ import {
 	ProjectRef,
 	SINCE_PATTERN,
 } from "../core/issues.ts";
+import { recordMcpCall } from "../core/setup-progress.ts";
 import { type Actor, hasScope } from "../core/tokens.ts";
 import { VERSION } from "../core/version.ts";
 import { listAlerts } from "../core/webhooks.ts";
@@ -397,11 +398,35 @@ function createServer(ports: Ports, actor: Actor): McpServer {
  * one transport per request, so it runs the same in a Worker and on Node. It needs a bearer
  * token with issues:read (or the bootstrap ADMIN_TOKEN).
  */
+/** clientInfo.name of an initialize request, or null. Reads a copy of the body. */
+async function mcpClientName(request: Request): Promise<string | null> {
+	if (request.method !== "POST") return null;
+	const body = (await request
+		.clone()
+		.json()
+		.catch(() => null)) as unknown;
+	const messages = Array.isArray(body) ? body : [body];
+	for (const message of messages) {
+		const m = message as { method?: unknown; params?: { clientInfo?: { name?: unknown } } } | null;
+		if (m?.method === "initialize" && typeof m.params?.clientInfo?.name === "string") {
+			return m.params.clientInfo.name;
+		}
+	}
+	return null;
+}
+
 export function mcpRoutes(app: Hono<AppEnv>): void {
 	// Auth runs before the MCP transport: no token, a wrong token, or a missing scope never
 	// reaches the server.
 	app.all("/mcp", requireActor, need("issues:read"), async (c) => {
-		const server = createServer(c.env.ports, c.get("actor"));
+		const actor = c.get("actor");
+		if (actor.type === "token" && actor.id !== null) {
+			// Onboarding progress: the first MCP call of a token, and the client name.
+			const name = await mcpClientName(c.req.raw);
+			const { ports } = c.env;
+			ports.defer(recordMcpCall(ports, actor.id, name).catch(() => {}));
+		}
+		const server = createServer(c.env.ports, actor);
 		const transport = new WebStandardStreamableHTTPServerTransport({
 			sessionIdGenerator: undefined,
 			enableJsonResponse: true,

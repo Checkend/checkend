@@ -17,6 +17,7 @@ import {
 	listSetupKeys,
 	revokeSetupKey,
 } from "../core/setup-keys.ts";
+import { onboardingProgress } from "../core/setup-progress.ts";
 import { authenticate, hasScope } from "../core/tokens.ts";
 import { dsn } from "./api.ts";
 import type { AppEnv } from "./app.ts";
@@ -118,5 +119,18 @@ export function setupRoutes(app: Hono<AppEnv>, state: IngestState): void {
 			body.output.step,
 		);
 		return result === "ok" ? c.body(null, 204) : c.json({ error: "not_found" }, 404);
+	});
+
+	app.get("/v1/setup/progress", async (c) => {
+		const actor = c.get("actor");
+		if (actor.type !== "setup_key" && !hasScope(actor, "admin")) {
+			return c.json({ error: "forbidden", required_scope: "admin" }, 403);
+		}
+		const progress = await onboardingProgress(
+			c.env.ports.db,
+			c.env.ports.clock.now(),
+			actor.type === "setup_key" && actor.id !== null ? { setupKeyId: actor.id } : {},
+		);
+		return c.json({ data: progress });
 	});
 }
