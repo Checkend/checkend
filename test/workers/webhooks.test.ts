@@ -35,7 +35,13 @@ describe("webhooks on D1", () => {
 			project: project.slug,
 		});
 		expect(created.kind).toBe("done");
-		const raw = new TextEncoder().encode(JSON.stringify({ message: "d1 webhook" }));
+		// A server SDK: high trust, so the default webhook (min_trust high) gets it.
+		const raw = new TextEncoder().encode(
+			JSON.stringify({
+				message: "d1 webhook",
+				sdk: { name: "sentry.javascript.node", version: "8.0.0" },
+			}),
+		);
 		const result = await storeEvent(
 			ports,
 			new IngestState(),
@@ -70,7 +76,12 @@ describe("webhooks on D1", () => {
 		expect(created.kind).toBe("done");
 		const results = [];
 		for (let i = 0; i < 4; i++) {
-			const raw = new TextEncoder().encode(JSON.stringify({ message: "d1 spike" }));
+			const raw = new TextEncoder().encode(
+				JSON.stringify({
+					message: "d1 spike",
+					sdk: { name: "sentry.javascript.node", version: "8.0.0" },
+				}),
+			);
 			results.push(
 				await storeEvent(
 					ports,

@@ -1,5 +1,6 @@
 import * as v from "valibot";
 import { type Db, sql } from "../ports/db.ts";
+import { trustFields } from "./trust.ts";
 
 /**
  * Read API (v1). Route schemas are Valibot, so that the OpenAPI document can be generated
@@ -127,7 +128,7 @@ const SCORED_ISSUES = `SELECT *,
 			i.status, i.times_seen, i.stored_events, i.users_affected, i.first_seen, i.last_seen,
 			i.first_release, i.last_release, i.fingerprint, i.fingerprint_version, i.merged_into,
 			i.claimed_by, i.claim_expires_at, i.project_id AS project_row_id, i.test,
-			coalesce(p.trust, CASE WHEN p.browser_seen_at IS NULL THEN 'high' ELSE 'low' END) AS trust,
+			p.trust AS trust_setting, p.server_seen_at, p.client_seen_at,
 			(SELECT coalesce(sum(c.count), 0) FROM issue_counts c WHERE c.issue_id = i.id AND c.hour > ?) AS events_24h,
 			(SELECT coalesce(sum(c.count), 0) FROM issue_counts c WHERE c.issue_id = i.id AND c.hour > ?) AS events_7d
 		FROM issues i JOIN projects p ON p.id = i.project_id WHERE p.deleted_at IS NULL) scored`;
@@ -157,9 +158,24 @@ const scoredParams = (now: Date) => [
 ];
 
 const forApi = (row: IssueRow, now: Date) => {
-	const { project_row_id: _internal, ...rest } = withClaim(row, now);
+	const {
+		project_row_id: _internal,
+		trust_setting,
+		server_seen_at,
+		client_seen_at,
+		...rest
+	} = withClaim(row, now);
+	// The trust of the project (core/trust.ts); the seen times stay on the project.
+	const trust = trustFields(
+		{
+			trust: trust_setting as string | null,
+			server_seen_at: server_seen_at as string | null,
+			client_seen_at: client_seen_at as string | null,
+		},
+		now,
+	);
 	// test: a test issue (the setup test event).
-	return { ...rest, test: rest.test === 1 } as unknown as IssueRow;
+	return { ...rest, ...trust, test: rest.test === 1 } as unknown as IssueRow;
 };
 
 /**

@@ -66,7 +66,12 @@ async function setup(options: { keys?: EncryptionKey[]; status?: number[] } = {}
 					"content-type": "application/json",
 					...(init.origin ? { origin: init.origin } : {}),
 				},
-				body: JSON.stringify({ message, release: init.release }),
+				// A server SDK: high trust, unless the event has an Origin header.
+				body: JSON.stringify({
+					message,
+					release: init.release,
+					sdk: { name: "sentry.javascript.node", version: "8.0.0" },
+				}),
 			},
 			{ ports: t.ports },
 		);

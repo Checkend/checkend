@@ -1,10 +1,11 @@
 import { type Statement, sql } from "../../ports/db.ts";
 import type { Ports } from "../../ports/index.ts";
 import { fixStatementsForEvent } from "../fixes.ts";
+import { classifySource, type SourceClass } from "../trust.ts";
 import { ingestDeliveryStatements, spikeDeliveryStatement } from "../webhooks.ts";
 import { FINGERPRINT_VERSION, type IssueTitle } from "./fingerprint.ts";
 import type { PreparedEvent } from "./prepare.ts";
-import { type IngestMode, IngestState } from "./state.ts";
+import { type IngestMode, IngestState, SOURCE_MARK_MS } from "./state.ts";
 
 export { IngestState };
 
@@ -42,6 +43,8 @@ const ROWS_PER_USER = 2;
 const ROWS_NEW_ISSUE = 5;
 /** A new tag key: its row and its index. */
 const ROWS_PER_TAG_KEY = 2;
+/** The seen time of a source class (the project row; no indexed column). */
+const ROWS_SOURCE_MARK = 1;
 
 /** Users stored per issue; users_affected stops at this number. */
 export const MAX_USERS_PER_ISSUE = 1000;
@@ -65,6 +68,8 @@ export interface StoreOptions {
 	sleep?: (ms: number) => Promise<void>;
 	/** The event came from a browser (Origin header): the DSN of the project is public. */
 	browser?: boolean;
+	/** The event came from POST /v1/ingest (X-Checkend-Key): a server source. */
+	native?: boolean;
 	/**
 	 * The setup test event: its issue is a test issue (resolved), and the write adds no
 	 * regression, fix change, webhook delivery, hourly count or user (so no alert, count or quota).
@@ -96,7 +101,7 @@ export async function storeEvent(
 		ports,
 		state,
 		projectId,
-		[{ prepared, browser: options.browser ?? false }],
+		[{ prepared, browser: options.browser ?? false, native: options.native ?? false }],
 		options,
 	);
 }
@@ -110,7 +115,7 @@ export async function storeEvents(
 	ports: StorePorts,
 	state: IngestState,
 	projectId: number,
-	items: { prepared: PreparedEvent; browser: boolean }[],
+	items: { prepared: PreparedEvent; browser: boolean; native?: boolean }[],
 	options: StoreOptions = {},
 ): Promise<StoreResult> {
 	const sleep = options.sleep ?? defaultSleep;
@@ -136,6 +141,7 @@ export async function storeEvents(
 			let rows = 0;
 			let stored = false;
 			const newTagKeys: string[] = [];
+			const sourceMarks: SourceClass[] = [];
 			const blobs: { key: string; bytes: Uint8Array }[] = [];
 			for (const [i, item] of items.entries()) {
 				const raw = raws[i] ?? { inline: null, blob: null };
@@ -146,7 +152,7 @@ export async function storeEvents(
 					item.prepared,
 					raw,
 					item.prepared.payloadBytes,
-					{ ...options, browser: item.browser },
+					{ ...options, browser: item.browser, native: item.native ?? false },
 				);
 				// The blob goes first: the row that names it is written after it.
 				if (write.mode === "full" && raw.blob) blobs.push(raw.blob);
@@ -155,6 +161,7 @@ export async function storeEvents(
 				rows += write.rows;
 				stored ||= write.mode === "full";
 				newTagKeys.push(...write.newTagKeys);
+				if (write.sourceMark) sourceMarks.push(write.sourceMark);
 			}
 			await Promise.all(blobs.map((blob) => ports.blobs?.put(blob.key, blob.bytes)));
 			const results = await ports.db.batch(statements);
@@ -166,6 +173,7 @@ export async function storeEvents(
 			state.health.recordSuccess(Date.now() - started, now);
 			state.budget.add(now, rows);
 			state.tagKeys.add(projectId, newTagKeys);
+			for (const source of sourceMarks) state.sources.mark(projectId, source, now);
 			return { outcome: stored ? "stored" : "counted", attempts: attempt, deliveries, rows };
 		} catch (error) {
 			lastError = error;
@@ -204,6 +212,8 @@ interface PlannedWrite {
 	newTagKeys: string[];
 	/** Indexes of the statements that add webhook deliveries (RETURNING id). */
 	deliveryStatements: number[];
+	/** The source class whose seen time the write sets, if any. */
+	sourceMark: SourceClass | null;
 }
 
 async function planWrite(
@@ -258,11 +268,22 @@ async function planWrite(
 	});
 
 	const statements: Statement[] = [];
-	if (options.browser) {
-		// The first browser event makes the project low trust (migration 0016). First in the
-		// batch: the webhook deliveries below must see the new trust.
+	// The source class of the event sets the trust of the project (core/trust.ts). First in the
+	// batch: the webhook deliveries below must see the new trust. At most once an hour per class;
+	// a retry or a second isolate writes nothing more (idempotent).
+	const source = classifySource(event.sdk?.name ?? null, {
+		origin: options.browser === true,
+		native: options.native === true,
+	});
+	const sourceMark = state.sources.due(projectId, source, now) ? source : null;
+	if (sourceMark) {
+		const markedBefore = new Date(now.getTime() - SOURCE_MARK_MS).toISOString();
 		statements.push(
-			sql`UPDATE projects SET browser_seen_at = ${nowIso} WHERE id = ${projectId} AND browser_seen_at IS NULL`,
+			sourceMark === "server"
+				? sql`UPDATE projects SET server_seen_at = ${nowIso}
+					WHERE id = ${projectId} AND (server_seen_at IS NULL OR server_seen_at <= ${markedBefore})`
+				: sql`UPDATE projects SET client_seen_at = ${nowIso}
+					WHERE id = ${projectId} AND (client_seen_at IS NULL OR client_seen_at <= ${markedBefore})`,
 		);
 	}
 	const test = options.test === true;
@@ -357,7 +378,8 @@ async function planWrite(
 		(mode === "full" ? ROWS_STORED : ROWS_COUNTED) +
 		(existing ? 0 : ROWS_NEW_ISSUE) +
 		newTagKeys.length * ROWS_PER_TAG_KEY +
-		(prepared.userHash ? ROWS_PER_USER : 0);
+		(prepared.userHash ? ROWS_PER_USER : 0) +
+		(sourceMark ? ROWS_SOURCE_MARK : 0);
 	const day = nowIso.slice(0, 10);
 	statements.push(
 		sql`INSERT INTO daily_usage (day, events_received, events_stored, rows_written)
@@ -367,5 +389,5 @@ async function planWrite(
 				events_stored = events_stored + excluded.events_stored,
 				rows_written = rows_written + excluded.rows_written`,
 	);
-	return { mode, statements, rows, newTagKeys, deliveryStatements };
+	return { mode, statements, rows, newTagKeys, deliveryStatements, sourceMark };
 }

@@ -12,6 +12,7 @@ import {
 	ScrubKey,
 } from "./scrub-settings.ts";
 import { type Actor, LimitReachedError } from "./tokens.ts";
+import { type Source, type Trust, trustFields } from "./trust.ts";
 
 /** A GitHub repository: owner/name. Stored lowercase (GitHub names are case-insensitive). */
 export const RepositoryName = v.pipe(
@@ -72,9 +73,16 @@ export interface ProjectSummary {
 	slug: string;
 	platform: string | null;
 	repository: string | null;
-	/** The trust level now: the setting, or automatic (low after a browser event). */
-	trust: "low" | "high";
+	/** The trust level now: the setting, or automatic (core/trust.ts). */
+	trust: Trust;
 	trust_setting: "low" | "high" | null;
+	/** Always equal to trust (the name that the UI and the docs use). */
+	source_trust: Trust;
+	/** Where the events of the last 30 days came from; null: none. */
+	source: Source;
+	/** The last event from a server source, or from a browser, mobile or unknown source. */
+	server_seen_at: string | null;
+	client_seen_at: string | null;
 	allowed_origins: string[] | null;
 	scrub_keys: string[];
 	scrub_patterns: string[];
@@ -193,7 +201,17 @@ export async function listProjects(db: Db, now: Date = new Date()): Promise<Proj
 	const today = `${now.toISOString().slice(0, 10)}T00`;
 	const hour24 = new Date(now.getTime() - 24 * 3_600_000).toISOString().slice(0, 13);
 	const projects = await db.all<
-		Omit<ProjectSummary, "keys" | "allowed_origins" | "scrub_keys" | "scrub_patterns" | "demo"> & {
+		Omit<
+			ProjectSummary,
+			| "keys"
+			| "allowed_origins"
+			| "scrub_keys"
+			| "scrub_patterns"
+			| "demo"
+			| "trust"
+			| "source_trust"
+			| "source"
+		> & {
 			demo: number;
 			internal_id: number;
 			allowed_origins: string | null;
@@ -202,8 +220,7 @@ export async function listProjects(db: Db, now: Date = new Date()): Promise<Proj
 		}
 	>(
 		sql`SELECT id AS internal_id, public_id AS id, name, slug, platform, repository,
-				coalesce(trust, CASE WHEN browser_seen_at IS NULL THEN 'high' ELSE 'low' END) AS trust,
-				trust AS trust_setting, allowed_origins, daily_quota, scrub_keys, scrub_patterns,
+				trust AS trust_setting, server_seen_at, client_seen_at, allowed_origins, daily_quota, scrub_keys, scrub_patterns,
 				(SELECT coalesce(sum(c.count), 0) FROM issue_counts c JOIN issues i ON i.id = c.issue_id
 					WHERE i.project_id = projects.id AND c.hour >= ${today}) AS events_today,
 				(SELECT coalesce(sum(c.count), 0) FROM issue_counts c JOIN issues i ON i.id = c.issue_id
@@ -220,6 +237,7 @@ export async function listProjects(db: Db, now: Date = new Date()): Promise<Proj
 	return projects.map(
 		({ internal_id, allowed_origins, scrub_keys, scrub_patterns, demo, ...p }) => ({
 			...p,
+			...trustFields({ ...p, trust: p.trust_setting }, now),
 			demo: demo === 1,
 			allowed_origins: allowed_origins ? (JSON.parse(allowed_origins) as string[]) : null,
 			scrub_keys: scrub_keys ? (JSON.parse(scrub_keys) as string[]) : [],

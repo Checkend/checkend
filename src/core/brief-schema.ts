@@ -80,6 +80,13 @@ export const BriefJsonSchema = v.pipe(
 				latest_event_id: nullable(v.number()),
 				claim: nullable(v.strictObject({ holder: v.string(), expires_at: Time })),
 				trust: v.picklist(["low", "high"]),
+				source_trust: v.pipe(v.picklist(["low", "high"]), v.description("Always equal to trust.")),
+				source: v.pipe(
+					nullable(v.picklist(["server", "browser", "mixed"])),
+					v.description(
+						"Where the events of the project came from in the last 30 days. browser: a browser, mobile or unknown SDK. Null: no events.",
+					),
+				),
 				test: v.pipe(
 					v.boolean(),
 					v.description("A test issue: the test event of the setup, not a real error."),

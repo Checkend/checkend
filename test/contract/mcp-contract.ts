@@ -118,7 +118,13 @@ export function mcpContract(
 				priority: expect.any(Number),
 				events_24h: expect.any(Number),
 				users_affected: expect.any(Number),
+				trust: expect.stringMatching(/^(low|high)$/),
 			});
+			// Source trust (additive): source_trust always equals trust.
+			for (const issue of body.issues) {
+				expect(issue.source_trust).toBe(issue.trust);
+				expect([null, "server", "browser", "mixed"]).toContain(issue.source);
+			}
 			expect(body.sort).toBe("priority");
 			await client.close();
 		});

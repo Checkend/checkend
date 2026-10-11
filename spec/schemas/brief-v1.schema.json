@@ -114,6 +114,30 @@
 					],
 					"type": "string"
 				},
+				"source_trust": {
+					"enum": [
+						"low",
+						"high"
+					],
+					"type": "string",
+					"description": "Always equal to trust."
+				},
+				"source": {
+					"anyOf": [
+						{
+							"enum": [
+								"server",
+								"browser",
+								"mixed"
+							],
+							"type": "string"
+						},
+						{
+							"type": "null"
+						}
+					],
+					"description": "Where the events of the project came from in the last 30 days. browser: a browser, mobile or unknown SDK. Null: no events."
+				},
 				"test": {
 					"type": "boolean",
 					"description": "A test issue: the test event of the setup, not a real error."
@@ -372,6 +396,8 @@
 				"latest_event_id",
 				"claim",
 				"trust",
+				"source_trust",
+				"source",
 				"test",
 				"source_maps",
 				"first_release_deploy",

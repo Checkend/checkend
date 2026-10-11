@@ -1,5 +1,6 @@
 import { type Db, sql } from "../../ports/db.ts";
 import { KeyCache } from "../projects.ts";
+import type { SourceClass } from "../trust.ts";
 
 const BACKOFF_MS = 30_000;
 const SLOW_WRITE_MS = 5_000;
@@ -122,6 +123,27 @@ export class QuotaCounter {
 	}
 }
 
+/** How often ingest writes the seen time of a source class (projects.*_seen_at). */
+export const SOURCE_MARK_MS = 3_600_000;
+
+/**
+ * The source classes that this isolate marked recently, per project. A recent mark needs no
+ * statement; the statement itself also writes at most once an hour (other isolates).
+ */
+export class SourceMarks {
+	private entries = new Map<string, number>();
+
+	due(projectId: number, source: SourceClass, now: Date): boolean {
+		const at = this.entries.get(`${projectId}:${source}`);
+		return at === undefined || now.getTime() - at >= SOURCE_MARK_MS;
+	}
+
+	mark(projectId: number, source: SourceClass, now: Date): void {
+		if (this.entries.size > 1000) this.entries.clear();
+		this.entries.set(`${projectId}:${source}`, now.getTime());
+	}
+}
+
 /** In-memory ingest state of one isolate. The app holds one instance. */
 export class IngestState {
 	readonly keys = new KeyCache();
@@ -129,4 +151,5 @@ export class IngestState {
 	readonly budget = new BudgetTracker();
 	readonly tagKeys = new TagKeyCache();
 	readonly quota = new QuotaCounter();
+	readonly sources = new SourceMarks();
 }

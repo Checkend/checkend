@@ -18,7 +18,11 @@ async function setup() {
 			{
 				method: "POST",
 				headers: { "content-type": "application/json", ...(origin ? { origin } : {}) },
-				body: JSON.stringify({ message }),
+				// A server SDK: only the Origin header makes it a browser event.
+				body: JSON.stringify({
+					message,
+					sdk: { name: "sentry.javascript.node", version: "8.0.0" },
+				}),
 			},
 			{ ports: t.ports },
 		);

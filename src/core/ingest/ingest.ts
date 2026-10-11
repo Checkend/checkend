@@ -143,19 +143,22 @@ export async function handleIngest(
 			project.scrub,
 		);
 		const browser = origin !== null;
+		const native = kind === "native";
 		if (overload > 0) {
-			if (!(await enqueueEvent(ports, project.projectId, prepared, browser))) {
+			if (!(await enqueueEvent(ports, project.projectId, prepared, browser, native))) {
 				return tooManyRequests(overload, "organization");
 			}
 			return json(200, { id: prepared.event.event_id });
 		}
 		ports.defer(
-			storeEvent(ports, state, project.projectId, prepared, { browser }).then(async (result) => {
-				// A write that failed after its retries goes to the overflow queue, when there is one.
-				if (result.outcome === "failed")
-					await enqueueEvent(ports, project.projectId, prepared, browser);
-				if (result.deliveries > 0) await startDeliveries(ports);
-			}),
+			storeEvent(ports, state, project.projectId, prepared, { browser, native }).then(
+				async (result) => {
+					// A write that failed after its retries goes to the overflow queue, when there is one.
+					if (result.outcome === "failed")
+						await enqueueEvent(ports, project.projectId, prepared, browser, native);
+					if (result.deliveries > 0) await startDeliveries(ports);
+				},
+			),
 		);
 		return json(200, { id: prepared.event.event_id });
 	} catch (error) {

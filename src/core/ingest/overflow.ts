@@ -19,6 +19,8 @@ export interface IngestMessage {
 	/** The internal project row ID. */
 	project_id: number;
 	browser: boolean;
+	/** POST /v1/ingest (a server source). Optional: older messages do not have it. */
+	native?: boolean;
 	/** The prepared event; or blob_key, when the message would be too large for the queue. */
 	prepared?: PreparedEvent;
 	blob_key?: string;
@@ -38,9 +40,17 @@ export async function enqueueEvent(
 	projectId: number,
 	prepared: PreparedEvent,
 	browser: boolean,
+	native = false,
 ): Promise<boolean> {
 	if (!ports.ingestQueue) return false;
-	const message: IngestMessage = { kind: "ingest", v: 1, project_id: projectId, browser, prepared };
+	const message: IngestMessage = {
+		kind: "ingest",
+		v: 1,
+		project_id: projectId,
+		browser,
+		...(native ? { native } : {}),
+		prepared,
+	};
 	try {
 		const json = JSON.stringify(message);
 		if (encoder.encode(json).byteLength <= MAX_QUEUE_MESSAGE_BYTES) {
@@ -92,7 +102,13 @@ export async function consumeIngest(
 		string,
 		{
 			projectId: number;
-			entries: { item: QueuedItem; prepared: PreparedEvent; browser: boolean; blobKey?: string }[];
+			entries: {
+				item: QueuedItem;
+				prepared: PreparedEvent;
+				browser: boolean;
+				native: boolean;
+				blobKey?: string;
+			}[];
 		}
 	>();
 	for (const item of items) {
@@ -117,6 +133,7 @@ export async function consumeIngest(
 			item,
 			prepared,
 			browser: body.browser,
+			native: body.native === true,
 			...(body.blob_key ? { blobKey: body.blob_key } : {}),
 		});
 		groups.set(key, group);

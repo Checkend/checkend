@@ -187,6 +187,47 @@ describe("hostile input corpus", () => {
 		expect(stored.message).toContain("password=[Filtered]");
 	});
 
+	it("a hostile SDK name: mapped to a fixed class; an odd name is never server", async () => {
+		// Hidden characters are removed in normalization first: the name is then a plain name.
+		for (const name of ["sentry.python\u202E", "sentry.python\u0000"]) {
+			const { post, ports } = await setup();
+			expect((await post(envelope(JSON.stringify({ message: "x", sdk: { name } })))).status).toBe(
+				200,
+			);
+			const stored = await ports.db.first<{ data: string }>(sql`SELECT data FROM events`);
+			const storedName: string = JSON.parse(stored?.data ?? "{}").sdk.name;
+			for (const hidden of ["\u0000", "\u202E"]) expect(storedName).not.toContain(hidden);
+		}
+		for (const name of [
+			"sentry.python.<script>alert(1)</script>",
+			"sentry.python.".padEnd(5000, "x"),
+			"Sentry.Python",
+			42,
+			{ name: "sentry.python" },
+			["sentry.python"],
+			null,
+		]) {
+			const { post, ports } = await setup();
+			const response = await post(envelope(JSON.stringify({ message: "x", sdk: { name } })));
+			expect([200, 400], JSON.stringify(name).slice(0, 40)).toContain(response.status);
+			const row = await ports.db.first<{
+				server_seen_at: string | null;
+				client_seen_at: string | null;
+			}>(sql`SELECT server_seen_at, client_seen_at FROM projects`);
+			expect(row?.server_seen_at, JSON.stringify(name).slice(0, 40)).toBeNull();
+			if (response.status === 200) expect(row?.client_seen_at).not.toBeNull();
+		}
+		// Not an object at all.
+		const { post, ports } = await setup();
+		expect([200, 400]).toContain(
+			(await post(envelope(JSON.stringify({ message: "x", sdk: "sentry.python" })))).status,
+		);
+		expect(
+			(await ports.db.first<{ s: string | null }>(sql`SELECT server_seen_at AS s FROM projects`))
+				?.s,
+		).toBeNull();
+	});
+
 	it("a JSON array or string as the event: 400", async () => {
 		const { post } = await setup();
 		expect((await post(envelope("[1,2,3]"))).status).toBe(400);

@@ -64,7 +64,11 @@ async function setup(options: { mailer?: boolean } = {}) {
 			{
 				method: "POST",
 				headers: { "content-type": "application/json" },
-				body: JSON.stringify({ message }),
+				// A server SDK: high trust, so the alerts fire (min_trust high).
+				body: JSON.stringify({
+					message,
+					sdk: { name: "sentry.javascript.node", version: "8.0.0" },
+				}),
 			},
 			{ ports: t.ports },
 		);
