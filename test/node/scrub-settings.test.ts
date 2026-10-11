@@ -59,10 +59,10 @@ describe("project scrub settings", () => {
 			message: "checkout failed",
 			extra: { Customer_Ref: "C-991", order: "o-1" },
 			tags: { customer_ref: "C-991" },
-			request: { url: "https://shop.example/pay", headers: { "X-Internal-Id": "abc" } },
+			request: { url: "https://shop.example/pay", headers: { "X-Internal-Id": "internal-id-zq7" } },
 		});
 		expect(JSON.stringify(event)).not.toContain("C-991");
-		expect(JSON.stringify(event)).not.toContain("abc");
+		expect(JSON.stringify(event)).not.toContain("internal-id-zq7");
 		expect(JSON.stringify(event)).toContain("o-1");
 	});
 
