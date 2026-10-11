@@ -322,6 +322,8 @@ export interface AppPageData {
 	sdk: string | undefined;
 	csrf: string;
 	deleteError?: string;
+	/** False for a member who is not an owner (hosted installs): no delete form. */
+	canDelete?: boolean;
 }
 
 function tabs(id: number, tab: AppTab): Html {
@@ -358,6 +360,12 @@ function manualTab(project: ProjectSummary, origin: string, sdkId: string | unde
 
 function dangerZone(data: AppPageData): Html {
 	const { project, csrf, demo } = data;
+	if (data.canDelete === false) {
+		return h`<section class="danger" aria-labelledby="delete-title">
+<h2 id="delete-title">Delete app</h2>
+<p class="muted">Only an owner of this space can delete an app.</p>
+</section>`;
+	}
 	if (demo) {
 		return h`<section class="danger" aria-labelledby="delete-title">
 <h2 id="delete-title">Delete the demo</h2>

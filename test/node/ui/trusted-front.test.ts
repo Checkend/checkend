@@ -83,6 +83,46 @@ describe("trusted front identity mode", () => {
 		expect((await t.post(ALICE, "/apps", { _csrf: aliceCsrf, name: "X" })).status).toBe(303);
 	});
 
+	it("lets only an owner delete an app; a member does not see the form", async () => {
+		const t = await hosted();
+		const created = await t.post(ALICE, "/apps", { _csrf: await t.csrfOf(ALICE), name: "Shop" });
+		const path = created.headers.get("location")?.split("?")[0] ?? "";
+		expect(path).toMatch(/^\/apps\/\d+$/);
+		const bobPage = await (await t.as(BOB, path)).text();
+		expect(bobPage).not.toContain(`action="${path}/delete"`);
+		expect(bobPage).toContain("Only an owner");
+		const refused = await t.post(BOB, `${path}/delete`, {
+			_csrf: await t.csrfOf(BOB),
+			confirm: "Shop",
+		});
+		expect(refused.status).toBe(403);
+		expect(
+			await t.ports.db.first(sql`SELECT 1 AS x FROM projects WHERE name = 'Shop'`),
+		).not.toBeNull();
+		expect(await (await t.as(ALICE, path)).text()).toContain(`action="${path}/delete"`);
+		const deleted = await t.post(ALICE, `${path}/delete`, {
+			_csrf: await t.csrfOf(ALICE),
+			confirm: "Shop",
+		});
+		expect(deleted.status).toBe(303);
+	});
+
+	it("lets a member add apps and make setup keys, without the admin scope", async () => {
+		const t = await hosted();
+		const csrf = await t.csrfOf(BOB);
+		expect((await t.post(BOB, "/apps", { _csrf: csrf, name: "Web" })).status).toBe(303);
+		const key = await t.as(BOB, "/apps/setup-key", {
+			method: "POST",
+			headers: {
+				"content-type": "application/x-www-form-urlencoded",
+				origin: UI_ORIGIN,
+				accept: "application/json",
+			},
+			body: new URLSearchParams({ _csrf: csrf }).toString(),
+		});
+		expect(key.status).toBe(200);
+	});
+
 	it("refuses every UI route without an identity, also with a valid install session cookie", async () => {
 		const t = await hosted();
 		await t.as(ALICE, "/issues");

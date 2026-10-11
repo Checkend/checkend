@@ -108,7 +108,9 @@ Checkend runs on Cloudflare first, and it must also run off Cloudflare. These ru
   URL that the app makes goes through `src/http/base-path.ts` (a crawler test fails on any URL
   outside the base path). In the trusted front identity mode (`config.trustedFront`), members come
   only from that call: no cookies, setup, sign-in or passkeys in the install; bearer tokens and
-  ingest work as before. A cross-tenant guard refuses script requests from another install's
+  ingest work as before. Roles: an owner is an admin; a member is not (only an owner deletes an
+  app). An install that is not provisioned refuses requests, except in the stand-in mode that the
+  call asks for; after `destroy()`, a tombstone keeps it deleted. A cross-tenant guard refuses script requests from another install's
   pages. Self-host has neither (no base path, mode off).
 - **Development mode** (`CHECKEND_DEV=1`, only from `npm run dev`; never in `wrangler.jsonc`):
   `/dev/login` signs in without a passkey, `/setup` needs no code, and ingest accepts

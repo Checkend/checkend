@@ -31,6 +31,7 @@ import {
 	ProjectRef,
 } from "../../core/issues.ts";
 import { createProject, listProjects } from "../../core/projects.ts";
+import { hasScope } from "../../core/tokens.ts";
 import { sql } from "../../ports/db.ts";
 import type { AppEnv } from "../app.ts";
 import { basePathOf, publicBase, withBase } from "../base-path.ts";
@@ -410,6 +411,7 @@ export function uiRoutes(app: Hono<AppEnv>, state: IngestState, onboarding: Onbo
 			tab: extra.tab ?? (c.req.query("tab") === "manual" ? "manual" : "agent"),
 			sdk: SDKS.some((s) => s.id === sdk) ? sdk : undefined,
 			csrf: csrf(c),
+			canDelete: hasScope(c.get("actor"), "admin"),
 			...(extra.deleteError ? { deleteError: extra.deleteError } : {}),
 		};
 		return render(c, row.project.name, "apps", appView(data, origin(c), now(c)), status);
@@ -424,6 +426,15 @@ export function uiRoutes(app: Hono<AppEnv>, state: IngestState, onboarding: Onbo
 	app.post("/apps/:id/delete", ...member, checkFormCsrf, async (c) => {
 		const row = await findApp(c);
 		if (!row) return notFound(c);
+		if (!hasScope(c.get("actor"), "admin")) {
+			return render(
+				c,
+				row.project.name,
+				"apps",
+				h`<p class="notice" role="alert">Only an owner of this space can delete an app.</p>`,
+				403,
+			);
+		}
 		const typed = c.get("form").confirm;
 		if (!row.demo && (typeof typed !== "string" || typed.trim() !== row.project.name)) {
 			return appPage(

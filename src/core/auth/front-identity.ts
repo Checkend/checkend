@@ -13,7 +13,10 @@ export interface FrontIdentity {
 	accountId: string;
 	/** The name to show, for example in the activity timeline. */
 	name: string;
-	/** The role in this space. Both roles are members of the install (all members are admins). */
+	/**
+	 * The role in this space: an owner is an admin of the install; a member is not (no app
+	 * deletes; see MEMBER_SCOPES in src/http/ui/security.ts).
+	 */
 	role: "owner" | "member";
 }
 

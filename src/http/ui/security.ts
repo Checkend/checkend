@@ -2,6 +2,7 @@ import type { Context, MiddlewareHandler } from "hono";
 import { frontSession, parseFrontIdentity } from "../../core/auth/front-identity.ts";
 import { isSetupOpen } from "../../core/auth/passkeys.ts";
 import { getSession, type Session } from "../../core/auth/sessions.ts";
+import type { Scope } from "../../core/tokens.ts";
 import type { AppEnv } from "../app.ts";
 import { bodyCap, MAX_JSON_BODY_BYTES } from "../body.ts";
 import { publicOrigin } from "../origin.ts";
@@ -67,11 +68,14 @@ export function sessionToken(c: Context): string | null {
  */
 export const requireMember: MiddlewareHandler<AppEnv> = async (c, next) => {
 	let session: Session | null;
+	// Self-host: every member is an admin. Hosted: an owner is; a member is not (MEMBER_SCOPES).
+	let scopes: Scope[] = ["admin"];
 	if (c.env.ports.config.trustedFront) {
 		// A hosted install: the member comes only from the front Worker's call; cookies are ignored.
 		const identity = parseFrontIdentity(c.env.identity);
 		if (!identity) return c.json({ error: "not_found" }, 404);
 		session = await frontSession(c.env.ports, identity);
+		if (identity.role !== "owner") scopes = [...MEMBER_SCOPES];
 	} else {
 		const token = sessionToken(c);
 		session = token ? await getSession(c.env.ports, token) : null;
@@ -84,10 +88,17 @@ export const requireMember: MiddlewareHandler<AppEnv> = async (c, next) => {
 		type: "member",
 		id: session.memberId,
 		name: session.memberName,
-		scopes: ["admin"],
+		scopes,
 	});
 	await next();
 };
+
+/**
+ * The scopes of a member that is not an owner (hosted installs): the issues and the setup of apps,
+ * but no admin actions. In the UI, only an owner can delete an app; admin tokens and approvals are
+ * in the bearer API only, which a member identity never reaches.
+ */
+export const MEMBER_SCOPES: readonly Scope[] = ["issues:read", "issues:write", "releases:write"];
 
 /**
  * For the install's own setup, sign-in and sign-out: a 404 in a hosted install (trusted front
