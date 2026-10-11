@@ -429,6 +429,7 @@ export async function getRelease(
 }
 
 const WAITING_FIXES_SQL = `SELECT f.id FROM fixes f JOIN issues i ON i.id = f.issue_id
+		JOIN projects p ON p.id = i.project_id AND p.deleted_at IS NULL
 	WHERE f.outcome IS NULL AND f.deployed_at IS NOT NULL AND coalesce(f.quiet_since, f.deployed_at) <= ?
 		AND i.status = 'fix_pending' AND ${CURRENT_FIX}
 	ORDER BY f.id LIMIT ?`;

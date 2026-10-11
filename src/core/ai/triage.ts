@@ -132,7 +132,8 @@ export async function runTriage(ports: TriagePorts): Promise<number> {
 	if (!ports.config.ai.triage || !ports.models) return 0;
 	const retryBefore = new Date(ports.clock.now().getTime() - RETRY_AFTER_MS).toISOString();
 	const due = await ports.db.all<{ id: number }>(
-		sql`SELECT i.id FROM issues i LEFT JOIN issue_triage t ON t.issue_id = i.id
+		sql`SELECT i.id FROM issues i JOIN projects p ON p.id = i.project_id AND p.deleted_at IS NULL
+			LEFT JOIN issue_triage t ON t.issue_id = i.id
 			WHERE i.times_seen >= ${TRIAGE_MIN_SEEN} AND i.merged_into IS NULL
 				AND i.status IN ('unresolved', 'regressed')
 				AND (t.issue_id IS NULL OR t.version < ${TRIAGE_VERSION})

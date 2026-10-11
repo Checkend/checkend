@@ -3,6 +3,7 @@ import { runTriage } from "./ai/triage.ts";
 import { verifyFixes } from "./fixes.ts";
 import { pruneDeliveries } from "./github.ts";
 import { fetchDeployCommits } from "./github-commits.ts";
+import { runProjectPurge } from "./project-delete.ts";
 import { runRetention } from "./retention.ts";
 import { deliverDue, reencryptSecrets } from "./webhooks.ts";
 
@@ -51,6 +52,8 @@ export async function runScheduled(ports: Ports, now: Date): Promise<ScheduledRu
 				run.triaged = await runTriage(p);
 			},
 		],
+		// Purge of deleted projects: a few chunks per run.
+		["purge_projects", async (p, at) => void (await runProjectPurge(p, at))],
 		// Retention: a few chunks per run, so that a backlog goes away over several runs.
 		["retention", async (p, at) => void (await runRetention(p, at))],
 		// Once a day (the run between 03:00 and 03:05 UTC).

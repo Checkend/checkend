@@ -195,7 +195,7 @@ export async function listProjects(db: Db, now: Date = new Date()): Promise<Proj
 				(SELECT coalesce(sum(c.count), 0) FROM issue_counts c JOIN issues i ON i.id = c.issue_id
 					WHERE i.project_id = projects.id AND c.hour >= ${today}) AS events_today,
 				created_at
-			FROM projects ORDER BY internal_id`,
+			FROM projects WHERE deleted_at IS NULL ORDER BY internal_id`,
 	);
 	const keys = await db.all<{ project_id: number; public_key: string }>(
 		sql`SELECT project_id, public_key FROM project_keys WHERE revoked_at IS NULL ORDER BY id`,
@@ -344,7 +344,8 @@ export class KeyCache {
 		}>(
 			sql`SELECT k.project_id, p.allowed_origins, p.daily_quota, p.scrub_keys, p.scrub_patterns
 				FROM project_keys k JOIN projects p ON p.id = k.project_id
-				WHERE k.public_key = ${publicKey} AND p.public_id = ${projectId} AND k.revoked_at IS NULL`,
+				WHERE k.public_key = ${publicKey} AND p.public_id = ${projectId} AND k.revoked_at IS NULL
+					AND p.deleted_at IS NULL`,
 		);
 		const value = row
 			? {

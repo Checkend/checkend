@@ -108,6 +108,13 @@ export const API_ROUTES: ApiRoute[] = [
 		body: UpdateProjectBody,
 	},
 	{
+		method: "DELETE",
+		path: "/v1/projects/:project",
+		scope: "admin",
+		summary:
+			"Delete a project: its DSN keys stop at once (events get 401), it is hidden everywhere, and the cron purges its data. 204; 202 when REQUIRE_APPROVAL has delete_project and another actor must complete it.",
+	},
+	{
 		method: "POST",
 		path: "/v1/projects/:project/keys",
 		scope: "admin",

@@ -15,7 +15,10 @@ export interface Config {
 	newIssuesPerHour: number;
 	/** Distinct tag keys per project. */
 	tagKeysPerProject: number;
-	/** Issue actions that need a human approval: "ignore", "merge". Empty: none (default). */
+	/**
+	 * Actions that need a human approval: "ignore", "merge" (issues), "delete_project". Empty: none
+	 * (default).
+	 */
 	requireApproval: string[];
 	/** Hours without the error, after a deploy with the fix, before the fix is verified. */
 	verifyQuietHours: number;

@@ -38,6 +38,7 @@ import {
 	ProjectRef,
 } from "../core/issues.ts";
 import { LabelQuery, listLabels } from "../core/labels.ts";
+import { deleteProject } from "../core/project-delete.ts";
 import {
 	createProject,
 	createProjectKey,
@@ -165,6 +166,24 @@ export function apiRoutes(app: Hono<AppEnv>, state: IngestState): void {
 		if (!project) return c.json({ error: "not_found" }, 404);
 		const { keys, ...rest } = project;
 		return c.json({ data: { ...rest, dsns: keys.map((k) => dsn(origin, k, rest.id)) } });
+	});
+
+	app.delete("/v1/projects/:project", need("admin"), async (c) => {
+		const result = await deleteProject(c.env.ports, c.get("actor"), c.req.param("project"), {
+			keyCache: state.keys,
+		});
+		if (result === "not_found") return c.json({ error: "not_found" }, 404);
+		if (result === "approval_required") {
+			return c.json(
+				{
+					status: "approval_required",
+					message:
+						"REQUIRE_APPROVAL has delete_project: another actor (a person in the UI, or another admin) must complete the delete.",
+				},
+				202,
+			);
+		}
+		return c.body(null, 204);
 	});
 
 	app.post("/v1/projects/:project/keys", need("admin"), async (c) => {

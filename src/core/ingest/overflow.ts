@@ -1,3 +1,4 @@
+import { sql } from "../../ports/db.ts";
 import type { Ports } from "../../ports/index.ts";
 import { MAX_QUEUE_MESSAGE_BYTES } from "../../ports/ingest-queue.ts";
 import { startDeliveries } from "../webhooks.ts";
@@ -122,6 +123,17 @@ export async function consumeIngest(
 	}
 	let deliveries = 0;
 	for (const { projectId, entries } of groups.values()) {
+		// A project deleted after the event was queued: its events are dropped.
+		const live = await ports.db.first(
+			sql`SELECT 1 AS live FROM projects WHERE id = ${projectId} AND deleted_at IS NULL`,
+		);
+		if (!live) {
+			for (const entry of entries) {
+				if (entry.blobKey) await ports.blobs?.delete(entry.blobKey).catch(() => {});
+				entry.item.ack();
+			}
+			continue;
+		}
 		const result = await storeEvents(ports, state, projectId, entries);
 		if (result.outcome === "failed") {
 			for (const entry of entries) entry.item.retry();

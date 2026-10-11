@@ -434,12 +434,15 @@ type DeliveryRow = {
 	recipients: string | null;
 	data: string | null;
 	deleted_at: string | null;
+	project_deleted_at: string | null;
 };
 
 async function attempt(ports: P, id: number): Promise<void> {
 	const row = await ports.db.first<DeliveryRow>(
 		sql`SELECT d.id, d.event, d.issue_id, d.attempts, d.created_at, d.data, w.id AS webhook_id, w.uid,
-				w.url, w.format, w.secret, w.auth, w.recipients, w.deleted_at
+				w.url, w.format, w.secret, w.auth, w.recipients, w.deleted_at,
+				(SELECT p.deleted_at FROM issues i JOIN projects p ON p.id = i.project_id
+					WHERE i.id = d.issue_id) AS project_deleted_at
 			FROM webhook_deliveries d JOIN webhooks w ON w.id = d.webhook_id WHERE d.id = ${id}`,
 	);
 	if (!row) return;
@@ -448,6 +451,7 @@ async function attempt(ports: P, id: number): Promise<void> {
 	let error: string | null = null;
 	try {
 		if (row.deleted_at) throw new PermanentError("The webhook was deleted.");
+		if (row.project_deleted_at) throw new PermanentError("The project was deleted.");
 		const keys = ports.config.encryptionKeys;
 		const extra = row.auth ? await decryptValue(keys, row.auth, authContext(row.uid)) : null;
 		const { body: checkendBody, alert } = await payload(ports, row);

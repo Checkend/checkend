@@ -91,7 +91,7 @@ The single binary is not released yet. Use npm (Node.js 22 or later):
 npx ${CE_NPM} --version
 \`\`\`
 
-Then use \`npx ${CE_NPM}\` where the steps say \`ce\`. For example: \`${ce("setup --url " + base + " --key <the setup key from your prompt>")}\`.
+Then use \`npx ${CE_NPM}\` where the steps say \`ce\`. For example: \`${ce(`setup --url ${base} --key <the setup key from your prompt>`)}\`.
 
 ## Rules
 

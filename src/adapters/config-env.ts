@@ -60,7 +60,7 @@ export function readConfig(env: ConfigEnv): Config {
 		requireApproval: (env.REQUIRE_APPROVAL ?? "")
 			.split(",")
 			.map((a) => a.trim())
-			.filter((a) => a === "ignore" || a === "merge"),
+			.filter((a) => a === "ignore" || a === "merge" || a === "delete_project"),
 		verifyQuietHours: positiveInt(env.VERIFY_QUIET_HOURS) ?? DEFAULT_CONFIG.verifyQuietHours,
 		githubWebhookSecret: env.GITHUB_WEBHOOK_SECRET?.trim() || null,
 		encryptionKeys: encryptionKeys(env.ENCRYPTION_KEYS),

@@ -93,7 +93,8 @@ export const likeContains = (text: string) => `%${text.replace(/[\\%_]/g, "\\$&"
 /** The internal row ID of a project, from its public ID or slug; null when there is none. */
 export async function findProjectRowId(db: Db, ref: string): Promise<number | null> {
 	const row = await db.first<{ id: number }>(
-		sql`SELECT id FROM projects WHERE public_id = ${/^\d{10}$/.test(ref) ? Number(ref) : null} OR slug = ${ref}`,
+		sql`SELECT id FROM projects
+			WHERE (public_id = ${/^\d{10}$/.test(ref) ? Number(ref) : null} OR slug = ${ref}) AND deleted_at IS NULL`,
 	);
 	return row?.id ?? null;
 }
@@ -127,7 +128,7 @@ const SCORED_ISSUES = `SELECT *,
 			coalesce(p.trust, CASE WHEN p.browser_seen_at IS NULL THEN 'high' ELSE 'low' END) AS trust,
 			(SELECT coalesce(sum(c.count), 0) FROM issue_counts c WHERE c.issue_id = i.id AND c.hour > ?) AS events_24h,
 			(SELECT coalesce(sum(c.count), 0) FROM issue_counts c WHERE c.issue_id = i.id AND c.hour > ?) AS events_7d
-		FROM issues i JOIN projects p ON p.id = i.project_id) scored`;
+		FROM issues i JOIN projects p ON p.id = i.project_id WHERE p.deleted_at IS NULL) scored`;
 
 // SQL text built once from constants (no values): the queries bind every value.
 const LIST_ISSUES_SQL = `${SCORED_ISSUES}
@@ -303,7 +304,7 @@ export async function listIssueEvents(db: Db, issueId: number, limit: number): P
 		sql: `SELECT e.id, e.issue_id, p.public_id AS project_id, e.event_id, e.timestamp, e.received_at,
 				e.level, e.release, e.environment
 			FROM events e JOIN projects p ON p.id = e.project_id
-			WHERE e.issue_id = ? ORDER BY e.id DESC LIMIT ?`,
+			WHERE e.issue_id = ? AND p.deleted_at IS NULL ORDER BY e.id DESC LIMIT ?`,
 		params: [issueId, limit],
 	});
 }
@@ -312,7 +313,7 @@ export async function getEvent(db: Db, eventId: number): Promise<Record<string, 
 	const row = await db.first<IssueRow & { data: string }>({
 		sql: `SELECT e.id, e.issue_id, p.public_id AS project_id, e.event_id, e.timestamp, e.received_at,
 				e.level, e.release, e.environment, e.data
-			FROM events e JOIN projects p ON p.id = e.project_id WHERE e.id = ?`,
+			FROM events e JOIN projects p ON p.id = e.project_id WHERE e.id = ? AND p.deleted_at IS NULL`,
 		params: [eventId],
 	});
 	if (!row) return null;

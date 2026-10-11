@@ -46,10 +46,9 @@ describe("readConfig", () => {
 	});
 
 	it("reads REQUIRE_APPROVAL: only ignore and merge", () => {
-		expect(readConfig({ REQUIRE_APPROVAL: " ignore, merge ,delete" }).requireApproval).toEqual([
-			"ignore",
-			"merge",
-		]);
+		expect(
+			readConfig({ REQUIRE_APPROVAL: " ignore, merge ,delete, delete_project" }).requireApproval,
+		).toEqual(["ignore", "merge", "delete_project"]);
 	});
 
 	it("ignores empty and invalid values", () => {

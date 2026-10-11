@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clefDecisions, type Question } from "../../../src/core/ai/decisions.ts";
+import { clefDecisions } from "../../../src/core/ai/decisions.ts";
 import { buildModelInput } from "../../../src/core/ai/model-input.ts";
 import {
 	getTriage,
