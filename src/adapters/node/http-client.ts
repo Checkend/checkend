@@ -11,6 +11,9 @@ import type { HttpClient } from "../../ports/http.ts";
  * lookup between the check and the connection. Redirects are not followed (as with
  * redirect: "manual"). `allowPrivate` is for tests only.
  */
+/** A webhook answer needs only its status; callers that read JSON pass a larger cap. */
+const DEFAULT_MAX_BYTES = 64 * 1024;
+
 export function pinnedHttpClient(
 	options: { lookup?: LookupFunction; allowPrivate?: boolean } = {},
 ): HttpClient {
@@ -36,7 +39,8 @@ export function pinnedHttpClient(
 		});
 	};
 	return {
-		send(url, init) {
+		send(url, init, sendOptions = {}) {
+			const maxBytes = sendOptions.maxBytes ?? DEFAULT_MAX_BYTES;
 			return new Promise((resolve, reject) => {
 				const target = new URL(url);
 				const request = (target.protocol === "https:" ? httpsRequest : httpRequest)(
@@ -48,17 +52,35 @@ export function pinnedHttpClient(
 					},
 					(response) => {
 						const chunks: Buffer[] = [];
-						response.on("data", (chunk: Buffer) => chunks.push(chunk));
-						response.on("end", () => {
+						let length = 0;
+						let done = false;
+						const finish = (truncated: boolean) => {
+							if (done) return;
+							done = true;
 							const headers = new Headers();
 							for (const [name, value] of Object.entries(response.headers)) {
 								if (typeof value === "string") headers.set(name, value);
 								else if (Array.isArray(value)) for (const v of value) headers.append(name, v);
 							}
+							if (truncated) headers.set("x-checkend-truncated", "true");
 							const status = response.statusCode ?? 0;
 							const body = status === 204 || status === 304 ? null : Buffer.concat(chunks);
 							resolve(new Response(body, { status, headers }));
+						};
+						response.on("data", (chunk: Buffer) => {
+							if (done) return;
+							if (length + chunk.byteLength > maxBytes) {
+								// The cap: keep what fits, stop reading, and close the connection.
+								chunks.push(chunk.subarray(0, maxBytes - length));
+								length = maxBytes;
+								finish(true);
+								request.destroy();
+								return;
+							}
+							chunks.push(chunk);
+							length += chunk.byteLength;
 						});
+						response.on("end", () => finish(false));
 						response.on("error", reject);
 					},
 				);

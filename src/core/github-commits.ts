@@ -64,16 +64,21 @@ export async function fetchDeployCommits(ports: Ports): Promise<number> {
 			ORDER BY d.id LIMIT ${DEPLOYS_PER_RUN}`,
 	);
 	const api = async (path: string): Promise<unknown> => {
-		const response = await ports.http.send(`https://api.github.com/repos/${path}`, {
-			method: "GET",
-			signal: AbortSignal.timeout(TIMEOUT_MS),
-			headers: {
-				authorization: `Bearer ${token}`,
-				accept: "application/vnd.github+json",
-				"x-github-api-version": "2022-11-28",
-				"user-agent": `Checkend/${VERSION}`,
+		const response = await ports.http.send(
+			`https://api.github.com/repos/${path}`,
+			{
+				method: "GET",
+				signal: AbortSignal.timeout(TIMEOUT_MS),
+				headers: {
+					authorization: `Bearer ${token}`,
+					accept: "application/vnd.github+json",
+					"x-github-api-version": "2022-11-28",
+					"user-agent": `Checkend/${VERSION}`,
+				},
 			},
-		});
+			// A compare with many commits and files is a large JSON answer.
+			{ maxBytes: 8 * 1024 * 1024 },
+		);
 		if (!response.ok) throw new Error(`GitHub API ${response.status} for ${path.split("?")[0]}`);
 		return response.json();
 	};

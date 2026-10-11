@@ -132,3 +132,42 @@ describe("defer on Node", () => {
 		expect(pending()).toBe(0);
 	});
 });
+
+describe("pinned HTTP client: response cap", () => {
+	it("stops reading a large response at the cap and keeps the status", async () => {
+		let written = 0;
+		const big = createServer((_request, response) => {
+			let closed = false;
+			response.on("close", () => {
+				closed = true;
+			});
+			response.writeHead(200, { "content-type": "application/octet-stream" });
+			const chunk = Buffer.alloc(64 * 1024, 120);
+			let sent = 0;
+			const pump = () => {
+				while (!closed && sent < 25 * 1024 * 1024) {
+					sent += chunk.byteLength;
+					written += chunk.byteLength;
+					if (!response.write(chunk)) return response.once("drain", pump);
+				}
+				response.end();
+			};
+			pump();
+		});
+		await new Promise<void>((resolve) => big.listen(0, "127.0.0.1", resolve));
+		try {
+			const url = `http://127.0.0.1:${(big.address() as AddressInfo).port}/`;
+			const client = pinnedHttpClient({ allowPrivate: true });
+			const response = await client.send(url, { method: "POST", body: "x" });
+			expect(response.status).toBe(200);
+			expect(response.headers.get("x-checkend-truncated")).toBe("true");
+			expect((await response.arrayBuffer()).byteLength).toBe(64 * 1024);
+			const larger = await client.send(url, { method: "GET" }, { maxBytes: 1024 * 1024 });
+			expect((await larger.arrayBuffer()).byteLength).toBe(1024 * 1024);
+			await new Promise((resolve) => setTimeout(resolve, 100));
+			expect(written).toBeLessThan(20 * 1024 * 1024);
+		} finally {
+			big.close();
+		}
+	});
+});
