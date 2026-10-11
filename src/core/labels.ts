@@ -22,7 +22,10 @@ export async function listLabels(
 	const since = query.since ? parseSince(query.since, now) : null;
 	const rows = await db.all(
 		sql`SELECT id, at, issue_id, label, actor_type, actor_name, data, corrects FROM triage_labels
-			WHERE (${since} IS NULL OR at >= ${since}) ORDER BY id DESC LIMIT ${query.limit}`,
+			WHERE (${since} IS NULL OR at >= ${since})
+				AND issue_id IN (SELECT i.id FROM issues i JOIN projects p ON p.id = i.project_id
+					WHERE p.deleted_at IS NULL)
+			ORDER BY id DESC LIMIT ${query.limit}`,
 	);
 	return rows.map((row) => ({
 		...row,

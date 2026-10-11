@@ -375,7 +375,7 @@ export async function listReleases(
 		sql`SELECT r.id, p.public_id AS project_id, r.version, r.commit_sha AS "commit", r.created_at,
 				(SELECT max(id) FROM deploys WHERE release_id = r.id) AS last_deploy
 			FROM releases r JOIN projects p ON p.id = r.project_id
-			WHERE (${projectId} IS NULL OR r.project_id = ${projectId})
+			WHERE (${projectId} IS NULL OR r.project_id = ${projectId}) AND p.deleted_at IS NULL
 			ORDER BY last_deploy DESC, r.id DESC LIMIT ${query.limit}`,
 	);
 	const deploys = await db.all<ReleaseRow & { release_id: number }>({
@@ -478,6 +478,8 @@ export async function listFixOutcomes(
 	return db.all(
 		sql`SELECT * FROM fix_outcomes
 			WHERE (${since} IS NULL OR coalesce(regressed_at, verified_at) >= ${since})
+				AND issue_id NOT IN (SELECT i.id FROM issues i JOIN projects p ON p.id = i.project_id
+					WHERE p.deleted_at IS NOT NULL)
 			ORDER BY fix_id DESC LIMIT ${query.limit}`,
 	);
 }

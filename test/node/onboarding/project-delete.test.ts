@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { sqliteVectorIndex } from "../../../src/adapters/node/vector-index.ts";
-import { verifyFixes } from "../../../src/core/fixes.ts";
+import { listFixOutcomes, listReleases, verifyFixes } from "../../../src/core/fixes.ts";
 import { prepareEvent } from "../../../src/core/ingest/prepare.ts";
 import { IngestState } from "../../../src/core/ingest/state.ts";
 import { storeEvent } from "../../../src/core/ingest/store.ts";
+import { setIssueStatus } from "../../../src/core/issue-actions.ts";
 import { getIssue, listIssues } from "../../../src/core/issues.ts";
+import { listLabels } from "../../../src/core/labels.ts";
 import { deleteProject, runProjectPurge } from "../../../src/core/project-delete.ts";
 import { createProject, listProjects } from "../../../src/core/projects.ts";
 import { onboardingProgress } from "../../../src/core/setup-progress.ts";
@@ -243,5 +245,37 @@ describe("no alerts for a deleted project before the purge", () => {
 			last_error: "The project was deleted.",
 		});
 		expect(await verifyFixes(ports, clock.now())).toBe(0);
+	});
+});
+
+describe("reads leave out a deleted project before the purge", () => {
+	it("releases, fix outcomes and labels", async () => {
+		const { ports, clock, project } = await projectWithData();
+		const issueId =
+			(
+				await ports.db.first<{ id: number }>(
+					sql`SELECT id FROM issues WHERE project_id = ${project.internalId}`,
+				)
+			)?.id ?? 0;
+		const now = clock.now().toISOString();
+		await ports.db.run(
+			sql`INSERT INTO releases (project_id, version, created_at) VALUES (${project.internalId}, 'v9', ${now})`,
+		);
+		await ports.db.run(
+			sql`INSERT INTO fixes (issue_id, kind, ref, linked_by_type, linked_by, linked_at, outcome, verified_at)
+				VALUES (${issueId}, 'commit', 'abc', 'token', 'agent', ${now}, 'verified', ${now})`,
+		);
+		await setIssueStatus(ports, BOOTSTRAP_ADMIN, issueId, "resolved");
+		expect(await listReleases(ports.db, { limit: 10 })).toHaveLength(1);
+		expect(await listFixOutcomes(ports.db, { limit: 10 }, clock.now())).toHaveLength(1);
+		expect(await listLabels(ports.db, { limit: 10 }, clock.now())).toHaveLength(1);
+		await deleteProject(ports, BOOTSTRAP_ADMIN, project.slug);
+		expect(await listReleases(ports.db, { limit: 10 })).toEqual([]);
+		expect(await listFixOutcomes(ports.db, { limit: 10 }, clock.now())).toEqual([]);
+		expect(await listLabels(ports.db, { limit: 10 }, clock.now())).toEqual([]);
+		// After the purge too: the activity rows stay, but their issues are gone.
+		clock.advance(11 * 60_000);
+		for (let i = 0; i < 5; i++) await runProjectPurge(ports, clock.now());
+		expect(await listLabels(ports.db, { limit: 10 }, clock.now())).toEqual([]);
 	});
 });
