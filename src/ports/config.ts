@@ -27,6 +27,19 @@ export interface Config {
 	githubToken: string | null;
 	/** Days that Checkend keeps stored events and hourly counts (RETENTION_DAYS). */
 	retentionDays: number;
+	/** AI features. Each is off by default; every model call goes through AI Gateway. */
+	ai: AiConfig;
+}
+
+export interface AiConfig {
+	/** AI_GATEWAY_ID; "default" makes a gateway on the first request. */
+	gatewayId: string;
+	/** AI_GATEWAY_LOGS=on: the gateway stores prompts and responses. Default off. */
+	gatewayLogs: boolean;
+	/** AI_TRIAGE=on: stock Clef triage of issues (advice only). */
+	triage: boolean;
+	/** AI_SIMILAR=on: embeddings and similar issues. */
+	similar: boolean;
 }
 
 export const DEFAULT_CONFIG: Config = {
@@ -41,4 +54,5 @@ export const DEFAULT_CONFIG: Config = {
 	encryptionKeys: [],
 	githubToken: null,
 	retentionDays: 90,
+	ai: { gatewayId: "default", gatewayLogs: false, triage: false, similar: false },
 };

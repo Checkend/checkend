@@ -23,7 +23,16 @@ export interface ConfigEnv {
 	RETENTION_DAYS?: string;
 	/** The sender of email alerts; a domain onboarded to Email Service. */
 	EMAIL_FROM?: string;
+	AI_GATEWAY_ID?: string;
+	/** "on": the gateway stores prompts and responses. */
+	AI_GATEWAY_LOGS?: string;
+	/** "on": stock Clef triage. */
+	AI_TRIAGE?: string;
+	/** "on": embeddings and similar issues. */
+	AI_SIMILAR?: string;
 }
+
+const on = (value: string | undefined) => value?.trim().toLowerCase() === "on";
 
 const positiveInt = (value: string | undefined): number | undefined => {
 	const n = Number(value);
@@ -57,5 +66,11 @@ export function readConfig(env: ConfigEnv): Config {
 		encryptionKeys: encryptionKeys(env.ENCRYPTION_KEYS),
 		githubToken: env.GITHUB_TOKEN?.trim() || null,
 		retentionDays: positiveInt(env.RETENTION_DAYS) ?? DEFAULT_CONFIG.retentionDays,
+		ai: {
+			gatewayId: env.AI_GATEWAY_ID?.trim() || DEFAULT_CONFIG.ai.gatewayId,
+			gatewayLogs: on(env.AI_GATEWAY_LOGS),
+			triage: on(env.AI_TRIAGE),
+			similar: on(env.AI_SIMILAR),
+		},
 	};
 }

@@ -30,7 +30,19 @@ describe("readConfig", () => {
 			encryptionKeys: [],
 			githubToken: null,
 			retentionDays: 90,
+			ai: { gatewayId: "default", gatewayLogs: false, triage: false, similar: false },
 		});
+	});
+
+	it("reads the AI settings: everything off by default, flags only with on", () => {
+		expect(
+			readConfig({
+				AI_GATEWAY_ID: " checkend ",
+				AI_GATEWAY_LOGS: "on",
+				AI_TRIAGE: "on",
+				AI_SIMILAR: "yes",
+			}).ai,
+		).toEqual({ gatewayId: "checkend", gatewayLogs: true, triage: true, similar: false });
 	});
 
 	it("reads REQUIRE_APPROVAL: only ignore and merge", () => {
@@ -72,5 +84,20 @@ describe("cloudflarePorts", () => {
 		const { INGEST_RATE_LIMITER: _absent, ...withoutBinding } = env;
 		const open = cloudflarePorts(withoutBinding, ctx);
 		expect(await open.rateLimiter.allow("key")).toBe(true);
+	});
+
+	it("runs models through the gateway with the AI binding, and has no models without it", async () => {
+		const ctx = createExecutionContext();
+		expect(cloudflarePorts(env, ctx).models).toBeNull();
+		const seen: unknown[] = [];
+		const AI = {
+			run: async (_model: string, _input: object, options: unknown) => {
+				seen.push(options);
+				return { ok: true };
+			},
+		};
+		const ports = cloudflarePorts({ ...env, AI, AI_GATEWAY_ID: "gw1" }, ctx);
+		expect(await ports.models?.run("@cf/cloudflare/clef-flash", {})).toEqual({ ok: true });
+		expect(seen).toEqual([{ gateway: { id: "gw1", collectLog: false } }]);
 	});
 });

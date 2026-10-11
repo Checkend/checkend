@@ -6,6 +6,7 @@ import type { Defer } from "./defer.ts";
 import type { HttpClient, NotifyQueue } from "./http.ts";
 import type { IngestQueue } from "./ingest-queue.ts";
 import type { Mailer } from "./mailer.ts";
+import type { ModelRunner } from "./model-runner.ts";
 import type { RateLimiter } from "./rate-limiter.ts";
 import type { Resolver } from "./resolver.ts";
 
@@ -17,6 +18,7 @@ export type { Defer } from "./defer.ts";
 export type { HttpClient, NotifyQueue } from "./http.ts";
 export type { IngestQueue } from "./ingest-queue.ts";
 export type { Mailer } from "./mailer.ts";
+export type { ModelRunner } from "./model-runner.ts";
 export type { RateLimiter } from "./rate-limiter.ts";
 export type { Resolver } from "./resolver.ts";
 
@@ -42,6 +44,8 @@ export interface Ports {
 	ingestQueue: IngestQueue | null;
 	/** Email for alerts; null: email alerts are off. */
 	mailer: Mailer | null;
+	/** Workers AI models, always through AI Gateway; null: no AI (the AI features are off). */
+	models: ModelRunner | null;
 	/**
 	 * The address of the client, for per-client rate limits. Workers: cf-connecting-ip. Node: the
 	 * socket address, or X-Forwarded-For from trusted proxies only (TRUSTED_PROXIES).

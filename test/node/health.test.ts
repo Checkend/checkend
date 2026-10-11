@@ -33,6 +33,7 @@ const portsWith = (db: Db): Ports => ({
 	blobs: null,
 	ingestQueue: null,
 	mailer: null,
+	models: null,
 	clientIp: () => "unknown",
 	config: DEFAULT_CONFIG,
 });

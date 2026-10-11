@@ -8,6 +8,8 @@
 //   SMTP_URL, EMAIL_FROM   email alerts: smtps://user:password@host:465 (or smtp:// for a relay)
 //   TRUSTED_PROXIES        proxies whose X-Forwarded-For is read (addresses, CIDR, loopback, private)
 //   RATE_LIMIT_PER_MINUTE  per DSN key (default 1000; 0: no limit)
+//   CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_API_TOKEN  Workers AI through AI Gateway (REST API), for
+//                          the AI features (AI_TRIAGE, AI_SIMILAR). Without them: no AI.
 import { mkdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -19,6 +21,7 @@ import { fsBlobStore } from "../adapters/node/fs-blob-store.ts";
 import { pinnedHttpClient } from "../adapters/node/http-client.ts";
 import { runJobs, sqliteJobQueue } from "../adapters/node/jobs-queue.ts";
 import { readMigrations } from "../adapters/node/migrations-fs.ts";
+import { restModelRunner } from "../adapters/node/model-runner.ts";
 import { tokenBucketLimiter } from "../adapters/node/rate-limiter.ts";
 import { systemResolver } from "../adapters/node/resolver.ts";
 import { s3BlobStore } from "../adapters/node/s3-blob-store.ts";
@@ -31,6 +34,7 @@ import { applyMigrations } from "../core/migrations.ts";
 import { runScheduled } from "../core/scheduler.ts";
 import { createApp } from "../http/app.ts";
 import type { BlobStore } from "../ports/blob-store.ts";
+import { fetchClient } from "../ports/http.ts";
 import type { Ports } from "../ports/index.ts";
 import type { Mailer } from "../ports/mailer.ts";
 import { noRateLimit } from "../ports/rate-limiter.ts";
@@ -87,6 +91,7 @@ export async function startServer(env: NodeEnv): Promise<RunningServer> {
 	const db = openSqliteDb(path);
 	await applyMigrations(db, readMigrations(MIGRATIONS_DIR));
 	const { defer, drain } = nodeDefer();
+	const config = readConfig(env);
 	const perMinute =
 		env.RATE_LIMIT_PER_MINUTE === undefined ? 1000 : Number(env.RATE_LIMIT_PER_MINUTE);
 	const ports: Ports = {
@@ -95,9 +100,18 @@ export async function startServer(env: NodeEnv): Promise<RunningServer> {
 		defer,
 		rateLimiter:
 			perMinute > 0 ? tokenBucketLimiter({ limit: perMinute, periodMs: 60_000 }) : noRateLimit,
-		config: readConfig(env),
+		config,
 		resolver: systemResolver,
 		http: pinnedHttpClient(),
+		models:
+			env.CLOUDFLARE_ACCOUNT_ID && env.CLOUDFLARE_API_TOKEN
+				? restModelRunner({
+						accountId: env.CLOUDFLARE_ACCOUNT_ID,
+						apiToken: env.CLOUDFLARE_API_TOKEN,
+						gateway: { id: config.ai.gatewayId, collectLog: config.ai.gatewayLogs },
+						http: fetchClient,
+					})
+				: null,
 		notifyQueue: null,
 		blobs: blobs(env),
 		ingestQueue: sqliteJobQueue(db, "ingest", systemClock),

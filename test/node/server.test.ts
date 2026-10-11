@@ -56,6 +56,19 @@ describe("Checkend on Node, without Cloudflare (the full flow)", () => {
 		).rejects.toThrow(/EADDRINUSE/);
 	});
 
+	it("has no models without a Cloudflare account and token, and has them with both", async () => {
+		expect(server.ports.models).toBeNull();
+		const withAi = await startServer({
+			DATABASE_PATH: ":memory:",
+			PORT: "0",
+			HOST: "127.0.0.1",
+			CLOUDFLARE_ACCOUNT_ID: "acc",
+			CLOUDFLARE_API_TOKEN: "token",
+		});
+		expect(withAi.ports.models).not.toBeNull();
+		await withAi.stop();
+	});
+
 	it("serves health with all migrations applied", async () => {
 		const health = (await (await fetch(`${server.url}/health`)).json()) as Record<string, any>;
 		expect(health).toMatchObject({
