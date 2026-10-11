@@ -42,7 +42,7 @@ operation has `x-required-scope`.
 | Status | Body |
 |---|---|
 | `400` | `{"error": "invalid_request", "details": [{"path": ..., "message": ...}]}` |
-| `401` | `{"error": "unauthorized"}`, with the header `WWW-Authenticate: Bearer`. The token is missing, not valid, or revoked. |
+| `401` | `{"error": "unauthorized"}`, with the header `WWW-Authenticate: Bearer`. The token is missing, not valid, or revoked. Checkend answers before it reads the body. |
 | `403` | `{"error": "forbidden", "required_scope": "<scope>"}`. The token does not have the scope that the endpoint needs. |
 | `404` | `{"error": "not_found"}`, or `{"error": "project_not_found"}` when the `?project=` value matches no project. |
 | `413` | `{"error": "payload_too_large", "max_bytes": N}`. A JSON body of `/v1`, `/v1/setup` or `/mcp` is at most 1 MB; a source map upload is at most 30 MB. The cap also holds for a chunked body without `Content-Length`. |
@@ -116,9 +116,12 @@ Deletes a project. Needs the `admin` scope. Returns `204`, or `404` for an unkno
   and webhooks, in chunks.
 - The activity timeline stays.
 - Its fixes are not verified any more.
+- The agent tokens bound to the project (made with a setup key for it) are revoked, each with a
+  `token.revoke` activity row.
 
 When `REQUIRE_APPROVAL` includes `delete_project`, an API token gets `202`
-`{"status": "approval_required", ...}`, and another admin must complete the delete. There is no MCP tool to delete a project.
+`{"status": "approval_required", ...}`, and another actor must complete the delete (see
+[Approvals](#approvals)). There is no MCP tool to delete a project.
 
 ### `POST /v1/projects/:project/keys`
 
@@ -481,7 +484,8 @@ Other tokens get `403`. In the OpenAPI document, the setup key is the security s
 
 Makes a setup key. Needs the `admin` scope (a setup key cannot make one). The key lasts 1 hour,
 and Checkend stores only its hash. `GET /v1/setup/keys` lists the keys, and
-`DELETE /v1/setup/keys/:id` revokes one.
+`DELETE /v1/setup/keys/:id` revokes one, and also the agent tokens that it made (each with a
+`token.revoke` activity row).
 
 ### `POST /v1/setup/apps`
 
@@ -492,7 +496,8 @@ register at most 10 apps (then `429`).
 ### `POST /v1/setup/tokens`
 
 Makes an agent token for an app: `{"name": "...", "project": ...}`. The token has `issues:read`
-and `issues:write`. A setup key can make at most 5 tokens (then `429`).
+and `issues:write` on every project of the install, not only on its own app. It does not expire.
+It is revoked with its setup key, with its project, or with `DELETE /v1/tokens/:id`. A setup key can make at most 5 tokens (then `429`).
 
 ### `POST /v1/setup/apps/:project/test-event`
 
@@ -569,7 +574,9 @@ Then such an action is not done at once. The response is `202`:
 {"status": "approval_required", "approval_id": 7}
 ```
 
-A person with the `admin` scope must approve the request. A request expires after 7 days.
+Another actor with the `admin` scope must decide the request: a second admin token, or a person
+in the web UI. No actor approves or rejects its own request, the `ADMIN_TOKEN` included, for
+every kind of action. A request expires after 7 days.
 
 ### `GET /v1/approvals`
 
@@ -588,8 +595,8 @@ Approves the request and does the action. Needs the `admin` scope. Returns `200`
 - `409` `{"error": "approval_not_pending"}`: the request is already decided, or it expired.
 - `409` `{"error": "approval_failed", "reason": "..."}`: the issue changed after the request (for
   example, it was merged), so the action cannot run. The request gets the status `failed`.
-- `403` `{"error": "forbidden", "reason": "A requester cannot approve its own request."}`: a
-  token cannot approve its own request. The `ADMIN_TOKEN` can.
+- `403` `{"error": "forbidden", "reason": "A requester cannot approve its own request."}`: the
+  request is your own. This also holds for the `ADMIN_TOKEN`.
 
 ### `POST /v1/approvals/:id/reject`
 

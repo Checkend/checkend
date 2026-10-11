@@ -16,19 +16,24 @@ The code has three layers:
 - **Ports** (`src/ports/`) are interfaces: the database, the clock, background work, the rate
   limit, the settings, DNS, outgoing requests, blob storage, the queues, email, and the client
   address.
-- **Adapters** implement the ports for one runtime: `src/adapters/cloudflare/` (D1, R2, Queues,
-  Email Service) and `src/adapters/node/` (SQLite with the built-in `node:sqlite`, a jobs table,
+- **Adapters** implement the ports for one runtime: `src/adapters/cloudflare/` (D1, the SQLite of
+  a Durable Object, R2, Queues, Email Service) and `src/adapters/node/` (SQLite with the built-in `node:sqlite`, a jobs table,
   a folder or S3, SMTP).
 
-Two entries build the ports and serve the same app: the Worker entry (`src/entry/worker.ts`) on
-Cloudflare, and the Node entry (`src/entry/server.ts`) on Node and in Docker.
+Three entries build the ports and serve the same app, with the same migrations:
 
-The linter (Biome) enforces the layers. Only the Cloudflare adapter and the Worker entry can
-import `cloudflare:*`. Core, ports and HTTP routes cannot import `node:*`.
+- the Worker entry (`src/entry/worker.ts`) on Cloudflare
+- the Node entry (`src/entry/server.ts`) on Node and in Docker
+- an entry for hosted tenants (`src/entry/durable-object.ts`): one Durable Object per install,
+  with its own SQLite database
+
+The linter (Biome) enforces the layers. Only the Cloudflare adapter and the Cloudflare entries
+(the Worker and the Durable Object) can import `cloudflare:*`. Core, ports and HTTP routes cannot import `node:*`.
 
 ## The database port
 
-The database port is small, so that D1 and SQLite can both implement it:
+The database port is small, so that D1 and SQLite (`node:sqlite`, or the SQLite of a Durable
+Object) can all implement it:
 
 - It is async, and it uses SQL.
 - Atomic writes use `batch()`: all statements apply, or none do. There are no interactive
@@ -37,7 +42,8 @@ The database port is small, so that D1 and SQLite can both implement it:
   text.
 - A statement has at most 100 parameters and 100 KB of SQL (the D1 limits).
 
-The same contract tests run on the D1 adapter and on the SQLite adapter.
+The same contract tests run on the D1 adapter, the Durable Object adapter and the SQLite
+adapter.
 
 ## Migrations
 
@@ -45,8 +51,11 @@ Migrations are plain SQL files in `migrations/`, in the Wrangler format (`0001_n
 
 - On Cloudflare, `wrangler d1 migrations apply` runs them.
 - On Node and in tests, `applyMigrations()` runs the same files.
+- A Durable Object install runs them on its first start after a deploy, from
+  `src/entry/migrations.generated.ts`. After you add a migration, run `npm run migrations:build`
+  to write that file again. A test fails when it is out of date.
 
-Both record the applied migrations in the same `d1_migrations` table. `/health` shows the
+All three record the applied migrations in the same `d1_migrations` table. `/health` shows the
 migration level.
 
 ## Tests and CI
@@ -56,7 +65,7 @@ The tests use Vitest, in three projects:
 | Project | Runs |
 |---|---|
 | `node` | Core logic, the SQLite adapter and tools, on Node. |
-| `workers` | The D1 adapter and the Worker entry, in `workerd` with a local D1. |
+| `workers` | The D1 adapter, the Durable Object adapter and the Cloudflare entries, in `workerd` with a local D1. |
 | `perf` | The CPU budget test, alone, so that the times are stable. |
 
 The Workers Free plan allows 10 ms of CPU time per request. Times from the CPU budget test (Node

@@ -17,7 +17,7 @@ A setup key (`cks_...`):
 - works only on `/v1/setup/*`; on every other route it gets `401`
 - can register at most 10 apps and make at most 5 agent tokens, also with parallel requests;
   above that, the answer is `429` `{"error": "limit"}`
-- can be revoked with `DELETE /v1/setup/keys/:id`
+- can be revoked with `DELETE /v1/setup/keys/:id`; this also revokes the agent tokens that it made
 
 Checkend stores only a hash of the key. `GET /v1/setup/keys` lists the keys.
 
@@ -71,6 +71,13 @@ Without `ce`, the recipe uses the fallback: HTTP MCP with the agent token in an 
 variable (see [Connect](mcp.md#connect)). The recipes take keys and tokens only from environment
 variables (`CHECKEND_SETUP_KEY`, `CHECKEND_TOKEN`, `CHECKEND_DEPLOY_TOKEN`,
 `CHECKEND_ADMIN_TOKEN`).
+
+> **Caution:** an agent token is install-wide. It can read and change the issues of every project
+> of the install, not only of its own app. It does not expire.
+
+The agent token stops working when you revoke its setup key (`DELETE /v1/setup/keys/:id`), when
+you delete its project, or when you revoke it (`DELETE /v1/tokens/:id`). Each revoked token gets a
+`token.revoke` activity row.
 
 The agent token that the setup made can also report the steps of its own app, also after the
 setup key expires. For any other app, it gets `403`.

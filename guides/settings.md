@@ -22,7 +22,7 @@ All settings are optional. Set them as Workers secrets or variables (in your
 | `EMAIL_FROM` | none | The sender of email alerts: an address on a domain that is onboarded to the Email Service. Email alerts need it and `EMAIL`. |
 | `NOTIFY` (binding) | none | Optional Cloudflare Queue for webhook deliveries. Without it, deliveries work. |
 | `RETENTION_DAYS` | 90 | Days that Checkend keeps stored events and hourly counts (hourly counts at least 8 days). See [Data retention](#data-retention). |
-| `REQUIRE_APPROVAL` | none | Actions that need a person's approval: a comma-separated list of `ignore`, `merge` and `delete_project`. See [Approvals](api.md#approvals). |
+| `REQUIRE_APPROVAL` | none | Actions that need the approval of another actor (never the requester, the `ADMIN_TOKEN` included): a comma-separated list of `ignore`, `merge` and `delete_project`. See [Approvals](api.md#approvals). |
 | `AI_TRIAGE` | off | `on`: triage issues with a Workers AI model. See [AI triage](ai-triage.md). |
 | `AI_GATEWAY_ID` | `default` | The AI Gateway for all model calls. |
 | `AI_GATEWAY_LOGS` | off | `on`: the gateway stores the prompts and the responses. |
