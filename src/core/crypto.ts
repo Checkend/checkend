@@ -69,6 +69,34 @@ export async function decryptValue(
 	return new TextDecoder().decode(plaintext);
 }
 
+const HKDF_SALT = encoder.encode("checkend install keys v1");
+
+/**
+ * The keys of one install, for hosted installs that share one ENCRYPTION_KEYS: each key is
+ * HKDF-SHA-256(key, info = the install ID), 32 bytes, with the same key ID. A value of one install
+ * does not decrypt in another; rotation works as before (the IDs and their order stay).
+ */
+export async function deriveInstallKeys(
+	keys: readonly EncryptionKey[],
+	installId: string,
+): Promise<EncryptionKey[]> {
+	if (!installId) throw new Error("deriveInstallKeys needs an install ID.");
+	const info = encoder.encode(`install:${installId}`);
+	return Promise.all(
+		keys.map(async ({ id, key }) => {
+			const material = await crypto.subtle.importKey("raw", new Uint8Array(key), "HKDF", false, [
+				"deriveBits",
+			]);
+			const bits = await crypto.subtle.deriveBits(
+				{ name: "HKDF", hash: "SHA-256", salt: HKDF_SALT, info },
+				material,
+				256,
+			);
+			return { id, key: new Uint8Array(bits) };
+		}),
+	);
+}
+
 /** Parses ENCRYPTION_KEYS. Entries that are not "<id>:<base64 of 32 bytes>" are invalid. */
 export function parseEncryptionKeys(value: string | undefined): {
 	keys: EncryptionKey[];

@@ -11,6 +11,7 @@ import { dohResolver } from "../adapters/cloudflare/resolver.ts";
 import { type ConfigEnv, readConfig } from "../adapters/config-env.ts";
 import type { FrontIdentity } from "../core/auth/front-identity.ts";
 import { systemClock } from "../core/clock.ts";
+import { deriveInstallKeys, type EncryptionKey } from "../core/crypto.ts";
 import { IngestState } from "../core/ingest/state.ts";
 import { applyMigrations } from "../core/migrations.ts";
 import { runScheduled } from "../core/scheduler.ts";
@@ -73,6 +74,8 @@ export class CheckendInstall extends DurableObject<InstallEnv> {
 	private readonly state = new IngestState();
 	private readonly app = createApp({ state: this.state });
 	private provisioned: Provision | null = null;
+	/** The encryption keys of this install, derived from the shared ENCRYPTION_KEYS at start. */
+	private encryptionKeys: EncryptionKey[] = [];
 	/** Set by destroy(): until the object restarts (empty), it refuses every request. */
 	private destroyed = false;
 
@@ -83,6 +86,10 @@ export class CheckendInstall extends DurableObject<InstallEnv> {
 		ctx.blockConcurrencyWhile(async () => {
 			await applyMigrations(this.db, MIGRATIONS);
 			this.provisioned = (await ctx.storage.get<Provision>(PROVISION_KEY)) ?? null;
+			this.encryptionKeys = await deriveInstallKeys(
+				readConfig(env).encryptionKeys,
+				ctx.id.toString(),
+			);
 			if ((await ctx.storage.getAlarm()) === null)
 				await ctx.storage.setAlarm(Date.now() + ALARM_MS);
 		});
@@ -102,7 +109,8 @@ export class CheckendInstall extends DurableObject<InstallEnv> {
 	/**
 	 * The settings of this install. The Worker environment is shared by all installs, so it gives
 	 * only operational settings: no secret (admin token, setup code, GitHub secrets) and no
-	 * development mode. Members come only from the front Worker (trusted front identity).
+	 * development mode; the encryption keys are derived per install. Members come only from the
+	 * front Worker (trusted front identity).
 	 */
 	config(): Config {
 		const config = readConfig(this.env);
@@ -115,6 +123,8 @@ export class CheckendInstall extends DurableObject<InstallEnv> {
 			// Per install, when they come: shared values would work across installs.
 			githubWebhookSecret: null,
 			githubToken: null,
+			// Its own keys: a value of one install does not decrypt in another.
+			encryptionKeys: this.encryptionKeys,
 			devMode: false,
 			trustedFront: true,
 			publicUrl: this.provisioned?.publicUrl ?? null,

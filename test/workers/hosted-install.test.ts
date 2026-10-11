@@ -1,6 +1,8 @@
 import { env, runInDurableObject } from "cloudflare:test";
 import { describe, expect, it } from "vitest";
+import { readConfig } from "../../src/adapters/config-env.ts";
 import type { FrontIdentity } from "../../src/core/auth/front-identity.ts";
+import { decryptValue, encryptValue } from "../../src/core/crypto.ts";
 
 /**
  * A hosted install as the front Worker uses it: provisioned once with its base path, then called
@@ -101,6 +103,23 @@ describe("a provisioned hosted install", () => {
 				`${basePath} ${publicUrl}`,
 			).toMatchObject({ ok: false });
 		}
+	});
+
+	it("encrypts with its own keys: another install cannot decrypt its values", async () => {
+		const a = await provisioned("hosted-keys-a", "k3y5aa");
+		const b = await provisioned("hosted-keys-b", "k3y5bb");
+		const keysA = await runInDurableObject(a, async (instance) => instance.config().encryptionKeys);
+		const keysB = await runInDurableObject(b, async (instance) => instance.config().encryptionKeys);
+		const shared = readConfig(env).encryptionKeys;
+		expect(shared.map((k) => k.id)).toEqual(["k1"]);
+		expect(keysA.map((k) => k.id)).toEqual(["k1"]);
+		expect(keysB.map((k) => k.id)).toEqual(["k1"]);
+		const stored = await encryptValue(keysA, "whsec_value", "webhooks.secret:1");
+		expect(await decryptValue(keysA, stored, "webhooks.secret:1")).toBe("whsec_value");
+		await expect(decryptValue(keysB, stored, "webhooks.secret:1")).rejects.toThrow();
+		await expect(decryptValue(shared, stored, "webhooks.secret:1")).rejects.toThrow();
+		const storedB = await encryptValue(keysB, "whsec_value", "webhooks.secret:1");
+		await expect(decryptValue(keysA, storedB, "webhooks.secret:1")).rejects.toThrow();
 	});
 
 	it("deletes all its data and its alarm with destroy(), then refuses requests", async () => {
