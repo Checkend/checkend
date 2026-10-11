@@ -1,6 +1,7 @@
 import type { Context, Hono } from "hono";
 import * as v from "valibot";
 import { listActivity } from "../core/activity.ts";
+import { SIMILAR_OFF, SimilarSearchBody, searchFromInput } from "../core/ai/similar.ts";
 import { correctTriage, TriageCorrectionBody } from "../core/ai/triage.ts";
 import { ClaimBody, LimitQuery, MergeBody, NoteBody, SplitBody } from "../core/api-spec.ts";
 import { addNote, claimIssue, issueTimeline, releaseClaim } from "../core/claims.ts";
@@ -342,6 +343,14 @@ export function apiRoutes(app: Hono<AppEnv>, state: IngestState): void {
 		const result = await correctTriage(c.env.ports, c.get("actor"), params.output.id, body.output);
 		if (result === "not_found") return c.json({ error: "not_found" }, 404);
 		return c.json({ data: { recorded: true } }, 201);
+	});
+
+	app.post("/v1/similar", need("issues:read"), async (c) => {
+		const body = v.safeParse(SimilarSearchBody, await c.req.json().catch(() => null));
+		if (!body.success) return invalid(c, body.issues);
+		const found = await searchFromInput(c.env.ports, body.output);
+		if (found === null) return c.json({ error: "similar_off", message: SIMILAR_OFF }, 409);
+		return c.json({ data: found });
 	});
 
 	app.get("/v1/issues/:id/activity", need("issues:read"), async (c) => {

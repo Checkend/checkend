@@ -43,6 +43,11 @@ export const MCP_TOOLS = [
 			"Add a note to the issue timeline: your findings, the cause, a link to the fix. Needs issues:write. Inputs: issue_id, text (up to 4000 characters).",
 	},
 	{
+		name: "search_similar",
+		summary:
+			"Find issues with a similar meaning, also in other projects: by issue_id, or by text (an error message). Use it to find an earlier fix of the same cause. Needs issues:read. Inputs: issue_id or text, limit (1-20).",
+	},
+	{
 		name: "correct_triage",
 		summary:
 			"Correct the model triage of an issue when it is wrong (a label for better triage). Needs issues:write. Inputs: issue_id, and at least one of category, severity (0-3), transient, agent_fixable, noise; optional note.",

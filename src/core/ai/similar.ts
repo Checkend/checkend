@@ -1,3 +1,4 @@
+import * as v from "valibot";
 import { type Db, sql } from "../../ports/db.ts";
 import type { Ports } from "../../ports/index.ts";
 import type { ModelRunner } from "../../ports/model-runner.ts";
@@ -226,3 +227,36 @@ export async function searchSimilar(
 		return row ? [{ ...row, score: Math.round(c.score * 100) / 100 }] : [];
 	});
 }
+
+/** The input of search_similar: an issue, or a text (for example an error message). */
+export const SimilarSearchBody = v.pipe(
+	v.strictObject({
+		issue_id: v.optional(
+			v.union([
+				v.pipe(v.number(), v.integer(), v.minValue(1)),
+				v.pipe(v.string(), v.regex(/^\d{1,15}$/), v.transform(Number)),
+			]),
+		),
+		text: v.optional(v.pipe(v.string(), v.regex(/\S/, "The text is empty."), v.maxLength(2000))),
+		limit: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(20))),
+	}),
+	v.check(
+		(body) => (body.issue_id === undefined) !== (body.text === undefined),
+		"Give issue_id or text (one of them).",
+	),
+);
+export type SimilarSearch = v.InferOutput<typeof SimilarSearchBody>;
+
+/** Runs a search from the API or MCP input. Null: similar issues are off. */
+export function searchFromInput(ports: SimilarPorts, input: SimilarSearch) {
+	return searchSimilar(
+		ports,
+		input.issue_id === undefined
+			? { text: (input.text ?? "").trim() }
+			: { issueId: input.issue_id },
+		input.limit ?? 5,
+	);
+}
+
+export const SIMILAR_OFF =
+	"Similar issues are off. They need AI_SIMILAR=on, Workers AI (the AI binding, or a Cloudflare account and token on Node) and a vector index (the VECTORIZE binding on Cloudflare).";

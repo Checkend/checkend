@@ -3,6 +3,7 @@ import { toStandardJsonSchema } from "@valibot/to-json-schema";
 import type { Hono } from "hono";
 import * as v from "valibot";
 import { MCP_TOOLS } from "../core/agent-docs.ts";
+import { SIMILAR_OFF, SimilarSearchBody, searchFromInput } from "../core/ai/similar.ts";
 import { correctTriage, TriageCorrectionBody, triageForBrief } from "../core/ai/triage.ts";
 import { ClaimBody, MergeBody, NoteBody, SplitBody } from "../core/api-spec.ts";
 import { buildBrief, UNTRUSTED_NOTICE } from "../core/brief.ts";
@@ -345,6 +346,30 @@ function createServer(ports: Ports, actor: Actor): McpServer {
 			const noteId = id === null ? null : await addNote(ports, actor, id, text);
 			if (noteId === null) return errorResult(`Issue ${issue_id} not found.`);
 			return textResult(JSON.stringify({ note_id: noteId, issue_id }));
+		},
+	);
+
+	server.registerTool(
+		"search_similar",
+		{
+			description: `${tool("search_similar")} ${UNTRUSTED_HINT}`,
+			inputSchema: toStandardJsonSchema(SimilarSearchBody.pipe[0]),
+		},
+		async (input) => {
+			const search = v.safeParse(SimilarSearchBody, input);
+			if (!search.success) return errorResult(search.issues[0]?.message ?? "Invalid input.");
+			const found = await searchFromInput(ports, search.output);
+			if (found === null) return errorResult(SIMILAR_OFF);
+			return textResult(
+				JSON.stringify({
+					untrusted_notice: UNTRUSTED_NOTICE,
+					similar: found.map(({ title, ...s }) => ({
+						...s,
+						id: formatIssueId(s.id),
+						title_untrusted: title,
+					})),
+				}),
+			);
 		},
 	);
 

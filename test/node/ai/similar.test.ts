@@ -13,6 +13,8 @@ import { IngestState } from "../../../src/core/ingest/state.ts";
 import { storeEvent } from "../../../src/core/ingest/store.ts";
 import { createProject } from "../../../src/core/projects.ts";
 import { runScheduled } from "../../../src/core/scheduler.ts";
+import { BOOTSTRAP_ADMIN, createToken } from "../../../src/core/tokens.ts";
+import { createApp } from "../../../src/http/app.ts";
 import { sql } from "../../../src/ports/db.ts";
 import { expectSpecBrief } from "../../support/brief-check.ts";
 import { fakeEmbeddings } from "../../support/fake-embeddings.ts";
@@ -133,5 +135,84 @@ describe("similar issues", () => {
 		clock.advance(5 * 60_000);
 		await runScheduled(ports, clock.now());
 		expect((await similarIssues(ports.db, ids[0] ?? 0)).map((s) => s.id)).toEqual([ids[1]]);
+	});
+});
+
+describe("search_similar over REST and MCP", () => {
+	const request = (
+		app: ReturnType<typeof createApp>,
+		ports: unknown,
+		path: string,
+		token: string,
+		body: unknown,
+	) =>
+		app.request(
+			path,
+			{
+				method: "POST",
+				headers: {
+					authorization: `Bearer ${token}`,
+					"content-type": "application/json",
+					accept: "application/json, text/event-stream",
+				},
+				body: JSON.stringify(body),
+			},
+			{ ports } as never,
+		);
+
+	it("POST /v1/similar searches by issue or text, needs issues:read, and says when it is off", async () => {
+		const { ports, ids, clock } = await setup();
+		await runEmbeddings(ports, clock.now());
+		const app = createApp({ state: new IngestState() });
+		const token = (
+			await createToken(ports, BOOTSTRAP_ADMIN, { name: "r", scopes: ["issues:read"] })
+		).token;
+		const byIssue = await request(app, ports, "/v1/similar", token, { issue_id: ids[0] });
+		expect(byIssue.status).toBe(200);
+		expect(((await byIssue.json()) as { data: { id: number }[] }).data[0]?.id).toBe(ids[1]);
+		const byText = await request(app, ports, "/v1/similar", token, {
+			text: "invoice database timeout",
+			limit: 2,
+		});
+		expect(((await byText.json()) as { data: { id: number }[] }).data[0]?.id).toBe(ids[2]);
+		expect((await request(app, ports, "/v1/similar", token, {})).status).toBe(400);
+		expect(
+			(await request(app, ports, "/v1/similar", token, { issue_id: ids[0], text: "x" })).status,
+		).toBe(400);
+		const off = {
+			...ports,
+			config: { ...ports.config, ai: { ...ports.config.ai, similar: false } },
+		};
+		const response = await request(app, off, "/v1/similar", token, { text: "x" });
+		expect(response.status).toBe(409);
+		expect(await response.json()).toMatchObject({ error: "similar_off" });
+	});
+
+	it("the MCP tool search_similar returns the matches with the untrusted notice", async () => {
+		const { ports, ids, clock } = await setup();
+		await runEmbeddings(ports, clock.now());
+		const app = createApp({ state: new IngestState() });
+		const token = (
+			await createToken(ports, BOOTSTRAP_ADMIN, { name: "r", scopes: ["issues:read"] })
+		).token;
+		await request(app, ports, "/mcp", token, {
+			jsonrpc: "2.0",
+			id: 1,
+			method: "initialize",
+			params: {
+				protocolVersion: "2025-06-18",
+				capabilities: {},
+				clientInfo: { name: "t", version: "1" },
+			},
+		});
+		const response = await request(app, ports, "/mcp", token, {
+			jsonrpc: "2.0",
+			id: 2,
+			method: "tools/call",
+			params: { name: "search_similar", arguments: { issue_id: ids[0] } },
+		});
+		const text = await response.text();
+		expect(text).toContain(`\\"id\\":${ids[1]}`);
+		expect(text).toContain("UNTRUSTED");
 	});
 });

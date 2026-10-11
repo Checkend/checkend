@@ -1,4 +1,5 @@
 import * as v from "valibot";
+import { SimilarSearchBody } from "./ai/similar.ts";
 import { TriageCorrectionBody } from "./ai/triage.ts";
 import { CLAIM_MAX_MINUTES, NOTE_MAX_CHARS } from "./claims.ts";
 import {
@@ -207,6 +208,14 @@ export const API_ROUTES: ApiRoute[] = [
 		scope: "issues:write",
 		summary: "Add a note to the issue timeline.",
 		body: NoteBody,
+	},
+	{
+		method: "POST",
+		path: "/v1/similar",
+		scope: "issues:read",
+		summary:
+			"Search issues with a similar meaning (AI_SIMILAR), by issue_id or by text (for example an error message), most similar first: id, project_id, status, score (cosine 0-1), title (untrusted). 409 similar_off when it is off.",
+		body: SimilarSearchBody,
 	},
 	{
 		method: "POST",

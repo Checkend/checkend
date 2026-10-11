@@ -97,6 +97,7 @@ export function mcpContract(
 					"merge_issues",
 					"release_claim",
 					"resolve_issue",
+					"search_similar",
 					"split_issue",
 				]);
 				for (const tool of tools) expect(tool.description, tool.name).toMatch(/untrusted/i);
