@@ -141,14 +141,16 @@ const PROXY_HEADERS = ["x-forwarded-for", "x-forwarded-host", "forwarded"];
 
 /**
  * Development features: only with the development flag AND a request to localhost that did
- * not come through a proxy or tunnel (a tunnel can rewrite the Host header to localhost).
+ * not come through a proxy or tunnel (a tunnel can rewrite the Host header to localhost). The
+ * client address comes from the clientIp port: CF-Connecting-IP on Workers (absent in local
+ * `wrangler dev`), the socket address on Node, where a client can send any header.
  */
 export function isDevRequest(c: Context<AppEnv>): boolean {
 	if (!c.env.ports.config.devMode) return false;
 	if (!LOCAL_HOSTS.has(new URL(c.req.url).hostname)) return false;
 	if (PROXY_HEADERS.some((name) => c.req.header(name) !== undefined)) return false;
-	const ip = c.req.header("cf-connecting-ip");
-	return ip === undefined || LOOPBACK_IPS.has(ip);
+	const ip = c.env.ports.clientIp(c.req.raw);
+	return ip === "unknown" || LOOPBACK_IPS.has(ip);
 }
 
 /**
@@ -171,7 +173,7 @@ export function clientKey(ip: string | undefined): string {
 	return `${network.join(":")}::/64`;
 }
 
-/** The client for the sign-in rate limit. */
-export const clientIp = (c: Context): string => clientKey(c.req.header("cf-connecting-ip"));
+/** The client for the sign-in rate limit, from the clientIp port (never from a header here). */
+export const clientIp = (c: Context<AppEnv>): string => clientKey(c.env.ports.clientIp(c.req.raw));
 
 export type { Session };

@@ -12,6 +12,7 @@ import {
 	SESSION_COOKIE,
 	sessionFrom,
 	UI_ADMIN_TOKEN,
+	UI_ORIGIN,
 	UI_SETUP_CODE,
 	uiApp,
 } from "../../support/ui.ts";
@@ -323,6 +324,35 @@ describe("development login", () => {
 		const pkg = JSON.parse(readFileSync("package.json", "utf8"));
 		expect(pkg.scripts.deploy).not.toContain("CHECKEND_DEV");
 		expect(pkg.scripts["deploy:production"]).not.toContain("CHECKEND_DEV");
+	});
+});
+
+describe("client address from the clientIp port (the Node server)", () => {
+	// On Node, ports.clientIp gives the socket address; a client can send any header.
+	const remote = { clientIp: () => "203.0.113.5" };
+
+	it("limits sign-in by the port's address, not by a header that the client sends", async () => {
+		const ui = await uiApp({}, UI_ORIGIN, remote);
+		for (let i = 0; i < AUTH_ATTEMPT_LIMIT; i++) {
+			const headers = { origin: ui.origin, "cf-connecting-ip": `198.51.100.${i}` };
+			expect((await ui.json("/login/options", {}, headers)).status).toBe(200);
+		}
+		const headers = { origin: ui.origin, "cf-connecting-ip": "198.51.100.200" };
+		expect((await ui.json("/login/options", {}, headers)).status).toBe(429);
+	});
+
+	it("refuses development mode for a remote socket, even with a localhost Host header", async () => {
+		const ui = await uiApp({ devMode: true, setupCode: null }, "http://localhost:8787", remote);
+		expect((await ui.request("/dev/login")).status).toBe(404);
+		const setup = await ui.json("/setup/options", { name: "A" });
+		expect(await setup.json()).toEqual({ error: "invalid_code" });
+	});
+
+	it("allows development mode for a loopback socket", async () => {
+		for (const ip of ["127.0.0.1", "::1"]) {
+			const ui = await uiApp({ devMode: true }, "http://localhost:8787", { clientIp: () => ip });
+			expect((await ui.request("/dev/login")).status, ip).toBe(303);
+		}
 	});
 });
 

@@ -2,6 +2,7 @@ import { createDevSession, getSession } from "../../src/core/auth/sessions.ts";
 import { IngestState } from "../../src/core/ingest/state.ts";
 import { createApp } from "../../src/http/app.ts";
 import type { Config } from "../../src/ports/config.ts";
+import type { Ports } from "../../src/ports/index.ts";
 import { testPorts } from "./node-ports.ts";
 
 export const UI_ADMIN_TOKEN = "ui-admin-token-0123456789";
@@ -10,8 +11,13 @@ export const UI_ORIGIN = "https://checkend.test";
 export const SESSION_COOKIE = "__Host-checkend_session";
 
 /** The app with a test database, plus helpers to call UI routes as a browser would. */
-export async function uiApp(config: Partial<Config> = {}, origin = UI_ORIGIN) {
+export async function uiApp(
+	config: Partial<Config> = {},
+	origin = UI_ORIGIN,
+	overrides: Partial<Omit<Ports, "config">> = {},
+) {
 	const t = await testPorts({
+		...overrides,
 		config: { adminToken: UI_ADMIN_TOKEN, setupCode: UI_SETUP_CODE, ...config },
 	});
 	const app = createApp({ state: new IngestState() });
