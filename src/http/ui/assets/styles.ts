@@ -151,7 +151,7 @@ tbody tr:last-child td { border-bottom: 1px solid var(--line); }
 .stack > * + * { margin-top: 24px; }
 
 /* Event data from the user's app (untrusted) */
-.untrusted { border: 1px solid var(--line); border-left: 3px solid var(--amber); border-radius: 10px; padding: 14px 16px 16px; background: var(--bg); min-width: 0; }
+.untrusted { border: 1px solid var(--line); border-left: 3px solid color-mix(in srgb, var(--muted) 45%, transparent); border-radius: 10px; padding: 14px 16px 16px; background: var(--bg); min-width: 0; }
 .untrusted + .untrusted { margin-top: 20px; }
 .untrusted-head { position: relative; display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; margin-bottom: 10px; }
 .untrusted-head h2 { margin: 0; }
