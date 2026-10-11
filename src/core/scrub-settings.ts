@@ -1,4 +1,5 @@
 import * as v from "valibot";
+import type { CpuClock } from "../ports/cpu-clock.ts";
 import { FILTERED } from "./ingest/scrub.ts";
 
 /**
@@ -83,11 +84,14 @@ const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 /**
  * Checks a pattern before it is saved. ioTick: a real I/O call that moves the Workers clock
- * (updateProject passes a database query); by default a timer.
+ * (updateProject passes a database query); by default a timer. cpu: the CPU clock of the process
+ * (Node). With it, each step is timed in CPU time and the total is the sum of the steps, so a
+ * busy machine cannot make a fast pattern look slow; without it (Workers), the wall clock.
  */
 export async function checkScrubPattern(
 	source: string,
 	ioTick: () => Promise<unknown> = tick,
+	cpu: CpuClock | null = null,
 ): Promise<PatternCheck> {
 	if (source.length === 0 || source.length > MAX_PATTERN_CHARS) {
 		return { ok: false, reason: `A pattern has 1 to ${MAX_PATTERN_CHARS} characters.` };
@@ -104,25 +108,32 @@ export async function checkScrubPattern(
 	}
 	// One timed step per length, over all the characters (few clock ticks per pattern).
 	const chars = inputChars(source);
-	await ioTick();
+	const clock = cpu ? () => cpu.now() : () => Date.now();
+	if (!cpu) await ioTick();
 	const battery = Date.now();
+	let total = 0;
 	for (const length of LENGTHS) {
 		await tick();
-		const started = Date.now();
+		const started = clock();
 		for (const char of chars) {
 			re.lastIndex = 0;
 			`${char.repeat(length)}!`.replace(re, "");
 		}
+		const step = clock() - started;
+		total += step;
 		await tick();
-		if (Date.now() - started > STEP_BUDGET_MS) {
+		if (step > STEP_BUDGET_MS) {
 			return {
 				ok: false,
 				reason: `The pattern is too slow on a long input (${length} characters).`,
 			};
 		}
 	}
-	await ioTick();
-	if (Date.now() - battery > TOTAL_BUDGET_MS) {
+	if (!cpu) {
+		await ioTick();
+		total = Date.now() - battery;
+	}
+	if (total > TOTAL_BUDGET_MS) {
 		return { ok: false, reason: "The pattern is too slow on long inputs." };
 	}
 	return { ok: true };

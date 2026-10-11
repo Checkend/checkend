@@ -1,6 +1,7 @@
 import type { BlobStore } from "./blob-store.ts";
 import type { Clock } from "./clock.ts";
 import type { Config } from "./config.ts";
+import type { CpuClock } from "./cpu-clock.ts";
 import type { Db } from "./db.ts";
 import type { Defer } from "./defer.ts";
 import type { HttpClient, NotifyQueue } from "./http.ts";
@@ -14,6 +15,7 @@ import type { VectorIndex } from "./vector-index.ts";
 export type { BlobStore } from "./blob-store.ts";
 export type { Clock } from "./clock.ts";
 export type { Config } from "./config.ts";
+export type { CpuClock } from "./cpu-clock.ts";
 export type { Db } from "./db.ts";
 export type { Defer } from "./defer.ts";
 export type { HttpClient, NotifyQueue } from "./http.ts";
@@ -50,6 +52,8 @@ export interface Ports {
 	models: ModelRunner | null;
 	/** Vectors of issues for similar issues; null: similar issues are off. */
 	vectors: VectorIndex | null;
+	/** The CPU time of the process (Node), for the scrub pattern check; null on Workers. */
+	cpuClock: CpuClock | null;
 	/**
 	 * The address of the client, for per-client rate limits. Workers: cf-connecting-ip. Node: the
 	 * socket address, or X-Forwarded-For from trusted proxies only (TRUSTED_PROXIES).

@@ -1,3 +1,4 @@
+import { processCpuClock } from "../../src/adapters/node/cpu-clock.ts";
 import { readMigrations } from "../../src/adapters/node/migrations-fs.ts";
 import { openSqliteDb } from "../../src/adapters/node/sqlite-db.ts";
 import { type FixedClock, fixedClock } from "../../src/core/clock.ts";
@@ -41,6 +42,7 @@ export async function testPorts(
 		mailer: null,
 		models: null,
 		vectors: null,
+		cpuClock: processCpuClock,
 		clientIp: (request: Request) => request.headers.get("cf-connecting-ip") ?? "unknown",
 		...overrides,
 		config: { ...DEFAULT_CONFIG, ...overrides.config },

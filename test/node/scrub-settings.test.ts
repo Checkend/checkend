@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { processCpuClock } from "../../src/adapters/node/cpu-clock.ts";
 import { IngestState } from "../../src/core/ingest/state.ts";
 import { createProject } from "../../src/core/projects.ts";
 import { checkScrubPattern } from "../../src/core/scrub-settings.ts";
@@ -67,7 +68,10 @@ describe("project scrub settings", () => {
 
 	it("replaces matches of the patterns in all strings, also in the title", async () => {
 		const { call, send, project, ports } = await setup();
-		await call("PATCH", `/v1/projects/${project.slug}`, { scrub_patterns: ["ORD-\\d{6}"] });
+		const saved = await call("PATCH", `/v1/projects/${project.slug}`, {
+			scrub_patterns: ["ORD-\\d{6}"],
+		});
+		expect(saved.status, `the pattern was not saved: ${JSON.stringify(saved.body)}`).toBe(200);
 		await send({ exception: { values: [{ type: "Error", value: "order ORD-123456 failed" }] } });
 		const issue = await ports.db.first<{ title: string }>(sql`SELECT title FROM issues`);
 		expect(issue?.title).toBe("Error: order [Filtered] failed");
@@ -102,12 +106,30 @@ describe("project scrub settings", () => {
 		}
 	});
 
-	it("checks a slow pattern in a short time", async () => {
+	it("checks a slow pattern in a short time, with the CPU clock of Node", async () => {
 		const started = performance.now();
-		expect((await checkScrubPattern("^(a|a)*$")).ok).toBe(false);
-		expect((await checkScrubPattern("(\\w+\\s?)+$")).ok).toBe(false);
-		expect((await checkScrubPattern("[A-Z]{2}-\\d{4,8}")).ok).toBe(true);
-		expect(performance.now() - started).toBeLessThan(2000);
+		const tick = async () => {};
+		expect((await checkScrubPattern("^(a|a)*$", tick, processCpuClock)).ok).toBe(false);
+		expect((await checkScrubPattern("(\\w+\\s?)+$", tick, processCpuClock)).ok).toBe(false);
+		expect((await checkScrubPattern("[A-Z]{2}-\\d{4,8}", tick, processCpuClock)).ok).toBe(true);
+		expect(performance.now() - started).toBeLessThan(5000);
+	});
+
+	it("with a CPU clock, a busy machine (a slow wall clock) does not reject a fast pattern", async () => {
+		const now = vi.spyOn(Date, "now");
+		let wall = 0;
+		now.mockImplementation(() => (wall += 1000)); // every wall-clock read: 1 s later
+		try {
+			const idle = { now: () => 0 };
+			expect(await checkScrubPattern("[A-Z]{2}-\\d{4}", async () => {}, idle)).toEqual({
+				ok: true,
+			});
+			let cpu = 0;
+			const busy = { now: () => (cpu += 60) }; // every step: 60 ms of CPU
+			expect((await checkScrubPattern("[A-Z]{2}-\\d{4}", async () => {}, busy)).ok).toBe(false);
+		} finally {
+			now.mockRestore();
+		}
 	});
 
 	it("on a frozen clock (Workers), times the whole battery between two I/O calls", async () => {

@@ -16,6 +16,7 @@ import { fileURLToPath } from "node:url";
 import { serve } from "@hono/node-server";
 import { type ConfigEnv, readConfig } from "../adapters/config-env.ts";
 import { clientIpResolver } from "../adapters/node/client-ip.ts";
+import { processCpuClock } from "../adapters/node/cpu-clock.ts";
 import { nodeDefer } from "../adapters/node/defer.ts";
 import { fsBlobStore } from "../adapters/node/fs-blob-store.ts";
 import { pinnedHttpClient } from "../adapters/node/http-client.ts";
@@ -103,6 +104,7 @@ export async function startServer(env: NodeEnv): Promise<RunningServer> {
 			perMinute > 0 ? tokenBucketLimiter({ limit: perMinute, periodMs: 60_000 }) : noRateLimit,
 		config,
 		vectors: sqliteVectorIndex(db),
+		cpuClock: processCpuClock,
 		resolver: systemResolver,
 		http: pinnedHttpClient(),
 		models:

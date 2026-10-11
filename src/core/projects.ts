@@ -226,7 +226,7 @@ export async function listProjects(db: Db, now: Date = new Date()): Promise<Proj
 
 /** Changes project settings. Returns false when there is no such project. */
 export async function updateProject(
-	ports: Pick<Ports, "db" | "clock">,
+	ports: Pick<Ports, "db" | "clock"> & Partial<Pick<Ports, "cpuClock">>,
 	actor: Actor,
 	ref: string,
 	body: UpdateProjectBody,
@@ -234,7 +234,11 @@ export async function updateProject(
 	// Each scrub pattern must be fast on any input (checked before the project lookup: no write).
 	for (const [i, pattern] of (body.scrub_patterns ?? []).entries()) {
 		// A database query is real I/O: on Workers it moves the clock that times the check.
-		const check = await checkScrubPattern(pattern, () => ports.db.first(sql`SELECT 1 AS one`));
+		const check = await checkScrubPattern(
+			pattern,
+			() => ports.db.first(sql`SELECT 1 AS one`),
+			ports.cpuClock ?? null,
+		);
 		if (!check.ok) return { invalid: { path: `scrub_patterns.${i}`, message: check.reason } };
 	}
 	const projectId = await findProjectRowId(ports.db, ref);

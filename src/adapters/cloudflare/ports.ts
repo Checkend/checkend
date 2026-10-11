@@ -52,6 +52,7 @@ export function cloudflarePorts(env: WorkerEnv, ctx: Pick<ExecutionContext, "wai
 		ingestQueue: env.INGEST_QUEUE ? cloudflareIngestQueue(env.INGEST_QUEUE) : null,
 		mailer: env.EMAIL && env.EMAIL_FROM ? cloudflareMailer(env.EMAIL, env.EMAIL_FROM) : null,
 		http: fetchClient,
+		cpuClock: null,
 		vectors: env.VECTORIZE ? vectorizeIndex(env.VECTORIZE) : null,
 		models: env.AI
 			? cloudflareModelRunner(env.AI, {
