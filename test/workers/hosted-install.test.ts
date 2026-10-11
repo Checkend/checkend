@@ -103,6 +103,36 @@ describe("a provisioned hosted install", () => {
 		}
 	});
 
+	it("deletes all its data and its alarm with destroy(), then refuses requests", async () => {
+		const stub = await provisioned("hosted-destroy", "d3s7r0");
+		const admin = await stub.createAdminToken("front worker");
+		const created = await stub.serve(
+			new Request(`${ORIGIN}/d3s7r0/v1/projects`, {
+				method: "POST",
+				headers: { authorization: `Bearer ${admin}`, "content-type": "application/json" },
+				body: JSON.stringify({ name: "Shop" }),
+			}),
+			null,
+		);
+		expect(created.status).toBe(201);
+		await stub.destroy();
+		await runInDurableObject(stub, async (_instance, state) => {
+			expect(await state.storage.getAlarm()).toBeNull();
+			expect(
+				state.storage.sql
+					.exec("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'projects'")
+					.toArray(),
+			).toEqual([]);
+		});
+		for (const path of ["/d3s7r0/health", "/d3s7r0/v1/projects", "/health"]) {
+			const response = await stub.serve(
+				new Request(`${ORIGIN}${path}`, { headers: { authorization: `Bearer ${admin}` } }),
+				ALICE,
+			);
+			expect(response.status, path).toBe(404);
+		}
+	});
+
 	it("serves bearer API calls and ingest without an identity", async () => {
 		const stub = await provisioned("hosted-api", "a1p2i3");
 		const admin = await stub.createAdminToken("front worker");

@@ -73,6 +73,8 @@ export class CheckendInstall extends DurableObject<InstallEnv> {
 	private readonly state = new IngestState();
 	private readonly app = createApp({ state: this.state });
 	private provisioned: Provision | null = null;
+	/** Set by destroy(): until the object restarts (empty), it refuses every request. */
+	private destroyed = false;
 
 	constructor(ctx: DurableObjectState, env: InstallEnv) {
 		super(ctx, env);
@@ -167,7 +169,20 @@ export class CheckendInstall extends DurableObject<InstallEnv> {
 	 * The identity is an argument of this call, which only the front Worker can make.
 	 */
 	serve(request: Request, identity: FrontIdentity | null): Promise<Response> {
+		if (this.destroyed)
+			return Promise.resolve(Response.json({ error: "not_found" }, { status: 404 }));
 		return Promise.resolve(this.app.fetch(request, { ports: this.ports(), identity }));
+	}
+
+	/**
+	 * RPC for the front Worker, when a space is deleted: all data of this install (its database and
+	 * its alarm). Its blobs in the shared bucket are not deleted here.
+	 */
+	async destroy(): Promise<void> {
+		this.destroyed = true;
+		this.provisioned = null;
+		await this.ctx.storage.deleteAlarm();
+		await this.ctx.storage.deleteAll();
 	}
 
 	/**
@@ -196,6 +211,7 @@ export class CheckendInstall extends DurableObject<InstallEnv> {
 
 	/** One alarm for all scheduled jobs (fix verification, retries, retention, ...). Idempotent. */
 	override async alarm(): Promise<void> {
+		if (this.destroyed) return;
 		// The next alarm first: a failed run is retried by the platform, and the chain goes on.
 		await this.ctx.storage.setAlarm(Date.now() + ALARM_MS);
 		await runScheduled(this.ports(), new Date());
