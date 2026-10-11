@@ -2,6 +2,7 @@ import type { Context, MiddlewareHandler } from "hono";
 import { isSetupOpen } from "../../core/auth/passkeys.ts";
 import { getSession, type Session } from "../../core/auth/sessions.ts";
 import type { AppEnv } from "../app.ts";
+import { bodyCap, MAX_JSON_BODY_BYTES } from "../body.ts";
 
 /**
  * Security for the web UI: response headers, the session cookie, CSRF checks and the
@@ -81,6 +82,12 @@ export const requireMember: MiddlewareHandler<AppEnv> = async (c, next) => {
 // --- CSRF -------------------------------------------------------------------------------
 
 /**
+ * The body cap of every UI POST (1 MB, also for a chunked body; 413 above it). The CSRF checks
+ * run it: the passkey routes before sign-in, the forms after `requireMember`.
+ */
+const uiBodyCap = bodyCap(() => MAX_JSON_BODY_BYTES);
+
+/**
  * A state-changing request must come from this origin: the Origin header (all current
  * browsers send it on POST) must match, and Sec-Fetch-Site, when sent, must be same-origin.
  */
@@ -107,16 +114,19 @@ export const checkFormCsrf: MiddlewareHandler<AppEnv> = async (c, next) => {
 	if (!type.startsWith("application/x-www-form-urlencoded")) {
 		return c.text("Unsupported form encoding.", 415);
 	}
-	const form = await c.req.parseBody();
-	const given = typeof form._csrf === "string" ? form._csrf : "";
-	if (!sameOrigin(c) || !constantTimeEqual(given, c.get("session").csrfToken)) {
-		return c.text(
-			"This form expired or came from another site. Reload the page and try again.",
-			403,
-		);
-	}
-	c.set("form", form as Record<string, string | File>);
-	await next();
+	return uiBodyCap(c, async () => {
+		const form = await c.req.parseBody();
+		const given = typeof form._csrf === "string" ? form._csrf : "";
+		if (!sameOrigin(c) || !constantTimeEqual(given, c.get("session").csrfToken)) {
+			c.res = c.text(
+				"This form expired or came from another site. Reload the page and try again.",
+				403,
+			);
+			return;
+		}
+		c.set("form", form as Record<string, string | File>);
+		await next();
+	});
 };
 
 /**
@@ -129,7 +139,7 @@ export const checkJsonCsrf: MiddlewareHandler<AppEnv> = async (c, next) => {
 		return c.json({ error: "unsupported_media_type" }, 415);
 	}
 	if (!sameOrigin(c)) return c.json({ error: "forbidden" }, 403);
-	await next();
+	return uiBodyCap(c, next);
 };
 
 // --- development guard ------------------------------------------------------------------
