@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { mkdtempSync } from "node:fs";
+import { existsSync, mkdtempSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
@@ -152,6 +152,9 @@ describe("the server process", () => {
 		const code = await new Promise<number | null>((resolve) => child.on("exit", resolve));
 		expect(code).toBe(0);
 		expect(output).toContain("SIGTERM, stopping");
+		// The database was closed after the drain: the WAL is checkpointed into the main file.
+		const wal = `${database}-wal`;
+		expect(existsSync(wal) ? statSync(wal).size : 0).toBe(0);
 		const db = openSqliteDb(database);
 		expect(await db.first(sql`SELECT title FROM issues`)).toEqual({ title: "written before exit" });
 	});

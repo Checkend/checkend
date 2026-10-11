@@ -15,7 +15,10 @@ const STATEMENT_CACHE_SIZE = 500;
  * Node entry and the fast test database. `batch()` runs in one transaction. The calls are
  * synchronous inside, so no other statement can run between the statements of a batch.
  */
-export function openSqliteDb(path: string): Db {
+/** The SQLite Db, with close(): the Node entry calls it on shutdown. */
+export type SqliteDb = Db & { close(): void };
+
+export function openSqliteDb(path: string): SqliteDb {
 	const database = new DatabaseSync(path);
 	// Same behaviour as D1: foreign keys on. WAL suits one writer with many readers.
 	database.exec("PRAGMA foreign_keys = ON");
@@ -68,6 +71,13 @@ export function openSqliteDb(path: string): Db {
 				database.exec("ROLLBACK");
 				throw error;
 			}
+		},
+
+		/** Moves the WAL into the main file and closes: the file alone is then complete. */
+		close() {
+			if (!database.isOpen) return;
+			if (path !== ":memory:") database.exec("PRAGMA wal_checkpoint(TRUNCATE)");
+			database.close();
 		},
 	};
 }

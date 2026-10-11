@@ -148,6 +148,7 @@ export async function startServer(env: NodeEnv): Promise<RunningServer> {
 		stopping = true;
 		for (const timer of timers) clearInterval(timer);
 		await drain();
+		db.close();
 		throw error;
 	}
 	const address = server.address();
@@ -160,6 +161,8 @@ export async function startServer(env: NodeEnv): Promise<RunningServer> {
 			for (const timer of timers) clearInterval(timer);
 			await new Promise<void>((done) => server.close(() => done()));
 			await drain();
+			// After the drain: the WAL is checkpointed into the main file.
+			db.close();
 		},
 	};
 }
