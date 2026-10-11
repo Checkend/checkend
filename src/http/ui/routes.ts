@@ -71,7 +71,34 @@ const SESSION_MAX_AGE = Math.floor(SESSION_TTL_MS / 1000);
 export function uiRoutes(app: Hono<AppEnv>, state: IngestState, onboarding: Onboarding): void {
 	assetRoutes(app);
 
-	const render = (
+	const now = (c: Context<AppEnv>) => c.env.ports.clock.now();
+
+	/** The badges of the sidebar: the setup progress on Home, and new issues on Issues. */
+	const sidebarFacts = async (c: Context<AppEnv>) => {
+		const since = new Date(now(c).getTime() - 24 * 3_600_000).toISOString();
+		const [progress, fresh] = await Promise.all([
+			onboarding.progress(c.env.ports, now(c)),
+			// last_seen >= since follows from first_seen >= since; it lets the query use the index.
+			c.env.ports.db.first<{ n: number }>(
+				sql`SELECT COUNT(*) AS n FROM issues
+					WHERE status = 'unresolved' AND last_seen >= ${since} AND first_seen >= ${since}`,
+			),
+		]);
+		const apps = progressJson(progress, now(c)).apps;
+		const open = apps.filter((a) => !a.complete);
+		const [only] = open;
+		const setup =
+			apps.length === 0
+				? "Start"
+				: open.length === 0
+					? null
+					: open.length === 1 && only
+						? `Setup ${only.done}/5`
+						: `Setup: ${open.length} apps`;
+		return { setup, newIssues: Number(fresh?.n ?? 0) };
+	};
+
+	const render = async (
 		c: Context<AppEnv>,
 		title: string,
 		section: Section | undefined,
@@ -79,18 +106,17 @@ export function uiRoutes(app: Hono<AppEnv>, state: IngestState, onboarding: Onbo
 		status: ContentfulStatusCode = 200,
 	) => {
 		const session = c.get("session") as Session | undefined;
-		return c.html(
-			page({
-				title,
-				member: session ? { name: session.memberName, devMode: c.env.ports.config.devMode } : null,
-				...(section ? { section } : {}),
-				body,
-			}),
-			status,
-		);
+		const member = session
+			? {
+					name: session.memberName,
+					devMode: c.env.ports.config.devMode,
+					csrf: session.csrfToken,
+					...(await sidebarFacts(c)),
+				}
+			: null;
+		return c.html(page({ title, member, ...(section ? { section } : {}), body }), status);
 	};
 	const notFound = (c: Context<AppEnv>) => render(c, "Not found", undefined, notFoundView(), 404);
-	const now = (c: Context<AppEnv>) => c.env.ports.clock.now();
 	const member = [securityHeaders, requireMember] as const;
 
 	// --- sign-in, setup, sign-out -------------------------------------------------------
@@ -278,7 +304,7 @@ export function uiRoutes(app: Hono<AppEnv>, state: IngestState, onboarding: Onbo
 		return render(
 			c,
 			"Connect your app",
-			undefined,
+			"home",
 			homeView(origin(c), csrf(c), progress, null, false),
 		);
 	});
@@ -408,7 +434,7 @@ export function uiRoutes(app: Hono<AppEnv>, state: IngestState, onboarding: Onbo
 
 	// The old addresses (before "apps").
 	app.get("/projects", securityHeaders, (c) => c.redirect("/apps", 301));
-	app.get("/projects/:id", securityHeaders, (c) => {
+	app.get("/projects/:id", securityHeaders, async (c) => {
 		const publicId = parseProjectId(c.req.param("id"));
 		return publicId === null ? notFound(c) : c.redirect(appPath(publicId), 301);
 	});

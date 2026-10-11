@@ -341,6 +341,22 @@ export const CLIENT_SCRIPT = `"use strict";
     }
   });
 
+  // The sidebar on phones: the menu button opens and closes it. Without JavaScript, the
+  // links show above the page.
+  var sideToggle = document.querySelector(".side-toggle");
+  if (sideToggle) {
+    var side = sideToggle.closest(".side");
+    document.documentElement.classList.add("js-nav");
+    var setSide = function (open) {
+      if (open) side.setAttribute("data-open", ""); else side.removeAttribute("data-open");
+      sideToggle.setAttribute("aria-expanded", open ? "true" : "false");
+    };
+    sideToggle.addEventListener("click", function () { setSide(!side.hasAttribute("data-open")); });
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape" && side.hasAttribute("data-open")) { setSide(false); sideToggle.focus(); }
+    });
+  }
+
   var progressSection = document.querySelector("[data-progress]");
   if (progressSection) pollProgress(progressSection);
 
