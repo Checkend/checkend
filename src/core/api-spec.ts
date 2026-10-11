@@ -340,6 +340,20 @@ export const API_ROUTES: ApiRoute[] = [
 	},
 	{ method: "DELETE", path: "/v1/tokens/:id", scope: "admin", summary: "Revoke a token." },
 	{
+		method: "POST",
+		path: "/v1/setup/keys",
+		scope: "admin",
+		summary:
+			"Create a setup key (cks_...) for an agent that connects apps. Valid 1 hour. The key is in this response only.",
+	},
+	{
+		method: "GET",
+		path: "/v1/setup/keys",
+		scope: "admin",
+		summary: "List setup keys (never the keys themselves), the newest first.",
+	},
+	{ method: "DELETE", path: "/v1/setup/keys/:id", scope: "admin", summary: "Revoke a setup key." },
+	{
 		method: "GET",
 		path: "/v1/activity",
 		scope: "admin",

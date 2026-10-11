@@ -13,8 +13,11 @@ export const CreateTokenBody = v.object({
 
 /** Who makes a request: a scoped token, or the bootstrap ADMIN_TOKEN secret. */
 export interface Actor {
-	/** "system": Checkend itself (for example ingest, when it reopens a resolved issue). */
-	type: "token" | "admin_token" | "system";
+	/**
+	 * "system": Checkend itself (for example ingest, when it reopens a resolved issue).
+	 * "setup_key": an agent with a setup key (only the /v1/setup routes; no scopes).
+	 */
+	type: "token" | "admin_token" | "system" | "setup_key";
 	id: number | null;
 	name: string;
 	scopes: Scope[];
@@ -33,14 +36,17 @@ export const hasScope = (actor: Actor, scope: Scope): boolean =>
 const hex = (bytes: ArrayBuffer | Uint8Array) =>
 	[...new Uint8Array(bytes)].map((b) => b.toString(16).padStart(2, "0")).join("");
 
-const sha256 = async (text: string) =>
+export const sha256 = async (text: string) =>
 	hex(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text)));
 
-function newToken(): string {
+/** A random secret: the prefix and 32 random bytes as base64url. */
+export function newSecret(prefix: string): string {
 	const bytes = crypto.getRandomValues(new Uint8Array(32));
 	const base64 = btoa(String.fromCharCode(...bytes));
-	return `ck_${base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "")}`;
+	return `${prefix}${base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "")}`;
 }
+
+const newToken = () => newSecret("ck_");
 
 export interface TokenRecord {
 	id: number;

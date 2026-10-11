@@ -8,6 +8,7 @@ import { docsRoutes } from "./docs.ts";
 import { githubRoutes } from "./github.ts";
 import { ingestRoutes } from "./ingest.ts";
 import { mcpRoutes } from "./mcp.ts";
+import { setupRoutes } from "./setup.ts";
 
 /** Each entry passes its ports as the Hono environment: `app.fetch(request, { ports })`. */
 export type AppEnv = {
@@ -35,6 +36,8 @@ export function createApp(options: AppOptions = {}): Hono<AppEnv> {
 	githubRoutes(app);
 	// Before apiRoutes: /v1/openapi.json is public, so it must answer before the /v1 auth.
 	docsRoutes(app);
+	// Before apiRoutes: setup keys open only /v1/setup, with their own auth.
+	setupRoutes(app);
 	apiRoutes(app, state);
 	mcpRoutes(app);
 
