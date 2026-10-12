@@ -110,6 +110,9 @@ describe("scoped tokens", () => {
 				created_by: "ADMIN_TOKEN",
 				last_used_at: null,
 				revoked_at: null,
+				// No app: a token for all apps.
+				project_id: null,
+				project_name: null,
 			},
 		]);
 	});

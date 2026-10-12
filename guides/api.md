@@ -30,6 +30,12 @@ secret.
 | `admin` | All scopes, and also `POST /v1/projects`, `PATCH /v1/projects/:project`, `DELETE /v1/projects/:project`, `POST` and `DELETE /v1/projects/:project/keys`, `POST`, `GET` and `DELETE /v1/setup/keys`, `GET /v1/setup/progress`, `POST /v1/setup/apps`, `/v1/setup/tokens`, `/test-event` and `/report` (the setup routes also take a setup key), `GET` and `POST /v1/tokens`, `DELETE /v1/tokens/:id`, `GET /v1/activity`, `GET /v1/labels`, `GET /v1/fix-outcomes`, `GET /v1/approvals`, `POST /v1/approvals/:id/approve` and `/reject`, and all `/v1/webhooks` endpoints |
 | `releases:write` | `POST /v1/deploys`, `POST /v1/sourcemaps`, `DELETE /v1/sourcemaps/:id` |
 
+An owner can also create a token in the web UI: **Settings → Tokens**. The page offers
+`issues:read`, `issues:write` and `releases:write` (never `admin`), and an optional app. A token
+for one app sends `POST /v1/deploys`, `POST /v1/sourcemaps` and `DELETE /v1/sourcemaps/:id` only
+for that app; another app gives `403` `forbidden_project`. Reads are not limited to the app. The
+page shows the token once, right after it was made.
+
 A coding agent that only reads errors needs `issues:read`. An agent that also resolves,
 ignores or merges issues needs `["issues:read", "issues:write"]`. Coding agents can also use the
 [MCP server](mcp.md).
@@ -43,7 +49,7 @@ operation has `x-required-scope`.
 |---|---|
 | `400` | `{"error": "invalid_request", "details": [{"path": ..., "message": ...}]}` |
 | `401` | `{"error": "unauthorized"}`, with the header `WWW-Authenticate: Bearer`. The token is missing, not valid, or revoked. Checkend answers before it reads the body. |
-| `403` | `{"error": "forbidden", "required_scope": "<scope>"}`. The token does not have the scope that the endpoint needs. |
+| `403` | `{"error": "forbidden", "required_scope": "<scope>"}`. The token does not have the scope that the endpoint needs. Or `{"error": "forbidden_project", "reason": ...}`: the token is for another app. |
 | `404` | `{"error": "not_found"}`, or `{"error": "project_not_found"}` when the `?project=` value matches no project. |
 | `413` | `{"error": "payload_too_large", "max_bytes": N}`. A JSON body of `/v1`, `/v1/setup` or `/mcp` is at most 1 MB; a source map upload is at most 30 MB. The cap also holds for a chunked body without `Content-Length`. |
 
@@ -638,7 +644,8 @@ characters of the token: use it to find a token in the list.
 ### `GET /v1/tokens`
 
 Lists the tokens. The list does not include the tokens or their hashes. `last_used_at` is
-updated at most once per hour.
+updated at most once per hour. `project_id` and `project_name` are the app of a token for one app
+(an agent token of the setup, or a token from Settings → Tokens), or `null`.
 
 ### `DELETE /v1/tokens/:id`
 

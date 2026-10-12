@@ -31,6 +31,7 @@ import {
 	CreateProjectBody,
 	decodeCursor,
 	EventListQuery,
+	findProjectRowId,
 	getEvent,
 	getIssue,
 	IdParam,
@@ -69,6 +70,7 @@ import {
 	pingWebhook,
 	startDeliveries,
 } from "../core/webhooks.ts";
+import { sql } from "../ports/db.ts";
 import type { AppEnv } from "./app.ts";
 import { need, requireActor } from "./auth.ts";
 import { publicBase } from "./base-path.ts";
@@ -93,6 +95,19 @@ export const dsn = (base: string, key: string, projectId: number) => {
  * The JSON API, `/v1`. Each request needs `Authorization: Bearer <token>`: a scoped token,
  * or the bootstrap ADMIN_TOKEN secret. Each route needs a scope.
  */
+const forbiddenProject = (c: Context<AppEnv>) =>
+	c.json({ error: "forbidden_project", reason: "This token is for another app." }, 403);
+
+/**
+ * A token bound to an app (Settings → Tokens) writes releases only for that app: a 403 for
+ * another app, or null when the write may go on.
+ */
+async function outsideBinding(c: Context<AppEnv>, ref: string): Promise<Response | null> {
+	const bound = c.get("actor").projectId;
+	if (bound == null) return null;
+	return (await findProjectRowId(c.env.ports.db, ref)) === bound ? null : forbiddenProject(c);
+}
+
 export function apiRoutes(app: Hono<AppEnv>, state: IngestState): void {
 	app.use("/v1/*", requireActor, authenticatedBodyCap);
 
@@ -409,6 +424,8 @@ export function apiRoutes(app: Hono<AppEnv>, state: IngestState): void {
 	app.post("/v1/deploys", need("releases:write"), async (c) => {
 		const body = v.safeParse(DeployBody, await c.req.json().catch(() => null));
 		if (!body.success) return invalid(c, body.issues);
+		const refused = await outsideBinding(c, body.output.project);
+		if (refused) return refused;
 		const result = await recordDeploy(c.env.ports, c.get("actor"), body.output);
 		if (result === "project_not_found") return c.json({ error: "project_not_found" }, 404);
 		return c.json({ data: result }, 201);
@@ -441,6 +458,8 @@ export function apiRoutes(app: Hono<AppEnv>, state: IngestState): void {
 	app.post("/v1/sourcemaps", need("releases:write"), async (c) => {
 		const query = v.safeParse(SourceMapUploadQuery, c.req.query());
 		if (!query.success) return invalid(c, query.issues);
+		const refused = await outsideBinding(c, query.output.project);
+		if (refused) return refused;
 		const type = (c.req.header("content-type") ?? "").split(";")[0]?.trim().toLowerCase();
 		if (type !== "application/json" && type !== INDEX_CONTENT_TYPE) {
 			return c.json(
@@ -495,6 +514,12 @@ export function apiRoutes(app: Hono<AppEnv>, state: IngestState): void {
 	app.delete("/v1/sourcemaps/:id", need("releases:write"), async (c) => {
 		const params = v.safeParse(IdParam, c.req.param());
 		if (!params.success) return invalid(c, params.issues);
+		if (c.get("actor").projectId != null) {
+			const map = await c.env.ports.db.first<{ project_id: number }>(
+				sql`SELECT project_id FROM sourcemaps WHERE id = ${params.output.id}`,
+			);
+			if (map && map.project_id !== c.get("actor").projectId) return forbiddenProject(c);
+		}
 		const deleted = await deleteSourceMap(c.env.ports, c.get("actor"), params.output.id);
 		return deleted
 			? c.json({ data: { id: params.output.id, deleted: true } })

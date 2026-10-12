@@ -22,6 +22,11 @@ export interface Actor {
 	id: number | null;
 	name: string;
 	scopes: Scope[];
+	/**
+	 * A token bound to one app (the internal project row ID): it writes releases, deploys and
+	 * source maps only for that app. Reads are not limited (agent tokens read every app).
+	 */
+	projectId?: number | null;
 }
 
 export const BOOTSTRAP_ADMIN: Actor = {
@@ -143,8 +148,9 @@ export async function authenticate(
 		name: string;
 		scopes: string;
 		last_used_at: string | null;
+		project_id: number | null;
 	}>(
-		sql`SELECT id, name, scopes, last_used_at FROM tokens WHERE token_hash = ${tokenHash} AND revoked_at IS NULL`,
+		sql`SELECT id, name, scopes, last_used_at, project_id FROM tokens WHERE token_hash = ${tokenHash} AND revoked_at IS NULL`,
 	);
 	if (!row) return null;
 	const now = clock.now();
@@ -155,7 +161,13 @@ export async function authenticate(
 				.catch(() => {}),
 		);
 	}
-	return { type: "token", id: row.id, name: row.name, scopes: row.scopes.split(" ") as Scope[] };
+	return {
+		type: "token",
+		id: row.id,
+		name: row.name,
+		scopes: row.scopes.split(" ") as Scope[],
+		projectId: row.project_id,
+	};
 }
 
 function constantTimeEqual(a: string, b: string): boolean {
@@ -165,9 +177,17 @@ function constantTimeEqual(a: string, b: string): boolean {
 	return difference === 0;
 }
 
-export async function listTokens(db: Db): Promise<TokenRecord[]> {
-	const rows = await db.all<Omit<TokenRecord, "scopes"> & { scopes: string }>(
-		sql`SELECT id, name, scopes, prefix, created_at, created_by, last_used_at, revoked_at FROM tokens ORDER BY id`,
+/** A token in the list, with the app that it is bound to (public ID and name), or null. */
+export interface TokenListItem extends TokenRecord {
+	project_id: number | null;
+	project_name: string | null;
+}
+
+export async function listTokens(db: Db): Promise<TokenListItem[]> {
+	const rows = await db.all<Omit<TokenListItem, "scopes"> & { scopes: string }>(
+		sql`SELECT t.id, t.name, t.scopes, t.prefix, t.created_at, t.created_by, t.last_used_at,
+				t.revoked_at, p.public_id AS project_id, p.name AS project_name
+			FROM tokens t LEFT JOIN projects p ON p.id = t.project_id ORDER BY t.id`,
 	);
 	return rows.map((row) => ({ ...row, scopes: row.scopes.split(" ") as Scope[] }));
 }

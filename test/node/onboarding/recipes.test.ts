@@ -65,6 +65,17 @@ describe("the agent recipes", () => {
 		expect(after).toContain("~/.bashrc");
 	});
 
+	it("asks the human for a releases:write token from Settings → Tokens for the CI secret", () => {
+		for (const task of ["deploys", "sourcemaps"]) {
+			const text = taskRecipe(BASE, task) ?? "";
+			expect(text, task).toContain(
+				"Ask the human to create a token with releases:write for this app in Settings → Tokens, and to add it to the CI secret CHECKEND_DEPLOY_TOKEN.",
+			);
+			expect(text, task).toContain("Do not create it yourself.");
+			expect(text, task).not.toContain("CHECKEND_ADMIN_TOKEN");
+		}
+	});
+
 	it("contains no secrets: no keys, no tokens, no DSN with a key", () => {
 		for (const text of all()) {
 			expect(text).not.toMatch(/cks_[A-Za-z0-9_-]{8}|ck_[A-Za-z0-9_-]{8}|[0-9a-f]{32}@/);

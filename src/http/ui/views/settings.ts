@@ -17,12 +17,23 @@ export interface SettingsData {
 	members: MemberRow[];
 	session: { memberName: string; expiresAt: string; csrfToken: string };
 	devMode: boolean;
+	/** An owner: a link to Settings → Tokens. */
+	canManageTokens?: boolean;
 	/** A hosted install (trusted front identity): people sign in at the front Worker. */
 	front?: { spacesUrl: string | null; membersUrl?: string | null } | null;
 }
 
 const fact = (label: string, value: Html | string) => h`<div><dt>${label}</dt>
 <dd>${value}</dd></div>`;
+
+const tokensSection = (data: SettingsData): Html | "" =>
+	data.canManageTokens
+		? h`<section aria-labelledby="tokens-title">
+<h2 id="tokens-title">API tokens</h2>
+<p>Tokens for scripts, CI and agents: for example a token that reports deploys from CI.</p>
+<p><a class="btn btn-quiet" href="/settings/tokens">Manage tokens</a></p>
+</section>`
+		: "";
 
 export function settingsView(data: SettingsData, now: Date): Html {
 	const { health, ingest } = data;
@@ -51,8 +62,9 @@ ${fact("Retry after", ingest && ingest.retry_after_seconds > 0 ? `${ingest.retry
 			h`<tr><td>${t(m.name, 100)}</td><td class="num">${m.passkeys}</td><td class="when">${time(m.last_used_at, now)}</td><td class="when">${time(m.created_at, now)}</td></tr>`,
 	)}</tbody>
 </table>
-<p class="hint">More members, API tokens and releases come in a later version.</p>
+<p class="hint">More members come in a later version.</p>
 </section>
+${tokensSection(data)}
 <section aria-labelledby="session-title">
 <h2 id="session-title">This session</h2>
 <p>Signed in as <strong>${t(data.session.memberName, 100)}</strong>. The session ends ${data.session.expiresAt.slice(0, 10)}.</p>
@@ -90,6 +102,7 @@ ${fact("Migration", health.migrations ? (health.migrations.latest ?? "none") : "
 </table>
 ${membersUrl ? h`<p><a class="btn btn-quiet" href="${membersUrl}">Members of this space</a></p>` : ""}
 </section>
+${tokensSection(data)}
 <section aria-labelledby="session-title">
 <h2 id="session-title">Your account</h2>
 <p>Signed in as <strong>${t(data.session.memberName, 100)}</strong> with your Checkend account.</p>

@@ -23,6 +23,7 @@ import type { IngestState } from "../../core/ingest/state.ts";
 import { ingestStatus } from "../../core/ingest-status.ts";
 import {
 	decodeCursor,
+	findProjectRowId,
 	getEvent,
 	getIssue,
 	ISSUE_STATUSES,
@@ -31,7 +32,7 @@ import {
 	ProjectRef,
 } from "../../core/issues.ts";
 import { createProject, listProjects } from "../../core/projects.ts";
-import { hasScope } from "../../core/tokens.ts";
+import { createToken, hasScope, listTokens, revokeToken, type Scope } from "../../core/tokens.ts";
 import { sql } from "../../ports/db.ts";
 import type { AppEnv } from "../app.ts";
 import { basePathOf, publicBase, withBase } from "../base-path.ts";
@@ -69,6 +70,7 @@ import { loginView, notFoundView, setupClosedView, setupView } from "./views/aut
 import { type EventDetail, eventView } from "./views/event.ts";
 import { inboxView, issueView, SINCE_CHOICES } from "./views/issues.ts";
 import { type MemberRow, settingsView } from "./views/settings.ts";
+import { type TokensPageData, tokensView, UI_TOKEN_SCOPES } from "./views/tokens.ts";
 
 const SESSION_MAX_AGE = Math.floor(SESSION_TTL_MS / 1000);
 
@@ -498,11 +500,93 @@ export function uiRoutes(app: Hono<AppEnv>, state: IngestState, onboarding: Onbo
 					members,
 					session,
 					devMode: ports.config.devMode,
+					canManageTokens: hasScope(c.get("actor"), "admin"),
 					...(ports.config.trustedFront ? { front: { spacesUrl, membersUrl } } : {}),
 				},
 				now(c),
 			),
 		);
+	});
+
+	// --- tokens (an owner only) ---------------------------------------------------------------
+
+	const ownerOnly = (c: Context<AppEnv>) =>
+		hasScope(c.get("actor"), "admin")
+			? null
+			: render(
+					c,
+					"Tokens",
+					"settings",
+					h`<p class="notice" role="alert">Only an owner can manage API tokens.</p>`,
+					403,
+				);
+	const tokensPage = async (
+		c: Context<AppEnv>,
+		extra: Partial<TokensPageData> = {},
+		status: ContentfulStatusCode = 200,
+	) => {
+		const db = c.env.ports.db;
+		const [tokens, apps] = await Promise.all([
+			listTokens(db),
+			db.all<{ id: number; name: string }>(
+				sql`SELECT public_id AS id, name FROM projects WHERE deleted_at IS NULL ORDER BY name`,
+			),
+		]);
+		const csrf = c.get("session").csrfToken;
+		const response = await render(
+			c,
+			"Tokens",
+			"settings",
+			tokensView({ tokens, apps, csrf, ...extra }, now(c)),
+			status,
+		);
+		// The new token is in this page only: no cache, no redirect, never in a URL.
+		response.headers.set("cache-control", "no-store");
+		return response;
+	};
+
+	app.get("/settings/tokens", ...member, async (c) => {
+		const refused = ownerOnly(c);
+		if (refused) return refused;
+		return tokensPage(c, { notice: c.req.query("revoked") ? "The token is revoked." : null });
+	});
+
+	app.post("/settings/tokens", ...member, checkFormCsrf, async (c) => {
+		const refused = ownerOnly(c);
+		if (refused) return refused;
+		const form = c.get("form");
+		const name = typeof form.name === "string" ? form.name.trim() : "";
+		// Only the scopes of the form: an admin field is ignored.
+		const scopes: Scope[] = UI_TOKEN_SCOPES.filter((s) => form[s.field] === "1").map(
+			(s) => s.scope,
+		);
+		const ref = typeof form.project === "string" ? form.project.trim() : "";
+		const projectId = ref === "" ? null : await findProjectRowId(c.env.ports.db, ref);
+		const error =
+			name.length === 0 || name.length > 100
+				? "Give the token a name of 1 to 100 characters."
+				: scopes.length === 0
+					? "Choose at least one scope."
+					: ref !== "" && projectId === null
+						? "That app does not exist."
+						: null;
+		if (error) return tokensPage(c, { error }, 400);
+		const { token } = await createToken(
+			c.env.ports,
+			c.get("actor"),
+			{ name, scopes },
+			projectId === null ? undefined : { setupKeyId: null, projectId },
+		);
+		return tokensPage(c, { created: { name, token } });
+	});
+
+	app.post("/settings/tokens/:id/revoke", ...member, checkFormCsrf, async (c) => {
+		const refused = ownerOnly(c);
+		if (refused) return refused;
+		const id = Number(c.req.param("id"));
+		if (!Number.isSafeInteger(id) || id <= 0) return notFound(c);
+		const revoked = await revokeToken(c.env.ports, c.get("actor"), id);
+		return revoked ? c.redirect("/settings/tokens?revoked=1", 303) : notFound(c);
 	});
 
 	// Unknown paths: an HTML 404 for a browser (it asks for text/html); others get the JSON 404.

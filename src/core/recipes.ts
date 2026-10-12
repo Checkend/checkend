@@ -251,8 +251,8 @@ const TASKS: Record<string, (base: string) => string> = {
    \`\`\`
 
 3. \`release\` must be the same value as the release of the SDK.
-4. The CI needs a token with the scope releases:write in the secret CHECKEND_DEPLOY_TOKEN. Ask the
-   human to create it in Checkend and add it to the CI secrets. Do not create it yourself.
+4. The CI needs a token in the secret CHECKEND_DEPLOY_TOKEN. Ask the human to create a token with releases:write for this app in Settings → Tokens, and to add it to the CI secret CHECKEND_DEPLOY_TOKEN.
+   Do not create it yourself.
 5. Do not deploy the .map files to the public web server unless the app already does.
 
 ## If ce is not available
@@ -275,8 +275,8 @@ ${curl("POST", `${base}/v1/sourcemaps?project=<app>&release=$RELEASE&name=~/stat
 
    The commit is git HEAD by default. \`--commits-since\` adds the commits since the last deploy, so
    that Checkend can find suspect commits and verify fixes.
-2. The CI needs a token with the scope releases:write in the secret CHECKEND_DEPLOY_TOKEN. Ask the
-   human to create it in Checkend and add it to the CI secrets. Do not create it yourself.
+2. The CI needs a token in the secret CHECKEND_DEPLOY_TOKEN. Ask the human to create a token with releases:write for this app in Settings → Tokens, and to add it to the CI secret CHECKEND_DEPLOY_TOKEN.
+   Do not create it yourself.
 
 ## If ce is not available
 

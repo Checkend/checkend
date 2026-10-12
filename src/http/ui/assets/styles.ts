@@ -308,6 +308,19 @@ abbr[title] { text-decoration: underline dotted; cursor: help; }
 .danger h2 { color: var(--red); }
 .danger .field { max-width: 360px; }
 
+/* Settings → Tokens */
+.stack-form { max-width: 520px; }
+fieldset.field { border: 0; padding: 0; margin: 0 0 14px; }
+fieldset.field legend { padding: 0; margin-bottom: 6px; font-weight: 500; }
+.check { display: block; margin: 4px 0; font-size: 14px; }
+.check .muted { font-size: 13px; }
+.token-new { padding: 14px 16px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+.token-new h2 { margin-top: 0; }
+table.tokens td { vertical-align: top; overflow-wrap: anywhere; }
+details.confirm > summary { cursor: pointer; color: var(--red); font-size: 13px; }
+details.confirm form { margin-top: 8px; max-width: 260px; }
+details.confirm p { margin: 0 0 8px; font-size: 13px; }
+
 /* Narrow screens */
 @media (max-width: 900px) {
   .filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -353,5 +366,15 @@ abbr[title] { text-decoration: underline dotted; cursor: help; }
   table.apps td.actions { grid-column: 2; grid-row: 1; }
   table.apps td.num, table.apps td.when, table.apps td.source, table.apps td.status { grid-column: 1 / -1; font-size: 12.5px; color: var(--muted); }
   table.apps td[data-label]::before { content: attr(data-label) " "; }
+  table.tokens thead { display: none; }
+  table.tokens, table.tokens tbody { display: block; }
+  table.tokens tr { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; padding: 12px 0; border-top: 1px solid var(--line); }
+  table.tokens tbody tr:last-child { border-bottom: 1px solid var(--line); }
+  table.tokens td, table.tokens tbody tr:last-child td { display: block; border: 0; padding: 0; text-align: left; }
+  table.tokens td.name { grid-column: 1; font-weight: 500; }
+  table.tokens td.actions { grid-column: 2; grid-row: 1; }
+  table.tokens td:not(.name):not(.actions) { grid-column: 1 / -1; font-size: 12.5px; color: var(--muted); }
+  table.tokens td[data-label]::before { content: attr(data-label) " "; }
+  table.tokens details.confirm[open] { grid-column: 1 / -1; }
 }
 `;
