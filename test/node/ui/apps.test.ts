@@ -93,16 +93,20 @@ describe("onboarding texts", () => {
 		expect(setupPrompt("https://errors.acme.com", "cks_abc")).toBe(
 			`Set up Checkend error tracking for this app.
 1. If \`ce\` is not installed, install it: https://errors.acme.com/agent/install
-2. Run: CHECKEND_SETUP_KEY=cks_abc ce setup --url https://errors.acme.com
-   The key is valid for 1 hour. Keep it only in CHECKEND_SETUP_KEY: never in a file or a commit.
-3. Follow the steps that \`ce setup\` prints.`,
+2. Run \`ce setup --url https://errors.acme.com\` with the setup key in the environment variable CHECKEND_SETUP_KEY.
+   Never pass the key as an argument (--key), and never write it to a file, a commit or a log.
+3. Follow the steps that \`ce setup\` prints.
+
+Setup key (valid for 1 hour): cks_abc`,
 		);
 	});
 
-	it("never puts the setup key into a command-line argument", () => {
+	it("never puts the setup key into a command line: the key is a line of data on its own", () => {
 		const prompt = setupPrompt("https://errors.acme.com", "cks_abc");
-		expect(prompt).not.toContain("--key");
-		expect(prompt).not.toMatch(/ce setup[^\n]*cks_abc/);
+		const lines = prompt.split("\n").filter((line) => line.includes("cks_abc"));
+		expect(lines).toEqual(["Setup key (valid for 1 hour): cks_abc"]);
+		expect(prompt).not.toMatch(/CHECKEND_SETUP_KEY=/);
+		expect(prompt).not.toMatch(/--key\s+cks/);
 	});
 
 	it("names each task's recipe and command, and the app by slug and ID only", () => {
@@ -204,8 +208,10 @@ describe("setup key", () => {
 		const response = await ui.form("/apps/setup-key", { _csrf: ui.session.csrf }, ui.session.token);
 		expect(response.status).toBe(200);
 		const text = await response.text();
-		expect(text).toContain("CHECKEND_SETUP_KEY=cks_fake1 ce setup --url");
-		expect(text).not.toContain("--key");
+		expect(text).toContain("Setup key (valid for 1 hour): cks_fake1");
+		// The prompt names --key only to forbid it: never with a key after it.
+		expect(text).not.toMatch(/--key\s+cks/);
+		expect(text).not.toContain("CHECKEND_SETUP_KEY=cks");
 		// A setup key makes agent tokens that read and change issues: the page must not say less.
 		expect(text).not.toContain("cannot read your errors");
 		expect(text).toContain("agent tokens that read and change issues");
@@ -412,7 +418,7 @@ describe("with the core onboarding (no fake)", () => {
 		});
 		expect(copied.status).toBe(200);
 		const { prompt } = (await copied.json()) as { prompt: string };
-		const key = /CHECKEND_SETUP_KEY=(cks_\S+)/.exec(prompt)?.[1] ?? "";
+		const key = /Setup key \(valid for 1 hour\): (cks_\S+)/.exec(prompt)?.[1] ?? "";
 		expect(key).not.toBe("");
 
 		// What `ce setup` does with the key.

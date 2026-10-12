@@ -48,10 +48,15 @@ agent. Paste it in the repository of your app:
 ```text
 Set up Checkend error tracking for this app.
 1. If `ce` is not installed, install it: https://<your-worker>/agent/install
-2. Run: CHECKEND_SETUP_KEY=cks_… ce setup --url https://<your-worker>
-   The key is valid for 1 hour. Keep it only in CHECKEND_SETUP_KEY: never in a file or a commit.
+2. Run `ce setup --url https://<your-worker>` with the setup key in the environment variable CHECKEND_SETUP_KEY.
+   Never pass the key as an argument (--key), and never write it to a file, a commit or a log.
 3. Follow the steps that `ce setup` prints.
+
+Setup key (valid for 1 hour): cks_…
 ```
+
+The key is on a line of its own, not in a command. The agent passes it to `ce setup` only in
+`CHECKEND_SETUP_KEY`.
 
 > **Caution:** treat the prompt as a secret. Its setup key can add apps, send a test error, and
 > make agent tokens that read and change issues.

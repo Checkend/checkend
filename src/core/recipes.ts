@@ -110,8 +110,7 @@ same work with curl.
 
 ## Rules
 
-- The setup key is in the prompt of the user. Keep it only in the environment variable
-  \`CHECKEND_SETUP_KEY\`. Do not write it to a file, a commit, a log or a command line.
+- The setup key is in the prompt of the user. Pass it to \`ce\` only in the environment variable \`CHECKEND_SETUP_KEY\`: never as an argument (\`--key\`), and never in a file, a commit or a log.
 - \`ce\` keeps its credentials in the OS keychain. Do not copy them into the repository.
 `;
 }

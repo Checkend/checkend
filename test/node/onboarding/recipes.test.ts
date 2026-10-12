@@ -76,6 +76,16 @@ describe("the agent recipes", () => {
 		}
 	});
 
+	it("the rules and the prompt agree: the key goes to ce only in CHECKEND_SETUP_KEY, never as an argument", () => {
+		const install = installRecipe(BASE);
+		expect(install).toContain(
+			"Pass it to `ce` only in the environment variable `CHECKEND_SETUP_KEY`: never as an argument (`--key`)",
+		);
+		const setup = setupRecipe(BASE);
+		expect(setup).not.toMatch(/CHECKEND_SETUP_KEY=cks/);
+		expect(setup).not.toMatch(/--key\s+cks/);
+	});
+
 	it("contains no secrets: no keys, no tokens, no DSN with a key", () => {
 		for (const text of all()) {
 			expect(text).not.toMatch(/cks_[A-Za-z0-9_-]{8}|ck_[A-Za-z0-9_-]{8}|[0-9a-f]{32}@/);
