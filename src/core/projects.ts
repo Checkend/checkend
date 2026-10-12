@@ -231,13 +231,24 @@ export async function listProjects(db: Db, now: Date = new Date()): Promise<Proj
 				created_at
 			FROM projects WHERE deleted_at IS NULL ORDER BY internal_id`,
 	);
-	const keys = await db.all<{ project_id: number; public_key: string }>(
-		sql`SELECT project_id, public_key FROM project_keys WHERE revoked_at IS NULL ORDER BY id`,
+	const keys = await db.all<{
+		project_id: number;
+		public_key: string;
+		client_marked_at: string | null;
+	}>(
+		sql`SELECT project_id, public_key, client_marked_at FROM project_keys
+			WHERE revoked_at IS NULL ORDER BY id`,
 	);
+	// CLIENT_MARKED_SQL in JS: an active key with a client mark (core/trust.ts).
+	const clientMarked = (projectRow: number) =>
+		keys.some((k) => k.project_id === projectRow && k.client_marked_at !== null);
 	return projects.map(
 		({ internal_id, allowed_origins, scrub_keys, scrub_patterns, demo, ...p }) => ({
 			...p,
-			...trustFields({ ...p, trust: p.trust_setting }, now),
+			...trustFields(
+				{ ...p, trust: p.trust_setting, client_marked: clientMarked(internal_id) },
+				now,
+			),
 			demo: demo === 1,
 			allowed_origins: allowed_origins ? (JSON.parse(allowed_origins) as string[]) : null,
 			scrub_keys: scrub_keys ? (JSON.parse(scrub_keys) as string[]) : [],

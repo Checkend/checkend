@@ -145,17 +145,17 @@ export async function handleIngest(
 		const browser = origin !== null;
 		const native = kind === "native";
 		if (overload > 0) {
-			if (!(await enqueueEvent(ports, project.projectId, prepared, browser, native))) {
+			if (!(await enqueueEvent(ports, project.projectId, prepared, browser, native, key))) {
 				return tooManyRequests(overload, "organization");
 			}
 			return json(200, { id: prepared.event.event_id });
 		}
 		ports.defer(
-			storeEvent(ports, state, project.projectId, prepared, { browser, native }).then(
+			storeEvent(ports, state, project.projectId, prepared, { browser, native, key }).then(
 				async (result) => {
 					// A write that failed after its retries goes to the overflow queue, when there is one.
 					if (result.outcome === "failed")
-						await enqueueEvent(ports, project.projectId, prepared, browser, native);
+						await enqueueEvent(ports, project.projectId, prepared, browser, native, key);
 					if (result.deliveries > 0) await startDeliveries(ports);
 				},
 			),

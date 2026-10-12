@@ -223,9 +223,9 @@ A DSN that a browser or a mobile app uses is public: anyone can read it from the
 and send events with any text. Text from such events must not steer an agent. So each project
 has a trust level, from where its events come:
 
-- **`high`**: in the last 30 days, the events came only from server SDKs.
-- **`low`**: in the last 30 days, at least one event came from a browser, a mobile app or an
-  unknown SDK. The weakest source sets the level.
+- **`high`**: the events of the active DSN keys came only from server SDKs.
+- **`low`**: at least one event came from a browser, a mobile app or an unknown SDK with an
+  active DSN key of the project. That key is public, so it keeps the project low.
 
 Checkend finds the source of each event from the SDK name of the event (`sdk.name` in the Sentry
 protocol) and the request:
@@ -239,9 +239,20 @@ protocol) and the request:
 | A missing or unknown SDK name | | browser |
 | [Native JSON ingest](#native-json-ingest) (`X-Checkend-Key`) | | server |
 
-The SDK name comes from the sender, so it can only lower the trust, never raise it. A source
-class counts for 30 days after its last event. So a project that stops getting browser events
-goes back to `high` 30 days later.
+The SDK name comes from the sender, so it can only lower the trust, never raise it. The first
+browser-class event with a DSN key marks that key, and the mark does not expire: a key that was
+in a browser stays public. The project stays `low` while an active key has the mark, also when
+the browser events stop. To make it `high` again:
+
+1. Send the browser events to a separate project.
+2. Make a new DSN key for this project
+   ([`POST /v1/projects/:project/keys`](api.md#post-v1projectsprojectkeys)), and use it only on
+   your servers.
+3. Revoke the old key
+   ([`DELETE /v1/projects/:project/keys/:key`](api.md#delete-v1projectsprojectkeyskey)).
+
+Or set the trust by hand (below). The `source` field (`server`, `browser`, `mixed`) still shows
+the events of the last 30 days only; it does not change the trust.
 
 An admin can set the trust with [`PATCH /v1/projects/:project`](api.md#patch-v1projectsproject):
 `{"trust": "low"}`, `{"trust": "high"}`, or `{"trust": null}` for automatic. The setting wins

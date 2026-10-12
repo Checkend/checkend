@@ -42,8 +42,8 @@ Contributors and coding agents: read [AGENTS.md](../AGENTS.md) and
 - **Error ingest** with the Sentry protocol. Any Sentry SDK works: change the DSN. Without a
   Sentry SDK, send JSON to `POST /v1/ingest`.
 - **Secret removal** before anything is stored.
-- **Trust levels and allowed origins**: a project that gets events from a browser, a mobile app
-  or an unknown SDK in the last 30 days is low trust, because its DSN is public. A project can
+- **Trust levels and allowed origins**: a project whose DSN key got events from a browser, a
+  mobile app or an unknown SDK is low trust, because the key is public (until key rotation). A project can
   allow browser events only from its own websites.
 - **Grouping** of events into issues. A deploy that only moves code does not create new issues:
   line numbers and bundle hashes are not used.

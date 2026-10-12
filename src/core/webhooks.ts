@@ -16,7 +16,7 @@ import { formatIssueId } from "./ids.ts";
 import { findProjectRowId, getIssue, ProjectRef } from "./issues.ts";
 import { checkOutboundUrl } from "./outbound.ts";
 import type { Actor } from "./tokens.ts";
-import { EFFECTIVE_TRUST_SQL, trustCutoff } from "./trust.ts";
+import { EFFECTIVE_TRUST_SQL } from "./trust.ts";
 import { VERSION } from "./version.ts";
 
 /**
@@ -281,14 +281,13 @@ export async function pingWebhook(ports: P, id: number): Promise<number | null> 
 	return row?.id ?? null;
 }
 
-// The trust of a project now (core/trust.ts). Its one parameter is trustCutoff(now).
+// The trust of a project now (core/trust.ts). It has no parameters.
 const PROJECT_TRUST = EFFECTIVE_TRUST_SQL("p");
-const cutoffOf = (nowIso: string) => trustCutoff(new Date(nowIso));
 
 /**
  * Inserts deliveries of `event` for the issues that `issueCondition` selects (alias i), to each
  * webhook that wants the event, the project and the trust. Parameters: event, now, now, then
- * the parameters of the condition, then the event again, then the trust cutoff.
+ * the parameters of the condition, then the event again.
  */
 const enqueueSql = (issueCondition: string) => `INSERT INTO webhook_deliveries
 		(webhook_id, event, issue_id, next_attempt_at, created_at)
@@ -331,7 +330,6 @@ export function ingestDeliveryStatements(
 				projectId,
 				eventId,
 				"issue.new",
-				cutoffOf(nowIso),
 			],
 		},
 		regressed: {
@@ -344,7 +342,6 @@ export function ingestDeliveryStatements(
 				fingerprint,
 				nowIso,
 				"issue.regressed",
-				cutoffOf(nowIso),
 			],
 		},
 	};
@@ -375,16 +372,7 @@ export function spikeDeliveryStatement(
 ): Statement {
 	return {
 		sql: SPIKE_SQL,
-		params: [
-			nowIso,
-			nowIso,
-			nowIso.slice(0, 13),
-			projectId,
-			fingerprint,
-			projectId,
-			eventId,
-			cutoffOf(nowIso),
-		],
+		params: [nowIso, nowIso, nowIso.slice(0, 13), projectId, fingerprint, projectId, eventId],
 	};
 }
 
@@ -392,7 +380,7 @@ export function spikeDeliveryStatement(
 export function verifiedDeliveryStatement(fixId: number, nowIso: string): Statement {
 	return {
 		sql: VERIFIED_SQL,
-		params: ["issue.verified", nowIso, nowIso, fixId, nowIso, "issue.verified", cutoffOf(nowIso)],
+		params: ["issue.verified", nowIso, nowIso, fixId, nowIso, "issue.verified"],
 	};
 }
 

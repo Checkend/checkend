@@ -3,8 +3,11 @@
  *
  * Server SDKs send events from the user's own servers, with a DSN that stays secret: high
  * trust. Browser, mobile and desktop SDKs send events from users' devices, with a DSN that
- * anyone can read and use: low trust. The weakest source of the last 30 days sets the level,
- * and an admin setting (projects.trust) wins over it.
+ * anyone can read and use: low trust. A client event marks its DSN key for good
+ * (project_keys.client_marked_at): the key is public, and a quiet month does not make it secret
+ * again. The app is low trust while an active key has the mark. Only a new key (rotation: add a
+ * key, revoke the old one) or the admin setting (projects.trust, which wins) changes that. The
+ * sources of the last 30 days only set the shown source (server, browser, mixed).
  *
  * The SDK name is untrusted input: anyone with a public DSN can send any name. So it can only
  * lower trust: an Origin header is always client, and an unknown or missing name is client.
@@ -19,7 +22,7 @@ export type SourceClass = "server" | "client";
 /** The sources of an app in the last 30 days. "browser" also covers mobile and unknown SDKs. */
 export type Source = "server" | "browser" | "mixed" | null;
 
-/** A source class counts for this long after its last event. */
+/** A source class counts for this long in the shown source (never for the trust). */
 export const TRUST_WINDOW_MS = 30 * 86_400_000;
 
 /** The trust columns of a project row. */
@@ -27,7 +30,17 @@ export interface TrustColumns {
 	trust: string | null;
 	server_seen_at: string | null;
 	client_seen_at: string | null;
+	/** 1 when an active DSN key of the app has a client mark (CLIENT_MARKED_SQL). */
+	client_marked: number | boolean;
 }
+
+/**
+ * CLIENT_MARKED_SQL for a projects row with the given alias: 1 when an active key has a client
+ * mark. SQL text from constants only (no values, no parameters).
+ */
+export const CLIENT_MARKED_SQL = (alias: "p" | "projects") =>
+	`EXISTS (SELECT 1 FROM project_keys k WHERE k.project_id = ${alias}.id
+		AND k.revoked_at IS NULL AND k.client_marked_at IS NOT NULL)`;
 
 // Exact names (and integration suffixes where the whole SDK family runs on servers).
 const SERVER_FAMILIES = ["sentry.python", "sentry.ruby", "sentry.php", "sentry.go"];
@@ -116,10 +129,10 @@ export function trustCutoff(now: Date): string {
 
 const counts = (seenAt: string | null, cutoff: string) => seenAt !== null && seenAt >= cutoff;
 
-/** The trust now: the admin setting, or low when a client source counts. */
-export function effectiveTrust(row: TrustColumns, now: Date): Trust {
+/** The trust: the admin setting, or low when an active key has a client mark. No expiry. */
+export function effectiveTrust(row: TrustColumns): Trust {
 	if (row.trust === "low" || row.trust === "high") return row.trust;
-	return counts(row.client_seen_at, trustCutoff(now)) ? "low" : "high";
+	return row.client_marked === true || row.client_marked === 1 ? "low" : "high";
 }
 
 /** The sources that count now. */
@@ -134,14 +147,14 @@ export function sourceOf(row: TrustColumns, now: Date): Source {
 }
 
 /**
- * effectiveTrust() in SQL, for a projects row with the given alias. It has one parameter:
- * trustCutoff(now). SQL text from constants only (no values).
+ * effectiveTrust() in SQL, for a projects row with the given alias. It has no parameters.
+ * SQL text from constants only (no values).
  */
 export const EFFECTIVE_TRUST_SQL = (alias: "p" | "projects") =>
-	`coalesce(${alias}.trust, CASE WHEN ${alias}.client_seen_at >= ? THEN 'low' ELSE 'high' END)`;
+	`coalesce(${alias}.trust, CASE WHEN ${CLIENT_MARKED_SQL(alias)} THEN 'low' ELSE 'high' END)`;
 
 /** The trust fields of the API (additive): trust, source_trust (always equal), source. */
 export function trustFields(row: TrustColumns, now: Date) {
-	const trust = effectiveTrust(row, now);
+	const trust = effectiveTrust(row);
 	return { trust, source_trust: trust, source: sourceOf(row, now) };
 }

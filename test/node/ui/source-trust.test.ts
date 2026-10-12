@@ -57,6 +57,31 @@ describe("source trust in the UI", () => {
 		expect(api).not.toContain("data-trust-note");
 	});
 
+	it("a marked key keeps the app low after 30 quiet days; a new key makes it high", async () => {
+		const ui = await setup();
+		// The browser event is 31 days old (the session would not last a clock jump).
+		await ui.ports.db.run(
+			sql`UPDATE projects SET client_seen_at = ${new Date(ui.clock.now().getTime() - 31 * 86_400_000).toISOString()}
+				WHERE id = ${ui.web.internalId}`,
+		);
+		await send(ui, ui.web, server("e"));
+		const before = await ui.page(`/apps/${ui.web.id}`);
+		expect(before).toContain("Server SDK · Low trust</span>");
+		expect(before).toContain("The app stays low trust, also when these events stop");
+		expect(before).toContain("make a new app key");
+		await ui.ports.db.run(
+			sql`UPDATE project_keys SET revoked_at = ${ui.clock.now().toISOString()}
+				WHERE project_id = ${ui.web.internalId}`,
+		);
+		await ui.ports.db.run(
+			sql`INSERT INTO project_keys (project_id, public_key, created_at)
+				VALUES (${ui.web.internalId}, ${"f".repeat(32)}, ${ui.clock.now().toISOString()})`,
+		);
+		const after = await ui.page(`/apps/${ui.web.id}`);
+		expect(after).toContain("Server SDK · High trust</span>");
+		expect(after).not.toContain("data-trust-note");
+	});
+
 	it("an admin setting shows as set by hand", async () => {
 		const ui = await setup();
 		await ui.ports.db.run(sql`UPDATE projects SET trust = 'high' WHERE name = 'Web'`);

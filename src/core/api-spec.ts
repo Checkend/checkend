@@ -95,7 +95,7 @@ export const API_ROUTES: ApiRoute[] = [
 		path: "/v1/projects",
 		scope: "issues:read",
 		summary:
-			"List projects with their DSNs. trust (low or high) and source_trust (always equal): the admin setting (trust_setting), else low when a browser, mobile or unknown SDK sent events in the last 30 days. source: server, browser, mixed, or null (no events in 30 days); server_seen_at and client_seen_at.",
+			"List projects with their DSNs. trust (low or high) and source_trust (always equal): the admin setting (trust_setting), else low when a browser, mobile or unknown SDK sent an event with an active DSN key (no expiry; key rotation clears it). source: server, browser, mixed, or null (no events in 30 days); server_seen_at and client_seen_at.",
 	},
 	{
 		method: "POST",

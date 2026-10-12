@@ -72,7 +72,9 @@ Lists all projects, with their DSNs. Each project also has:
 - `trust_setting`: `low`, `high`, or `null` (automatic)
 - `source_trust`: always the same as `trust`
 - `source`: where the events of the last 30 days came from: `server`, `browser` (a browser, a
-  mobile app or an unknown SDK), `mixed`, or `null` (no events in 30 days)
+  mobile app or an unknown SDK), `mixed`, or `null` (no events in 30 days). It does not set the
+  trust: a DSN key that got a browser-class event keeps the project `low` until the key is
+  revoked
 - `server_seen_at` and `client_seen_at`: the last event from a server source, and from a browser,
   mobile or unknown source (written at most once an hour), or `null`
 - `allowed_origins`: a list of origins, or `null` (any origin)
@@ -141,7 +143,8 @@ When `REQUIRE_APPROVAL` includes `delete_project`, an API token gets `202`
 ### `POST /v1/projects/:project/keys`
 
 Adds a DSN key to a project, so that you can rotate the DSN. Needs the `admin` scope. Returns `201`
-with `public_key` and the new `dsn`.
+with `public_key` and the new `dsn`. A new key has no browser mark: after the old key is revoked,
+the [trust](sending-errors.md#trust-and-allowed-origins) of the project can be `high` again.
 
 ### `DELETE /v1/projects/:project/keys/:key`
 

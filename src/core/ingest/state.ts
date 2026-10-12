@@ -142,6 +142,18 @@ export class SourceMarks {
 		if (this.entries.size > 1000) this.entries.clear();
 		this.entries.set(`${projectId}:${source}`, now.getTime());
 	}
+
+	/** The DSN keys that this isolate marked as client: the mark does not expire. */
+	private keys = new Set<string>();
+
+	keyDue(projectId: number, key: string): boolean {
+		return !this.keys.has(`${projectId}:${key}`);
+	}
+
+	markKey(projectId: number, key: string): void {
+		if (this.keys.size > 1000) this.keys.clear();
+		this.keys.add(`${projectId}:${key}`);
+	}
 }
 
 /** In-memory ingest state of one isolate. The app holds one instance. */

@@ -71,6 +71,12 @@ export interface StoreOptions {
 	/** The event came from POST /v1/ingest (X-Checkend-Key): a server source. */
 	native?: boolean;
 	/**
+	 * The DSN key of the event (lowercase). A client event marks it for good (core/trust.ts).
+	 * Without it (an older queue message, a direct call), a client event marks every active key
+	 * of the project (fail closed).
+	 */
+	key?: string;
+	/**
 	 * The setup test event: its issue is a test issue (resolved), and the write adds no
 	 * regression, fix change, webhook delivery, hourly count or user (so no alert, count or quota).
 	 */
@@ -101,7 +107,14 @@ export async function storeEvent(
 		ports,
 		state,
 		projectId,
-		[{ prepared, browser: options.browser ?? false, native: options.native ?? false }],
+		[
+			{
+				prepared,
+				browser: options.browser ?? false,
+				native: options.native ?? false,
+				...(options.key === undefined ? {} : { key: options.key }),
+			},
+		],
 		options,
 	);
 }
@@ -115,7 +128,7 @@ export async function storeEvents(
 	ports: StorePorts,
 	state: IngestState,
 	projectId: number,
-	items: { prepared: PreparedEvent; browser: boolean; native?: boolean }[],
+	items: { prepared: PreparedEvent; browser: boolean; native?: boolean; key?: string }[],
 	options: StoreOptions = {},
 ): Promise<StoreResult> {
 	const sleep = options.sleep ?? defaultSleep;
@@ -142,6 +155,7 @@ export async function storeEvents(
 			let stored = false;
 			const newTagKeys: string[] = [];
 			const sourceMarks: SourceClass[] = [];
+			const keyMarks: string[] = [];
 			const blobs: { key: string; bytes: Uint8Array }[] = [];
 			for (const [i, item] of items.entries()) {
 				const raw = raws[i] ?? { inline: null, blob: null };
@@ -152,7 +166,12 @@ export async function storeEvents(
 					item.prepared,
 					raw,
 					item.prepared.payloadBytes,
-					{ ...options, browser: item.browser, native: item.native ?? false },
+					{
+						...options,
+						browser: item.browser,
+						native: item.native ?? false,
+						...(item.key === undefined ? {} : { key: item.key }),
+					},
 				);
 				// The blob goes first: the row that names it is written after it.
 				if (write.mode === "full" && raw.blob) blobs.push(raw.blob);
@@ -162,6 +181,7 @@ export async function storeEvents(
 				stored ||= write.mode === "full";
 				newTagKeys.push(...write.newTagKeys);
 				if (write.sourceMark) sourceMarks.push(write.sourceMark);
+				if (write.keyMark) keyMarks.push(write.keyMark);
 			}
 			await Promise.all(blobs.map((blob) => ports.blobs?.put(blob.key, blob.bytes)));
 			const results = await ports.db.batch(statements);
@@ -174,6 +194,7 @@ export async function storeEvents(
 			state.budget.add(now, rows);
 			state.tagKeys.add(projectId, newTagKeys);
 			for (const source of sourceMarks) state.sources.mark(projectId, source, now);
+			for (const key of keyMarks) state.sources.markKey(projectId, key);
 			return { outcome: stored ? "stored" : "counted", attempts: attempt, deliveries, rows };
 		} catch (error) {
 			lastError = error;
@@ -214,6 +235,8 @@ interface PlannedWrite {
 	deliveryStatements: number[];
 	/** The source class whose seen time the write sets, if any. */
 	sourceMark: SourceClass | null;
+	/** The DSN key that the write marks as client, if any (null also when all keys are marked). */
+	keyMark: string | null;
 }
 
 async function planWrite(
@@ -290,6 +313,28 @@ async function planWrite(
 		);
 	}
 	const test = options.test === true;
+	// A client event marks its DSN key for good: the key is public, so the app stays low trust
+	// until the key is rotated or an admin sets the trust (core/trust.ts). Once per key (the
+	// statement writes nothing for a marked key). Not for the setup test event: Checkend makes
+	// it, no DSN key sends it.
+	let keyMark: string | null = null;
+	let keyRows = 0;
+	if (source === "client" && !test) {
+		if (options.key === undefined) {
+			statements.push(
+				sql`UPDATE project_keys SET client_marked_at = ${nowIso}
+					WHERE project_id = ${projectId} AND revoked_at IS NULL AND client_marked_at IS NULL`,
+			);
+			keyRows = ROWS_SOURCE_MARK;
+		} else if (state.sources.keyDue(projectId, options.key)) {
+			statements.push(
+				sql`UPDATE project_keys SET client_marked_at = ${nowIso}
+					WHERE project_id = ${projectId} AND public_key = ${options.key} AND client_marked_at IS NULL`,
+			);
+			keyMark = options.key;
+			keyRows = ROWS_SOURCE_MARK;
+		}
+	}
 	if (!test) {
 		statements.push(
 			// A new event reopens a resolved issue (a regression). Not for an event_id that is stored.
@@ -382,7 +427,8 @@ async function planWrite(
 		(existing ? 0 : ROWS_NEW_ISSUE) +
 		newTagKeys.length * ROWS_PER_TAG_KEY +
 		(prepared.userHash ? ROWS_PER_USER : 0) +
-		(sourceMark ? ROWS_SOURCE_MARK : 0);
+		(sourceMark ? ROWS_SOURCE_MARK : 0) +
+		keyRows;
 	const day = nowIso.slice(0, 10);
 	statements.push(
 		sql`INSERT INTO daily_usage (day, events_received, events_stored, rows_written)
@@ -392,5 +438,5 @@ async function planWrite(
 				events_stored = events_stored + excluded.events_stored,
 				rows_written = rows_written + excluded.rows_written`,
 	);
-	return { mode, statements, rows, newTagKeys, deliveryStatements, sourceMark };
+	return { mode, statements, rows, newTagKeys, deliveryStatements, sourceMark, keyMark };
 }

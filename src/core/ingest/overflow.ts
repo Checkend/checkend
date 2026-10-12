@@ -21,6 +21,8 @@ export interface IngestMessage {
 	browser: boolean;
 	/** POST /v1/ingest (a server source). Optional: older messages do not have it. */
 	native?: boolean;
+	/** The DSN key (core/trust.ts). Optional: older messages do not have it (fail closed). */
+	key?: string;
 	/** The prepared event; or blob_key, when the message would be too large for the queue. */
 	prepared?: PreparedEvent;
 	blob_key?: string;
@@ -41,6 +43,7 @@ export async function enqueueEvent(
 	prepared: PreparedEvent,
 	browser: boolean,
 	native = false,
+	key?: string,
 ): Promise<boolean> {
 	if (!ports.ingestQueue) return false;
 	const message: IngestMessage = {
@@ -49,6 +52,7 @@ export async function enqueueEvent(
 		project_id: projectId,
 		browser,
 		...(native ? { native } : {}),
+		...(key === undefined ? {} : { key }),
 		prepared,
 	};
 	try {
@@ -107,6 +111,7 @@ export async function consumeIngest(
 				prepared: PreparedEvent;
 				browser: boolean;
 				native: boolean;
+				key?: string;
 				blobKey?: string;
 			}[];
 		}
@@ -134,6 +139,7 @@ export async function consumeIngest(
 			prepared,
 			browser: body.browser,
 			native: body.native === true,
+			...(typeof body.key === "string" ? { key: body.key } : {}),
 			...(body.blob_key ? { blobKey: body.blob_key } : {}),
 		});
 		groups.set(key, group);

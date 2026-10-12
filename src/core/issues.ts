@@ -1,6 +1,6 @@
 import * as v from "valibot";
 import { type Db, sql } from "../ports/db.ts";
-import { trustFields } from "./trust.ts";
+import { CLIENT_MARKED_SQL, trustFields } from "./trust.ts";
 
 /**
  * Read API (v1). Route schemas are Valibot, so that the OpenAPI document can be generated
@@ -129,6 +129,7 @@ const SCORED_ISSUES = `SELECT *,
 			i.first_release, i.last_release, i.fingerprint, i.fingerprint_version, i.merged_into,
 			i.claimed_by, i.claim_expires_at, i.project_id AS project_row_id, i.test,
 			p.trust AS trust_setting, p.server_seen_at, p.client_seen_at,
+			${CLIENT_MARKED_SQL("p")} AS client_marked,
 			(SELECT coalesce(sum(c.count), 0) FROM issue_counts c WHERE c.issue_id = i.id AND c.hour > ?) AS events_24h,
 			(SELECT coalesce(sum(c.count), 0) FROM issue_counts c WHERE c.issue_id = i.id AND c.hour > ?) AS events_7d
 		FROM issues i JOIN projects p ON p.id = i.project_id WHERE p.deleted_at IS NULL) scored`;
@@ -163,6 +164,7 @@ const forApi = (row: IssueRow, now: Date) => {
 		trust_setting,
 		server_seen_at,
 		client_seen_at,
+		client_marked,
 		...rest
 	} = withClaim(row, now);
 	// The trust of the project (core/trust.ts); the seen times stay on the project.
@@ -171,6 +173,7 @@ const forApi = (row: IssueRow, now: Date) => {
 			trust: trust_setting as string | null,
 			server_seen_at: server_seen_at as string | null,
 			client_seen_at: client_seen_at as string | null,
+			client_marked: client_marked as number,
 		},
 		now,
 	);

@@ -61,8 +61,8 @@ alerts show it with care:
   under a warning line, and the label `checkend`.
 
 Alerts follow `min_trust` as webhooks do: by default (`high`), they skip
-[low-trust](sending-errors.md#trust-and-allowed-origins) issues. A project is low trust when, in
-the last 30 days, it got an event from a browser, a mobile app or an unknown SDK. To get alerts
+[low-trust](sending-errors.md#trust-and-allowed-origins) issues. A project is low trust when an
+active DSN key of it got an event from a browser, a mobile app or an unknown SDK. To get alerts
 for such a project, set its trust to `high`, or set the `min_trust` of the alert to `low`.
 
 ## Email
