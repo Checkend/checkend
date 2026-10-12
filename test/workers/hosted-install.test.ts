@@ -144,7 +144,8 @@ describe("a provisioned hosted install", () => {
 		await stub.destroy();
 		expect((await env.BLOBS.list({ prefix })).objects).toEqual([]);
 		expect(await env.BLOBS.get(`${otherPrefix}maps/keep`)).not.toBeNull();
-	});
+		// 1003 puts and deletes in the local R2 take about 5 s on a CI runner: more than the default.
+	}, 30_000);
 
 	it("deletes all its data and its alarm with destroy(), then refuses requests", async () => {
 		const stub = await provisioned("hosted-destroy", "d3s7r0");
