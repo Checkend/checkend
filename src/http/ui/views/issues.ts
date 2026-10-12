@@ -1,8 +1,10 @@
+import { CLAIM_DEFAULT_MINUTES } from "../../../core/claims.ts";
 import type { InboxFacets, InboxPage, InboxQuery, TagCount } from "../../../core/inbox.ts";
 import type { NormalizedEvent } from "../../../core/ingest/normalize.ts";
-import { ISSUE_STATUSES, type IssueRow } from "../../../core/issues.ts";
-import { count, type Html, h, time } from "../html.ts";
-import { eventPath, issuePath } from "../ids.ts";
+import { type Claim, ISSUE_STATUSES, type IssueRow } from "../../../core/issues.ts";
+import { curl } from "../../../core/recipes.ts";
+import { count, type Html, h, time, until } from "../html.ts";
+import { eventPath, issuePath, issueRef } from "../ids.ts";
 import { pageHead, untrusted } from "../layout.ts";
 import { displayText as t } from "../text.ts";
 import { type TrustView, trustLabel } from "../trust.ts";
@@ -112,6 +114,133 @@ export interface IssueDetail {
 	event: (Record<string, unknown> & { event: NormalizedEvent }) | null;
 	events: IssueRow[];
 	tags: TagCount[];
+	actions: IssueActions;
+}
+
+/** What the signed-in member can do on the issue page. */
+export interface IssueActions {
+	/** The public URL of this install, with its base path: for the prompt and the commands. */
+	origin: string;
+	csrf: string;
+	/** The member holds the active claim. */
+	holdsClaim: boolean;
+	/** An owner: can release a claim that another actor holds. */
+	canReleaseAny: boolean;
+	/** The `done` value of the redirect after an action (unknown values show nothing). */
+	done: string | undefined;
+}
+
+// --- "Fix this" and the actions -------------------------------------------------------
+
+/** Open issues: an agent (or a person) can fix them. */
+const OPEN = new Set(["unresolved", "regressed"]);
+/** Closed by a person: Unresolve opens them again. fix_pending and verified belong to the fix loop. */
+const CLOSED = new Set(["resolved", "ignored"]);
+
+/**
+ * The prompt of "Copy prompt for your agent". The issue is named by its ID and URL only: the title
+ * is event data, and a prompt must not carry text that an agent could read as an instruction.
+ */
+export function fixPrompt(origin: string, issueId: number): string {
+	const id = issueRef(issueId);
+	return `Fix the Checkend issue ${id} (${origin}${issuePath(id)}). Read its brief: run \`ce issue view ${id}\`, or call the MCP tool get_issue_brief with issue_id ${id}. Call claim_issue, so that other agents do not work on the same issue. Find the cause in this repository, fix it, and add a test that reproduces the error. Make a commit or pull request, then call link_fix with the commit SHA or the pull request URL. Checkend verifies the fix after the deploy.`;
+}
+
+/** The same steps as commands, for people who use the CLI. The token comes from the environment. */
+export function fixCommands(origin: string, issueId: number): string {
+	const id = issueRef(issueId);
+	const api = `${origin}/v1/issues/${id}`;
+	return `ce issue view ${id}
+
+# Claim it (${CLAIM_DEFAULT_MINUTES / 60} hours), so that agents do not work on it:
+${curl("POST", `${api}/claim`, "CHECKEND_TOKEN")}
+
+# After the commit: link the fix (or {"pr_url":"<url>"}).
+${curl("POST", `${api}/fix`, "CHECKEND_TOKEN", '{"commit":"<sha>"}')}`;
+}
+
+/** The notice after an action: fixed texts only, never the query value. */
+const NOTICES: Record<string, string> = {
+	resolve: "You resolved this issue by hand. A new event opens it again.",
+	ignore: "You ignored this issue. New events do not open it again.",
+	unresolve: "You opened this issue again.",
+	claim: `You claimed this issue for ${CLAIM_DEFAULT_MINUTES / 60} hours.`,
+	claim_taken: "Another member or agent claimed this issue first.",
+	release: "The claim is released.",
+	not_holder: "Only the holder of the claim or an owner can release it.",
+	approval:
+		"The action waits for an approval, because this install needs approvals for it (REQUIRE_APPROVAL).",
+};
+
+function fixBlock(issueId: number, origin: string): Html {
+	return h`<section class="fix" aria-labelledby="fix-title">
+<div class="fix-head"><div><h2 id="fix-title">Fix this</h2>
+<p class="muted">Paste the prompt into your coding agent. It reads the brief, claims the issue, fixes it and links the fix.</p></div>
+<button class="btn" type="button" data-copy-text="${fixPrompt(origin, issueId)}">Copy prompt for your agent</button></div>
+<details class="fix-cli"><summary>Do it yourself with the CLI</summary>
+<pre class="snippet"><code>${fixCommands(origin, issueId)}</code></pre>
+<p class="hint">Put an API token with <code>issues:write</code> in <code>CHECKEND_TOKEN</code>.</p>
+</details>
+</section>`;
+}
+
+const actionForm = (issueId: number, action: string, csrf: string, label: string) =>
+	h`<form method="post" action="${issuePath(issueId)}/${action}"><input type="hidden" name="_csrf" value="${csrf}"><button class="btn btn-quiet btn-small" type="submit">${label}</button></form>`;
+
+function claimLine(
+	issueId: number,
+	claim: Claim | null,
+	a: IssueActions,
+	open: boolean,
+	now: Date,
+): Html {
+	if (!claim) {
+		return open
+			? h`<div class="claim"><span class="muted">Nobody works on this issue.</span>${actionForm(issueId, "claim", a.csrf, "Claim")}</div>`
+			: h``;
+	}
+	const release = a.holdsClaim
+		? actionForm(issueId, "release", a.csrf, "Release")
+		: a.canReleaseAny
+			? h`<details class="confirm"><summary>Release the claim</summary>
+<form method="post" action="${issuePath(issueId)}/release"><input type="hidden" name="_csrf" value="${a.csrf}">
+<p>Release the claim of ${t(claim.holder, 100)}? Another agent can then work on this issue.</p>
+<button class="btn btn-danger btn-small" type="submit">Release the claim</button>
+</form></details>`
+			: "";
+	return h`<div class="claim"><span>Claimed by ${a.holdsClaim ? "you, " : ""}<strong>${t(claim.holder, 100)}</strong>, expires ${until(claim.expires_at, now)}</span>${release}</div>`;
+}
+
+function statusActions(issueId: number, status: string, a: IssueActions): Html {
+	if (OPEN.has(status)) {
+		return h`<div class="status-actions">${actionForm(issueId, "resolve", a.csrf, "Resolve")}
+<details class="confirm"><summary>Ignore</summary>
+<form method="post" action="${issuePath(issueId)}/ignore"><input type="hidden" name="_csrf" value="${a.csrf}">
+<p>Ignore this issue? New events do not open it again, and it leaves the open issues.</p>
+<button class="btn btn-danger btn-small" type="submit">Ignore issue</button>
+</form></details></div>
+<p class="hint">Resolve closes the issue by hand: it is not a verified fix. Checkend verifies a fix only after a deploy.</p>`;
+	}
+	if (CLOSED.has(status)) {
+		return h`<div class="status-actions">${actionForm(issueId, "unresolve", a.csrf, "Unresolve")}</div>`;
+	}
+	if (status === "fix_pending") {
+		return h`<p class="hint">A fix is linked. Checkend checks it after the deploy that contains it.</p>`;
+	}
+	return h``;
+}
+
+function actionsBlock(issue: Record<string, unknown>, a: IssueActions, now: Date): Html {
+	const id = Number(issue.id);
+	const status = String(issue.status);
+	if (status === "merged") return h``;
+	const notice = a.done && Object.hasOwn(NOTICES, a.done) ? NOTICES[a.done] : null;
+	return h`${notice ? h`<p class="notice" role="status">${notice}</p>` : ""}
+${OPEN.has(status) ? fixBlock(id, a.origin) : ""}
+<div class="issue-actions">
+${claimLine(id, (issue.claim as Claim | null) ?? null, a, OPEN.has(status), now)}
+${statusActions(id, status, a)}
+</div>`;
 }
 
 function tagsView(tags: TagCount[], stored: number): Html {
@@ -131,7 +260,7 @@ function tagsView(tags: TagCount[], stored: number): Html {
 
 /** One issue: facts, in-app frames of the latest event, tags, and the recent events. */
 export function issueView(detail: IssueDetail, now: Date): Html {
-	const { issue, project, event, events, tags } = detail;
+	const { issue, project, event, events, tags, actions } = detail;
 	const e = event?.event;
 	const facts: [string, Html | string][] = [
 		["Events", count(issue.times_seen)],
@@ -148,6 +277,7 @@ export function issueView(detail: IssueDetail, now: Date): Html {
 		h`${statusPill(issue.status)} <span class="level level-${String(issue.level)}">${t(issue.level)}</span> ${issue.culprit ? h`<span class="mono">${t(issue.culprit, 300)}</span>` : ""}`,
 		h`<a href="/issues">Issues</a>${project ? h` / <a href="/issues?project=${project.id}">${t(project.name, 100)}</a>` : ""}`,
 	)}
+${actionsBlock(issue, actions, now)}
 <dl class="facts">${facts.map(
 		([k, v]) => h`<div><dt>${k}</dt>
 <dd>${v}</dd></div>`,

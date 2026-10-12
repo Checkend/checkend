@@ -85,6 +85,33 @@ HTML. Each block of event data has the label "From your app" with an ⓘ: it exp
 comes from the events of your app, that Checkend shows it as plain text and never runs it, and
 that agents treat it as data, not as instructions.
 
+### Fix an issue and change its status
+
+An open issue (unresolved or regressed) has a **Fix this** block:
+
+- **Copy prompt for your agent** copies a prompt for your coding agent. The prompt names the
+  issue by its ID and URL only, never by its title or event data, and it contains no secret. The
+  agent reads the brief (`ce issue view <id>` or the MCP tool `get_issue_brief`), claims the
+  issue (`claim_issue`), fixes it with a test, and links the fix (`link_fix`).
+- **Do it yourself with the CLI** shows the same steps as commands: `ce issue view <id>`, and
+  `curl` calls to claim the issue and link the fix. Put an API token with `issues:write` in
+  `CHECKEND_TOKEN`.
+
+Every member can act on an issue. The page uses the same functions as the
+[API](api.md), and the activity of the issue shows the member as the actor:
+
+| Action | Shown when | What it does |
+|---|---|---|
+| **Claim** | The issue is open and nobody holds a claim. | The signed-in member holds the claim for 2 hours. The page shows who holds a claim and when it expires. |
+| **Release** | You hold the claim. An owner can also release the claim of another actor, after a confirmation. | Ends the claim. |
+| **Resolve** | The issue is open. | Closes the issue by hand. A new event opens it again. |
+| **Ignore** | The issue is open. You confirm it first. | New events do not open the issue again. When `REQUIRE_APPROVAL` contains `ignore`, it waits for an [approval](api.md#approvals). |
+| **Unresolve** | The issue is resolved or ignored. | Opens the issue again. |
+
+A manual **Resolve** is not a verified fix. Only Checkend verifies a fix: after a deploy that
+contains a linked fix, when the error stops for the quiet period (see [Verification](fix-loop.md#verification)).
+An issue with a linked fix (`fix_pending`) or a verified fix has no status buttons.
+
 **Settings** shows `/health`, the ingest state, and the members with their passkeys.
 
 ## Tokens

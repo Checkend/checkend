@@ -33,5 +33,12 @@ export const time = (iso: string | number | null | undefined, now: Date): Html =
 		? h`<time datetime="${iso}" title="${iso.replace("T", " ").slice(0, 19)} UTC">${ago(iso, now)}</time>`
 		: h`<span class="muted">never</span>`;
 
+/** A future time, for example "in 2 h", with the exact UTC time on hover. */
+export function until(iso: string, now: Date): Html {
+	const m = Math.max(1, Math.round((Date.parse(iso) - now.getTime()) / 60_000));
+	const text = m < 60 ? `in ${m} min` : `in ${Math.round(m / 60)} h`;
+	return h`<time datetime="${iso}" title="${iso.replace("T", " ").slice(0, 19)} UTC">${text}</time>`;
+}
+
 /** A number with thousands separators. */
 export const count = (n: unknown): string => Number(n ?? 0).toLocaleString("en-US");

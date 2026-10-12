@@ -321,6 +321,23 @@ details.confirm > summary { cursor: pointer; color: var(--red); font-size: 13px;
 details.confirm form { margin-top: 8px; max-width: 260px; }
 details.confirm p { margin: 0 0 8px; font-size: 13px; }
 
+/* Issue page: Fix this, claim and status actions */
+.fix { margin: 0 0 16px; padding: 16px 18px; border: 1px solid color-mix(in srgb, var(--violet) 35%, var(--line)); border-radius: 12px; background: var(--panel); }
+.fix-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px 20px; }
+.fix h2 { margin: 0 0 4px; font-size: 16px; }
+.fix-head p { margin: 0; font-size: 13.5px; max-width: 60ch; }
+.fix-cli { margin-top: 12px; }
+.fix-cli > summary { cursor: pointer; font-size: 13px; color: var(--muted); }
+.fix-cli > summary:hover, .fix-cli[open] > summary { color: var(--fg); }
+.fix-cli pre.snippet { margin-top: 8px; white-space: pre; }
+.issue-actions { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 10px 24px; margin: 0 0 20px; }
+.issue-actions > .hint { flex-basis: 100%; margin: 0; }
+.claim, .status-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; font-size: 14px; }
+.status-actions { align-items: flex-start; }
+.issue-actions form { margin: 0; }
+.issue-actions details.confirm > summary { display: inline-flex; align-items: center; min-height: 28px; }
+.notice + .fix, .notice + .issue-actions { margin-top: 12px; }
+
 /* Narrow screens */
 @media (max-width: 900px) {
   .filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -355,6 +372,8 @@ details.confirm p { margin: 0 0 8px; font-size: 13px; }
   .prompt-card, .progress { padding: 16px; }
   pre.prompt { padding: 14px; font-size: 13px; }
   .prompt-actions .btn { width: 100%; }
+  .fix { padding: 14px; }
+  .fix-head .btn { width: 100%; }
   .steps li { grid-template-columns: 22px minmax(0, 1fr); }
   .step-detail { grid-column: 2; text-align: left; }
   table.apps thead { display: none; }

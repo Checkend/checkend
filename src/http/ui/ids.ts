@@ -7,6 +7,8 @@
 const ROW_ID = /^[1-9]\d{0,14}$/;
 const PROJECT_ID = /^[1-9]\d{9}$/;
 
+/** The issue ID as people and agents type it: in prompts, `ce issue view <id>` and the API. */
+export const issueRef = (id: number | string): string => String(id);
 export const issuePath = (id: number | string | null | undefined): string => `/issues/${id}`;
 export const eventPath = (id: number | string | null | undefined): string => `/events/${id}`;
 /** An app (a project in the API) by its public ID. The UI says "app". */

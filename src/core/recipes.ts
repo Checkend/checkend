@@ -71,7 +71,7 @@ export const AGENT_TASKS: readonly AgentTask[] = [
 ];
 
 /** The fallback HTTP calls: the key or token always comes from an environment variable. */
-const curl = (method: string, url: string, token: string, body?: string) =>
+export const curl = (method: string, url: string, token: string, body?: string) =>
 	`curl -X ${method} "${url}" -H "Authorization: Bearer $${token}"${
 		body ? ` \\\n  -H "Content-Type: application/json" -d '${body}'` : ""
 	}`;

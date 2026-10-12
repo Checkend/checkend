@@ -60,6 +60,15 @@ export async function claimIssue(
 	};
 }
 
+/** True when the actor holds an active claim on the issue. */
+export async function holdsClaim(ports: P, actor: Actor, issueId: number): Promise<boolean> {
+	const row = await ports.db.first<{ id: number }>(
+		sql`SELECT id FROM issues WHERE id = ${issueId} AND claim_expires_at > ${ports.clock.now().toISOString()}
+			AND claimed_by_type = ${actor.type} AND coalesce(claimed_by_id, -1) = ${actor.id ?? -1}`,
+	);
+	return row !== null;
+}
+
 /** Releases a claim. Only the holder or an admin can release an active claim. */
 export async function releaseClaim(ports: P, actor: Actor, issueId: number): Promise<ClaimResult> {
 	const now = ports.clock.now();

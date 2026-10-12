@@ -17,10 +17,12 @@ import {
 	SESSION_TTL_MS,
 	type Session,
 } from "../../core/auth/sessions.ts";
+import { claimIssue, holdsClaim, releaseClaim } from "../../core/claims.ts";
 import { checkHealth } from "../../core/health.ts";
 import { inboxFacets, issueTags, listInbox } from "../../core/inbox.ts";
 import type { IngestState } from "../../core/ingest/state.ts";
 import { ingestStatus } from "../../core/ingest-status.ts";
+import { setIssueStatus } from "../../core/issue-actions.ts";
 import {
 	decodeCursor,
 	findProjectRowId,
@@ -39,7 +41,7 @@ import { basePathOf, publicBase, withBase } from "../base-path.ts";
 import { publicOrigin } from "../origin.ts";
 import { assetRoutes } from "./assets/index.ts";
 import { type Html, h } from "./html.ts";
-import { appPath, parseEventId, parseIssueId, parseProjectId } from "./ids.ts";
+import { appPath, issuePath, parseEventId, parseIssueId, parseProjectId } from "./ids.ts";
 import { page, type Section } from "./layout.ts";
 import { type Onboarding, progressJson, setupPrompt } from "./onboarding.ts";
 import {
@@ -282,15 +284,65 @@ export function uiRoutes(app: Hono<AppEnv>, state: IngestState, onboarding: Onbo
 				sql`SELECT public_id AS id, name FROM projects WHERE public_id = ${Number(issue.project_id)}`,
 			),
 		]);
+		const actor = c.get("actor");
+		const actions = {
+			origin: publicBase(c),
+			csrf: c.get("session").csrfToken,
+			holdsClaim: await holdsClaim(c.env.ports, actor, id),
+			canReleaseAny: hasScope(actor, "admin"),
+			done: c.req.query("done"),
+		};
 		return render(
 			c,
 			displayText(issue.title, 80),
 			"issues",
 			issueView(
-				{ issue, project, event: latest as Parameters<typeof issueView>[0]["event"], events, tags },
+				{
+					issue,
+					project,
+					event: latest as Parameters<typeof issueView>[0]["event"],
+					events,
+					tags,
+					actions,
+				},
 				now(c),
 			),
 		);
+	});
+
+	// Human actions: the core functions of the API (/v1/issues/:id/...), with the member as actor.
+	// Each one redirects back to the issue page with a fixed notice.
+	const backTo = (c: Context<AppEnv>, id: number, done: string) =>
+		c.redirect(`${issuePath(id)}?done=${done}`, 303);
+
+	for (const [action, status] of [
+		["resolve", "resolved"],
+		["ignore", "ignored"],
+		["unresolve", "unresolved"],
+	] as const) {
+		app.post(`/issues/:id/${action}`, ...member, checkFormCsrf, async (c) => {
+			const id = parseIssueId(c.req.param("id"));
+			if (id === null) return notFound(c);
+			const result = await setIssueStatus(c.env.ports, c.get("actor"), id, status);
+			if (result.kind === "not_found" || result.kind === "invalid") return notFound(c);
+			return backTo(c, id, result.kind === "approval_required" ? "approval" : action);
+		});
+	}
+
+	app.post("/issues/:id/claim", ...member, checkFormCsrf, async (c) => {
+		const id = parseIssueId(c.req.param("id"));
+		if (id === null) return notFound(c);
+		const result = await claimIssue(c.env.ports, c.get("actor"), id);
+		if (result.kind === "not_found") return notFound(c);
+		return backTo(c, id, result.kind === "claimed" ? "claim_taken" : "claim");
+	});
+
+	app.post("/issues/:id/release", ...member, checkFormCsrf, async (c) => {
+		const id = parseIssueId(c.req.param("id"));
+		if (id === null) return notFound(c);
+		const result = await releaseClaim(c.env.ports, c.get("actor"), id);
+		if (result.kind === "not_found") return notFound(c);
+		return backTo(c, id, result.kind === "not_holder" ? "not_holder" : "release");
 	});
 
 	app.get("/events/:id", ...member, async (c) => {
