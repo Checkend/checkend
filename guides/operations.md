@@ -97,7 +97,7 @@ A maintainer pushes a version tag, for example `v0.9.0`. The workflow
 
 1. runs the checks (`npm run check`)
 2. builds the multi-arch image (`linux/amd64` and `linux/arm64`) and pushes it to
-   `ghcr.io/checkend/checkend`
+   `ghcr.io/checkend/checkend` by its digest only, with no tag
 3. builds the Worker bundle (`checkend-worker-<version>.tar.gz`, one ES module `worker.js`) and
    the migrations (`checkend-migrations-<version>.tar.gz`), and pins the Caddy and cloudflared
    images by their multi-arch digest
@@ -106,6 +106,11 @@ A maintainer pushes a version tag, for example `v0.9.0`. The workflow
 5. in the environment `release`, after a maintainer approves the job: signs the manifest
    (`checkend-release.json.sig`), checks the signature with `release/allowed_signers`, and
    publishes the release
+6. after the release is published: checks the signed manifest again, then adds the tags
+   `:<version>`, `:<major>.<minor>` and `:latest` to the image digest that the manifest pins,
+   and checks that each tag points to that digest
+
+So no image tag points to a release that a maintainer did not approve.
 
 The manifest never has a secret or a default value of a secret. A release that is not signed
 stays a draft, so `ce` never sees it.

@@ -1,10 +1,12 @@
 # Runs when a maintainer pushes a version tag (vX.Y.Z). Agents never push tags.
-# It checks the code, pushes the multi-arch image to GHCR, builds the Worker bundle and the
-# migrations, writes the release manifest (checkend-release.json, format 1; the reader is
-# checkend-cli internal/serverrelease) and makes a DRAFT release. Then it signs the manifest in
-# the environment "release" (a maintainer approves the job; the key is a secret of that
-# environment only), checks the signature with release/allowed_signers, and publishes the
-# release. A published release is never unsigned.
+# It checks the code, pushes the multi-arch image to GHCR by its digest only (no tags), builds
+# the Worker bundle and the migrations, writes the release manifest (checkend-release.json,
+# format 1; the reader is checkend-cli internal/serverrelease) and makes a DRAFT release. Then it
+# signs the manifest in the environment "release" (a maintainer approves the job; the key is a
+# secret of that environment only), checks the signature with release/allowed_signers, and
+# publishes the release. Only then does the tag job add :X.Y.Z, :X.Y and :latest to the image
+# digest that the signed manifest pins. A published release is never unsigned, and a public
+# image tag never points to an image that no maintainer approved.
 name: Release
 
 on:
@@ -45,7 +47,7 @@ jobs:
       - run: npm run check
 
   image:
-    name: Build and push the ghcr.io image
+    name: Build and push the ghcr.io image by digest (no tags)
     needs: check
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -53,7 +55,9 @@ jobs:
       contents: read
       packages: write
     outputs:
+      name: ${{ steps.name.outputs.name }}
       digest: ${{ steps.push.outputs.digest }}
+      tags: ${{ steps.meta.outputs.tags }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -65,6 +69,10 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      # The image name in lowercase (a registry name has no capitals).
+      - id: name
+        run: echo "name=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+      # The tags are computed here (for the labels), but the tag job pushes them after sign.
       - id: meta
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
         with:
@@ -73,14 +81,14 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=raw,value=latest
-      # The digest output is the digest of the image index (all platforms): the manifest pins it.
+      # Pushed by digest only: no tag points to it before the sign job is approved. The digest
+      # output is the digest of the image index (all platforms): the manifest pins it.
       - id: push
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
           platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          outputs: type=image,name=${{ steps.name.outputs.name }},push-by-digest=true,name-canonical=true,push=true
           labels: ${{ steps.meta.outputs.labels }}
           provenance: true
           sbom: true
@@ -196,3 +204,53 @@ jobs:
         run: |
           gh release upload "$TAG" checkend-release.json.sig --repo "$GITHUB_REPOSITORY"
           gh release edit "$TAG" --draft=false --repo "$GITHUB_REPOSITORY"
+
+  tag:
+    name: Tag the ghcr.io image (:X.Y.Z, :X.Y, :latest)
+    needs: [image, sign]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      packages: write
+    env:
+      TAG: ${{ github.ref_name }}
+      IMAGE: ${{ needs.image.outputs.name }}
+      IMAGE_DIGEST: ${{ needs.image.outputs.digest }}
+      IMAGE_TAGS: ${{ needs.image.outputs.tags }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # The tags go only to the image that the published, signed manifest pins.
+      - name: Check the digest against the signed manifest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eu
+          gh release download "$TAG" --pattern checkend-release.json --pattern checkend-release.json.sig \
+            --repo "$GITHUB_REPOSITORY"
+          ssh-keygen -Y verify -f release/allowed_signers -I server-2026 -n checkend-server-release \
+            -s checkend-release.json.sig < checkend-release.json
+          repository=$(jq -r .image.repository checkend-release.json)
+          signed=$(jq -r .image.digest checkend-release.json)
+          [ "$repository" = "$IMAGE" ] || { echo "The manifest names $repository, not $IMAGE."; exit 1; }
+          [ "$signed" = "$IMAGE_DIGEST" ] || { echo "The manifest pins $signed, not $IMAGE_DIGEST."; exit 1; }
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Add the tags to the signed digest, then check each tag
+        run: |
+          set -eu
+          args=""
+          for tag in $IMAGE_TAGS; do args="$args --tag $tag"; done
+          [ -n "$args" ] || { echo "No tags to add."; exit 1; }
+          # shellcheck disable=SC2086 # one --tag argument per word
+          docker buildx imagetools create $args "$IMAGE@$IMAGE_DIGEST"
+          for tag in $IMAGE_TAGS; do
+            got=$(docker buildx imagetools inspect "$tag" --format '{{json .Manifest}}' | jq -r .digest)
+            [ "$got" = "$IMAGE_DIGEST" ] || { echo "$tag points to $got, not $IMAGE_DIGEST."; exit 1; }
+          done

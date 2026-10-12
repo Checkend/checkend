@@ -52,8 +52,8 @@ describe("the release workflow", () => {
 		expect(lock.packages[""].version).toBe(pkg.version);
 	});
 
-	it("builds without the signing key: check, image and draft release", () => {
-		for (const name of ["check", "image", "build"]) {
+	it("builds without the signing key: check, image, draft release and tags", () => {
+		for (const name of ["check", "image", "build", "tag"]) {
 			expect(job(name), name).not.toContain("SERVER_RELEASE_SIGNING_KEY");
 			expect(job(name), name).not.toContain("environment:");
 		}
@@ -91,5 +91,49 @@ describe("the release workflow", () => {
 		expect(order).toEqual([...order].sort((a, b) => a - b));
 		expect(sign).toContain("SIGNING_KEY: ${{ secrets.SERVER_RELEASE_SIGNING_KEY }}");
 		expect(text).not.toMatch(/run:[^\n]*\$\{\{\s*secrets\./);
+	});
+
+	it("pushes the ghcr.io image by digest only: no tag before the sign job is approved", () => {
+		const image = job("image");
+		expect(image).toContain("push-by-digest=true");
+		expect(image).toContain("name=${{ steps.name.outputs.name }}");
+		const push = image.slice(image.indexOf("- id: push"));
+		expect(push).toContain("docker/build-push-action@");
+		expect(push).not.toMatch(/^\s+tags:/m);
+		expect(push).not.toMatch(/^\s+push: true/m);
+		expect(image).not.toContain("imagetools create");
+		// The tags are computed here and handed to the tag job.
+		expect(image).toContain("type=raw,value=latest");
+		expect(image).toContain("tags: ${{ steps.meta.outputs.tags }}");
+		expect(image).toContain("digest: ${{ steps.push.outputs.digest }}");
+		// No other job pushes a tag.
+		for (const name of ["check", "build", "sign"]) {
+			expect(job(name), name).not.toContain("imagetools create");
+			expect(job(name), name).not.toContain("packages: write");
+		}
+	});
+
+	it("adds :X.Y.Z, :X.Y and :latest only after sign, to the digest that the signed manifest pins", () => {
+		const tag = job("tag");
+		expect(tag).toMatch(/needs: \[?[^\n]*sign/);
+		expect(tag).toMatch(/needs: \[?[^\n]*image/);
+		expect(tag).not.toContain("environment:");
+		expect(tag).toMatch(/permissions:\n {6}contents: read\n {6}packages: write\n/);
+		expect(tag).toContain("IMAGE_DIGEST: ${{ needs.image.outputs.digest }}");
+		expect(tag).toContain("IMAGE_TAGS: ${{ needs.image.outputs.tags }}");
+		const order = [
+			"gh release download",
+			"ssh-keygen -Y verify -f release/allowed_signers -I server-2026 -n checkend-server-release",
+			"jq -r .image.digest checkend-release.json",
+			'[ "$signed" = "$IMAGE_DIGEST" ]',
+			'docker buildx imagetools create $args "$IMAGE@$IMAGE_DIGEST"',
+			'docker buildx imagetools inspect "$tag"',
+			'[ "$got" = "$IMAGE_DIGEST" ]',
+		].map((part) => {
+			const at = tag.indexOf(part);
+			expect(at, part).toBeGreaterThan(0);
+			return at;
+		});
+		expect(order).toEqual([...order].sort((a, b) => a - b));
 	});
 });
