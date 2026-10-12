@@ -70,6 +70,16 @@ Release builds (Homebrew, an install script, npm) are not available yet. Then, f
 claude mcp add checkend -- ce mcp --url https://<your-worker>
 ```
 
+The agent starts `ce` by its name. `go install` puts `ce` in `$(go env GOPATH)/bin` (or
+`$(go env GOBIN)`), which is often not on PATH. If `ce --version` fails, use the full path:
+
+```sh
+claude mcp add checkend -- "$(go env GOPATH)/bin/ce" mcp --url https://<your-worker>
+```
+
+Or add the folder to PATH in `~/.zshrc` or `~/.bashrc`:
+`export PATH="$PATH:$(go env GOPATH)/bin"`.
+
 Without `ce`, the recipe uses the fallback: HTTP MCP with the agent token in an environment
 variable (see [Connect](mcp.md#connect)). The recipes take keys and tokens only from environment
 variables (`CHECKEND_SETUP_KEY`, `CHECKEND_TOKEN`, `CHECKEND_DEPLOY_TOKEN`,

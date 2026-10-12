@@ -182,6 +182,14 @@ the OS keychain. So the token never goes into an agent config file or into your 
   { "mcpServers": { "checkend": { "command": "ce", "args": ["mcp", "--url", "${base}"] } } }
   \`\`\`
 
+The agent starts \`ce\` by its name, so \`ce\` must be on PATH. If \`ce --version\` fails because
+\`go install\` put \`ce\` in a folder that is not on PATH, use its full path. The shell writes the
+full path into the agent config:
+
+- Claude Code: \`claude mcp add checkend -- "$(go env GOPATH)/bin/ce" mcp --url ${base}\`
+- Codex: \`codex mcp add checkend -- "$(go env GOPATH)/bin/ce" mcp --url ${base}\`
+- Cursor: put the output of \`echo "$(go env GOPATH)/bin/ce"\` in \`"command"\`.
+
 Then agents read issues with the tools list_issues and get_issue_brief.
 
 ## 8. Report deploys in CI

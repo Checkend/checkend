@@ -86,6 +86,15 @@ describe("the agent recipes", () => {
 		expect(setup).not.toMatch(/--key\s+cks/);
 	});
 
+	it("connects MCP with the full path of ce when the Go bin folder is not on PATH", () => {
+		const setup = setupRecipe(BASE);
+		const mcp = setup.slice(setup.indexOf("## 7. Connect MCP"));
+		expect(mcp).toContain(`claude mcp add checkend -- "$(go env GOPATH)/bin/ce" mcp --url ${BASE}`);
+		expect(mcp).toContain(`codex mcp add checkend -- "$(go env GOPATH)/bin/ce" mcp --url ${BASE}`);
+		expect(mcp).toContain("ce --version");
+		expect(mcp).toContain('echo "$(go env GOPATH)/bin/ce"');
+	});
+
 	it("contains no secrets: no keys, no tokens, no DSN with a key", () => {
 		for (const text of all()) {
 			expect(text).not.toMatch(/cks_[A-Za-z0-9_-]{8}|ck_[A-Za-z0-9_-]{8}|[0-9a-f]{32}@/);
