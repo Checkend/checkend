@@ -47,12 +47,19 @@ describe("the agent recipes", () => {
 		}
 	});
 
-	it("is truthful about ce: go install today, no release channels yet, no npx line", () => {
+	it("is truthful about ce: the published channels, the install script first, no npx line", () => {
 		const text = installRecipe(BASE);
+		const script =
+			"curl -fsSL https://raw.githubusercontent.com/Checkend/checkend-cli/main/install.sh | sh";
+		expect(text).toContain(script);
+		expect(text).toContain("npm install -g @checkend/cli");
+		expect(text).toContain("brew tap checkend/tap\nbrew install checkend/tap/checkend");
 		expect(text).toContain("Go 1.26 or later");
-		expect(text).toContain("not available yet");
-		expect(text).not.toContain("npx");
 		expect(text).toContain("go install github.com/Checkend/checkend-cli/cmd/ce@latest");
+		expect(text.indexOf(script)).toBeLessThan(text.indexOf("npm install"));
+		expect(text.indexOf("npm install")).toBeLessThan(text.indexOf("go install"));
+		expect(text).not.toMatch(/not available yet|not published/);
+		expect(text).not.toContain("npx");
 	});
 
 	it("finds ce after go install when the Go bin folder is not on PATH", () => {

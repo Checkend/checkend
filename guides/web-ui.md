@@ -17,8 +17,9 @@ The script asks `/health` whether setup is open. If it is, it stores a random co
 
 Open the link, type your name, and create a passkey. Then setup closes for good.
 
-> **Note:** On Node and Docker, the setup link is not available yet. Until then, use development mode only
-> on a local machine, or deploy on Cloudflare.
+> **Note:** `ce server install` prints the setup link for every install (Cloudflare, Docker and
+> SSH). After a manual install on Node or Docker, the setup link is not available yet: use
+> development mode only on a local machine, or use `ce server install`.
 
 - The link works once, for 24 hours. Run `npm run setup-link` again for a new link.
 - The code is in the URL fragment, so the browser does not send it in a URL.

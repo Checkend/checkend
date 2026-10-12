@@ -88,14 +88,33 @@ Run \`ce --version\`. If it works, \`ce\` is installed: go to ${base}/agent/setu
 
 ## Get ce
 
-Today, install \`ce\` with Go (Go 1.26 or later):
+Install \`ce\` with the install script. It checks the signature of the release before it installs:
+
+\`\`\`sh
+curl -fsSL https://raw.githubusercontent.com/Checkend/checkend-cli/main/install.sh | sh
+\`\`\`
+
+Or with npm:
+
+\`\`\`sh
+npm install -g @checkend/cli
+\`\`\`
+
+Or with Homebrew (two commands):
+
+\`\`\`sh
+brew tap checkend/tap
+brew install checkend/tap/checkend
+\`\`\`
+
+Or from source, with Go (Go 1.26 or later):
 
 \`\`\`sh
 go install github.com/Checkend/checkend-cli/cmd/ce@latest
 \`\`\`
 
-Then run \`ce --version\`. If the shell does not find \`ce\`, the Go bin folder is not on PATH
-(\`go install\` writes to \`$(go env GOBIN)\` when it is set, else to \`$(go env GOPATH)/bin\`). For
+Then run \`ce --version\`. After \`go install\`, if the shell does not find \`ce\`, the Go bin
+folder is not on PATH (\`go install\` writes to \`$(go env GOBIN)\` when it is set, else to \`$(go env GOPATH)/bin\`). For
 this session, run \`"$(go env GOPATH)/bin/ce"\` in place of \`ce\`. Tell the person to add this line
 to \`~/.zshrc\` (zsh) or \`~/.bashrc\` (bash), then open a new terminal:
 
@@ -103,10 +122,8 @@ to \`~/.zshrc\` (zsh) or \`~/.bashrc\` (bash), then open a new terminal:
 export PATH="$PATH:$(go env GOPATH)/bin"
 \`\`\`
 
-Release builds (Homebrew, an install script, an npm package) are not available yet.
-
-Without Go, use the steps under "If ce is not available" in ${base}/agent/setup.md. They do the
-same work with curl.
+If none of these works, use the steps under "If ce is not available" in ${base}/agent/setup.md.
+They do the same work with curl.
 
 ## Rules
 

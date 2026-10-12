@@ -18,8 +18,11 @@ const BASE = "/k7q2x9";
 const SPACES = `${ORIGIN}/spaces`;
 /** The front Worker's members page of this space (owners only). */
 const MEMBERS = `${SPACES}${BASE}/members`;
-/** Other hosts in responses: the docs on GitHub, the JSON Schema dialect of MCP tools. */
-const EXTERNAL_HOSTS = new Set(["github.com", "json-schema.org"]);
+/**
+ * Other hosts in responses: the docs on GitHub, the install script of ce (/agent/install), the JSON
+ * Schema dialect of MCP tools.
+ */
+const EXTERNAL_HOSTS = new Set(["github.com", "raw.githubusercontent.com", "json-schema.org"]);
 /** The member identity that the front Worker passes with each request of a signed-in person. */
 const ALICE: FrontIdentity = { accountId: "acc1alice", name: "Alice", role: "owner" };
 

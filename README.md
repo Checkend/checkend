@@ -2,8 +2,10 @@
 
 Open-source error tracking for coding agents. It runs on your own Cloudflare account.
 
-> **Status: in development.** Error ingest from Sentry SDKs and a JSON API work. The rest is not
-> built yet. See the [guides](guides/README.md) for what works today. Watch this repo to follow the build.
+> **Status: early development, public alpha (0.8.0).** The
+> [releases](https://github.com/Checkend/checkend/releases) are signed. Install one with
+> `ce server install` (see [Run without Cloudflare](guides/self-host.md#install-with-ce)). See the
+> [guides](guides/README.md) for what works today.
 >
 > Looking for the previous Rails version of Checkend? It is on the
 > [`rails-legacy`](https://github.com/Checkend/checkend/tree/rails-legacy) branch and the

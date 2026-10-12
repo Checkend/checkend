@@ -58,19 +58,19 @@ issues), and its brief has a row "Test event from setup: not a real error".
 
 The recipe connects the agent through `ce mcp`: a local MCP server that keeps the agent token in
 the keychain of the operating system, so the token never goes into a config file of the agent.
-Today, install `ce` with Go (Go 1.26 or later):
+Install `ce` (see [Install ce](cli.md#install-ce) for npm, Homebrew and `go install`):
 
 ```sh
-go install github.com/Checkend/checkend-cli/cmd/ce@latest
+curl -fsSL https://raw.githubusercontent.com/Checkend/checkend-cli/main/install.sh | sh
 ```
 
-Release builds (Homebrew, an install script, npm) are not available yet. Then, for Claude Code:
+Then, for Claude Code:
 
 ```sh
 claude mcp add checkend -- ce mcp --url https://<your-worker>
 ```
 
-The agent starts `ce` by its name. `go install` puts `ce` in `$(go env GOPATH)/bin` (or
+The agent starts `ce` by its name. If you used `go install`: it puts `ce` in `$(go env GOPATH)/bin` (or
 `$(go env GOBIN)`), which is often not on PATH. If `ce --version` fails, use the full path:
 
 ```sh

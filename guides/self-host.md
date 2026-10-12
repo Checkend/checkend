@@ -3,6 +3,31 @@
 Checkend can also run as one Node process with one SQLite file, for example in Docker. It has the
 same features and the same API as on Cloudflare.
 
+## Install with ce
+
+The first path is `ce server install` (see [the ce CLI](cli.md#install-and-manage-a-server)). It
+installs a signed [server release](operations.md#server-releases), shows the plan and asks first
+(`--yes` for agents), and ends with the setup link of the web UI.
+
+Docker on this machine:
+
+```sh
+ce server install docker
+```
+
+A server over SSH:
+
+```sh
+ce server install ssh root@203.0.113.7 --domain errors.example.com
+```
+
+`ce server install docker` writes `compose.yaml` and `.env` (with new secrets) in `./checkend`,
+and starts nothing: it prints the `docker compose` command to run. For a server over SSH, see
+[On a server over SSH](#on-a-server-over-ssh). Later, `ce server upgrade` backs up, then upgrades
+(see [Upgrade with ce](operations.md#upgrade-with-ce)).
+
+The manual steps below stay an alternative.
+
 ## With Docker
 
 ```sh
@@ -10,9 +35,9 @@ docker run -p 8787:8787 -v checkend-data:/data -e ADMIN_TOKEN=<at least 32 chara
   ghcr.io/checkend/checkend:<version>
 ```
 
-> **Note:** the maintainers publish the image for release tags (`linux/amd64` and `linux/arm64`).
-> Until the first release, build it yourself from the repository: `docker build -t checkend .`,
-> and use the image `checkend`.
+The maintainers publish the image for each release (`linux/amd64` and `linux/arm64`), for
+example `ghcr.io/checkend/checkend:0.8.0`. You can also build it yourself from the repository:
+`docker build -t checkend .`, then use the image `checkend`.
 
 Or use Docker Compose with
 [`examples/docker/compose.yaml`](../examples/docker/compose.yaml). Put the secrets in a `.env` file
@@ -66,9 +91,9 @@ It:
 It shows the plan and asks first (`--yes` for agents). Run it again to update: the secrets on the
 server stay. Secrets go to the server only on stdin, never as arguments.
 
-> **Note:** `ce server install ssh` installs only a signed server release (see
-> [Server releases](operations.md#server-releases)). No server release is published yet. Until
-> then, use [Docker](#with-docker) on the server by hand.
+`ce server install ssh` installs only a signed server release (see
+[Server releases](operations.md#server-releases)). To install by hand, use
+[Docker](#with-docker) on the server.
 
 ## Settings
 
@@ -108,8 +133,10 @@ cannot fake its address.
 
 ## Web UI
 
-On Node and Docker, the setup link is not available yet. Until then, use development mode only
-on a local machine, or deploy on Cloudflare. See [Web UI](web-ui.md).
+`ce server install docker` and `ce server install ssh` make the setup code and print the setup
+link of the web UI. After the manual steps (Docker or Node by hand), the setup link is not
+available yet: use development mode only on a local machine, or use `ce server install`. See
+[Web UI](web-ui.md).
 
 ## What is different from Cloudflare
 

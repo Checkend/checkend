@@ -10,14 +10,36 @@ The source and the full list of commands are in the
 
 ## Install ce
 
-Today, build `ce` from source with Go (Go 1.26 or later):
+`ce` is one binary for macOS, Linux and Windows. Install it with one of these.
+
+The install script:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Checkend/checkend-cli/main/install.sh | sh
+```
+
+npm (or run it once with `npx @checkend/cli`):
+
+```sh
+npm install -g @checkend/cli
+```
+
+Homebrew (two commands: Homebrew does not tap on install):
+
+```sh
+brew tap checkend/tap
+brew install checkend/tap/checkend
+```
+
+From source, with Go 1.26 or later:
 
 ```sh
 go install github.com/Checkend/checkend-cli/cmd/ce@latest
-ce --version
 ```
 
-Release builds (Homebrew, an install script, an npm package) are not available yet.
+Then run `ce --version`. The install script and the npm package first check the SSH signature of
+the checksums of the release, then the SHA-256 of the binary. Without a valid signature, they
+install nothing.
 
 `go install` puts `ce` in `$(go env GOBIN)` when it is set, else in `$(go env GOPATH)/bin`. This
 folder is often not on PATH. If `ce --version` says "command not found", add the folder to PATH
@@ -34,12 +56,7 @@ ce update
 ```
 
 `ce update` looks for the newest release of `ce`, and it updates `ce` in the same way that you
-installed it. No `ce` release is published yet, so today it prints the command to build the
-latest version from source:
-
-```sh
-go install github.com/Checkend/checkend-cli/cmd/ce@latest
-```
+installed it: Homebrew, npm, the install script or `go install`.
 
 ## Log in
 
@@ -99,9 +116,10 @@ project only), then the saved login.
 | `ce server status` | The version, the health, and whether a newer release exists |
 | `ce server uninstall` | Remove the server. The data stays, unless you add `--delete-data`. |
 
-> **Note:** these commands install only a signed server release (see
-> [Server releases](operations.md#server-releases)). No server release is published yet. Until
-> then, use the manual steps: [deploy to Cloudflare](quick-start.md#2-or-deploy-it-to-your-cloudflare-account)
-> or [run without Cloudflare](self-host.md).
+These commands install only a signed server release (see
+[Server releases](operations.md#server-releases)). They show the plan and ask first (`--yes` for
+agents), and they end with the setup link of the web UI. The manual steps stay an alternative:
+[deploy to Cloudflare](quick-start.md#2-or-deploy-it-to-your-cloudflare-account) or
+[run without Cloudflare](self-host.md#with-docker).
 
 A hosted space does not use `ce server`: it updates itself.

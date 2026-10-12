@@ -87,8 +87,8 @@ checks, in this order:
 3. its tag and commit, against the GitHub release
 4. the size and the SHA-256 of each file, when `ce` downloads it
 
-> **Note:** no server release is published yet, so `ce server install` and `ce server upgrade`
-> cannot install one today. Until the first release, use the manual steps on this page.
+The releases are on the [releases page](https://github.com/Checkend/checkend/releases). The first
+release is 0.8.0 (tag `v0.8.0`). Its image is `ghcr.io/checkend/checkend:0.8.0`.
 
 ### How a release is made
 
