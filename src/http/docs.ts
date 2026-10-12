@@ -47,7 +47,7 @@ export function openApiDocument(base: string): Record<string, unknown> {
 			...(route.scope ? { "x-required-scope": route.scope } : {}),
 			security: route.setupKey
 				? [{ setupKey: [] }, { bearer: [] }]
-				: [route.scope ? { bearer: [] } : { dsnKey: [] }],
+				: [route.scope || route.anyToken ? { bearer: [] } : { dsnKey: [] }],
 			...(parameters.length > 0 ? { parameters } : {}),
 			...(route.body
 				? {

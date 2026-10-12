@@ -61,6 +61,8 @@ export interface ApiRoute {
 	scope: Scope | null;
 	/** Also open to a setup key (cks_...): the onboarding routes. */
 	setupKey?: true;
+	/** Any valid bearer token, with no scope (scope is null). */
+	anyToken?: true;
 	summary: string;
 	query?: v.GenericSchema;
 	body?: v.GenericSchema;
@@ -378,8 +380,17 @@ export const API_ROUTES: ApiRoute[] = [
 		method: "POST",
 		path: "/v1/tokens",
 		scope: "admin",
-		summary: "Create a scoped token. The token is in this response only.",
+		summary:
+			"Create a scoped token, optionally for one app (project: public ID or slug; 404 project_not_found when there is none). The token is in this response only.",
 		body: CreateTokenBody,
+	},
+	{
+		method: "GET",
+		path: "/v1/tokens/current",
+		scope: null,
+		anyToken: true,
+		summary:
+			"The token of this request: type (token or admin_token), id, name, scopes, prefix, project_id and project_name (the app of a bound token, or null). Any valid token; no scope. Never the token or its hash.",
 	},
 	{ method: "DELETE", path: "/v1/tokens/:id", scope: "admin", summary: "Revoke a token." },
 	{

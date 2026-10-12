@@ -1,6 +1,7 @@
 import * as v from "valibot";
 import { type Db, type Statement, sql } from "../ports/db.ts";
 import type { Ports } from "../ports/index.ts";
+import { ProjectRef } from "./issues.ts";
 
 /** API scopes. `admin` includes all the others. */
 export const SCOPES = ["issues:read", "issues:write", "releases:write", "admin"] as const;
@@ -9,6 +10,13 @@ export type Scope = (typeof SCOPES)[number];
 export const CreateTokenBody = v.object({
 	name: v.pipe(v.string(), v.trim(), v.minLength(1), v.maxLength(100)),
 	scopes: v.pipe(v.array(v.picklist(SCOPES)), v.minLength(1), v.maxLength(SCOPES.length)),
+	/**
+	 * The app of the token: its public ID or slug. The token then writes releases, deploys and
+	 * source maps only for that app (as a token from Settings → Tokens).
+	 */
+	project: v.optional(
+		v.union([ProjectRef, v.pipe(v.number(), v.integer(), v.minValue(1), v.transform(String))]),
+	),
 });
 
 /** Who makes a request: a scoped token, the bootstrap ADMIN_TOKEN secret, or a member (web UI). */
@@ -190,6 +198,47 @@ export async function listTokens(db: Db): Promise<TokenListItem[]> {
 			FROM tokens t LEFT JOIN projects p ON p.id = t.project_id ORDER BY t.id`,
 	);
 	return rows.map((row) => ({ ...row, scopes: row.scopes.split(" ") as Scope[] }));
+}
+
+/** The token of a request, for GET /v1/tokens/current: never the token or its hash. */
+export interface CurrentToken {
+	type: "token" | "admin_token";
+	id: number | null;
+	name: string;
+	scopes: Scope[];
+	prefix: string | null;
+	project_id: number | null;
+	project_name: string | null;
+}
+
+/** The token that made a request. The bootstrap ADMIN_TOKEN has no ID, prefix or app. */
+export async function currentToken(db: Db, actor: Actor): Promise<CurrentToken | null> {
+	if (actor.type === "admin_token") {
+		return {
+			type: "admin_token",
+			id: null,
+			name: actor.name,
+			scopes: actor.scopes,
+			prefix: null,
+			project_id: null,
+			project_name: null,
+		};
+	}
+	if (actor.type !== "token" || actor.id === null) return null;
+	const row = await db.first<{
+		id: number;
+		name: string;
+		scopes: string;
+		prefix: string;
+		project_id: number | null;
+		project_name: string | null;
+	}>(
+		sql`SELECT t.id, t.name, t.scopes, t.prefix, p.public_id AS project_id, p.name AS project_name
+			FROM tokens t LEFT JOIN projects p ON p.id = t.project_id
+			WHERE t.id = ${actor.id} AND t.revoked_at IS NULL`,
+	);
+	if (!row) return null;
+	return { type: "token", ...row, scopes: row.scopes.split(" ") as Scope[] };
 }
 
 /** Revokes a token. Returns false when it does not exist or is already revoked. */

@@ -628,21 +628,25 @@ with secrets removed. The API never returns the raw payload.
 
 ## Tokens
 
-All token endpoints need the `admin` scope.
+All token endpoints need the `admin` scope, except `GET /v1/tokens/current` (any valid token).
 
 ### `POST /v1/tokens`
 
 Creates a scoped token.
 
 Body: `{"name": "claude-code", "scopes": ["issues:read"]}`. `name` has 1 to 100 characters.
-`scopes` is a list of 1 to 4 scopes from the [scopes table](#scopes).
+`scopes` is a list of 1 to 4 scopes from the [scopes table](#scopes). The optional `project` (the
+public ID or the slug of an app) makes a token for that app, as Settings → Tokens does: it sends
+`POST /v1/deploys`, `POST /v1/sourcemaps` and `DELETE /v1/sourcemaps/:id` only for that app
+(another app gives `403` `forbidden_project`). An unknown project gives `404`
+`{"error": "project_not_found"}`, and no token is made.
 
 Returns `201`:
 
 ```json
 { "data": { "id": 1, "name": "claude-code", "scopes": ["issues:read"], "prefix": "ck_8Hq2xP0",
             "created_at": "...", "created_by": "...", "last_used_at": null, "revoked_at": null,
-            "token": "ck_..." } }
+            "project_id": null, "project_name": null, "token": "ck_..." } }
 ```
 
 The token is `ck_` and 43 more characters. **The token is only in this response.** Checkend
@@ -654,6 +658,20 @@ characters of the token: use it to find a token in the list.
 Lists the tokens. The list does not include the tokens or their hashes. `last_used_at` is
 updated at most once per hour. `project_id` and `project_name` are the app of a token for one app
 (an agent token of the setup, or a token from Settings → Tokens), or `null`.
+
+### `GET /v1/tokens/current`
+
+The token of this request. Any valid token works: it needs no scope. Returns `200`:
+
+```json
+{ "data": { "type": "token", "id": 1, "name": "ci", "scopes": ["releases:write"],
+            "prefix": "ck_8Hq2xP0", "project_id": 4821937065, "project_name": "Shop" } }
+```
+
+`project_id` and `project_name` are `null` for a token for all apps. For the bootstrap
+`ADMIN_TOKEN`, `type` is `admin_token`, `name` is `ADMIN_TOKEN`, `scopes` is `["admin"]`, and
+`id`, `prefix`, `project_id` and `project_name` are `null`. The response never has the token or
+its hash. A missing, wrong or revoked token gets `401`.
 
 ### `DELETE /v1/tokens/:id`
 

@@ -59,7 +59,13 @@ import {
 	SourceMapUploadQuery,
 	uploadSourceMap,
 } from "../core/sourcemaps.ts";
-import { CreateTokenBody, createToken, listTokens, revokeToken } from "../core/tokens.ts";
+import {
+	CreateTokenBody,
+	createToken,
+	currentToken,
+	listTokens,
+	revokeToken,
+} from "../core/tokens.ts";
 import {
 	CreateWebhookBody,
 	createWebhook,
@@ -115,11 +121,44 @@ export function apiRoutes(app: Hono<AppEnv>, state: IngestState): void {
 		c.json({ data: await listTokens(c.env.ports.db) }),
 	);
 
+	// Any valid token: who am I (for `ce`). No scope is needed; the token itself is never returned.
+	app.get("/v1/tokens/current", async (c) => {
+		const current = await currentToken(c.env.ports.db, c.get("actor"));
+		return current ? c.json({ data: current }) : c.json({ error: "not_found" }, 404);
+	});
+
 	app.post("/v1/tokens", need("admin"), async (c) => {
 		const body = v.safeParse(CreateTokenBody, await c.req.json().catch(() => null));
 		if (!body.success) return invalid(c, body.issues);
-		const { token, record } = await createToken(c.env.ports, c.get("actor"), body.output);
-		return c.json({ data: { ...record, token } }, 201);
+		const { project: ref, ...input } = body.output;
+		let project: { id: number; public_id: number; name: string } | null = null;
+		if (ref !== undefined) {
+			const rowId = await findProjectRowId(c.env.ports.db, ref);
+			project =
+				rowId === null
+					? null
+					: await c.env.ports.db.first<{ id: number; public_id: number; name: string }>(
+							sql`SELECT id, public_id, name FROM projects WHERE id = ${rowId}`,
+						);
+			if (!project) return c.json({ error: "project_not_found" }, 404);
+		}
+		const { token, record } = await createToken(
+			c.env.ports,
+			c.get("actor"),
+			input,
+			project ? { setupKeyId: null, projectId: project.id } : undefined,
+		);
+		return c.json(
+			{
+				data: {
+					...record,
+					project_id: project?.public_id ?? null,
+					project_name: project?.name ?? null,
+					token,
+				},
+			},
+			201,
+		);
 	});
 
 	app.delete("/v1/tokens/:id", need("admin"), async (c) => {

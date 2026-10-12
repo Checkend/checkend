@@ -40,6 +40,12 @@ describe("OpenAPI 3.1 document", () => {
 				expect(operation["x-required-scope"]).toBeUndefined();
 				continue;
 			}
+			if (route.path === "/v1/tokens/current") {
+				// Any valid bearer token, with no scope.
+				expect(operation.security).toEqual([{ bearer: [] }]);
+				expect(operation["x-required-scope"]).toBeUndefined();
+				continue;
+			}
 			expect(operation["x-required-scope"], `${route.method} ${route.path}`).toMatch(
 				/^(issues:read|issues:write|releases:write|admin)$/,
 			);
