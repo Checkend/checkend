@@ -27,7 +27,12 @@ import {
 	SINCE_PATTERN,
 } from "../core/issues.ts";
 import { recordMcpCall } from "../core/setup-progress.ts";
-import { type Actor, hasScope } from "../core/tokens.ts";
+import {
+	type Actor,
+	FORBIDDEN_PROJECT_REASON,
+	hasScope,
+	outsideIssueBinding,
+} from "../core/tokens.ts";
 import { VERSION } from "../core/version.ts";
 import { listAlerts } from "../core/webhooks.ts";
 import type { Ports } from "../ports/index.ts";
@@ -89,6 +94,7 @@ const EventInput = v.object({ event_id: Id });
 
 const textResult = (text: string) => ({ content: [{ type: "text" as const, text }] });
 const errorResult = (text: string) => ({ ...textResult(text), isError: true });
+const forbiddenProject = () => errorResult(`forbidden_project: ${FORBIDDEN_PROJECT_REASON}`);
 
 /** The MCP server with the read tools. A new server per request (stateless). */
 function createServer(ports: Ports, actor: Actor): McpServer {
@@ -198,11 +204,19 @@ function createServer(ports: Ports, actor: Actor): McpServer {
 		},
 	);
 
+	/** A token bound to an app writes only the issues of that app (unknown issues do not count). */
+	const outside = async (issueIds: readonly number[]) => outsideIssueBinding(db, actor, issueIds);
+
 	/** Write tools: they need issues:write (the endpoint itself needs only issues:read). */
-	const write = async (run: () => Promise<ActionResult>, issueId: number) => {
+	const write = async (
+		run: () => Promise<ActionResult>,
+		issueId: number,
+		sourceIds: readonly number[] = [],
+	) => {
 		if (!hasScope(actor, "issues:write")) {
 			return errorResult(NEEDS_WRITE);
 		}
+		if (await outside([issueId, ...sourceIds])) return forbiddenProject();
 		const result = await run();
 		if (result.kind === "not_found") return errorResult(`Issue ${issueId} not found.`);
 		if (result.kind === "invalid") return errorResult(result.message);
@@ -249,6 +263,7 @@ function createServer(ports: Ports, actor: Actor): McpServer {
 		async ({ issue_id, minutes }) => {
 			if (!hasScope(actor, "issues:write")) return errorResult(NEEDS_WRITE);
 			const id = parseIssueId(issue_id);
+			if (id !== null && (await outside([id]))) return forbiddenProject();
 			const result =
 				id === null ? { kind: "not_found" as const } : await claimIssue(ports, actor, id, minutes);
 			if (result.kind === "not_found") return errorResult(`Issue ${issue_id} not found.`);
@@ -270,6 +285,7 @@ function createServer(ports: Ports, actor: Actor): McpServer {
 		async ({ issue_id }) => {
 			if (!hasScope(actor, "issues:write")) return errorResult(NEEDS_WRITE);
 			const id = parseIssueId(issue_id);
+			if (id !== null && (await outside([id]))) return forbiddenProject();
 			const result =
 				id === null ? { kind: "not_found" as const } : await releaseClaim(ports, actor, id);
 			if (result.kind === "not_found") return errorResult(`Issue ${issue_id} not found.`);
@@ -300,6 +316,7 @@ function createServer(ports: Ports, actor: Actor): McpServer {
 				return errorResult("Give one of commit (a SHA) and pr_url (a GitHub pull request URL).");
 			}
 			const id = parseIssueId(issue_id);
+			if (id !== null && (await outside([id]))) return forbiddenProject();
 			const body = commit !== undefined ? { commit } : { pr_url: pr_url as string };
 			const result = id === null ? "not_found" : await linkFix(ports, actor, id, body);
 			if (result === "not_found") return errorResult(`Issue ${issue_id} not found.`);
@@ -346,6 +363,7 @@ function createServer(ports: Ports, actor: Actor): McpServer {
 		async ({ issue_id, text }) => {
 			if (!hasScope(actor, "issues:write")) return errorResult(NEEDS_WRITE);
 			const id = parseIssueId(issue_id);
+			if (id !== null && (await outside([id]))) return forbiddenProject();
 			const noteId = id === null ? null : await addNote(ports, actor, id, text);
 			if (noteId === null) return errorResult(`Issue ${issue_id} not found.`);
 			return textResult(JSON.stringify({ note_id: noteId, issue_id }));
@@ -393,6 +411,7 @@ function createServer(ports: Ports, actor: Actor): McpServer {
 			if (!correction.success)
 				return errorResult(correction.issues[0]?.message ?? "Invalid input.");
 			const id = parseIssueId(issue_id);
+			if (id !== null && (await outside([id]))) return forbiddenProject();
 			const result =
 				id === null ? "not_found" : await correctTriage(ports, actor, id, correction.output);
 			if (result === "not_found") return errorResult(`Issue ${issue_id} not found.`);
@@ -414,6 +433,7 @@ function createServer(ports: Ports, actor: Actor): McpServer {
 		async ({ issue_id, event_ids }) => {
 			if (!hasScope(actor, "issues:write")) return errorResult(NEEDS_WRITE);
 			const id = parseIssueId(issue_id);
+			if (id !== null && (await outside([id]))) return forbiddenProject();
 			const result =
 				id === null
 					? { kind: "not_found" as const }
@@ -438,7 +458,7 @@ function createServer(ports: Ports, actor: Actor): McpServer {
 		async ({ target_id, source_ids }) => {
 			const id = parseIssueId(target_id);
 			if (id === null) return errorResult(`Issue ${target_id} not found.`);
-			return write(() => mergeIssues(ports, actor, id, source_ids), id);
+			return write(() => mergeIssues(ports, actor, id, source_ids), id, source_ids);
 		},
 	);
 

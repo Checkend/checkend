@@ -27,6 +27,11 @@ agent a read-only token, not the admin token:
 | `401` | `{"error": "unauthorized"}` | The token is missing, not valid, or revoked. |
 | `403` | `{"error": "forbidden", "required_scope": "issues:read"}` | The token does not have the `issues:read` scope. |
 
+A token for one app (Settings → Tokens, or an agent token from the setup) reads every app. A write
+tool on an issue of another app gives an error result with the text
+`forbidden_project: This token is for another app.`; for `merge_issues`, the target and all
+sources must be in the app of the token.
+
 ## Tools
 
 The ID inputs (`issue_id`, `event_id` and `target_id`) accept a number or a string of digits,

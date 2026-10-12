@@ -85,8 +85,9 @@ variable (see [Connect](mcp.md#connect)). The recipes take keys and tokens only 
 variables (`CHECKEND_SETUP_KEY`, `CHECKEND_TOKEN`, `CHECKEND_DEPLOY_TOKEN`,
 `CHECKEND_ADMIN_TOKEN`).
 
-> **Caution:** an agent token is install-wide. It can read and change the issues of every project
-> of the install, not only of its own app. It does not expire.
+> **Caution:** an agent token reads the issues of every project of the install, not only of its
+> own app. It changes only the issues of its own app (another app gives `403`
+> `forbidden_project`). It does not expire.
 
 The agent token stops working when you revoke its setup key (`DELETE /v1/setup/keys/:id`), when
 you delete its project, or when you revoke it (`DELETE /v1/tokens/:id`). Each revoked token gets a

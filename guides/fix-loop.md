@@ -67,8 +67,8 @@ curl -X POST "$CHECKEND_URL/v1/deploys" \
 
 Create the deploy token once, in the web UI: **Settings → Tokens** (an owner only). Give it a
 name, the scope `releases:write`, and the app. Copy the token: Checkend shows it only once. Add
-it to the CI secret `CHECKEND_DEPLOY_TOKEN`. A token for one app reports deploys and uploads
-source maps only for that app.
+it to the CI secret `CHECKEND_DEPLOY_TOKEN`. A token for one app reports deploys, uploads
+source maps and changes issues only for that app.
 
 On a self-host install, a script can also create it with the admin token:
 

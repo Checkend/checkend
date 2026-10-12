@@ -123,8 +123,8 @@ owner can open it: on a self-hosted install, every member; in a hosted space, an
 1. Give the token a name.
 2. Choose its scopes: `issues:read`, `issues:write` and `releases:write`. The page never makes an
    `admin` token.
-3. Choose an app, or all apps. A token for one app reports deploys and uploads source maps only
-   for that app.
+3. Choose an app, or all apps. A token for one app changes issues, reports deploys and uploads
+   source maps only for that app. It reads the issues of all apps.
 4. Copy the token. Checkend shows it only once.
 
 The list shows the name, the scopes, the app, the first characters of each token, and when it was

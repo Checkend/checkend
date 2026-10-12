@@ -11,8 +11,8 @@ export const CreateTokenBody = v.object({
 	name: v.pipe(v.string(), v.trim(), v.minLength(1), v.maxLength(100)),
 	scopes: v.pipe(v.array(v.picklist(SCOPES)), v.minLength(1), v.maxLength(SCOPES.length)),
 	/**
-	 * The app of the token: its public ID or slug. The token then writes releases, deploys and
-	 * source maps only for that app (as a token from Settings → Tokens).
+	 * The app of the token: its public ID or slug. The token then writes issues, releases, deploys
+	 * and source maps only for that app (as a token from Settings → Tokens).
 	 */
 	project: v.optional(
 		v.union([ProjectRef, v.pipe(v.number(), v.integer(), v.minValue(1), v.transform(String))]),
@@ -31,10 +31,33 @@ export interface Actor {
 	name: string;
 	scopes: Scope[];
 	/**
-	 * A token bound to one app (the internal project row ID): it writes releases, deploys and
-	 * source maps only for that app. Reads are not limited (agent tokens read every app).
+	 * A token bound to one app (the internal project row ID): it writes issues (status, merge,
+	 * split, claims, notes, fixes, triage corrections), releases, deploys and source maps only
+	 * for that app. Reads are not limited (agent tokens read every app).
 	 */
 	projectId?: number | null;
+}
+
+/** The reason for a write by a bound token to another app (REST `forbidden_project`, MCP). */
+export const FORBIDDEN_PROJECT_REASON = "This token is for another app.";
+
+/**
+ * True when a token bound to an app would write an issue of another app. Unknown issues do not
+ * count: the action reports them as not found, as for any token.
+ */
+export async function outsideIssueBinding(
+	db: Db,
+	actor: Actor,
+	issueIds: readonly number[],
+): Promise<boolean> {
+	const bound = actor.projectId;
+	if (bound == null || issueIds.length === 0) return false;
+	const other = await db.first(
+		sql`SELECT 1 AS found FROM issues
+			WHERE id IN (SELECT value FROM json_each(${JSON.stringify(issueIds)})) AND project_id != ${bound}
+			LIMIT 1`,
+	);
+	return other !== null;
 }
 
 export const BOOTSTRAP_ADMIN: Actor = {

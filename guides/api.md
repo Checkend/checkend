@@ -32,9 +32,12 @@ secret.
 
 An owner can also create a token in the web UI: **Settings → Tokens**. The page offers
 `issues:read`, `issues:write` and `releases:write` (never `admin`), and an optional app. A token
-for one app sends `POST /v1/deploys`, `POST /v1/sourcemaps` and `DELETE /v1/sourcemaps/:id` only
-for that app; another app gives `403` `forbidden_project`. Reads are not limited to the app. The
-page shows the token once, right after it was made.
+for one app sends the issue writes (`resolve`, `ignore`, `unresolve`, `merge`, `split`, `claim`,
+`release`, `DELETE /claim`, `notes`, `fix` and `triage-correction`), `POST /v1/deploys`,
+`POST /v1/sourcemaps` and `DELETE /v1/sourcemaps/:id` only for that app; another app gives `403`
+`forbidden_project`. A merge needs the target and all sources in that app. An unknown issue
+gives `404`, as for any token. Reads are not limited to the app. The page shows the token once,
+right after it was made.
 
 A coding agent that only reads errors needs `issues:read`. An agent that also resolves,
 ignores or merges issues needs `["issues:read", "issues:write"]`. Coding agents can also use the
@@ -510,7 +513,8 @@ register at most 10 apps (then `429`).
 ### `POST /v1/setup/tokens`
 
 Makes an agent token for an app: `{"name": "...", "project": ...}`. The token has `issues:read`
-and `issues:write` on every project of the install, not only on its own app. It does not expire.
+and `issues:write`. It is bound to its app: it reads every project of the install, but it writes
+only the issues of its own app (another app gives `403` `forbidden_project`). It does not expire.
 It is revoked with its setup key, with its project, or with `DELETE /v1/tokens/:id`. A setup key can make at most 5 tokens (then `429`).
 
 ### `POST /v1/setup/apps/:project/test-event`
@@ -637,8 +641,8 @@ Creates a scoped token.
 Body: `{"name": "claude-code", "scopes": ["issues:read"]}`. `name` has 1 to 100 characters.
 `scopes` is a list of 1 to 4 scopes from the [scopes table](#scopes). The optional `project` (the
 public ID or the slug of an app) makes a token for that app, as Settings → Tokens does: it sends
-`POST /v1/deploys`, `POST /v1/sourcemaps` and `DELETE /v1/sourcemaps/:id` only for that app
-(another app gives `403` `forbidden_project`). An unknown project gives `404`
+the issue writes, `POST /v1/deploys`, `POST /v1/sourcemaps` and `DELETE /v1/sourcemaps/:id` only
+for that app (another app gives `403` `forbidden_project`). An unknown project gives `404`
 `{"error": "project_not_found"}`, and no token is made.
 
 Returns `201`:

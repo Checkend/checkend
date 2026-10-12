@@ -52,7 +52,7 @@ ${UI_TOKEN_SCOPES.map(
 <option value="">All apps</option>
 ${data.apps.map((a) => h`<option value="${String(a.id)}">${t(a.name, 100)}</option>`)}
 </select>
-<p class="hint">A token for one app reports deploys and uploads source maps only for that app.</p></div>
+<p class="hint">A token for one app changes issues, reports deploys and uploads source maps only for that app. It reads all apps.</p></div>
 <button class="btn" type="submit">Make token</button>
 </form>
 </section>`;

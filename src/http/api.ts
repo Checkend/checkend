@@ -1,4 +1,4 @@
-import type { Context, Hono } from "hono";
+import type { Context, Hono, MiddlewareHandler } from "hono";
 import * as v from "valibot";
 import { listActivity } from "../core/activity.ts";
 import { SIMILAR_OFF, SimilarSearchBody, searchFromInput } from "../core/ai/similar.ts";
@@ -63,7 +63,9 @@ import {
 	CreateTokenBody,
 	createToken,
 	currentToken,
+	FORBIDDEN_PROJECT_REASON,
 	listTokens,
+	outsideIssueBinding,
 	revokeToken,
 } from "../core/tokens.ts";
 import {
@@ -102,7 +104,22 @@ export const dsn = (base: string, key: string, projectId: number) => {
  * or the bootstrap ADMIN_TOKEN secret. Each route needs a scope.
  */
 const forbiddenProject = (c: Context<AppEnv>) =>
-	c.json({ error: "forbidden_project", reason: "This token is for another app." }, 403);
+	c.json({ error: "forbidden_project", reason: FORBIDDEN_PROJECT_REASON }, 403);
+
+/**
+ * Every issue write: a token bound to an app writes only the issues of that app (403 for
+ * another app). An unknown or invalid ID goes on to the route, which answers as before.
+ */
+const ownIssue: MiddlewareHandler<AppEnv> = async (c, next) => {
+	const params = v.safeParse(IdParam, c.req.param());
+	if (
+		params.success &&
+		(await outsideIssueBinding(c.env.ports.db, c.get("actor"), [params.output.id]))
+	) {
+		return forbiddenProject(c);
+	}
+	await next();
+};
 
 /**
  * A token bound to an app (Settings → Tokens) writes releases only for that app: a 403 for
@@ -327,7 +344,7 @@ export function apiRoutes(app: Hono<AppEnv>, state: IngestState): void {
 		["ignore", "ignored"],
 		["unresolve", "unresolved"],
 	] as const) {
-		app.post(`/v1/issues/:id/${path}`, need("issues:write"), async (c) => {
+		app.post(`/v1/issues/:id/${path}`, need("issues:write"), ownIssue, async (c) => {
 			const params = v.safeParse(IdParam, c.req.param());
 			if (!params.success) return invalid(c, params.issues);
 			const result = await setIssueStatus(c.env.ports, c.get("actor"), params.output.id, status);
@@ -335,11 +352,15 @@ export function apiRoutes(app: Hono<AppEnv>, state: IngestState): void {
 		});
 	}
 
-	app.post("/v1/issues/:id/merge", need("issues:write"), async (c) => {
+	app.post("/v1/issues/:id/merge", need("issues:write"), ownIssue, async (c) => {
 		const params = v.safeParse(IdParam, c.req.param());
 		if (!params.success) return invalid(c, params.issues);
 		const body = v.safeParse(MergeBody, await c.req.json().catch(() => null));
 		if (!body.success) return invalid(c, body.issues);
+		// Before the "another project" check: a bound token learns nothing about other apps.
+		if (await outsideIssueBinding(c.env.ports.db, c.get("actor"), body.output.source_ids)) {
+			return forbiddenProject(c);
+		}
 		const result = await mergeIssues(
 			c.env.ports,
 			c.get("actor"),
@@ -349,7 +370,7 @@ export function apiRoutes(app: Hono<AppEnv>, state: IngestState): void {
 		return actionResponse(c, params.output.id, result);
 	});
 
-	app.post("/v1/issues/:id/claim", need("issues:write"), async (c) => {
+	app.post("/v1/issues/:id/claim", need("issues:write"), ownIssue, async (c) => {
 		const params = v.safeParse(IdParam, c.req.param());
 		if (!params.success) return invalid(c, params.issues);
 		const body = v.safeParse(ClaimBody, (await c.req.json().catch(() => ({}))) ?? {});
@@ -379,10 +400,10 @@ export function apiRoutes(app: Hono<AppEnv>, state: IngestState): void {
 			data: await getIssue(c.env.ports.db, params.output.id, c.env.ports.clock.now()),
 		});
 	};
-	app.post("/v1/issues/:id/release", need("issues:write"), release);
-	app.delete("/v1/issues/:id/claim", need("issues:write"), release);
+	app.post("/v1/issues/:id/release", need("issues:write"), ownIssue, release);
+	app.delete("/v1/issues/:id/claim", need("issues:write"), ownIssue, release);
 
-	app.post("/v1/issues/:id/notes", need("issues:write"), async (c) => {
+	app.post("/v1/issues/:id/notes", need("issues:write"), ownIssue, async (c) => {
 		const params = v.safeParse(IdParam, c.req.param());
 		if (!params.success) return invalid(c, params.issues);
 		const body = v.safeParse(NoteBody, await c.req.json().catch(() => null));
@@ -392,7 +413,7 @@ export function apiRoutes(app: Hono<AppEnv>, state: IngestState): void {
 		return c.json({ data: { id } }, 201);
 	});
 
-	app.post("/v1/issues/:id/triage-correction", need("issues:write"), async (c) => {
+	app.post("/v1/issues/:id/triage-correction", need("issues:write"), ownIssue, async (c) => {
 		const params = v.safeParse(IdParam, c.req.param());
 		if (!params.success) return invalid(c, params.issues);
 		const body = v.safeParse(TriageCorrectionBody, await c.req.json().catch(() => null));
@@ -418,7 +439,7 @@ export function apiRoutes(app: Hono<AppEnv>, state: IngestState): void {
 		return c.json({ data: await issueTimeline(c.env.ports, params.output.id, query.output.limit) });
 	});
 
-	app.post("/v1/issues/:id/split", need("issues:write"), async (c) => {
+	app.post("/v1/issues/:id/split", need("issues:write"), ownIssue, async (c) => {
 		const params = v.safeParse(IdParam, c.req.param());
 		if (!params.success) return invalid(c, params.issues);
 		const body = v.safeParse(SplitBody, await c.req.json().catch(() => null));
@@ -442,7 +463,7 @@ export function apiRoutes(app: Hono<AppEnv>, state: IngestState): void {
 		);
 	});
 
-	app.post("/v1/issues/:id/fix", need("issues:write"), async (c) => {
+	app.post("/v1/issues/:id/fix", need("issues:write"), ownIssue, async (c) => {
 		const params = v.safeParse(IdParam, c.req.param());
 		if (!params.success) return invalid(c, params.issues);
 		const body = v.safeParse(LinkFixBody, await c.req.json().catch(() => null));
