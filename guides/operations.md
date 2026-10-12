@@ -90,6 +90,26 @@ checks, in this order:
 > **Note:** no server release is published yet, so `ce server install` and `ce server upgrade`
 > cannot install one today. Until the first release, use the manual steps on this page.
 
+### How a release is made
+
+A maintainer pushes a version tag, for example `v0.9.0`. The workflow
+`.github/workflows/release.yml` then:
+
+1. runs the checks (`npm run check`)
+2. builds the multi-arch image (`linux/amd64` and `linux/arm64`) and pushes it to
+   `ghcr.io/checkend/checkend`
+3. builds the Worker bundle (`checkend-worker-<version>.tar.gz`, one ES module `worker.js`) and
+   the migrations (`checkend-migrations-<version>.tar.gz`), and pins the Caddy and cloudflared
+   images by their multi-arch digest
+4. writes the manifest (`scripts/release-manifest.ts`) and `SHA256SUMS`, and makes a draft
+   release with them
+5. in the environment `release`, after a maintainer approves the job: signs the manifest
+   (`checkend-release.json.sig`), checks the signature with `release/allowed_signers`, and
+   publishes the release
+
+The manifest never has a secret or a default value of a secret. A release that is not signed
+stays a draft, so `ce` never sees it.
+
 ### Upgrade with ce
 
 For a server that `ce server install` installed:

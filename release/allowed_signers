@@ -1,0 +1,5 @@
+# The public keys that sign server releases (checkend-release.json), in the format of
+# `ssh-keygen -Y verify -f`. The release workflow checks each signature against this file
+# before it publishes. ce trusts the same keys (checkend-cli internal/serverrelease).
+# server-2026: SHA256:QMPYElbPG0/hSKTHjqjkeaD9ylozLFgf3BFadqoeAzw (test/node/release-manifest.test.ts pins it)
+server-2026 namespaces="checkend-server-release" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPLnE0XiMd0q3TgIYSsvGK3FPZZGVMvE/8DCkNm3y3fy
