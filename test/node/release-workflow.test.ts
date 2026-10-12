@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import pkg from "../../package.json" with { type: "json" };
 
 /**
  * The server release workflow (.github/workflows/release.yml). A published release is never
@@ -32,6 +33,23 @@ describe("the release workflow", () => {
 		const checkouts = text.match(/actions\/checkout@/g) ?? [];
 		const noCredentials = text.match(/persist-credentials: false/g) ?? [];
 		expect(noCredentials.length).toBe(checkouts.length);
+	});
+
+	it("stops when the tag and the package.json version differ, before anything else", () => {
+		const check = job("check");
+		expect(check).toContain("TAG: ${{ github.ref_name }}");
+		expect(check).toContain("have=$(node -p 'require(\"./package.json\").version')");
+		expect(check).toContain('[ "$have" = "${TAG#v}" ]');
+		expect(check).toContain("Set package.json version to ${TAG#v} first");
+		expect(check.indexOf("Set package.json version")).toBeLessThan(check.indexOf("npm ci"));
+	});
+
+	it("package.json and package-lock.json have the same release version", () => {
+		const lock = JSON.parse(readFileSync("package-lock.json", "utf8"));
+		expect(pkg.version).toMatch(/^\d+\.\d+\.\d+$/);
+		expect(pkg.version).not.toBe("0.0.0");
+		expect(lock.version).toBe(pkg.version);
+		expect(lock.packages[""].version).toBe(pkg.version);
 	});
 
 	it("builds without the signing key: check, image and draft release", () => {

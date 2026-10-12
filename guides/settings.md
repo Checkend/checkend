@@ -159,7 +159,7 @@ runs. After it deletes events, Checkend updates the stored-event counts of the i
 ```json
 {
   "status": "ok",
-  "version": "0.0.0",
+  "version": "0.8.0",
   "migrations": { "level": 3, "latest": "0003_tokens_activity_public_ids.sql", "applied": 3 },
   "ingest": { "mode": "full", "write_failures_today": 0, "retry_after_seconds": 0 },
   "setup_open": false,

@@ -26,10 +26,17 @@ jobs:
     timeout-minutes: 20
     permissions:
       contents: read
+    env:
+      TAG: ${{ github.ref_name }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      # The server reports the version of package.json (/health, Settings, the image).
+      - name: The tag matches the package.json version
+        run: |
+          have=$(node -p 'require("./package.json").version')
+          [ "$have" = "${TAG#v}" ] || { echo "Set package.json version to ${TAG#v} first (it is $have)."; exit 1; }
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
