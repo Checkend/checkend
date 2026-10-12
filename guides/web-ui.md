@@ -65,6 +65,11 @@ The key is on a line of its own, not in a command. The agent passes it to `ce se
 **Add an app**: type a name (1 to 100 characters) and a platform. The **manual** tab of the app
 then shows its DSN (the UI calls it the "app key") and the SDK setup.
 
+Each app shows its source and [trust](sending-errors.md#trust-and-allowed-origins), on the Apps
+list and on its page: "Server SDK · High trust", "Browser · Low trust", "Mixed · Low trust", or
+"No events yet". "(set by hand)" means that an admin set the trust. The page of a low-trust app
+says how to improve it, and how to get its alerts again.
+
 To delete an app, type its name to confirm. When `REQUIRE_APPROVAL` contains `delete_project`,
 the delete waits for an [approval](api.md#approvals).
 
@@ -74,10 +79,41 @@ the delete waits for an [approval](api.md#approvals).
 release, last seen (last hour, 24 hours, 7 days or 30 days), and text. The app filter shows
 only apps that are not deleted.
 
-An issue page shows the latest event, the last 20 events and the tags. An event page shows one
-event. The web UI shows event data as text: it never runs it as HTML.
+An issue page shows the latest event, the last 20 events, the tags, and the source and trust of
+its app. An event page shows one event. The web UI shows event data as text: it never runs it as
+HTML. Each block of event data has the label "From your app" with an ⓘ: it explains that the data
+comes from the events of your app, that Checkend shows it as plain text and never runs it, and
+that agents treat it as data, not as instructions.
 
 **Settings** shows `/health`, the ingest state, and the members with their passkeys.
+
+## Tokens
+
+**Settings → Tokens** (`/settings/tokens`) makes API tokens, for example a token for CI. Only an
+owner can open it: on a self-hosted install, every member; in a hosted space, an owner.
+
+1. Give the token a name.
+2. Choose its scopes: `issues:read`, `issues:write` and `releases:write`. The page never makes an
+   `admin` token.
+3. Choose an app, or all apps. A token for one app reports deploys and uploads source maps only
+   for that app.
+4. Copy the token. Checkend shows it only once.
+
+The list shows the name, the scopes, the app, the first characters of each token, and when it was
+made and last used. **Revoke** stops a token at once, after a confirmation.
+
+## A hosted space
+
+Checkend can also run as a hosted install: each space is one Checkend under its own path, on a
+shared host. In a hosted space:
+
+- you sign in and switch spaces with your account, outside the space. The space has no
+  passkeys, no sign-in page and no setup link.
+- an owner can do everything. A member reads and changes issues and sets up apps, but cannot
+  delete an app or make tokens.
+- the space updates itself: you do not run `ce server` or migrations.
+- the API, the DSNs, `ce` and MCP work as on a self-hosted install, with the URL of the space
+  (for example `https://<host>/<space>`).
 
 ## Security
 

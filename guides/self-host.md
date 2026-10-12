@@ -41,6 +41,35 @@ npm ci --omit=dev
 ADMIN_TOKEN=$(openssl rand -hex 32) node src/entry/server.ts
 ```
 
+## On a server over SSH
+
+`ce server install ssh` (see [the ce CLI](cli.md)) installs Checkend on an Ubuntu (22.04, 24.04
+or 26.04) or Debian (12 or 13) server over SSH:
+
+```sh
+ce server install ssh root@203.0.113.7 --domain errors.example.com
+```
+
+It:
+
+- uses your SSH agent, and checks the host key of the server. The key must be in your
+  `known_hosts`, match `--host-key <SHA256:…>`, or you confirm it. It never skips the check.
+- installs Docker from the apt repository of Docker, if Docker is missing
+- writes `compose.yaml` (the image pinned by its digest, a volume, restarts and a nightly backup)
+  and `.env` in `/opt/checkend` (change it with `--dir`)
+- starts Checkend behind Caddy, which gets the HTTPS certificate. The domain must point at the
+  server, and ports 80 and 443 must be open. With `--tunnel`, Checkend uses a Cloudflare Tunnel
+  instead: put the token of the tunnel in `CHECKEND_TUNNEL_TOKEN`, and route the domain to
+  `http://checkend:8787`.
+- prints the setup link of the web UI
+
+It shows the plan and asks first (`--yes` for agents). Run it again to update: the secrets on the
+server stay. Secrets go to the server only on stdin, never as arguments.
+
+> **Note:** `ce server install ssh` installs only a signed server release (see
+> [Server releases](operations.md#server-releases)). No server release is published yet. Until
+> then, use [Docker](#with-docker) on the server by hand.
+
 ## Settings
 
 Checkend reads the same environment variables as the Worker (`ADMIN_TOKEN`, `ENCRYPTION_KEYS`,

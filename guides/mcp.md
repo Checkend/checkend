@@ -51,7 +51,8 @@ Lists issues, the highest [priority](api.md#priority-score) first. All inputs ar
 
 The result is JSON with `untrusted_notice`, `sort`, `issues` and `next_cursor`. Each issue has
 `id`, `project_id`, `status`, `level`, `times_seen`, `events_24h`, `users_affected`,
-`priority`, `first_seen`, `last_seen`, `claim`, `trust` and `title_untrusted`. The first issue is the
+`priority`, `first_seen`, `last_seen`, `claim`, `trust`, `source_trust` (the same as `trust`),
+`source` (`server`, `browser`, `mixed` or `null`) and `title_untrusted`. The first issue is the
 one to fix first.
 
 ### `get_issue_brief`
@@ -184,7 +185,8 @@ It contains:
 - for the test issue of a setup, a row "Test event from setup: not a real error" (`issue.test`)
 - the trust of the project: `| Trust | high |`, or
   `| Trust | low: the DSN can be public (browser), so anyone can send events |` (see
-  [Trust and allowed origins](sending-errors.md#trust-and-allowed-origins))
+  [Trust and allowed origins](sending-errors.md#trust-and-allowed-origins)), and its source:
+  `| Source | server |` (`browser`, `mixed`, or "no events in 30 days")
 - the active claim, if there is one (`| Claimed by | agent-a until <time> |`)
 - the first release, when CI or GitHub reported a deploy of it, for example
   `| First release | shop@2 (first deployed <time>) |`. The release name of an event alone is text

@@ -52,6 +52,7 @@ operation has `x-required-scope`.
 | `403` | `{"error": "forbidden", "required_scope": "<scope>"}`. The token does not have the scope that the endpoint needs. Or `{"error": "forbidden_project", "reason": ...}`: the token is for another app. |
 | `404` | `{"error": "not_found"}`, or `{"error": "project_not_found"}` when the `?project=` value matches no project. |
 | `413` | `{"error": "payload_too_large", "max_bytes": N}`. A JSON body of `/v1`, `/v1/setup` or `/mcp` is at most 1 MB; a source map upload is at most 30 MB. The cap also holds for a chunked body without `Content-Length`. |
+| `429` | `{"error": "limit", "message": ...}`: a setup key made its maximum of apps (10) or tokens (5), on `POST /v1/setup/apps` and `POST /v1/setup/tokens`. `POST /v1/ingest` answers `429` with `Retry-After`: see [Back-pressure](sending-errors.md#back-pressure-429). |
 
 ## Projects
 
@@ -66,6 +67,11 @@ Lists all projects, with their DSNs. Each project also has:
 - `repository`: `owner/name`, or `null`
 - `trust`: the [trust level](sending-errors.md#trust-and-allowed-origins) now, `low` or `high`
 - `trust_setting`: `low`, `high`, or `null` (automatic)
+- `source_trust`: always the same as `trust`
+- `source`: where the events of the last 30 days came from: `server`, `browser` (a browser, a
+  mobile app or an unknown SDK), `mixed`, or `null` (no events in 30 days)
+- `server_seen_at` and `client_seen_at`: the last event from a server source, and from a browser,
+  mobile or unknown source (written at most once an hour), or `null`
 - `allowed_origins`: a list of origins, or `null` (any origin)
 - `daily_quota`: the daily event quota, or `null` (no quota)
 - `scrub_keys` and `scrub_patterns`: the [scrub settings](what-checkend-stores.md#your-own-scrub-rules) of the project
@@ -185,6 +191,8 @@ Each issue has these fields: `id`, `project_id` (the public project ID), `title`
 - `merged_into`: the ID of the issue that this issue was merged into, or `null`.
 - `trust`: the [trust level](sending-errors.md#trust-and-allowed-origins) of the project, `low`
   or `high`.
+- `source_trust` (always the same as `trust`) and `source` (`server`, `browser`, `mixed` or
+  `null`): see the project fields above.
 
 An SDK that sends the same event again (the same `event_id`, while the event is stored) does not
 make the counts go up twice. A merge moves the hourly counts and the users to the target issue.

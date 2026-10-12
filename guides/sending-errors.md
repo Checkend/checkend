@@ -219,25 +219,48 @@ See the Cloudflare docs: [Rate limiting rules](https://developers.cloudflare.com
 
 ## Trust and allowed origins
 
-A DSN that a browser uses is public: anyone can read it from the page and send events with any
-text. Text from such events must not steer an agent. So each project has a trust level:
+A DSN that a browser or a mobile app uses is public: anyone can read it from the page or the app
+and send events with any text. Text from such events must not steer an agent. So each project
+has a trust level, from where its events come:
 
-- **`high`**: Checkend has seen only events from servers.
-- **`low`**: the DSN can be public, so anyone can send events.
+- **`high`**: in the last 30 days, the events came only from server SDKs.
+- **`low`**: in the last 30 days, at least one event came from a browser, a mobile app or an
+  unknown SDK. The weakest source sets the level.
 
-By default, the trust is automatic. A project is `high` until its first event with an `Origin`
-header (a browser sends one). After that, the project is `low` for good: a later server event
-does not make it `high` again, because the DSN stays public. An admin can set the trust with
-[`PATCH /v1/projects/:project`](api.md#patch-v1projectsproject): `{"trust": "low"}`,
-`{"trust": "high"}`, or `{"trust": null}` for automatic.
+Checkend finds the source of each event from the SDK name of the event (`sdk.name` in the Sentry
+protocol) and the request:
+
+| Source | Examples | Class |
+|---|---|---|
+| An `Origin` header (a browser sends one) | any SDK | browser |
+| A server SDK | `sentry.python`, `sentry.ruby`, `sentry.php`, `sentry.go`, `sentry.dotnet`, `sentry.javascript.node` | server |
+| A framework SDK with a browser and a server part | `sentry.javascript.nextjs`, `sveltekit`, `remix`, `nuxt`, `astro` | server only when the platform of the event is `node` or its runtime is a server runtime (`node`, `bun`, `deno`, `vercel-edge`, `edge`); else browser. This covers a tunnel route, which sends browser events from your server. |
+| A browser, mobile or desktop SDK | `sentry.javascript.browser`, `sentry.javascript.react`, `sentry.cocoa`, `sentry.java.android`, `sentry.dart.flutter` | browser |
+| A missing or unknown SDK name | | browser |
+| [Native JSON ingest](#native-json-ingest) (`X-Checkend-Key`) | | server |
+
+The SDK name comes from the sender, so it can only lower the trust, never raise it. A source
+class counts for 30 days after its last event. So a project that stops getting browser events
+goes back to `high` 30 days later.
+
+An admin can set the trust with [`PATCH /v1/projects/:project`](api.md#patch-v1projectsproject):
+`{"trust": "low"}`, `{"trust": "high"}`, or `{"trust": null}` for automatic. The setting wins
+over the source.
 
 The trust is for the project, not for each event. A request without an `Origin` header can come
 from anyone who has the DSN, so the header cannot make an event trusted.
 
 A low-trust issue is still shown, and an agent can still fix it. But the agent must treat its
-text with more care. Automatic agent runs ([webhooks](webhooks.md#trust)) skip low-trust issues
-by default. The issues, `list_issues` and the [issue brief](mcp.md#the-issue-brief) show
-the trust.
+text with more care. [Webhooks](webhooks.md#trust) and [alerts](alerts.md) skip low-trust issues
+by default (`min_trust` is `high`). The issues, `list_issues`, the
+[issue brief](mcp.md#the-issue-brief) and the web UI show the trust and the source.
+
+### Improve the trust of a project
+
+- Send browser events to a separate project. Keep this project for server events.
+- Report important errors from a server SDK.
+- To get alerts again for a low-trust project, set its trust to `high`, or set the `min_trust` of
+  the alert or webhook to `low`.
 
 ### Allowed origins
 

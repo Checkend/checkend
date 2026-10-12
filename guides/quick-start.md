@@ -39,8 +39,13 @@ You need:
 
 ## 2. Or deploy it to your Cloudflare account
 
-To run Checkend without Cloudflare, in Docker or on Node, see
+To run Checkend without Cloudflare, in Docker, on Node, or on a server over SSH, see
 [Run without Cloudflare](self-host.md).
+
+`ce server install cloudflare` (see [the ce CLI](cli.md#install-and-manage-a-server)) makes the
+Worker and the D1 database on your account, with a Cloudflare API token. It installs only a
+signed [server release](operations.md#server-releases), and no server release is published yet.
+Until then, do the steps below by hand.
 
 > **Caution:** a deploy uses resources in your Cloudflare account. On the Workers Free plan, also
 > set `D1_DAILY_ROW_LIMIT` (see [Budget mode](settings.md#budget-mode-workers-free-plan)).

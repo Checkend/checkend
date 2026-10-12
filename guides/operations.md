@@ -74,6 +74,38 @@ never merges: you review the pull request.
    npx wrangler deploy --config wrangler.<name>.jsonc
    ```
 
+## Server releases
+
+A server release is a GitHub release of Checkend with a signed manifest
+(`checkend-release.json`). The manifest lists the Worker bundle, the migrations and the digest of
+the Docker image. `ce server install` and `ce server upgrade` install only a release that `ce`
+checks, in this order:
+
+1. the SSH signature of the exact manifest bytes, with a key that `ce` trusts (the namespace
+   `checkend-server-release`)
+2. the manifest itself
+3. its tag and commit, against the GitHub release
+4. the size and the SHA-256 of each file, when `ce` downloads it
+
+> **Note:** no server release is published yet, so `ce server install` and `ce server upgrade`
+> cannot install one today. Until the first release, use the manual steps on this page.
+
+### Upgrade with ce
+
+For a server that `ce server install` installed:
+
+```sh
+ce server status     # the version, the health, and whether a newer release exists
+ce server backup     # a backup (Cloudflare: a D1 Time Travel bookmark)
+ce server upgrade    # a backup, then the newer release
+```
+
+`ce server upgrade` does not go to an older version, unless you add `--allow-downgrade` and the
+older version has the same migrations. `ce server uninstall` removes the server; the data stays,
+unless you add `--delete-data`.
+
+A hosted space updates itself: it does not use `ce server`.
+
 ## Check an install
 
 `scripts/free-plan-check.ts` runs a full-flow check against a deployed install (8 steps, each

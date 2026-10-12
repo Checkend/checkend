@@ -1,7 +1,8 @@
 # Checkend guides
 
 Checkend is open-source error tracking for coding agents. It runs as one Cloudflare Worker with a
-D1 database, in your own Cloudflare account.
+D1 database in your own Cloudflare account, as one Node process with one SQLite file (for example
+in Docker), or as a hosted install.
 
 > **Status: early development.** Checkend can receive errors from Sentry SDKs, group them into
 > issues, give them to coding agents through an MCP server and a JSON API, and send alerts. It
@@ -14,6 +15,7 @@ D1 database, in your own Cloudflare account.
 | [Quick start](quick-start.md) | Run Checkend, connect an app, and read its errors. |
 | [Web UI](web-ui.md) | Sign in with a passkey, connect your apps, and read the errors in a browser. |
 | [Set up with an agent](agent-setup.md) | Let a coding agent add Checkend to your apps, with a short-lived setup key. |
+| [The ce CLI](cli.md) | Install and update `ce`, log in, and keep tokens in the keychain. |
 | [MCP server](mcp.md) | Connect a coding agent, and read issue briefs. |
 | [Webhooks](webhooks.md) | Call your agent runner when an issue is new, regressed or verified, or [start an agent from GitHub Actions](webhooks.md#start-an-agent-from-github-actions). |
 | [Alerts](alerts.md) | Tell people in Slack, Discord, a GitHub issue or email. |
@@ -40,8 +42,9 @@ Contributors and coding agents: read [AGENTS.md](../AGENTS.md) and
 - **Error ingest** with the Sentry protocol. Any Sentry SDK works: change the DSN. Without a
   Sentry SDK, send JSON to `POST /v1/ingest`.
 - **Secret removal** before anything is stored.
-- **Trust levels and allowed origins**: a project that gets browser events is low trust, because
-  its DSN is public. A project can allow browser events only from its own websites.
+- **Trust levels and allowed origins**: a project that gets events from a browser, a mobile app
+  or an unknown SDK in the last 30 days is low trust, because its DSN is public. A project can
+  allow browser events only from its own websites.
 - **Grouping** of events into issues. A deploy that only moves code does not create new issues:
   line numbers and bundle hashes are not used.
 - **Protection** for your Cloudflare account: size limits, rate limits, caps per project, and a
@@ -76,6 +79,8 @@ Contributors and coding agents: read [AGENTS.md](../AGENTS.md) and
   writes notes to the timeline of the issue.
 - **A JSON API** (`/v1`) with scoped tokens, and an audit timeline of token and project changes.
 - **A project CLI** (`npm run project`) to create projects and print their DSNs.
+- **The `ce` CLI** for people, scripts and agents: issues, setup, MCP, deploys and source maps
+  (see [The ce CLI](cli.md)).
 - **A web UI** with passkey sign-in: connect apps with a prompt for your coding agent, and read
   the issues and events.
 

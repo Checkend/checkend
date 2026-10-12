@@ -119,7 +119,9 @@ Cloudflare Queue binding, `NOTIFY`, can also start deliveries. Without it, deliv
 
 A webhook gets only the issues of projects with `high` [trust](sending-errors.md#trust-and-allowed-origins),
 unless its `min_trust` is `low`. So automatic agent runs skip low-trust issues by default: the
-text of those issues can come from anyone who has a public DSN.
+text of those issues can come from anyone who has a public DSN. A project is low trust when, in the
+last 30 days, it got an event from a browser, a mobile app or an unknown SDK, unless an admin set
+its trust.
 
 ## URL rules
 
