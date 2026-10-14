@@ -19,3 +19,4 @@ node_modules/
 *.sqlite-*
 coverage/
 dist/
+.playwright-mcp/
