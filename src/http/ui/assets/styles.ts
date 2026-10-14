@@ -103,6 +103,11 @@ input[type="text"], input[type="search"], input[type="password"], select {
   font: inherit; font-size: 14px; color: var(--fg); background: var(--bg);
   border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; min-height: 36px; width: 100%;
 }
+select {
+  appearance: none; padding-right: 34px; cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none' stroke='%23888' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m3 4.5 3 3 3-3'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 12px center; background-size: 12px;
+}
 input:hover, select:hover { border-color: var(--muted); }
 .field { margin-bottom: 14px; }
 .hint { font-size: 13px; color: var(--muted); margin: 4px 0 0; }
