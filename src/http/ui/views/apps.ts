@@ -91,7 +91,7 @@ export function checklist(progress: ProgressJson, only?: number): Html {
 			: "Waiting for your agent. Copy the prompt, then paste it into your agent."
 	}</p>
 <div data-progress-apps>${apps.map(progressApp)}</div>
-${only === undefined ? h`<p class="progress-done" data-progress-done${progress.all_complete ? "" : h` hidden`}>Every app is set up. <a href="/issues">Go to the errors</a></p>` : ""}
+${only === undefined ? h`<p class="progress-done" data-progress-done${progress.all_complete ? "" : h` hidden`}>Every app is set up. <a href="/">Open the dashboard</a></p>` : ""}
 <template data-progress-template>${progressApp({ id: 0, name: "", complete: false, done: 0, steps: EMPTY_STEPS as ProgressJson["apps"][number]["steps"] })}</template>
 </section>`;
 }

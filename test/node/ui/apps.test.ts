@@ -157,7 +157,23 @@ describe("home", () => {
 		expect(html).toContain("Waiting for your agent");
 	});
 
-	it("goes to the errors when every app is set up (the demo app does not count)", async () => {
+	it("shows the dashboard when an app exists (the demo app does not count)", async () => {
+		const ui = await signedIn();
+		ui.fake.apps = [
+			{
+				...appProgress({ id: 2222222222, slug: "demo", name: "Demo" }),
+				project: { id: 2222222222, slug: "demo", name: "Demo", platform: null, demo: true },
+			},
+		];
+		expect((await ui.page("/")).html).toContain("Copy prompt");
+		ui.fake.apps.push(appProgress({ id: 1111111111, slug: "shop", name: "Shop" }, COMPLETE));
+		const { response, html } = await ui.page("/");
+		expect(response.status).toBe(200);
+		expect(html).not.toContain("Copy prompt");
+		expect(html).toContain("Nothing needs you");
+	});
+
+	it("goes to the dashboard, not to the errors, when every app is set up", async () => {
 		const ui = await signedIn();
 		ui.fake.apps = [
 			appProgress({ id: 1111111111, slug: "shop", name: "Shop" }, COMPLETE),
@@ -167,8 +183,7 @@ describe("home", () => {
 			},
 		];
 		const { response } = await ui.page("/");
-		expect(response.status).toBe(303);
-		expect(response.headers.get("location")).toBe("/issues");
+		expect(response.status).toBe(200);
 	});
 
 	it("is where the first member lands after setup", async () => {

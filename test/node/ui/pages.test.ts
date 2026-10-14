@@ -242,11 +242,14 @@ describe("settings", () => {
 });
 
 describe("other paths", () => {
-	it("shows the onboarding on / while an app is not set up", async () => {
+	it("shows the dashboard on / once an app exists, with the setup gaps in Needs you", async () => {
 		const d = await withData();
 		const { response, html } = await d.page("/");
 		expect(response.status).toBe(200);
-		expect(html).toContain("Copy prompt");
+		expect(html).not.toContain("Copy prompt");
+		expect(html).toContain("Needs you");
+		expect(html).toContain("Fix loop");
+		expect(html).toMatch(/tag-violet">Setup<\/span>[\s\S]*?Shop/);
 	});
 
 	it("serves the stylesheet and the script with long caching", async () => {

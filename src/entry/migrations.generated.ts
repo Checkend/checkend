@@ -109,5 +109,9 @@ export const MIGRATIONS: readonly Migration[] = [
 	{
 		"name": "0033_client_key_marks.sql",
 		"sql": "-- Migration 0033: a client mark per DSN key that does not expire.\n-- Rules (AGENTS.md): valid on D1 and SQLite; forward-only and additive; no triggers.\n-- client_marked_at: the first event from a browser, mobile or unknown SDK (or with an Origin\n-- header) that came with this key. Such a key is public, so it never gives high trust again:\n-- the app stays low trust while an active key has the mark, until the key is rotated (a new\n-- key, then the old one revoked) or an admin sets `trust` (core/trust.ts).\n-- An app with client_seen_at (0032) had a client source: all its keys get the mark (fail closed).\n\nALTER TABLE project_keys ADD COLUMN client_marked_at TEXT;\nUPDATE project_keys SET client_marked_at = (\n  SELECT p.client_seen_at FROM projects p WHERE p.id = project_keys.project_id\n) WHERE project_id IN (SELECT id FROM projects WHERE client_seen_at IS NOT NULL);\nCREATE INDEX project_keys_project ON project_keys (project_id);\n"
+	},
+	{
+		"name": "0034_member_visits.sql",
+		"sql": "-- Migration 0034: member visits, for \"since your last visit\" on the dashboard.\n-- Rules (AGENTS.md): valid on D1 and SQLite; forward-only and additive; no triggers.\n-- last_visit_at: the last dashboard view (written at most once a minute).\n-- previous_visit_at: the end of the visit before the current one (a new visit starts after\n-- 30 minutes away).\n\nALTER TABLE members ADD COLUMN last_visit_at TEXT;\nALTER TABLE members ADD COLUMN previous_visit_at TEXT;\n\n-- The dashboard counts the activity of a time window.\nCREATE INDEX activity_at ON activity (at);\n"
 	}
 ];

@@ -18,6 +18,7 @@ import {
 	type Session,
 } from "../../core/auth/sessions.ts";
 import { claimIssue, holdsClaim, releaseClaim } from "../../core/claims.ts";
+import { loadDashboard, recordVisit } from "../../core/dashboard.ts";
 import { checkHealth } from "../../core/health.ts";
 import { inboxFacets, issueTags, listInbox } from "../../core/inbox.ts";
 import type { IngestState } from "../../core/ingest/state.ts";
@@ -69,6 +70,7 @@ import {
 	SDKS,
 } from "./views/apps.ts";
 import { loginView, notFoundView, setupClosedView, setupView } from "./views/auth.ts";
+import { dashboardView } from "./views/dashboard.ts";
 import { type EventDetail, eventView } from "./views/event.ts";
 import { inboxView, issueView, SINCE_CHOICES } from "./views/issues.ts";
 import { type MemberRow, settingsView } from "./views/settings.ts";
@@ -369,10 +371,18 @@ export function uiRoutes(app: Hono<AppEnv>, state: IngestState, onboarding: Onbo
 		progressJson(await onboarding.progress(c.env.ports, now(c)), now(c));
 	const csrf = (c: Context<AppEnv>) => c.get("session").csrfToken;
 
-	// Home: the prompt box and the live checklist until every app is set up; then the errors.
+	// Home: the prompt box and the live checklist until the first app; then the dashboard.
 	app.get("/", ...member, async (c) => {
 		const progress = await loadProgress(c);
-		if (progress.all_complete) return c.redirect("/issues", 303);
+		if (progress.apps.length > 0) {
+			const visit = await recordVisit(c.env.ports, c.get("session").memberId);
+			const [data, ingest] = await Promise.all([
+				loadDashboard(c.env.ports, new Date(visit.since)),
+				ingestStatus(c.env.ports, state),
+			]);
+			const view = dashboardView({ data, visit, progress, ingest, now: now(c) });
+			return render(c, "Home", "home", view);
+		}
 		return render(
 			c,
 			"Connect your app",
