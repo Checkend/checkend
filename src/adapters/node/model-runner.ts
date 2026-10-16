@@ -1,5 +1,5 @@
 import type { HttpClient } from "../../ports/http.ts";
-import type { GatewaySettings, ModelRunner } from "../../ports/model-runner.ts";
+import { callSignal, type GatewaySettings, type ModelRunner } from "../../ports/model-runner.ts";
 
 export interface RestModelRunnerOptions {
 	/** CLOUDFLARE_ACCOUNT_ID. */
@@ -22,7 +22,7 @@ const TIMEOUT_MS = 15_000;
 export function restModelRunner(options: RestModelRunnerOptions): ModelRunner {
 	const url = `${options.baseUrl ?? "https://api.cloudflare.com"}/client/v4/accounts/${encodeURIComponent(options.accountId)}/ai/run`;
 	return {
-		async run(model, input) {
+		async run(model, input, runOptions) {
 			const response = await options.http.send(url, {
 				method: "POST",
 				headers: {
@@ -32,7 +32,7 @@ export function restModelRunner(options: RestModelRunnerOptions): ModelRunner {
 					"cf-aig-collect-log": String(options.gateway.collectLog),
 				},
 				body: JSON.stringify({ model, input }),
-				signal: AbortSignal.timeout(options.timeoutMs ?? TIMEOUT_MS),
+				signal: callSignal(options.timeoutMs ?? TIMEOUT_MS, runOptions?.signal),
 			});
 			const body = (await response.json().catch(() => null)) as {
 				success?: unknown;

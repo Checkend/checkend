@@ -10,6 +10,7 @@ export interface ConfigEnv {
 	/** A secret: the one-time setup code. `npm run setup-link` sets it. */
 	SETUP_CODE?: string;
 	D1_DAILY_ROW_LIMIT?: string;
+	DAILY_EVENT_LIMIT?: string;
 	EVENTS_PER_ISSUE?: string;
 	NEW_ISSUES_PER_HOUR?: string;
 	TAG_KEYS_PER_PROJECT?: string;
@@ -106,6 +107,7 @@ export function readConfig(env: ConfigEnv): Config {
 		adminToken: adminToken(env.ADMIN_TOKEN),
 		setupCode: env.SETUP_CODE?.trim() || null,
 		dailyRowLimit: positiveInt(env.D1_DAILY_ROW_LIMIT) ?? DEFAULT_CONFIG.dailyRowLimit,
+		dailyEventLimit: positiveInt(env.DAILY_EVENT_LIMIT) ?? DEFAULT_CONFIG.dailyEventLimit,
 		eventsPerIssue: positiveInt(env.EVENTS_PER_ISSUE) ?? DEFAULT_CONFIG.eventsPerIssue,
 		newIssuesPerHour: positiveInt(env.NEW_ISSUES_PER_HOUR) ?? DEFAULT_CONFIG.newIssuesPerHour,
 		tagKeysPerProject: positiveInt(env.TAG_KEYS_PER_PROJECT) ?? DEFAULT_CONFIG.tagKeysPerProject,

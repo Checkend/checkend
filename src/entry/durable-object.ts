@@ -26,8 +26,26 @@ import type { Ports } from "../ports/index.ts";
 import { noRateLimit, type RateLimiter } from "../ports/rate-limiter.ts";
 import { MIGRATIONS } from "./migrations.generated.ts";
 
-/** The scheduled jobs run every 5 minutes, like the cron of the Worker; each job decides by time. */
-const ALARM_MS = 5 * 60_000;
+/**
+ * The scheduled jobs run every 5 minutes while the install is in use, like the cron of the
+ * Worker; each job decides by time. An install with no request for IDLE_AFTER_MS runs them only
+ * every IDLE_ALARM_MS: each alarm is a billed request and wakes the object, and many spaces are
+ * not used for long times. A request makes the install active again. IDLE_AFTER_MS is longer
+ * than the quiet period of fix verification (24 hours by default).
+ */
+export const ACTIVE_ALARM_MS = 5 * 60_000;
+export const IDLE_ALARM_MS = 6 * 3_600_000;
+export const IDLE_AFTER_MS = 3 * 86_400_000;
+/** The time of the last request (ms), written at most once per ACTIVITY_WRITE_MS. */
+export const ACTIVITY_KEY = "last_activity";
+const ACTIVITY_WRITE_MS = 3_600_000;
+
+/**
+ * The events per UTC day of a hosted install when DAILY_EVENT_LIMIT does not set a lower value.
+ * Ingest is public (a browser DSN is in the page), so without a limit one DSN could make an
+ * install write rows without end, and the Cloud pays for each row.
+ */
+export const HOSTED_DAILY_EVENT_LIMIT = 10_000;
 
 /** The front Worker: the only caller of the RPC methods (a Durable Object is not on the internet). */
 const FRONT: Actor = { type: "system", id: null, name: "front worker", scopes: ["admin"] };
@@ -91,6 +109,8 @@ export class CheckendInstall extends DurableObject<InstallEnv> {
 	private encryptionKeys: EncryptionKey[] = [];
 	/** Set by destroy(): until the object restarts (empty), it refuses every request. */
 	private destroyed = false;
+	/** The stored time of the last request (ACTIVITY_KEY); 0: none. */
+	private activityAt = 0;
 
 	constructor(ctx: DurableObjectState, env: InstallEnv) {
 		super(ctx, env);
@@ -104,6 +124,7 @@ export class CheckendInstall extends DurableObject<InstallEnv> {
 			}
 			await applyMigrations(this.db, MIGRATIONS);
 			this.provisioned = (await ctx.storage.get<Provision>(PROVISION_KEY)) ?? null;
+			this.activityAt = (await ctx.storage.get<number>(ACTIVITY_KEY)) ?? 0;
 			this.encryptionKeys = await deriveInstallKeys(
 				readConfig(env).encryptionKeys,
 				ctx.id.toString(),
@@ -114,7 +135,22 @@ export class CheckendInstall extends DurableObject<InstallEnv> {
 
 	private async startAlarm(): Promise<void> {
 		if ((await this.ctx.storage.getAlarm()) === null) {
-			await this.ctx.storage.setAlarm(Date.now() + ALARM_MS);
+			await this.ctx.storage.setAlarm(Date.now() + ACTIVE_ALARM_MS);
+		}
+	}
+
+	/**
+	 * Records a request: at most one write per hour. The write also brings an idle install back
+	 * to the 5-minute alarm.
+	 */
+	private async touch(): Promise<void> {
+		const now = Date.now();
+		if (now - this.activityAt < ACTIVITY_WRITE_MS) return;
+		this.activityAt = now;
+		await this.ctx.storage.put(ACTIVITY_KEY, now);
+		const alarm = await this.ctx.storage.getAlarm();
+		if (alarm === null || alarm > now + ACTIVE_ALARM_MS) {
+			await this.ctx.storage.setAlarm(now + ACTIVE_ALARM_MS);
 		}
 	}
 
@@ -149,6 +185,10 @@ export class CheckendInstall extends DurableObject<InstallEnv> {
 			// Its own keys: a value of one install does not decrypt in another.
 			encryptionKeys: this.encryptionKeys,
 			devMode: false,
+			dailyEventLimit: Math.min(
+				config.dailyEventLimit ?? HOSTED_DAILY_EVENT_LIMIT,
+				HOSTED_DAILY_EVENT_LIMIT,
+			),
 			trustedFront: true,
 			publicUrl: this.provisioned?.publicUrl ?? at?.publicUrl ?? null,
 			basePath: this.provisioned?.basePath ?? at?.basePath ?? "",
@@ -214,7 +254,7 @@ export class CheckendInstall extends DurableObject<InstallEnv> {
 	 * this request only. A front Worker sends requests for unknown paths to empty stand-in installs,
 	 * so that they get the same answers as a real install that gets no valid credentials.
 	 */
-	serve(
+	async serve(
 		request: Request,
 		identity: FrontIdentity | null,
 		at: InstallLocation | null = null,
@@ -236,8 +276,9 @@ export class CheckendInstall extends DurableObject<InstallEnv> {
 			if (location.basePath === "") return refused();
 			if (this.provisioned && this.provisioned.basePath !== location.basePath) return refused();
 		}
+		if (this.provisioned) await this.touch();
 		const ports = this.ports(this.provisioned ? null : location);
-		return Promise.resolve(this.app.fetch(request, { ports, identity }));
+		return this.app.fetch(request, { ports, identity });
 	}
 
 	/**
@@ -288,6 +329,7 @@ export class CheckendInstall extends DurableObject<InstallEnv> {
 		}
 		await this.ctx.storage.put(PROVISION_KEY, next);
 		this.provisioned = next;
+		await this.touch();
 		await this.startAlarm();
 		return { ok: true };
 	}
@@ -300,7 +342,9 @@ export class CheckendInstall extends DurableObject<InstallEnv> {
 			return;
 		}
 		// The next alarm first: a failed run is retried by the platform, and the chain goes on.
-		await this.ctx.storage.setAlarm(Date.now() + ALARM_MS);
+		this.activityAt = (await this.ctx.storage.get<number>(ACTIVITY_KEY)) ?? 0;
+		const idle = Date.now() - this.activityAt > IDLE_AFTER_MS;
+		await this.ctx.storage.setAlarm(Date.now() + (idle ? IDLE_ALARM_MS : ACTIVE_ALARM_MS));
 		await runScheduled(this.ports(), new Date());
 	}
 

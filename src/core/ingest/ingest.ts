@@ -105,10 +105,14 @@ export async function handleIngest(
 		if (!(await ports.rateLimiter.allow(`${projectId}:${key}`))) {
 			return tooManyRequests(RATE_LIMIT_SECONDS, "key");
 		}
-		// The daily quota of the project: until midnight UTC.
+		// The daily limits, until midnight UTC: of the project, then of the install (all projects).
+		// Both come before any write, so that a flood above them costs no rows. The project comes
+		// first: events that its own quota refuses do not use the limit of the other projects.
+		const installLimit = ports.config.dailyEventLimit;
 		if (
-			project.dailyQuota !== null &&
-			!(await state.quota.allow(ports.db, project.projectId, project.dailyQuota, now))
+			(project.dailyQuota !== null &&
+				!(await state.quota.allow(ports.db, project.projectId, project.dailyQuota, now))) ||
+			(installLimit !== null && !(await state.quota.allowInstall(ports.db, installLimit, now)))
 		) {
 			const midnight = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1);
 			return tooManyRequests(

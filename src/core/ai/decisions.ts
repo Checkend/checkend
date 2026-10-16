@@ -20,7 +20,11 @@ export type Answer =
 export interface DecisionProvider {
 	/** The model name that is stored with the answers. */
 	readonly model: string;
-	decide(input: ModelInput, questions: Record<string, Question>): Promise<Record<string, Answer>>;
+	decide(
+		input: ModelInput,
+		questions: Record<string, Question>,
+		signal?: AbortSignal,
+	): Promise<Record<string, Answer>>;
 }
 
 const Probability = v.pipe(v.number(), v.minValue(0), v.maxValue(1));
@@ -73,12 +77,12 @@ export function clefDecisions(
 ): DecisionProvider {
 	return {
 		model,
-		async decide(input, questions) {
-			const output = (await models.run(`@cf/cloudflare/${model}`, {
-				model,
-				state: input.state,
-				questions,
-			})) as { answers?: Record<string, unknown> } | null;
+		async decide(input, questions, signal) {
+			const output = (await models.run(
+				`@cf/cloudflare/${model}`,
+				{ model, state: input.state, questions },
+				signal ? { signal } : {},
+			)) as { answers?: Record<string, unknown> } | null;
 			const answers: Record<string, Answer> = {};
 			for (const [id, question] of Object.entries(questions)) {
 				answers[id] = checkAnswer(id, question, output?.answers?.[id]);

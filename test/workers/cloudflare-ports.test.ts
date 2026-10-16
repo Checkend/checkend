@@ -13,6 +13,7 @@ describe("readConfig", () => {
 			readConfig({
 				ADMIN_TOKEN: "  s3cret-admin-token-of-32-chars-x  ",
 				D1_DAILY_ROW_LIMIT: "100000",
+				DAILY_EVENT_LIMIT: "5000",
 				EVENTS_PER_ISSUE: "20",
 				NEW_ISSUES_PER_HOUR: "5",
 				TAG_KEYS_PER_PROJECT: "10",
@@ -22,6 +23,7 @@ describe("readConfig", () => {
 			adminToken: "s3cret-admin-token-of-32-chars-x",
 			setupCode: null,
 			dailyRowLimit: 100000,
+			dailyEventLimit: 5000,
 			eventsPerIssue: 20,
 			newIssuesPerHour: 5,
 			tagKeysPerProject: 10,
@@ -128,7 +130,9 @@ describe("cloudflarePorts", () => {
 		};
 		const ports = cloudflarePorts({ ...env, AI, AI_GATEWAY_ID: "gw1" }, ctx);
 		expect(await ports.models?.run("@cf/cloudflare/clef-flash", {})).toEqual({ ok: true });
-		expect(seen).toEqual([{ gateway: { id: "gw1", collectLog: false } }]);
+		expect(seen).toEqual([
+			{ gateway: { id: "gw1", collectLog: false }, signal: expect.any(AbortSignal) },
+		]);
 	});
 
 	it("uses the Vectorize binding when it exists", () => {

@@ -89,7 +89,11 @@ export async function getTriage(db: Db, issueId: number): Promise<Triage | null>
 }
 
 /** Triages one issue and stores the answers. Null: AI triage is off, or no issue. */
-export async function triageIssue(ports: TriagePorts, issueId: number): Promise<Triage | null> {
+export async function triageIssue(
+	ports: TriagePorts,
+	issueId: number,
+	signal?: AbortSignal,
+): Promise<Triage | null> {
 	if (!ports.config.ai.triage || !ports.models) return null;
 	// A test issue (the setup test event) is not a real error: no model call.
 	const issue = await ports.db.first<{ test: number }>(
@@ -99,11 +103,11 @@ export async function triageIssue(ports: TriagePorts, issueId: number): Promise<
 	const input = await issueModelInput(ports.db, issueId);
 	if (!input) return null;
 	let provider = clefDecisions(ports.models, "clef-flash");
-	let answers = await provider.decide(input, TRIAGE_QUESTIONS);
+	let answers = await provider.decide(input, TRIAGE_QUESTIONS, signal);
 	const category = answers.category;
 	if (category?.type === "choice" && category.confidence < ESCALATE_BELOW) {
 		provider = clefDecisions(ports.models, "clef");
-		answers = await provider.decide(input, TRIAGE_QUESTIONS);
+		answers = await provider.decide(input, TRIAGE_QUESTIONS, signal);
 	}
 	const triage: Triage = {
 		model: provider.model,
@@ -176,11 +180,18 @@ export async function triageForBrief(ports: TriagePorts, issueId: number): Promi
 	const retryBefore = new Date(ports.clock.now().getTime() - RETRY_AFTER_MS).toISOString();
 	if (row?.error && row.triaged_at >= retryBefore) return;
 	let timer: ReturnType<typeof setTimeout> | undefined;
+	// When the brief stops waiting, the model call stops too: an open call keeps a hosted install
+	// (a Durable Object) awake, and the Cloud pays for that time.
+	const stop = new AbortController();
 	try {
 		await Promise.race([
-			triageIssue(ports, issueId),
+			triageIssue(ports, issueId, stop.signal),
 			new Promise((_, fail) => {
-				timer = setTimeout(() => fail(new Error("triage timed out")), BRIEF_WAIT_MS);
+				timer = setTimeout(() => {
+					const error = new Error("triage timed out");
+					stop.abort(error);
+					fail(error);
+				}, BRIEF_WAIT_MS);
 			}),
 		]);
 	} catch (error) {

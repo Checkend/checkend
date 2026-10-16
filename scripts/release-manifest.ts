@@ -60,6 +60,7 @@ export const SETTINGS: Record<string, Setting> = {
 	GITHUB_TOKEN: { secret: true },
 	PUBLIC_URL: { secret: false, format: "https://<host>" },
 	D1_DAILY_ROW_LIMIT: { secret: false },
+	DAILY_EVENT_LIMIT: { secret: false },
 	EVENTS_PER_ISSUE: { secret: false },
 	NEW_ISSUES_PER_HOUR: { secret: false },
 	TAG_KEYS_PER_PROJECT: { secret: false },

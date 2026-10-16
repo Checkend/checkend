@@ -3,7 +3,14 @@ import { describe, expect, it } from "vitest";
 import { readConfig } from "../../src/adapters/config-env.ts";
 import type { FrontIdentity } from "../../src/core/auth/front-identity.ts";
 import { decryptValue, encryptValue } from "../../src/core/crypto.ts";
-import { ingestLimitKey } from "../../src/entry/durable-object.ts";
+import {
+	ACTIVE_ALARM_MS,
+	ACTIVITY_KEY,
+	HOSTED_DAILY_EVENT_LIMIT,
+	IDLE_AFTER_MS,
+	IDLE_ALARM_MS,
+	ingestLimitKey,
+} from "../../src/entry/durable-object.ts";
 
 /**
  * A hosted install as the front Worker uses it: provisioned once with its base path, then called
@@ -76,6 +83,13 @@ describe("a provisioned hosted install", () => {
 			publicUrl: ORIGIN,
 			spacesUrl: `${ORIGIN}/spaces`,
 		});
+	});
+
+	it("always has a daily event limit, so that a flood with a public DSN cannot write without end", async () => {
+		const stub = await provisioned("hosted-event-limit", "e1v2l3");
+		const config = await runInDurableObject(stub, async (instance) => instance.config());
+		expect(HOSTED_DAILY_EVENT_LIMIT).toBeGreaterThan(0);
+		expect(config.dailyEventLimit).toBe(HOSTED_DAILY_EVENT_LIMIT);
 	});
 
 	it("answers only under its base path", async () => {
@@ -264,6 +278,30 @@ describe("a provisioned hosted install", () => {
 				.toArray();
 			expect(tables).toEqual([]);
 		});
+	});
+
+	it("wakes every 5 minutes while in use, and rarely when nobody used it for days", async () => {
+		const stub = await provisioned("hosted-idle", "i1d2l3");
+		const alarmIn = () =>
+			runInDurableObject(
+				stub,
+				async (_i, state) => ((await state.storage.getAlarm()) ?? 0) - Date.now(),
+			);
+		expect(await alarmIn()).toBeLessThanOrEqual(ACTIVE_ALARM_MS);
+		// Used recently: the next alarm is in 5 minutes.
+		expect(await runDurableObjectAlarm(stub)).toBe(true);
+		expect(await alarmIn()).toBeLessThanOrEqual(ACTIVE_ALARM_MS);
+		// No request for longer than IDLE_AFTER_MS: the alarm runs at the idle interval.
+		await runInDurableObject(stub, async (_i, state) => {
+			await state.storage.put(ACTIVITY_KEY, Date.now() - IDLE_AFTER_MS - 60_000);
+			await state.storage.setAlarm(Date.now() + 1000);
+		});
+		expect(await runDurableObjectAlarm(stub)).toBe(true);
+		expect(await alarmIn()).toBeGreaterThan(IDLE_ALARM_MS - 60_000);
+		// A request makes it active again: the next alarm is in 5 minutes.
+		const health = await stub.serve(new Request(`${ORIGIN}/i1d2l3/health`), null);
+		expect(health.status).toBe(200);
+		expect(await alarmIn()).toBeLessThanOrEqual(ACTIVE_ALARM_MS);
 	});
 
 	it("keys the ingest limit by its base path, not by the object", () => {

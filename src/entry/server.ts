@@ -36,7 +36,7 @@ import { applyMigrations } from "../core/migrations.ts";
 import { runScheduled } from "../core/scheduler.ts";
 import { createApp } from "../http/app.ts";
 import type { BlobStore } from "../ports/blob-store.ts";
-import { fetchClient } from "../ports/http.ts";
+import { fetchClient, withTimeout } from "../ports/http.ts";
 import type { Ports } from "../ports/index.ts";
 import type { Mailer } from "../ports/mailer.ts";
 import { noRateLimit } from "../ports/rate-limiter.ts";
@@ -114,7 +114,7 @@ export async function startServer(env: NodeEnv): Promise<RunningServer> {
 		vectors: sqliteVectorIndex(db),
 		cpuClock: processCpuClock,
 		resolver: systemResolver,
-		http: pinnedHttpClient(),
+		http: withTimeout(pinnedHttpClient()),
 		models:
 			env.CLOUDFLARE_ACCOUNT_ID && env.CLOUDFLARE_API_TOKEN
 				? restModelRunner({

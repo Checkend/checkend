@@ -2,12 +2,13 @@ import { describe, expect, it } from "vitest";
 import { IngestState } from "../../src/core/ingest/state.ts";
 import { createProject } from "../../src/core/projects.ts";
 import { createApp } from "../../src/http/app.ts";
+import { sql } from "../../src/ports/db.ts";
 import { testPorts } from "../support/node-ports.ts";
 
 const ADMIN = "quota-admin-token-0123456789";
 
-async function setup() {
-	const t = await testPorts({ config: { adminToken: ADMIN } });
+async function setup(config: { dailyEventLimit?: number | null } = {}) {
+	const t = await testPorts({ config: { adminToken: ADMIN, ...config } });
 	const shop = await createProject(t.ports, { name: "Shop" });
 	const other = await createProject(t.ports, { name: "Other" });
 	const app = createApp({ state: new IngestState() });
@@ -90,5 +91,64 @@ describe("per-project daily quotas", () => {
 				String(daily_quota),
 			).toBe(400);
 		}
+	});
+});
+
+describe("the daily event limit of the install (DAILY_EVENT_LIMIT)", () => {
+	it("counts the events of all projects; above the limit, 429 for every project until midnight UTC", async () => {
+		const { send, shop, other, clock } = await setup({ dailyEventLimit: 3 });
+		expect((await send(shop)).status).toBe(200);
+		expect((await send(other)).status).toBe(200);
+		expect((await send(shop)).status).toBe(200);
+		for (const project of [shop, other]) {
+			const over = await send(project);
+			expect(over.status).toBe(429);
+			expect(over.headers.get("retry-after")).toBe(String(12 * 3600));
+			expect(over.headers.get("x-sentry-rate-limits")).toBe(
+				`${12 * 3600}::organization:quota_exceeded`,
+			);
+		}
+		clock.advance(12 * 3600_000 + 61_000);
+		expect((await send(shop)).status).toBe(200);
+	});
+
+	it("writes no row for a refused event (a flood above the limit costs no writes)", async () => {
+		const { send, shop, ports } = await setup({ dailyEventLimit: 1 });
+		await send(shop);
+		// SQLite: all rows that this connection inserted, updated or deleted so far.
+		const rows = async () =>
+			(await ports.db.first<{ n: number }>(sql`SELECT total_changes() AS n`))?.n;
+		const before = await rows();
+		expect(before).toBeGreaterThan(0);
+		for (let i = 0; i < 20; i++) expect((await send(shop, "same error")).status).toBe(429);
+		expect(await rows()).toBe(before);
+	});
+
+	it("counts the events that the database already has (another isolate)", async () => {
+		const { send, shop, ports } = await setup({ dailyEventLimit: 2 });
+		await send(shop);
+		await send(shop);
+		const fresh = createApp({ state: new IngestState() });
+		const response = await fresh.request(
+			`https://checkend.test/api/${shop.id}/store/?sentry_key=${shop.publicKey}`,
+			{ method: "POST", headers: { "content-type": "application/json" }, body: '{"message":"x"}' },
+			{ ports },
+		);
+		expect(response.status).toBe(429);
+	});
+
+	it("does not use the install limit for events that the quota of a project refuses", async () => {
+		const { send, call, shop, other } = await setup({ dailyEventLimit: 3 });
+		await call("PATCH", `/v1/projects/${shop.slug}`, { daily_quota: 1 });
+		expect((await send(shop)).status).toBe(200);
+		for (let i = 0; i < 5; i++) expect((await send(shop)).status).toBe(429);
+		expect((await send(other)).status).toBe(200);
+		expect((await send(other)).status).toBe(200);
+		expect((await send(other)).status).toBe(429);
+	});
+
+	it("has no limit by default (self-host)", async () => {
+		const { send, shop } = await setup();
+		for (let i = 0; i < 5; i++) expect((await send(shop)).status).toBe(200);
 	});
 });

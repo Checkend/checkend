@@ -14,6 +14,12 @@ export interface Config {
 	 * Near the limit, ingest stores counters only (budget mode).
 	 */
 	dailyRowLimit: number | null;
+	/**
+	 * Events per UTC day for the whole install, all projects together (DAILY_EVENT_LIMIT). Above
+	 * it, ingest answers 429 before it writes a row, so a flood with a public DSN costs no writes.
+	 * Null: no limit (self-host default). Hosted installs always have one.
+	 */
+	dailyEventLimit: number | null;
 	/** Stored events per issue. */
 	eventsPerIssue: number;
 	/** New issues per project per hour; more new fingerprints go to one "flood" issue. */
@@ -79,6 +85,7 @@ export const DEFAULT_CONFIG: Config = {
 	adminToken: null,
 	setupCode: null,
 	dailyRowLimit: null,
+	dailyEventLimit: null,
 	eventsPerIssue: 100,
 	newIssuesPerHour: 100,
 	tagKeysPerProject: 200,

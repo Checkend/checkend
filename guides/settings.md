@@ -9,6 +9,7 @@ All settings are optional. Set them as Workers secrets or variables (in your
 |---|---|---|
 | `ADMIN_TOKEN` (secret) | none | The bootstrap admin token for `/v1`. It has all scopes. Use it to create [scoped tokens](api.md#tokens). It needs at least 32 characters, for example `openssl rand -hex 32`; a shorter one is ignored, and the logs say why. |
 | `D1_DAILY_ROW_LIMIT` | none | Turns on budget mode (see below). |
+| `DAILY_EVENT_LIMIT` | none | Events per UTC day for the whole install, all apps together. Above it, ingest answers `429` until 00:00 UTC and writes nothing, so a flood with a public DSN cannot write rows without end. The per-app daily quota still applies. |
 | `EVENTS_PER_ISSUE` | 100 | Stored events per issue. |
 | `NEW_ISSUES_PER_HOUR` | 100 | New issues per project per hour. More go into one "flood" issue. |
 | `TAG_KEYS_PER_PROJECT` | 200 | Different tag keys per project. |

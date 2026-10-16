@@ -68,6 +68,29 @@ Checkend runs on Cloudflare first, and it must also run off Cloudflare. These ru
    Workers Logs (`console.error` with JSON). The product code has no Sentry SDK; the SDKs in
    `devDependencies` only record test fixtures. A test checks both.
 
+## Cost safety (hosted installs)
+
+A hosted service runs one Durable Object per install (`src/entry/durable-object.ts`), with this
+open-source code. Anyone can read the code, find a request that keeps an object awake or writes
+many rows, and repeat it against every install of the service. Duration is billed for each second that an object is active or cannot
+hibernate; rows written, requests and alarms are billed too. So:
+
+1. **Every outbound call ends.** Use `ports.http` (`withTimeout` adds a timeout to every call)
+   and `ports.models` (`MODEL_TIMEOUT_MS`). No direct `fetch`. A `Promise.race` that stops
+   waiting must also abort the losing call.
+2. **No interval timers and no plain WebSockets** in code that can run in a Durable Object. A live
+   view polls, or uses the WebSocket Hibernation API.
+3. **Work in `ports.defer` is bounded** in time and count (for example, 10 webhook deliveries per
+   run), never "until the queue is empty".
+4. **Know the cost of a request from outside** (ingest with a public DSN, unknown paths, a
+   webhook target that a tenant sets). Refuse before you write: the daily event limit and the
+   quotas come before any row. A new write per event is a cost change: say so in the commit.
+5. **No new always-on alarms.** The install alarm runs every 5 minutes only while it is in use,
+   and every 6 hours after 3 days without a request.
+
+`test/node/cost-guards.test.ts` finds timers, races, WebSockets, direct `fetch`, alarms and
+`waitUntil`. A new use fails it: review it, then add it to the list with the reason.
+
 ## How we build
 
 1. **Test first (TDD).** Write a failing test. Run it and see it fail. Write the smallest code that
@@ -135,6 +158,7 @@ Settings (Workers secrets and vars; all optional):
 | `ADMIN_TOKEN` (secret) | none | Bearer token for `/v1`. Without it, the API rejects all requests. |
 | `SETUP_CODE` (secret) | none | The one-time code of the setup link, as `<unix seconds>.<code>`: the link expires after 24 hours (deploy logs show it). `npm run setup-link` sets it; do not set it by hand. |
 | `D1_DAILY_ROW_LIMIT` | none | Set `100000` on the Workers Free plan: from 80% of it, ingest stores counters only until 00:00 UTC. |
+| `DAILY_EVENT_LIMIT` | none | Events per UTC day for the install (all projects). Above it, ingest answers 429 before any write. Hosted installs always have a limit (`HOSTED_DAILY_EVENT_LIMIT`, 10,000); the variable can only lower it. |
 | `EVENTS_PER_ISSUE` | 100 | Stored events per issue. |
 | `NEW_ISSUES_PER_HOUR` | 100 | New issues per project per hour; more go to one "flood" issue. |
 | `TAG_KEYS_PER_PROJECT` | 200 | Distinct tag keys per project. |

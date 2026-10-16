@@ -121,6 +121,24 @@ export class QuotaCounter {
 		entry.count++;
 		return true;
 	}
+
+	private install: { day: string; count: number; fetchedAt: number } | null = null;
+
+	/** Counts one event of the install (all projects). False when the install is at its limit. */
+	async allowInstall(db: Db, limit: number, now: Date): Promise<boolean> {
+		const day = now.toISOString().slice(0, 10);
+		let entry = this.install;
+		if (!entry || entry.day !== day || now.getTime() - entry.fetchedAt > 60_000) {
+			const row = await db.first<{ n: number }>(
+				sql`SELECT coalesce(sum(count), 0) AS n FROM issue_counts WHERE hour >= ${`${day}T00`}`,
+			);
+			entry = { day, count: row?.n ?? 0, fetchedAt: now.getTime() };
+			this.install = entry;
+		}
+		if (entry.count >= limit) return false;
+		entry.count++;
+		return true;
+	}
 }
 
 /** How often ingest writes the seen time of a source class (projects.*_seen_at). */
