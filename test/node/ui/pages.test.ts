@@ -46,8 +46,8 @@ async function withData() {
 
 /** Every UI page, for the checks that apply to all of them. */
 const pagesOf = (d: Awaited<ReturnType<typeof withData>>) => [
-	"/issues",
-	"/issues?status=unresolved&environment=staging",
+	`/apps/${d.web.id}?status=unresolved&environment=staging`,
+	"/?range=live&issues=unresolved",
 	`/issues/${d.issues[0]?.id}`,
 	`/events/${d.events[0]?.id}`,
 	"/",
@@ -115,41 +115,41 @@ describe("every page", () => {
 	});
 });
 
-describe("inbox", () => {
-	it("lists issues with project, times seen and last seen", async () => {
+describe("the issues of an app (its page)", () => {
+	it("lists the issues of the app with times seen and last seen", async () => {
 		const d = await withData();
-		const { html } = await d.page("/issues");
-		expect(html).toContain("TypeError: cart is undefined");
-		expect(html).toContain("RangeError: page out of range");
-		expect(html).toMatch(/<td[^>]*>2<\/td>/); // times seen
-		expect(html).toContain('datetime="2026-10-10T12:01:00.000Z"');
-		expect(html).toContain(`href="/issues/${d.issues[0]?.id}"`);
+		const shop = (await d.page(`/apps/${d.shop.id}`)).html;
+		expect(shop).toContain("TypeError: cart is undefined");
+		expect(shop).not.toContain("RangeError: page out of range");
+		expect(shop).toMatch(/<td[^>]*>2<\/td>/); // times seen
+		expect(shop).toContain(`href="/issues/${d.issues[0]?.id}"`);
+		const web = (await d.page(`/apps/${d.web.id}`)).html;
+		expect(web).toContain("RangeError: page out of range");
+		expect(web).toContain('datetime="2026-10-10T12:01:00.000Z"');
 	});
 
-	it("filters by project, environment and text, and keeps the filter values in the form", async () => {
+	it("filters by environment and text, and keeps the filter values in the form", async () => {
 		const d = await withData();
-		const byProject = (await d.page(`/issues?project=${d.web.id}`)).html;
-		expect(byProject).toContain("RangeError");
-		expect(byProject).not.toContain("TypeError: cart");
-		const byEnvironment = (await d.page("/issues?environment=staging")).html;
-		expect(byEnvironment).not.toContain("TypeError: cart");
-		expect(byEnvironment).toMatch(/<option value="staging" selected>/);
-		const recent = (await d.page("/issues?since=1h")).html;
+		const byEnvironment = (await d.page(`/apps/${d.web.id}?environment=production`)).html;
+		expect(byEnvironment).not.toContain("RangeError: page");
+		const staging = (await d.page(`/apps/${d.web.id}?environment=staging`)).html;
+		expect(staging).toContain("RangeError: page");
+		expect(staging).toMatch(/<option value="staging" selected>/);
+		const recent = (await d.page(`/apps/${d.shop.id}?since=1h`)).html;
 		expect(recent).toMatch(/<option value="1h" selected>/);
-		const bySearch = (await d.page("/issues?q=cart")).html;
+		const bySearch = (await d.page(`/apps/${d.shop.id}?q=cart`)).html;
 		expect(bySearch).toContain("TypeError: cart");
-		expect(bySearch).not.toContain("RangeError: page");
 		expect(bySearch).toContain('value="cart"');
 	});
 
 	it("shows an empty state, and rejects invalid filters with 400", async () => {
 		const d = await withData();
-		expect((await d.page("/issues?q=nothing-matches")).html).toContain("No issues match");
-		expect((await d.page("/issues?status=exploded")).response.status).toBe(400);
-		expect((await d.page("/issues?cursor=%%%")).response.status).toBe(400);
-		expect((await d.page("/issues?since=forever")).response.status).toBe(400);
-		const unknown = await d.page("/issues?project=no-such-project");
-		expect(unknown.html).toContain("No app no-such-project");
+		expect((await d.page(`/apps/${d.shop.id}?q=nothing-matches`)).html).toContain(
+			"No issues match",
+		);
+		for (const query of ["status=exploded", "cursor=%%%", "since=forever"]) {
+			expect((await d.page(`/apps/${d.shop.id}?${query}`)).response.status, query).toBe(400);
+		}
 	});
 });
 
@@ -254,7 +254,7 @@ describe("other paths", () => {
 
 	it("serves the stylesheet and the script with long caching", async () => {
 		const d = await withData();
-		const { html } = await d.page("/issues");
+		const { html } = await d.page("/apps");
 		const css = /href="(\/assets\/app\.[0-9a-f]{8}\.css)"/.exec(html)?.[1];
 		const js = /src="(\/assets\/app\.[0-9a-f]{8}\.js)"/.exec(html)?.[1];
 		expect(css).toBeDefined();

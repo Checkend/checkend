@@ -179,10 +179,10 @@ details.from-app > p { position: absolute; right: 0; top: 100%; z-index: 2; widt
 .frame-head .loc { color: var(--muted); overflow-wrap: anywhere; }
 .frame.lib .frame-head { color: var(--muted); }
 .frame-tag { font-family: var(--sans); font-size: 11px; color: var(--violet); font-weight: 600; }
-.source { margin: 0; padding: 6px 0; font-size: 12.5px; line-height: 1.6; overflow-x: auto; }
-.source span { display: block; padding: 0 10px; white-space: pre; }
-.source span::before { content: attr(data-line); display: inline-block; width: 4.5ch; margin-right: 1.5ch; text-align: right; color: var(--muted); }
-.source .hit { background: color-mix(in srgb, var(--red) 12%, transparent); }
+pre.source { margin: 0; padding: 6px 0; font-size: 12.5px; line-height: 1.6; overflow-x: auto; }
+pre.source span { display: block; padding: 0 10px; white-space: pre; }
+pre.source span::before { content: attr(data-line); display: inline-block; width: 4.5ch; margin-right: 1.5ch; text-align: right; color: var(--muted); }
+pre.source .hit { background: color-mix(in srgb, var(--red) 12%, transparent); }
 details.lib-frames > summary { cursor: pointer; font-size: 13px; color: var(--muted); margin: 4px 0 8px; }
 
 /* Key/value tables in event data */
@@ -277,6 +277,8 @@ td.actions { text-align: right; padding-right: 0; }
 .trust-low { color: var(--amber); }
 .trust-note { margin: 0 0 20px; padding: 12px 16px; border: 1px solid var(--line); border-left: 3px solid var(--amber); border-radius: 10px; background: var(--panel); font-size: 14px; max-width: 72ch; }
 .trust-note h2 { margin: 0 0 6px; font-size: 15px; }
+.trust-note summary { cursor: pointer; }
+.trust-note[open] summary { margin-bottom: 6px; }
 .trust-note p, .trust-note ul { margin: 6px 0; }
 .trust-note ul { padding-left: 20px; }
 .pill-demo { color: var(--violet); font-size: 12px; vertical-align: middle; }
@@ -388,6 +390,24 @@ table.dash-apps th:nth-child(n+2), table.dash-apps td:nth-child(n+2) { padding-l
 .spark-cell { white-space: nowrap; }
 .spark-cell .num { display: inline-block; min-width: 3ch; margin-left: 8px; font-variant-numeric: tabular-nums; vertical-align: middle; }
 .spark { color: var(--violet); vertical-align: middle; }
+.card-head, .chart-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; margin-bottom: 12px; }
+.card-head h2, .chart-head h2 { margin: 0; }
+.card-foot { margin: 12px 0 0; font-size: 13px; }
+.segmented-small a { padding: 2px 10px; font-size: 12.5px; }
+.chart-total { margin-left: 6px; font-size: 14px; font-weight: 500; color: var(--muted); font-variant-numeric: tabular-nums; }
+.chart { display: block; width: 100%; height: 140px; color: var(--violet); }
+.chart rect { fill: currentColor; }
+.chart rect:hover { fill: var(--fg); }
+.chart-axis { display: flex; justify-content: space-between; margin-top: 6px; font-size: 12px; color: var(--muted); }
+.live-dot { display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; background: var(--green); vertical-align: 1px; }
+.recent-list { list-style: none; margin: 0; padding: 0; }
+.recent { padding: 9px 0; border-top: 1px solid var(--line); }
+.recent:first-child { border-top: 0; padding-top: 0; }
+.recent-title { font-weight: 600; text-decoration: none; overflow-wrap: anywhere; }
+a.recent-title:hover { text-decoration: underline; }
+.recent-sub { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin-top: 3px; font-size: 12.5px; color: var(--muted); }
+.recent-app { color: var(--fg); font-weight: 500; }
+.table-wrap { overflow-x: auto; }
 
 /* Narrow screens */
 @media (max-width: 900px) {
@@ -441,7 +461,7 @@ table.dash-apps th:nth-child(n+2), table.dash-apps td:nth-child(n+2) { padding-l
   table.apps td, table.apps tbody tr:last-child td { display: block; border: 0; padding: 0 !important; text-align: left; }
   table.apps td.app { grid-column: 1; }
   table.apps td.actions { grid-column: 2; grid-row: 1; }
-  table.apps td.num, table.apps td.when, table.apps td.source, table.apps td.status { grid-column: 1 / -1; font-size: 12.5px; color: var(--muted); }
+  table.apps td.num, table.apps td.when, table.apps td.spark-cell, table.apps td.status { grid-column: 1 / -1; font-size: 12.5px; color: var(--muted); }
   table.apps td[data-label]::before { content: attr(data-label) " "; }
   table.tokens thead { display: none; }
   table.tokens, table.tokens tbody { display: block; }

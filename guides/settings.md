@@ -126,7 +126,7 @@ To prevent this, set:
 D1_DAILY_ROW_LIMIT=100000
 ```
 
-Checkend estimates the rows that it writes: 10 rows for a stored event, 6 rows for a counted
+Checkend estimates the rows that it writes: 11 rows for a stored event, 7 rows for a counted
 event, 2 more rows for an event with a user, and 1 row for each new tag key. This is an estimate, not the real count from D1. Each
 Worker instance reads the count again at most every 30 seconds.
 

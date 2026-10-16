@@ -40,7 +40,7 @@ beforeAll(async () => {
 
 describe("web UI in the Worker (D1)", () => {
 	it("sets up with a passkey, signs in, and shows the pages with a strict CSP", async () => {
-		const first = await get("/issues");
+		const first = await get("/apps");
 		expect(first.status, await first.clone().text()).toBe(303);
 		expect(first.headers.get("location")).toBe("/setup");
 		const device = new VirtualAuthenticator(ORIGIN);
@@ -60,7 +60,7 @@ describe("web UI in the Worker (D1)", () => {
 		const cookie = cookieOf(signIn);
 		expect(cookie).toMatch(/^__Host-checkend_session=/);
 
-		for (const path of ["/issues", "/apps", "/settings"]) {
+		for (const path of ["/", "/apps", "/settings"]) {
 			const page = await get(path, cookie);
 			expect(page.status, path).toBe(200);
 			expect(page.headers.get("content-security-policy"), path).toBe(CSP);

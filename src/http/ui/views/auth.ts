@@ -71,5 +71,5 @@ ${logo("/login")}
 
 export function notFoundView(): Html {
 	return h`<div class="page-head"><h1>Not found</h1><p>This page does not exist, or it was removed.</p></div>
-<p><a href="/issues">Go to the issues</a></p>`;
+<p><a href="/">Go to the dashboard</a></p>`;
 }

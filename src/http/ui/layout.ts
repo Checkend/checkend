@@ -80,8 +80,7 @@ ${member.devMode ? h`<span class="dev-flag" title="CHECKEND_DEV is on">Developme
 </div>
 <div class="side-body" id="side-nav">
 <nav class="side-nav" aria-label="Primary">
-${navLink(section, "home", "/", "Home", setupBadge)}
-${navLink(section, "issues", "/issues", "Issues", issuesBadge)}
+${navLink(section, "home", "/", "Dashboard", setupBadge ?? issuesBadge)}
 ${navLink(section, "apps", "/apps", "Apps")}
 </nav>
 <div class="side-foot">

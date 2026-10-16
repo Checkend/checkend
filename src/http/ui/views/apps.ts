@@ -1,3 +1,4 @@
+import type { AppHealth } from "../../../core/dashboard.ts";
 import type { ProjectSummary } from "../../../core/projects.ts";
 import { type Child, count, type Html, h, time } from "../html.ts";
 import { appPath } from "../ids.ts";
@@ -15,6 +16,7 @@ import {
 } from "../onboarding.ts";
 import { displayText as t } from "../text.ts";
 import { lowTrustNote, trustBadge } from "../trust.ts";
+import { sparkline } from "./chart.ts";
 
 export const PLATFORMS = ["node", "javascript", "python", "ruby", "php", "go", "other"] as const;
 
@@ -186,6 +188,8 @@ export interface AppRow {
 	project: ProjectSummary;
 	progress: AppProgress | null;
 	demo: boolean;
+	/** Events per hour, open issues and the last deploy (null: not loaded). */
+	health?: AppHealth | null;
 }
 
 function setupStatus(row: AppRow, now: Date): Html {
@@ -207,19 +211,21 @@ ${notice ? h`<p class="notice" role="status">${notice}</p>` : ""}
 ${
 	rows.length === 0
 		? h`<div class="empty"><h2>No apps yet</h2><p>Add an app: your coding agent does the setup.</p><p><a class="btn" href="/apps/new">Add app</a></p></div>`
-		: h`<table class="apps">
-<thead><tr><th scope="col">App</th><th scope="col" class="num">Errors, 24 h</th><th scope="col">Last error</th><th scope="col">Source</th><th scope="col">Setup</th><th scope="col"><span class="sr">Actions</span></th></tr></thead>
-<tbody>${rows.map(
-				(row) => h`<tr>
-<td class="app"><a class="app-name" href="${appPath(row.project.id)}">${t(row.project.name, 100)}</a><span class="app-sub">${platformLabel(row.project.platform)}</span></td>
-<td class="num" data-label="Errors, 24 h:">${count(row.project.events_24h)}</td>
-<td class="when" data-label="Last error:">${row.project.last_event_at ? time(row.project.last_event_at, now) : "none yet"}</td>
-<td class="source">${trustBadge(row.project, row.project.last_event_at !== null)}</td>
+		: h`<div class="table-wrap"><table class="apps">
+<thead><tr><th scope="col">App</th><th scope="col">Events, 24 h</th><th scope="col" class="num">Open issues</th><th scope="col">Last error</th><th scope="col">Last deploy</th><th scope="col">Setup</th><th scope="col"><span class="sr">Actions</span></th></tr></thead>
+<tbody>${rows.map((row) => {
+				const health = row.health ?? null;
+				return h`<tr>
+<td class="app"><a class="app-name" href="${appPath(row.project.id)}">${t(row.project.name, 100)}</a><span class="app-sub">${platformLabel(row.project.platform)} · ${trustBadge(row.project, row.project.last_event_at !== null)}</span></td>
+<td class="spark-cell" data-label="Events, 24 h:">${health ? sparkline(health.hourly) : ""}<span class="num">${count(health?.events_24h ?? row.project.events_24h)}</span></td>
+<td class="num" data-label="Open issues:">${health ? h`<a href="${appPath(row.project.id)}?status=unresolved">${count(health.open_issues)}</a>` : "—"}</td>
+<td class="when" data-label="Last error:">${row.project.last_event_at ? time(row.project.last_event_at, now) : h`<span class="muted">none yet</span>`}</td>
+<td class="when" data-label="Last deploy:">${health?.last_deploy_at ? time(health.last_deploy_at, now) : h`<span class="muted">none</span>`}</td>
 <td class="status">${setupStatus(row, now)}</td>
 <td class="actions">${askMenu(origin, row.project)}</td>
-</tr>`,
-			)}</tbody>
-</table>`
+</tr>`;
+			})}</tbody>
+</table></div>`
 }`;
 }
 
@@ -314,7 +320,9 @@ err := sentry.Init(sentry.ClientOptions{
 	},
 ];
 
-export type AppTab = "agent" | "manual";
+/** issues: the chart and the issues of the app (the default); setup: the checklist, the agent
+ * prompts and delete; manual: the DSN and the SDK code. */
+export type AppTab = "issues" | "setup" | "manual";
 
 export interface AppPageData {
 	project: ProjectSummary;
@@ -326,12 +334,14 @@ export interface AppPageData {
 	deleteError?: string;
 	/** False for a member who is not an owner (hosted installs): no delete form. */
 	canDelete?: boolean;
+	/** The issues tab: the chart and the issue list, rendered by the route. */
+	issues?: Html;
 }
 
 function tabs(id: number, tab: AppTab): Html {
 	const link = (key: AppTab, href: string, label: string) =>
 		h`<a href="${href}"${key === tab ? h` aria-current="page"` : ""}>${label}</a>`;
-	return h`<nav class="tabs" aria-label="App">${link("agent", appPath(id), "With your agent")}${link("manual", `${appPath(id)}?tab=manual`, "Manual setup")}</nav>`;
+	return h`<nav class="tabs" aria-label="App">${link("issues", appPath(id), "Issues")}${link("setup", `${appPath(id)}?tab=setup`, "Setup and agent tasks")}${link("manual", `${appPath(id)}?tab=manual`, "Manual setup")}</nav>`;
 }
 
 function manualTab(project: ProjectSummary, origin: string, sdkId: string | undefined): Html {
@@ -393,7 +403,7 @@ ${data.deleteError ? h`<p class="error" role="alert">${data.deleteError}</p>` : 
 
 export function appView(data: AppPageData, origin: string, now: Date): Html {
 	const { project } = data;
-	const sub: Child = h`${platformLabel(project.platform)} · added ${time(project.created_at, now)} · <a href="/issues?project=${project.id}">Errors</a> · ${trustBadge(project, project.last_event_at !== null)}`;
+	const sub: Child = h`${platformLabel(project.platform)} · added ${time(project.created_at, now)} · ${trustBadge(project, project.last_event_at !== null)}`;
 	return h`<div class="page-head">
 <div class="crumbs"><a href="/apps">Apps</a></div>
 <h1>${t(project.name, 100)}${data.demo ? h` <span class="pill pill-demo">Demo data</span>` : ""}</h1>
@@ -404,10 +414,12 @@ ${tabs(project.id, data.tab)}
 ${
 	data.tab === "manual"
 		? manualTab(project, origin, data.sdk)
-		: h`<div class="app-agent">
+		: data.tab === "setup"
+			? h`<div class="app-agent">
 ${checklist(data.progress, project.id)}
 <section aria-labelledby="tasks-title"><h2 id="tasks-title">Ask your agent</h2><p class="muted">Copy a prompt and paste it into your coding agent. Each prompt names a recipe that your agent reads from this Checkend.</p>${taskCards(origin, project)}</section>
-</div>`
-}
-${dangerZone(data)}`;
+</div>
+${dangerZone(data)}`
+			: (data.issues ?? "")
+}`;
 }

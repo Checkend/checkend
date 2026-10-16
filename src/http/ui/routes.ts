@@ -18,7 +18,7 @@ import {
 	type Session,
 } from "../../core/auth/sessions.ts";
 import { claimIssue, holdsClaim, releaseClaim } from "../../core/claims.ts";
-import { loadDashboard, recordVisit } from "../../core/dashboard.ts";
+import { loadAppHealth, loadDashboard, recordVisit } from "../../core/dashboard.ts";
 import { checkHealth } from "../../core/health.ts";
 import { inboxFacets, issueTags, listInbox } from "../../core/inbox.ts";
 import type { IngestState } from "../../core/ingest/state.ts";
@@ -35,6 +35,7 @@ import {
 	ProjectRef,
 } from "../../core/issues.ts";
 import { createProject, listProjects } from "../../core/projects.ts";
+import { eventSeries, isSeriesRange } from "../../core/series.ts";
 import { createToken, hasScope, listTokens, revokeToken, type Scope } from "../../core/tokens.ts";
 import { sql } from "../../ports/db.ts";
 import type { AppEnv } from "../app.ts";
@@ -70,7 +71,8 @@ import {
 	SDKS,
 } from "./views/apps.ts";
 import { loginView, notFoundView, setupClosedView, setupView } from "./views/auth.ts";
-import { dashboardView } from "./views/dashboard.ts";
+import { chartCard } from "./views/chart.ts";
+import { dashboardView, RECENT_FILTERS, RECENT_ISSUES } from "./views/dashboard.ts";
 import { type EventDetail, eventView } from "./views/event.ts";
 import { inboxView, issueView, SINCE_CHOICES } from "./views/issues.ts";
 import { type MemberRow, settingsView } from "./views/settings.ts";
@@ -176,7 +178,7 @@ export function uiRoutes(app: Hono<AppEnv>, state: IngestState, onboarding: Onbo
 			input.response,
 		);
 		if (!result.ok) return c.json({ error: result.error }, 401);
-		return signedIn(c, result.value.token, "/issues");
+		return signedIn(c, result.value.token, "/");
 	});
 
 	app.get("/setup", ownSignIn, securityHeaders, async (c) => {
@@ -235,7 +237,7 @@ export function uiRoutes(app: Hono<AppEnv>, state: IngestState, onboarding: Onbo
 		if (!isDevRequest(c)) return notFound(c);
 		const session = await createDevSession(c.env.ports);
 		c.header("Set-Cookie", sessionCookie(session.token, SESSION_MAX_AGE));
-		return c.redirect("/issues", 303);
+		return c.redirect("/", 303);
 	});
 
 	// --- inbox, issue, event -------------------------------------------------------------
@@ -250,15 +252,17 @@ export function uiRoutes(app: Hono<AppEnv>, state: IngestState, onboarding: Onbo
 		cursor: v.optional(v.pipe(v.string(), v.maxLength(200))),
 	});
 
-	app.get("/issues", ...member, async (c) => {
+	/**
+	 * The issues of one app, with the filters of the query (the app page). Null: the query is not
+	 * valid.
+	 */
+	const appIssues = async (c: Context<AppEnv>, appId: number) => {
 		const parsed = v.safeParse(InboxParams, c.req.query());
 		const cursor = parsed.success ? parsed.output.cursor : undefined;
-		if (!parsed.success || (cursor && !decodeCursor(cursor))) {
-			return render(c, "Issues", "issues", notFoundView(), 400);
-		}
-		const { project, status, environment, release, since, q } = parsed.output;
+		if (!parsed.success || (cursor && !decodeCursor(cursor))) return null;
+		const { status, environment, release, since, q } = parsed.output;
 		const query = {
-			project: project || undefined,
+			project: String(appId),
 			status: status || undefined,
 			environment: environment || undefined,
 			release: release || undefined,
@@ -271,7 +275,17 @@ export function uiRoutes(app: Hono<AppEnv>, state: IngestState, onboarding: Onbo
 			inboxFacets(c.env.ports.db),
 			listInbox(c.env.ports.db, query, now(c)),
 		]);
-		return render(c, "Issues", "issues", inboxView(query, facets, inbox, now(c)));
+		return { query, facets, inbox };
+	};
+
+	// The cross-app issue list is gone: the dashboard has the recent issues, each app its own.
+	app.get("/issues", ...member, (c) => {
+		const query = new URLSearchParams(c.req.query());
+		const project = parseProjectId(query.get("project") ?? undefined);
+		query.delete("project");
+		if (project === null) return c.redirect("/", 301);
+		const rest = query.toString();
+		return c.redirect(`${appPath(project)}${rest ? `?${rest}` : ""}`, 301);
 	});
 
 	app.get("/issues/:id", ...member, async (c) => {
@@ -297,7 +311,7 @@ export function uiRoutes(app: Hono<AppEnv>, state: IngestState, onboarding: Onbo
 		return render(
 			c,
 			displayText(issue.title, 80),
-			"issues",
+			"apps",
 			issueView(
 				{
 					issue,
@@ -360,7 +374,7 @@ export function uiRoutes(app: Hono<AppEnv>, state: IngestState, onboarding: Onbo
 			issue_title: String(issue?.title ?? ""),
 			event: event.event,
 		} as EventDetail;
-		return render(c, "Event", "issues", eventView(detail, now(c)));
+		return render(c, "Event", "apps", eventView(detail, now(c)));
 	});
 
 	// --- home, apps ----------------------------------------------------------------------
@@ -375,13 +389,27 @@ export function uiRoutes(app: Hono<AppEnv>, state: IngestState, onboarding: Onbo
 	app.get("/", ...member, async (c) => {
 		const progress = await loadProgress(c);
 		if (progress.apps.length > 0) {
+			const range = c.req.query("range");
+			const filter = c.req.query("issues");
+			const issues = RECENT_FILTERS.find(([value]) => value === filter)?.[0] ?? null;
 			const visit = await recordVisit(c.env.ports, c.get("session").memberId);
-			const [data, ingest] = await Promise.all([
+			const [data, ingest, series, recent] = await Promise.all([
 				loadDashboard(c.env.ports, new Date(visit.since)),
 				ingestStatus(c.env.ports, state),
+				eventSeries(c.env.ports.db, now(c), isSeriesRange(range) ? range : "24h"),
+				listInbox(c.env.ports.db, { status: issues ?? undefined, limit: RECENT_ISSUES }, now(c)),
 			]);
-			const view = dashboardView({ data, visit, progress, ingest, now: now(c) });
-			return render(c, "Home", "home", view);
+			const view = dashboardView({
+				data,
+				visit,
+				progress,
+				ingest,
+				now: now(c),
+				series,
+				recent: recent === "project_not_found" ? [] : recent.data,
+				issues,
+			});
+			return render(c, "Dashboard", "home", view);
 		}
 		return render(
 			c,
@@ -405,20 +433,38 @@ export function uiRoutes(app: Hono<AppEnv>, state: IngestState, onboarding: Onbo
 		return render(c, "Add an app", "apps", view);
 	});
 
+	// The chart data, for the Live view (the client script asks every 10 s while it is visible).
+	app.get("/dashboard/series", ...member, async (c) => {
+		c.header("Cache-Control", "no-store");
+		const range = c.req.query("range");
+		const app = c.req.query("app");
+		const appId = app === undefined ? null : parseProjectId(app);
+		if (!isSeriesRange(range) || (app !== undefined && appId === null)) {
+			return c.json({ error: "invalid_query" }, 400);
+		}
+		return c.json(await eventSeries(c.env.ports.db, now(c), range, appId));
+	});
+
 	app.get("/apps/progress", ...member, async (c) => {
 		c.header("Cache-Control", "no-store");
 		return c.json(await loadProgress(c));
 	});
 
 	const appRows = async (c: Context<AppEnv>): Promise<AppRow[]> => {
-		const [projects, progress] = await Promise.all([
+		const [projects, progress, health] = await Promise.all([
 			listProjects(c.env.ports.db, now(c)),
 			onboarding.progress(c.env.ports, now(c)),
+			loadAppHealth(c.env.ports.db, now(c)),
 		]);
 		return projects.map((project) => {
 			const found = progress.apps.find((a) => a.project.id === project.id) ?? null;
 			const demo = project.demo || found?.project.demo === true;
-			return { project, progress: found, demo };
+			return {
+				project,
+				progress: found,
+				demo,
+				health: health.find((a) => a.id === project.id) ?? null,
+			};
 		});
 	};
 
@@ -468,11 +514,28 @@ export function uiRoutes(app: Hono<AppEnv>, state: IngestState, onboarding: Onbo
 		status: ContentfulStatusCode = 200,
 	) => {
 		const sdk = c.req.query("sdk");
+		const asked = c.req.query("tab");
+		const tab: AppTab =
+			extra.tab ??
+			(asked === "manual" ? "manual" : asked === "setup" || asked === "agent" ? "setup" : "issues");
+		let issues: Html | undefined;
+		if (tab === "issues") {
+			const range = c.req.query("range");
+			const [found, series] = await Promise.all([
+				appIssues(c, row.project.id),
+				eventSeries(c.env.ports.db, now(c), isSeriesRange(range) ? range : "24h", row.project.id),
+			]);
+			if (!found) return render(c, row.project.name, "apps", notFoundView(), 400);
+			const base = appPath(row.project.id);
+			issues = h`${chartCard(series, (r) => (r === "24h" ? base : `${base}?range=${r}`), row.project.id)}
+${inboxView(found.query, found.facets, found.inbox, now(c), base)}`;
+		}
 		const data: AppPageData = {
 			project: row.project,
 			progress: await loadProgress(c),
 			demo: row.demo,
-			tab: extra.tab ?? (c.req.query("tab") === "manual" ? "manual" : "agent"),
+			tab,
+			...(issues ? { issues } : {}),
 			sdk: SDKS.some((s) => s.id === sdk) ? sdk : undefined,
 			csrf: csrf(c),
 			canDelete: hasScope(c.get("actor"), "admin"),
@@ -504,7 +567,10 @@ export function uiRoutes(app: Hono<AppEnv>, state: IngestState, onboarding: Onbo
 			return appPage(
 				c,
 				row,
-				{ deleteError: "Type the name of the app exactly as it is shown, to confirm." },
+				{
+					tab: "setup",
+					deleteError: "Type the name of the app exactly as it is shown, to confirm.",
+				},
 				400,
 			);
 		}

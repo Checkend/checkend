@@ -41,7 +41,7 @@ describe("a provisioned hosted install", () => {
 		const page = await stub.serve(new Request(`${ORIGIN}/k7q2x9/apps/new`), ALICE);
 		expect(page.status).toBe(200);
 		const html = await page.text();
-		expect(html).toContain('href="/k7q2x9/issues"');
+		expect(html).toContain('href="/k7q2x9/apps"');
 		expect(html).toContain(`href="${ORIGIN}/spaces"`);
 		expect(html).toContain(`ce setup --url ${ORIGIN}/k7q2x9`);
 	});
@@ -255,7 +255,7 @@ describe("a provisioned hosted install", () => {
 
 	it("stays deleted after a restart: no migrations, no alarm, no data, no answers", async () => {
 		const deleted = await provisioned("hosted-tombstone", "t0m6b5");
-		expect((await deleted.serve(new Request(`${ORIGIN}/t0m6b5/issues`), ALICE)).status).toBe(200);
+		expect((await deleted.serve(new Request(`${ORIGIN}/t0m6b5/apps`), ALICE)).status).toBe(200);
 		await deleted.destroy();
 		// A restart (a deploy, an eviction): the object is built again from its storage.
 		await runInDurableObject(deleted, (_instance, state) => state.abort("restart")).catch(() => {});
@@ -265,7 +265,7 @@ describe("a provisioned hosted install", () => {
 			{ basePath: "/t0m6b5", publicUrl: ORIGIN },
 			{ basePath: "/t0m6b5", publicUrl: ORIGIN, standIn: true },
 		]) {
-			const page = await again.serve(new Request(`${ORIGIN}/t0m6b5/issues`), ALICE, at);
+			const page = await again.serve(new Request(`${ORIGIN}/t0m6b5/apps`), ALICE, at);
 			expect(page.status).toBe(404);
 		}
 		expect(

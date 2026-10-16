@@ -30,7 +30,7 @@ export function eventView(detail: EventDetail, now: Date): Html {
 	return h`${pageHead(
 		eventSummary(e),
 		h`Event <span class="mono">${t(e.event_id, 64)}</span> · ${time(e.timestamp, now)}${e.truncated ? " · cut to the size limit" : ""}`,
-		h`<a href="/issues">Issues</a> / <a href="${issuePath(detail.issue_id)}">${t(detail.issue_title, 120)}</a>`,
+		h`<a href="/apps">Apps</a> / <a href="${issuePath(detail.issue_id)}">${t(detail.issue_title, 120)}</a>`,
 	)}
 <div class="stack">
 ${e.exceptions.length > 0 ? untrusted("Exception", exceptions(e.exceptions, true)) : ""}

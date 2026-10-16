@@ -200,14 +200,17 @@ describe("a base path: every URL stays under /<id>/", () => {
 		const d = await seeded(t);
 		const pages = [
 			"/",
+			"/?range=live&issues=regressed",
+			"/dashboard/series?range=live",
 			"/issues",
-			"/issues?status=unresolved",
+			`/issues?project=${d.project.id}&status=unresolved`,
 			`/issues/${d.issues[0]?.id}`,
 			`/events/${d.events[0]?.id}`,
 			"/apps",
 			"/apps/new",
 			`/apps/${d.project.id}`,
 			`/apps/${d.project.id}?tab=manual`,
+			`/apps/${d.project.id}?tab=setup`,
 			"/apps/progress",
 			"/settings",
 			"/settings/tokens",
@@ -221,7 +224,8 @@ describe("a base path: every URL stays under /<id>/", () => {
 			expect(await outside(response), path).toEqual([]);
 		}
 		const home = await (await t.call("/apps/new", { as: ALICE })).text();
-		expect(home).toContain(`href="${BASE}/issues"`);
+		expect(home).toContain(`href="${BASE}/"`);
+		expect(home).toContain(`href="${BASE}/apps"`);
 		expect(home).toContain(`href="${SPACES}"`);
 		expect(home).not.toContain("/logout");
 		expect(home).toMatch(new RegExp(`src="${BASE}/assets/app\\.[0-9a-f]+\\.js"`));
@@ -421,6 +425,7 @@ describe("a base path: every URL stays under /<id>/", () => {
 			"/apps/new",
 			"/apps/:id",
 			"/apps/progress",
+			"/dashboard/series",
 			"/settings",
 			"/settings/tokens",
 			"/projects",
@@ -519,7 +524,7 @@ describe("a base path: the cross-tenant request guard", () => {
 	it("allows navigations, other sites (browser SDKs) and bearer calls without a member", async () => {
 		const t = await tenant();
 		const d = await seeded(t);
-		const navigation = await t.call("/issues", {
+		const navigation = await t.call("/apps", {
 			as: ALICE,
 			headers: {
 				"sec-fetch-site": "same-origin",
@@ -563,7 +568,7 @@ describe("without a base path", () => {
 		const t = await uiApp();
 		const { token } = await t.signIn();
 		const page = await (await t.request("/apps/new", { session: token })).text();
-		expect(page).toContain('href="/issues"');
+		expect(page).toContain('href="/apps"');
 		expect(page).toContain('action="/logout"');
 		const other = await t.request("/apps/progress", {
 			session: token,

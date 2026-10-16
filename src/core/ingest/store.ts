@@ -36,8 +36,8 @@ const FLOOD_TITLE: IssueTitle = {
 // Estimated D1 rows written (D1 counts index updates as rows). Used for budget mode.
 // Measured on D1 (test/workers/d1-rows.test.ts): a stored repeat 9-10, a repeat above the
 // per-issue cap 6, a new issue 14-16. The estimate must not be below the real rows.
-const ROWS_STORED = 10;
-const ROWS_COUNTED = 6;
+const ROWS_STORED = 11;
+const ROWS_COUNTED = 7;
 const ROWS_PER_USER = 2;
 /** A new issue: the issue row and its indexes. */
 const ROWS_NEW_ISSUE = 5;
@@ -382,6 +382,13 @@ async function planWrite(
 				WHERE project_id = ${projectId} AND fingerprint = ${fingerprint}
 					AND NOT EXISTS (SELECT 1 FROM events WHERE project_id = ${projectId} AND event_id = ${event.event_id})
 				ON CONFLICT (issue_id, hour) DO UPDATE SET count = count + 1`,
+		);
+		// The minute count of the project, for the Live chart (the same duplicate check).
+		statements.push(
+			sql`INSERT INTO minute_counts (project_id, minute, count)
+				SELECT ${projectId}, ${nowIso.slice(0, 16)}, 1
+				WHERE NOT EXISTS (SELECT 1 FROM events WHERE project_id = ${projectId} AND event_id = ${event.event_id})
+				ON CONFLICT (project_id, minute) DO UPDATE SET count = count + 1`,
 		);
 		// Spike alerts: after the count, before the event insert (the duplicate check).
 		deliveryStatements.push(statements.length);

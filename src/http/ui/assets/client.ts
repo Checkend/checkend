@@ -314,6 +314,37 @@ export const CLIENT_SCRIPT = `"use strict";
     document.addEventListener("visibilitychange", tick);
   }
 
+  // The Live chart: every 10 s while the page is visible, the bars move to the new minutes.
+  // Polling stops while the tab is hidden: each request costs (the install wakes for it).
+  function pollChart(svg) {
+    var height = 140;
+    function draw(data) {
+      var rects = svg.querySelectorAll("rect");
+      var max = 1;
+      data.buckets.forEach(function (b) { if (b.n > max) max = b.n; });
+      data.buckets.forEach(function (b, i) {
+        var rect = rects[i];
+        if (!rect) return;
+        var h = b.n === 0 ? 0 : Math.max(2, (b.n / max) * (height - 4));
+        rect.setAttribute("y", (height - h).toFixed(1));
+        rect.setAttribute("height", h.toFixed(1));
+        var title = rect.querySelector("title");
+        if (title) title.textContent = b.at.slice(11) + " UTC: " + b.n + (b.n === 1 ? " event" : " events");
+      });
+      var total = document.querySelector("[data-chart-total]");
+      if (total) total.textContent = data.total + (data.total === 1 ? " event" : " events");
+    }
+    function tick() {
+      if (document.visibilityState !== "visible") return;
+      fetch(BASE + "/dashboard/series?" + svg.getAttribute("data-live"), { credentials: "same-origin", headers: { accept: "application/json" } })
+        .then(function (response) { return response.ok ? response.json() : null; })
+        .then(function (data) { if (data && data.buckets) draw(data); })
+        .catch(function () {});
+    }
+    setInterval(tick, 10000);
+    document.addEventListener("visibilitychange", tick);
+  }
+
   document.addEventListener("click", function (event) {
     var target = event.target instanceof Element ? event.target.closest("button") : null;
     // A click outside an open menu closes it.
@@ -368,6 +399,8 @@ export const CLIENT_SCRIPT = `"use strict";
 
   var progressSection = document.querySelector("[data-progress]");
   if (progressSection) pollProgress(progressSection);
+  var liveChart = document.querySelector("svg[data-live]");
+  if (liveChart) pollChart(liveChart);
 
   document.querySelectorAll("[data-js-only]").forEach(function (el) { el.hidden = false; });
   document.querySelectorAll("[data-no-js]").forEach(function (el) { el.hidden = true; });

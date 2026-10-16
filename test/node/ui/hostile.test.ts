@@ -67,7 +67,7 @@ async function hostile() {
 }
 
 const pages = (d: Awaited<ReturnType<typeof hostile>>) => [
-	"/issues",
+	"/",
 	`/issues/${d.issueId}`,
 	`/events/${d.eventId}`,
 	"/",
@@ -145,7 +145,7 @@ describe("hostile event data in the UI", () => {
 		await d.ports.db.run(
 			sql`UPDATE issues SET title = ${"invoice\u202Etxt.exe\u200B\u001b[2J"} WHERE id = ${d.issueId}`,
 		);
-		const html = await d.page("/issues");
+		const html = await d.page("/");
 		const title = await d.page(`/issues/${d.issueId}`);
 		expect(/<title>([^<]*)<\/title>/.exec(title)?.[1]).toContain("invoice⟨U+202E⟩txt.exe");
 		for (const hidden of ["\u202E", "\u200B", "\u001b"]) expect(html).not.toContain(hidden);

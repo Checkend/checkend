@@ -117,6 +117,7 @@ export async function runProjectPurge(
 			sql`DELETE FROM issue_counts WHERE rowid IN (SELECT rowid FROM issue_counts
 				WHERE issue_id IN (SELECT id FROM issues WHERE project_id = ${p}) LIMIT ${size})`,
 		),
+		simple(sql`DELETE FROM minute_counts WHERE project_id = ${p}`),
 		simple(
 			sql`DELETE FROM issue_users WHERE rowid IN (SELECT rowid FROM issue_users
 				WHERE issue_id IN (SELECT id FROM issues WHERE project_id = ${p}) LIMIT ${size})`,

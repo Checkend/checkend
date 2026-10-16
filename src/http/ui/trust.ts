@@ -32,8 +32,9 @@ export function trustBadge(view: TrustView, hasEvents: boolean): Html {
 
 /** How to improve a low-trust app, and how to get its alerts again. */
 export function lowTrustNote(): Html {
-	return h`<section class="trust-note" aria-labelledby="trust-title" data-trust-note>
-<h2 id="trust-title">Low trust</h2>
+	// Closed by default: the issues of the app come first on its page.
+	return h`<details class="trust-note" data-trust-note>
+<summary><strong>Low trust:</strong> anyone can send fake events with this app's key. Alerts do not fire for it.</summary>
 <p>This app got events from a browser, a mobile app or an unknown SDK. Anyone can read its app key there and send fake events with it. The app stays low trust, also when these events stop: the key stays public. Alerts with the default minimum trust (high) do not fire for this app.</p>
 <p>To improve:</p>
 <ul>
@@ -42,5 +43,5 @@ export function lowTrustNote(): Html {
 <li>Then make a new app key, use it on your servers only, and revoke the old key.</li>
 </ul>
 <p>To get alerts again, ask your agent to set the trust of this app to high, or to set the minimum trust of an alert to low.</p>
-</section>`;
+</details>`;
 }

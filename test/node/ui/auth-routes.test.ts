@@ -37,7 +37,7 @@ async function setUpWithPasskey(
 describe("setup over HTTP", () => {
 	it("sends a new browser to /setup while no member exists", async () => {
 		const ui = await uiApp();
-		const response = await ui.request("/issues");
+		const response = await ui.request("/apps");
 		expect(response.status).toBe(303);
 		expect(response.headers.get("location")).toBe("/setup");
 		expect((await ui.request("/login")).headers.get("location")).toBe("/setup");
@@ -47,7 +47,7 @@ describe("setup over HTTP", () => {
 	it("registers the first passkey with the setup code, signs in, and closes", async () => {
 		const ui = await setUpWithPasskey();
 		expect(ui.setupSession).not.toBeNull();
-		const page = await ui.request("/issues", { session: ui.setupSession ?? "" });
+		const page = await ui.request("/apps", { session: ui.setupSession ?? "" });
 		expect(page.status).toBe(200);
 		const closed = await ui.request("/setup");
 		expect(closed.status).toBe(404);
@@ -191,7 +191,7 @@ describe("sign-in over HTTP", () => {
 			response: await ui.device.get((await options.json()) as RequestOptions),
 		});
 		expect(verify.status).toBe(200);
-		expect(await verify.json()).toEqual({ redirect: "/issues" });
+		expect(await verify.json()).toEqual({ redirect: "/" });
 		const cookie = verify.headers.get("set-cookie") ?? "";
 		expect(cookie).toMatch(
 			new RegExp(
@@ -304,7 +304,7 @@ describe("development login", () => {
 		const ui = await uiApp({ devMode: true }, "http://localhost:8787");
 		const response = await ui.request("/dev/login");
 		expect(response.status).toBe(303);
-		expect(response.headers.get("location")).toBe("/issues");
+		expect(response.headers.get("location")).toBe("/");
 		expect(sessionFrom(response)).not.toBeNull();
 	});
 
@@ -373,7 +373,7 @@ describe("session cookie", () => {
 	it("ignores an unknown session and sends the browser to sign in", async () => {
 		const ui = await uiApp();
 		await ui.signIn();
-		const response = await ui.request("/issues", { session: "a".repeat(43) });
+		const response = await ui.request("/apps", { session: "a".repeat(43) });
 		expect(response.status).toBe(303);
 		expect(response.headers.get("location")).toBe("/login");
 	});

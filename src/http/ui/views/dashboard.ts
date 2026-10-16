@@ -7,16 +7,20 @@ import type {
 	Visit,
 } from "../../../core/dashboard.ts";
 import type { IngestStatus } from "../../../core/ingest-status.ts";
+import type { IssueRow } from "../../../core/issues.ts";
+import type { Series, SeriesRange } from "../../../core/series.ts";
 import { ago, count, type Html, h, time } from "../html.ts";
 import { appPath, issuePath } from "../ids.ts";
 import { pageHead } from "../layout.ts";
 import type { ProgressJson } from "../onboarding.ts";
 import { displayText as t } from "../text.ts";
+import { chartCard, sparkline } from "./chart.ts";
 
 /**
- * Home for the people who supervise: what changed since the last visit, what needs a person,
- * the fix loop, agent activity and the apps. Agents do the triage; this page shows when they
- * cannot, and whether their fixes work. No script.
+ * The dashboard, for the people who supervise: what changed since the last visit, the events
+ * chart, the recent issues of all apps, what needs a person, the fix loop, agent activity and
+ * the apps. Agents do the triage; this page shows when they cannot, and whether their fixes
+ * work. It works without script; the Live chart updates with script.
  */
 
 export interface DashboardPage {
@@ -25,7 +29,31 @@ export interface DashboardPage {
 	progress: ProgressJson;
 	ingest: IngestStatus;
 	now: Date;
+	series: Series;
+	/** The most recent issues of all apps (at most RECENT_ISSUES), of `issues` when it is set. */
+	recent: IssueRow[];
+	issues: RecentFilter | null;
 }
+
+/** The status filters of "Recent issues" (`/?issues=<status>`). */
+export const RECENT_FILTERS = [
+	["unresolved", "Unresolved"],
+	["regressed", "Regressed"],
+	["fix_pending", "Fix pending"],
+	["verified", "Verified"],
+] as const;
+export type RecentFilter = (typeof RECENT_FILTERS)[number][0];
+export const RECENT_ISSUES = 10;
+
+/** A dashboard URL with its query values (the chart range and the issue filter). */
+function dashHref(range: SeriesRange | null, issues: RecentFilter | null, anchor = ""): string {
+	const query = new URLSearchParams();
+	if (range && range !== "24h") query.set("range", range);
+	if (issues) query.set("issues", issues);
+	const text = query.toString();
+	return `/${text ? `?${text}` : ""}${anchor}`;
+}
+const issuesHref = (status: RecentFilter) => dashHref(null, status, "#recent");
 
 const plural = (n: number, one: string, many = `${one}s`) => `${count(n)} ${n === 1 ? one : many}`;
 
@@ -45,9 +73,9 @@ function summary(d: Dashboard): Html {
 				: h`<div><span class="stat-n">${count(n)}</span><span class="stat-label">${label}</span></div>`
 		}</li>`;
 	return h`<ul class="stats" aria-label="Since your last visit">
-${stat(new_issues, new_issues === 1 ? "new issue" : "new issues", "/issues")}
-${stat(verified, verified === 1 ? "fix verified" : "fixes verified", "/issues?status=verified", verified > 0 ? "good" : "")}
-${stat(regressed, regressed === 1 ? "fix regressed" : "fixes regressed", "/issues?status=regressed", regressed > 0 ? "bad" : "")}
+${stat(new_issues, new_issues === 1 ? "new issue" : "new issues", issuesHref("unresolved"))}
+${stat(verified, verified === 1 ? "fix verified" : "fixes verified", issuesHref("verified"), verified > 0 ? "good" : "")}
+${stat(regressed, regressed === 1 ? "fix regressed" : "fixes regressed", issuesHref("regressed"), regressed > 0 ? "bad" : "")}
 ${stat(agent_actions, agent_actions === 1 ? "agent action" : "agent actions", null)}
 </ul>`;
 }
@@ -74,11 +102,11 @@ const KIND_TONE: Record<AttentionKind, string> = {
 };
 /** Where "N more" goes, for kinds that the issue filters can show. */
 const KIND_MORE: Partial<Record<AttentionKind, string>> = {
-	regressed: "/issues?status=regressed",
-	still_failing: "/issues?status=fix_pending",
-	not_deployed: "/issues?status=fix_pending",
-	unclaimed: "/issues?status=unresolved",
-	expired_claim: "/issues?status=unresolved",
+	regressed: issuesHref("regressed"),
+	still_failing: issuesHref("fix_pending"),
+	not_deployed: issuesHref("fix_pending"),
+	unclaimed: issuesHref("unresolved"),
+	expired_claim: issuesHref("unresolved"),
 };
 
 function why(item: AttentionItem, now: Date): Html {
@@ -178,15 +206,15 @@ function fixLoop(d: Dashboard): Html {
 	return h`<section class="card" aria-labelledby="loop-title">
 <h2 id="loop-title">Fix loop</h2>
 <ol class="loop">
-${stage(d.loop.open, "Open, no agent", "/issues?status=unresolved", "warn")}
-${stage(d.loop.claimed, "Claimed by an agent", "/issues?status=unresolved")}
-${stage(d.loop.fix_linked, "Fix linked", "/issues?status=fix_pending")}
-${stage(d.loop.fix_deployed, "Deployed, quiet period", "/issues?status=fix_pending")}
-${stage(d.loop.verified_7d, "Verified (7 days)", "/issues?status=verified", "good")}
+${stage(d.loop.open, "Open, no agent", issuesHref("unresolved"), "warn")}
+${stage(d.loop.claimed, "Claimed by an agent", issuesHref("unresolved"))}
+${stage(d.loop.fix_linked, "Fix linked", issuesHref("fix_pending"))}
+${stage(d.loop.fix_deployed, "Deployed, quiet period", issuesHref("fix_pending"))}
+${stage(d.loop.verified_7d, "Verified (7 days)", issuesHref("verified"), "good")}
 </ol>
 <p class="loop-foot">${
 		d.loop.regressed > 0
-			? h`<a class="regressed-link" href="/issues?status=regressed">${plural(d.loop.regressed, "issue")} regressed</a> · `
+			? h`<a class="regressed-link" href="${issuesHref("regressed")}">${plural(d.loop.regressed, "issue")} regressed</a> · `
 			: ""
 	}Last 7 days: ${plural(o.verified, "fix", "fixes")} verified, ${count(o.regressed)} regressed${
 		o.median_hours_to_verified === null
@@ -262,23 +290,11 @@ ${
 
 // --- apps --------------------------------------------------------------------------------
 
-/** A 24-hour sparkline. Decorative: the row has the number as text. */
-function sparkline(values: number[]): Html {
-	const width = 96;
-	const height = 22;
-	const max = Math.max(1, ...values);
-	const step = width / Math.max(1, values.length - 1);
-	const points = values
-		.map((v, n) => `${(n * step).toFixed(1)},${(height - 1 - (v / max) * (height - 2)).toFixed(1)}`)
-		.join(" ");
-	return h`<svg class="spark" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" aria-hidden="true" focusable="false"><polyline points="${points}" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
-}
-
 function appRow(a: AppHealth, setup: ProgressJson["apps"][number] | undefined, now: Date): Html {
 	return h`<tr>
 <td><a href="${appPath(a.id)}">${t(a.name, 60)}</a>${setup && !setup.complete ? h` <span class="pill pill-progress">Setup ${setup.done}/5</span>` : ""}</td>
 <td class="spark-cell" data-label="24 h">${sparkline(a.hourly)}<span class="num">${count(a.events_24h)}</span></td>
-<td class="num" data-label="Open"><a href="/issues?project=${a.id}&amp;status=unresolved">${count(a.open_issues)}</a></td>
+<td class="num" data-label="Open"><a href="${appPath(a.id)}?status=unresolved">${count(a.open_issues)}</a></td>
 <td class="when" data-label="Last deploy">${a.last_deploy_at ? time(a.last_deploy_at, now) : h`<span class="muted">none</span>`}</td>
 </tr>`;
 }
@@ -297,15 +313,49 @@ function apps(d: Dashboard, progress: ProgressJson, now: Date): Html {
 
 // --- the page ----------------------------------------------------------------------------
 
+// --- recent issues -----------------------------------------------------------------------
+
+const statusPill = (status: unknown) =>
+	h`<span class="pill pill-${String(status)}">${t(status)}</span>`;
+
+function recentRow(issue: IssueRow, now: Date): Html {
+	return h`<li class="recent">
+<a class="recent-title" href="${issuePath(issue.id)}">${t(issue.title, 200)}</a>
+<div class="recent-sub">${statusPill(issue.status)}<a class="recent-app" href="${appPath(issue.project_id)}">${t(issue.project_name, 60)}</a><span class="muted">${plural(Number(issue.times_seen ?? 0), "event")}</span>${time(issue.last_seen as string, now)}</div>
+</li>`;
+}
+
+function recentIssues(page: DashboardPage): Html {
+	const { recent, issues, now, series } = page;
+	const tab = (value: RecentFilter | null, label: string) =>
+		h`<a href="${dashHref(series.range, value, "#recent")}"${value === issues ? h` aria-current="true"` : ""}>${label}</a>`;
+	return h`<section class="card" id="recent" aria-labelledby="recent-title">
+<div class="card-head"><h2 id="recent-title">Recent issues</h2>
+<nav class="segmented segmented-small" aria-label="Issue status">${tab(null, "All")}${RECENT_FILTERS.map(([value, label]) => tab(value, label))}</nav></div>
+${
+	recent.length === 0
+		? h`<p class="muted">${issues ? "No issues with this status." : "No errors yet."}</p>`
+		: h`<ul class="recent-list">${recent.map((issue) => recentRow(issue, now))}</ul>`
+}
+<p class="card-foot muted">The issues of one app, with search and filters, are on its page in <a href="/apps">Apps</a>.</p>
+</section>`;
+}
+
+// --- the page ----------------------------------------------------------------------------
+
 export function dashboardView(page: DashboardPage): Html {
-	const { data, visit, progress, now } = page;
+	const { data, visit, progress, now, series, issues } = page;
 	const sub = visit.previous
 		? h`Since your last visit, ${ago(visit.previous, now)}.`
 		: "In the last 24 hours.";
-	return h`${pageHead("Home", sub)}
+	return h`${pageHead("Dashboard", sub)}
 <div class="dash">
 ${summary(data)}
+${chartCard(series, (range) => dashHref(range, issues), null)}
+<div class="dash-cols">
+${recentIssues(page)}
 ${needsYou(page)}
+</div>
 ${fixLoop(data)}
 <div class="dash-cols">
 ${activity(data, now)}

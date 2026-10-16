@@ -31,11 +31,11 @@ describe("trusted front identity mode", () => {
 	it("is off by default: an identity in the call does nothing, cookies work as before", async () => {
 		expect(DEFAULT_CONFIG.trustedFront ?? false).toBe(false);
 		const ui = await uiApp();
-		const ignored = await ui.request("/issues", { identity: ALICE });
+		const ignored = await ui.request("/apps", { identity: ALICE });
 		expect(ignored.status).toBe(303);
 		expect(ignored.headers.get("location")).toBe("/setup");
 		const { token } = await ui.signIn();
-		expect((await ui.request("/issues", { session: token })).status).toBe(200);
+		expect((await ui.request("/apps", { session: token })).status).toBe(200);
 		expect(
 			await ui.ports.db.first(sql`SELECT 1 AS x FROM members WHERE name = ${ALICE.name}`),
 		).toBeNull();
@@ -44,11 +44,11 @@ describe("trusted front identity mode", () => {
 	it("serves the UI to the identity from the front Worker, and maps it to one member", async () => {
 		const t = await hosted();
 		for (let i = 0; i < 3; i++) {
-			const page = await t.as(ALICE, "/issues", { headers: { accept: "text/html" } });
+			const page = await t.as(ALICE, "/apps", { headers: { accept: "text/html" } });
 			expect(page.status).toBe(200);
 			expect(await page.text()).toContain("Alice");
 		}
-		await t.as(BOB, "/issues");
+		await t.as(BOB, "/apps");
 		const members = await t.ports.db.all<{ name: string; user_handle: string }>(
 			sql`SELECT name, user_handle FROM members ORDER BY id`,
 		);
@@ -57,7 +57,7 @@ describe("trusted front identity mode", () => {
 			{ name: "Bob", user_handle: "front:acc2bob" },
 		]);
 		// A new name at the front Worker: the same member, with the new name.
-		await t.as({ ...ALICE, name: "Alice Smith" }, "/issues");
+		await t.as({ ...ALICE, name: "Alice Smith" }, "/apps");
 		expect(
 			(await t.ports.db.all(sql`SELECT name FROM members ORDER BY id`)).map((m) => m.name),
 		).toEqual(["Alice Smith", "Bob"]);
@@ -88,7 +88,7 @@ describe("trusted front identity mode", () => {
 		const created = await t.post(ALICE, "/apps", { _csrf: await t.csrfOf(ALICE), name: "Shop" });
 		const path = created.headers.get("location")?.split("?")[0] ?? "";
 		expect(path).toMatch(/^\/apps\/\d+$/);
-		const bobPage = await (await t.as(BOB, path)).text();
+		const bobPage = await (await t.as(BOB, `${path}?tab=setup`)).text();
 		expect(bobPage).not.toContain(`action="${path}/delete"`);
 		expect(bobPage).toContain("Only an owner");
 		const refused = await t.post(BOB, `${path}/delete`, {
@@ -99,7 +99,9 @@ describe("trusted front identity mode", () => {
 		expect(
 			await t.ports.db.first(sql`SELECT 1 AS x FROM projects WHERE name = 'Shop'`),
 		).not.toBeNull();
-		expect(await (await t.as(ALICE, path)).text()).toContain(`action="${path}/delete"`);
+		expect(await (await t.as(ALICE, `${path}?tab=setup`)).text()).toContain(
+			`action="${path}/delete"`,
+		);
 		const deleted = await t.post(ALICE, `${path}/delete`, {
 			_csrf: await t.csrfOf(ALICE),
 			confirm: "Shop",
@@ -125,9 +127,9 @@ describe("trusted front identity mode", () => {
 
 	it("refuses every UI route without an identity, also with a valid install session cookie", async () => {
 		const t = await hosted();
-		await t.as(ALICE, "/issues");
+		await t.as(ALICE, "/apps");
 		const { token } = await t.signIn();
-		for (const path of ["/", "/issues", "/apps", "/apps/new", "/settings", "/apps/progress"]) {
+		for (const path of ["/", "/apps", "/apps/new", "/settings", "/apps/progress"]) {
 			const bare = await t.request(path, { headers: { accept: "text/html" } });
 			expect(bare.status, path).toBe(404);
 			const cookie = await t.request(path, { session: token, headers: { accept: "text/html" } });
@@ -144,7 +146,7 @@ describe("trusted front identity mode", () => {
 
 	it("never sets or reads a cookie", async () => {
 		const t = await hosted();
-		for (const path of ["/issues", "/apps/new", "/settings"]) {
+		for (const path of ["/apps", "/apps/new", "/settings"]) {
 			const response = await t.as(ALICE, path, {
 				headers: { cookie: "__Host-checkend_session=x; __Host-checkend_s_other=y" },
 			});
@@ -192,7 +194,7 @@ describe("trusted front identity mode", () => {
 			{ accountId: "acc1", name: "A", role: "admin" },
 			{ accountId: "acc1", name: "A" },
 		]) {
-			const response = await t.as(identity as FrontIdentity, "/issues");
+			const response = await t.as(identity as FrontIdentity, "/apps");
 			expect(response.status, JSON.stringify(identity)).toBe(404);
 		}
 		expect(await t.ports.db.first(sql`SELECT 1 AS x FROM members`)).toBeNull();

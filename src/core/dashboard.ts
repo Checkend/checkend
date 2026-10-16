@@ -1,4 +1,4 @@
-import { sql } from "../ports/db.ts";
+import { type Db, sql } from "../ports/db.ts";
 import type { Ports } from "../ports/index.ts";
 
 /**
@@ -201,6 +201,60 @@ function median(values: number[]): number | null {
 	return Math.round(value * 10) / 10;
 }
 
+/**
+ * Each app with its events per hour (the last 24 hours), open issues, last event and last deploy:
+ * for the dashboard and the Apps list.
+ */
+export async function loadAppHealth(db: Db, now: Date): Promise<AppHealth[]> {
+	const nowIso = now.toISOString();
+	const hour24 = new Date(now.getTime() - DAY).toISOString().slice(0, 13);
+	const today = `${nowIso.slice(0, 10)}T00`;
+	const [apps, hourly] = await Promise.all([
+		db.all<Row>(
+			sql`SELECT p.public_id AS id, p.name, p.daily_quota,
+					(SELECT count(*) FROM issues i WHERE i.project_id = p.id AND i.test = 0
+						AND i.status IN ('unresolved', 'regressed', 'fix_pending')) AS open_issues,
+					(SELECT max(d.deployed_at) FROM deploys d WHERE d.project_id = p.id) AS last_deploy_at,
+					(SELECT max(i.last_seen) FROM issues i WHERE i.project_id = p.id AND i.test = 0)
+						AS last_event_at
+				FROM projects p WHERE p.deleted_at IS NULL ORDER BY p.name, p.id`,
+		),
+		// The quota counts every event (as ingest does); the chart leaves out test issues.
+		db.all<Row>(
+			sql`SELECT p.public_id AS id, c.hour,
+					sum(CASE WHEN i.test = 0 THEN c.count ELSE 0 END) AS n, sum(c.count) AS all_n
+				FROM issue_counts c JOIN issues i ON i.id = c.issue_id JOIN projects p ON p.id = i.project_id
+				WHERE c.hour > ${hour24} AND p.deleted_at IS NULL
+				GROUP BY p.public_id, c.hour`,
+		),
+	]);
+	// The 24 hour keys of the chart, the oldest first.
+	const hours = Array.from({ length: 24 }, (_, n) =>
+		new Date(now.getTime() - (23 - n) * HOUR).toISOString().slice(0, 13),
+	);
+	const counts = new Map<string, { n: number; all: number }>();
+	for (const row of hourly) {
+		counts.set(`${row.id}|${row.hour}`, { n: num(row.n), all: num(row.all_n) });
+	}
+	return apps.map((row) => {
+		const series = hours.map((hour) => counts.get(`${row.id}|${hour}`)?.n ?? 0);
+		const eventsToday = hours
+			.filter((hour) => hour >= today)
+			.reduce((sum, hour) => sum + (counts.get(`${row.id}|${hour}`)?.all ?? 0), 0);
+		return {
+			id: num(row.id),
+			name: String(row.name ?? ""),
+			hourly: series,
+			events_24h: series.reduce((a, b) => a + b, 0),
+			open_issues: num(row.open_issues),
+			last_event_at: str(row.last_event_at),
+			last_deploy_at: str(row.last_deploy_at),
+			daily_quota: row.daily_quota === null ? null : num(row.daily_quota),
+			events_today: eventsToday,
+		};
+	});
+}
+
 /** All the reads of the dashboard, in parallel. `since`: the start of the visit window. */
 export async function loadDashboard({ db, clock }: P, since: Date): Promise<Dashboard> {
 	const now = clock.now();
@@ -210,8 +264,6 @@ export async function loadDashboard({ db, clock }: P, since: Date): Promise<Dash
 	const recent = new Date(now.getTime() - RECENT_MS).toISOString();
 	const claimGrace = new Date(now.getTime() - CLAIM_GRACE_MS).toISOString();
 	const deployGrace = new Date(now.getTime() - DEPLOY_GRACE_MS).toISOString();
-	const hour24 = new Date(now.getTime() - DAY).toISOString().slice(0, 13);
-	const today = `${nowIso.slice(0, 10)}T00`;
 	const limit = ATTENTION_LIMIT;
 
 	const [
@@ -226,8 +278,7 @@ export async function loadDashboard({ db, clock }: P, since: Date): Promise<Dash
 		unclaimed,
 		loop,
 		activity,
-		apps,
-		hourly,
+		appHealth,
 		outcomes,
 	] = await Promise.all([
 		db.first<Row>(
@@ -337,23 +388,7 @@ export async function loadDashboard({ db, clock }: P, since: Date): Promise<Dash
 					AND coalesce(ip.deleted_at, pp.deleted_at, rp.deleted_at) IS NULL
 				ORDER BY a.id DESC LIMIT ${ACTIVITY_LIMIT}`,
 		),
-		db.all<Row>(
-			sql`SELECT p.public_id AS id, p.name, p.daily_quota,
-					(SELECT count(*) FROM issues i WHERE i.project_id = p.id AND i.test = 0
-						AND i.status IN ('unresolved', 'regressed', 'fix_pending')) AS open_issues,
-					(SELECT max(d.deployed_at) FROM deploys d WHERE d.project_id = p.id) AS last_deploy_at,
-					(SELECT max(i.last_seen) FROM issues i WHERE i.project_id = p.id AND i.test = 0)
-						AS last_event_at
-				FROM projects p WHERE p.deleted_at IS NULL ORDER BY p.name, p.id`,
-		),
-		// The quota counts every event (as ingest does); the chart leaves out test issues.
-		db.all<Row>(
-			sql`SELECT p.public_id AS id, c.hour,
-					sum(CASE WHEN i.test = 0 THEN c.count ELSE 0 END) AS n, sum(c.count) AS all_n
-				FROM issue_counts c JOIN issues i ON i.id = c.issue_id JOIN projects p ON p.id = i.project_id
-				WHERE c.hour > ${hour24} AND p.deleted_at IS NULL
-				GROUP BY p.public_id, c.hour`,
-		),
+		loadAppHealth(db, now),
 		db.all<Row>(
 			sql`SELECT o.verified_at, o.regressed_at, o.hours_to_verified
 				FROM fix_outcomes o JOIN issues i ON i.id = o.issue_id JOIN projects p ON p.id = i.project_id
@@ -362,32 +397,6 @@ export async function loadDashboard({ db, clock }: P, since: Date): Promise<Dash
 				LIMIT ${1000}`,
 		),
 	]);
-
-	// The 24 hour keys of the chart, the oldest first.
-	const hours = Array.from({ length: 24 }, (_, n) =>
-		new Date(now.getTime() - (23 - n) * HOUR).toISOString().slice(0, 13),
-	);
-	const counts = new Map<string, { n: number; all: number }>();
-	for (const row of hourly) {
-		counts.set(`${row.id}|${row.hour}`, { n: num(row.n), all: num(row.all_n) });
-	}
-	const appHealth: AppHealth[] = apps.map((row) => {
-		const series = hours.map((hour) => counts.get(`${row.id}|${hour}`)?.n ?? 0);
-		const eventsToday = hours
-			.filter((hour) => hour >= today)
-			.reduce((sum, hour) => sum + (counts.get(`${row.id}|${hour}`)?.all ?? 0), 0);
-		return {
-			id: num(row.id),
-			name: String(row.name ?? ""),
-			hourly: series,
-			events_24h: series.reduce((a, b) => a + b, 0),
-			open_issues: num(row.open_issues),
-			last_event_at: str(row.last_event_at),
-			last_deploy_at: str(row.last_deploy_at),
-			daily_quota: row.daily_quota === null ? null : num(row.daily_quota),
-			events_today: eventsToday,
-		};
-	});
 
 	const quota: AttentionItem[] = appHealth
 		.filter((a) => a.daily_quota !== null && a.events_today >= a.daily_quota)

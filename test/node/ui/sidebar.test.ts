@@ -44,7 +44,9 @@ describe("sidebar", () => {
 		expect(html).not.toContain('class="top"');
 		const side = sidebarOf(html);
 		expect(side).toContain('<nav class="side-nav" aria-label="Primary"');
-		for (const href of ["/", "/issues", "/apps", "/settings"]) {
+		expect(side).not.toContain('href="/issues"');
+		expect(side).toMatch(/href="\/"[^>]*>[\s\S]*?Dashboard/);
+		for (const href of ["/", "/apps", "/settings"]) {
 			expect(side).toContain(`href="${href}"`);
 		}
 		expect(side).toMatch(/href="\/apps"[^>]*aria-current="page"/);
@@ -56,11 +58,11 @@ describe("sidebar", () => {
 
 	it("shows the setup progress on Home until every app is set up", async () => {
 		const incomplete = await withSidebar([app({ test_event_at: "2026-10-10T11:02:00.000Z" })]);
-		expect(sidebarOf(await incomplete.page("/issues"))).toContain("Setup 2/5");
+		expect(sidebarOf(await incomplete.page("/apps"))).toContain("Setup 2/5");
 		const none = await withSidebar([]);
-		expect(sidebarOf(await none.page("/issues"))).toContain("Start");
+		expect(sidebarOf(await none.page("/apps"))).toContain("Start");
 		const done = await withSidebar([app(COMPLETE)]);
-		expect(sidebarOf(await done.page("/issues"))).not.toMatch(/Setup \d\/5|Start/);
+		expect(sidebarOf(await done.page("/apps"))).not.toMatch(/Setup \d\/5|Start/);
 	});
 
 	it("counts the new unresolved issues (first seen in the last 24 hours) on Issues", async () => {

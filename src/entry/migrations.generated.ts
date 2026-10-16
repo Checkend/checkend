@@ -113,5 +113,9 @@ export const MIGRATIONS: readonly Migration[] = [
 	{
 		"name": "0034_member_visits.sql",
 		"sql": "-- Migration 0034: member visits, for \"since your last visit\" on the dashboard.\n-- Rules (AGENTS.md): valid on D1 and SQLite; forward-only and additive; no triggers.\n-- last_visit_at: the last dashboard view (written at most once a minute).\n-- previous_visit_at: the end of the visit before the current one (a new visit starts after\n-- 30 minutes away).\n\nALTER TABLE members ADD COLUMN last_visit_at TEXT;\nALTER TABLE members ADD COLUMN previous_visit_at TEXT;\n\n-- The dashboard counts the activity of a time window.\nCREATE INDEX activity_at ON activity (at);\n"
+	},
+	{
+		"name": "0035_minute_counts.sql",
+		"sql": "-- Migration 0035: events per project and UTC minute (\"2026-10-10T12:34\"), for the Live and\n-- 60-minute views of the dashboard chart. Written in the same batch as the event (one more row\n-- written per event); retention keeps only the last hours (src/core/series.ts), so the table stays\n-- small: at most 60 rows per project and hour kept.\n-- Rules (AGENTS.md): valid on D1 and SQLite; forward-only and additive; no triggers.\n\n-- WITHOUT ROWID and no other index: one B-tree, so a new minute writes one row (rows written\n-- are billed). Retention scans the small table by minute.\nCREATE TABLE minute_counts (\n  project_id INTEGER NOT NULL REFERENCES projects (id),\n  minute     TEXT NOT NULL,\n  count      INTEGER NOT NULL DEFAULT 0,\n  PRIMARY KEY (project_id, minute)\n) WITHOUT ROWID;\n"
 	}
 ];

@@ -1,5 +1,6 @@
 import { sql } from "../ports/db.ts";
 import type { Ports } from "../ports/index.ts";
+import { MINUTE_COUNT_HOURS } from "./series.ts";
 
 /**
  * Retention: the cron deletes data that is older than RETENTION_DAYS (default 90): stored events
@@ -18,6 +19,8 @@ export interface RetentionRun {
 	counts: number;
 	deliveries: number;
 	commits: number;
+	/** Minute counts older than MINUTE_COUNT_HOURS. */
+	minutes: number;
 }
 
 export async function runRetention(
@@ -33,7 +36,10 @@ export async function runRetention(
 		now.getTime() - Math.max(days, MIN_COUNT_DAYS) * 86_400_000,
 	).toISOString();
 	let chunks = options.maxChunks ?? DEFAULT_MAX_CHUNKS;
-	const run: RetentionRun = { events: 0, counts: 0, deliveries: 0, commits: 0 };
+	const run: RetentionRun = { events: 0, counts: 0, deliveries: 0, commits: 0, minutes: 0 };
+	const minuteCutoff = new Date(now.getTime() - MINUTE_COUNT_HOURS * 3_600_000)
+		.toISOString()
+		.slice(0, 16);
 
 	// Events: the oldest ids first (ids grow with time), then recount the issues they were in.
 	while (chunks > 0) {
@@ -63,6 +69,14 @@ export async function runRetention(
 				db.run(
 					sql`DELETE FROM issue_counts WHERE rowid IN (
 						SELECT rowid FROM issue_counts WHERE hour < ${countsCutoff.slice(0, 13)} LIMIT ${RETENTION_CHUNK})`,
+				),
+		],
+		[
+			"minutes",
+			() =>
+				db.run(
+					// A small table (MINUTE_COUNT_HOURS per project): one statement.
+					sql`DELETE FROM minute_counts WHERE minute < ${minuteCutoff}`,
 				),
 		],
 		[

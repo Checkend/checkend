@@ -410,7 +410,7 @@ describe("delete an app", () => {
 		];
 		const list = await ui.page("/apps");
 		expect(list.html).toContain("Demo data");
-		const one = await ui.page(`/apps/${ui.shop.id}`);
+		const one = await ui.page(`/apps/${ui.shop.id}?tab=setup`);
 		expect(one.html).toContain("Delete demo");
 		expect((await ui.del({ demo: "1" })).status).toBe(303);
 		expect(ui.fake.calls.deleted).toEqual([ui.shop.id]);
@@ -489,7 +489,7 @@ describe("delete with the core (no fake)", () => {
 		const html = await (
 			await ui.request("/apps", { session: session.token, headers: { accept: "text/html" } })
 		).text();
-		expect(html).toMatch(/data-label="Errors, 24 h:">2</);
+		expect(html).toMatch(/data-label="Events, 24 h:">[\s\S]*?<span class="num">2</);
 		expect(html).toContain("Demo data");
 	});
 });
