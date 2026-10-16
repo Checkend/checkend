@@ -64,7 +64,7 @@ h1, h2, h3 { font-weight: 600; letter-spacing: -0.02em; }
 .side-nav a[aria-current="page"], .side-foot > a[aria-current="page"] { color: var(--fg); background: var(--bg); box-shadow: inset 0 0 0 1px var(--line); }
 .icon { width: 16px; height: 16px; flex: none; }
 .side-label { flex: 1; }
-.badge { min-width: 20px; padding: 0 6px; font-size: 11.5px; font-weight: 600; line-height: 1.7; text-align: center; font-variant-numeric: tabular-nums; color: var(--bg); background: var(--fg); border-radius: 999px; }
+.badge { min-width: 20px; padding: 0 6px; font-size: 11.5px; font-weight: 600; line-height: 1.7; text-align: center; font-variant-numeric: tabular-nums; color: var(--bg); background: var(--fg); border-radius: 999px; white-space: nowrap; flex: none; }
 .badge-setup { color: var(--violet); background: color-mix(in srgb, var(--violet) 14%, transparent); }
 .side-account { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 8px 0 0; padding: 8px 10px 0; font-size: 13px; }
 .side-account .who { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--fg); font-weight: 500; }
